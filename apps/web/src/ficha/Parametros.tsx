@@ -11,6 +11,7 @@ import { Adorno, metros } from '../lib/mascara';
 import { CAMADA, geoLinhas, geoVals, type LinhaToca } from '../lib/camadas';
 import { consultarArea } from '../novo/consulta';
 import type { Ficha, R } from './dados';
+import { CONT_KS, DetalhesContaminacao, registrosCont } from './Contaminacao';
 import { abrirQuadroJa, focar, lerNum, num, numStr, proximoCampo, Quadro, usePedido, useSalvar } from './edicao';
 
 // Seção Parâmetros urbanísticos da aba Terreno (antes aba própria; pedido do Moises, 9/nov/2026), logo depois de Endereço e
@@ -465,8 +466,9 @@ function restDados(d: D): Rest | null {
 function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
   const { edita } = useSessao();
   const qc = useQueryClient(), toast = useToast();
-  const [busc, setBusc] = useState(false);
-  const sp = d.base?.codigo === 'geosampa', r = sp ? restDados(d) : null;
+  const [busc, setBusc] = useState(false), [ctAb, setCtAb] = useState(false);
+  const sp = d.base?.codigo === 'geosampa', r = sp ? restDados(d) : null, regs = r ? registrosCont(r.camadas) : [];
+  const verCt = <button className="linkbtn ct-ver" onClick={() => setCtAb(true)}>Ver detalhes</button>;
   const consultar = async () => {
     if (busc || !f.poly) return;
     setBusc(true);
@@ -487,7 +489,8 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
     const grav = o.grav || CAMADA[ks[0]]?.[3] || '';
     if (o.sn) return cel(vals.length ? <><span className={`chip ${grav}`}>Sim</span> <span className="faint">{vals.join(', ')}</span></> : erro ? <span className="faint">Não respondeu</span> : 'Não');
     if (!vals.length) return cel(erro ? <span className="faint">Não respondeu</span> : o.vazio || 'Não');
-    return cel(vals.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className={`chip ${o.info ? '' : grav}`}>{v}</span></span>));
+    const ct = ks.some((k) => CONT_KS.includes(k)) && regs.length;
+    return cel(<>{vals.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className={`chip ${o.info ? '' : grav}`}>{v}</span></span>)}{ct ? <> {verCt}</> : null}</>);
   };
   return (
     <Quadro aba="terreno" id="rest" titulo="Restrições e entorno" acoes={acoes}>
@@ -495,6 +498,7 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
         <div className="hint rs-fonte">{r ? orig : f.poly ? 'Sem consulta ao GeoSampa: consulte pela poligonal ou inclua os SQLs em Terreno › Matrículas e SQLs.' : 'Desenhe a poligonal do terreno para consultar.'}</div>
         {REST_GRUPOS.map(([g, itens]) => <div className="rs-g" key={g}><div className="rs-gt">{g}</div>{itens.map(linha)}</div>)}
       </div>
+      {ctAb ? <DetalhesContaminacao regs={regs} poly={f.poly} fechar={() => setCtAb(false)} /> : null}
     </Quadro>
   );
 }
@@ -503,8 +507,8 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
 function SecHistUso({ f, d }: { f: Ficha; d: D }) {
   const { edita } = useSessao();
   const sp = d.base?.codigo === 'geosampa', r = sp ? restDados(d) : null;
-  const [txt, setTxt] = useState<string>(f.t.historico_uso ?? '');
-  const ks = ['area_contaminada_reabilitada_svma', 'GEOSAMPA_area_contaminada_sigac', 'area_contaminada_reabilitada_svma@30', 'GEOSAMPA_area_contaminada_sigac@30'];
+  const [txt, setTxt] = useState<string>(f.t.historico_uso ?? ''), [ctAb, setCtAb] = useState(false);
+  const ks = CONT_KS, regs = r ? registrosCont(r.camadas) : [];
   const ac = r ? [...new Set(ks.flatMap((k) => (r.camadas[k] || []).map((x) => { try { return CAMADA[k][2](x) + (x._dist_m > 0 ? ` (a ${num(x._dist_m)} m)` : /@/.test(k) ? '' : ' (no terreno)'); } catch { return null; } })).filter(Boolean) as string[])] : [];
   const salvarT = useSalvar(f);
   const gravar = async () => {
@@ -517,7 +521,8 @@ function SecHistUso({ f, d }: { f: Ficha; d: D }) {
       <div className="sec-b">
         <div className="rs-l"><span className="k">Cadastro de áreas contaminadas (prefeitura e Cetesb)</span><span className="v">
           {!sp ? <span className="faint">Não disponível nesta cidade</span> : !r ? <span className="faint">Sem consulta ao GeoSampa</span>
-            : ac.length ? ac.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className="chip warn">{v}</span></span>) : 'Nada cadastrado no terreno nem a até 30 m'}</span></div>
+            : ac.length ? <>{ac.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className="chip warn">{v}</span></span>)}{regs.length ? <> <button className="linkbtn ct-ver" onClick={() => setCtAb(true)}>Ver detalhes</button></> : null}</> : 'Nada cadastrado no terreno nem a até 30 m'}</span></div>
+        {ctAb ? <DetalhesContaminacao regs={regs} poly={f.poly} fechar={() => setCtAb(false)} /> : null}
         <div className="field" style={{ marginTop: 12 }}><label htmlFor="hu-t">Pesquisa do histórico</label>
           <textarea id="hu-t" readOnly={!edita} value={txt} onChange={(e) => setTxt(e.target.value)} onBlur={gravar}
             placeholder="Fotos aéreas antigas, matrícula, Cetesb, vizinhos: o que funcionou aqui e em volta (posto, indústria, oficina...)" /></div>

@@ -68,6 +68,8 @@ Temas:
   - **Melhoramento viário** e **faixa não edificável** mostram a lei, o tipo, a largura da faixa (quando a prefeitura informa) e quanto do terreno a faixa atinge, em m². **Córrego**, **vila**, **alta tensão** e **ferrovia** mostram a distância até o terreno ("encosta no terreno" quando toca).
 - **Riscos e interferências**: risco geológico, restrição geotécnica, faixa não edificável.
 
+**Ver detalhes** (ao lado de "Área contaminada no terreno" e "a até 30 m", quando há registro) abre uma janela com o mapa de lotes do GeoSampa, o terreno em azul e cada registro numerado em vermelho, e embaixo tudo o que a prefeitura guarda de cada um. No **potencial ou suspeita de contaminação** (cadastro SIGAC): a atividade, o lote (setor.quadra.lote), a origem do registro (cadastro, licenciamento SIPOL, processo administrativo...), o número do processo quando há, a data do cadastro e o código. Na **área contaminada ou reabilitada**: classificação, endereço, contaminantes, uso anterior e pretendido, restrições, intervenção, datas e se está também na Cetesb. "Potencial de contaminação" quer dizer que funcionou ali uma atividade que costuma contaminar, não que a contaminação foi constatada; "Atividade potencial" é o texto genérico do cadastro (a prefeitura não diz qual). O mapa só aparece na versão publicada.
+
 Cada linha diz sim, não, a distância, "Nada cadastrado no terreno nem a até 30 m" ou "Não respondeu" (quando a fonte falhou).
 
 **Fora de São Paulo:** "Não disponível nesta cidade. O que a prefeitura traz está em cada lote, acima" (em Índices urbanísticos).
@@ -76,7 +78,7 @@ Cada linha diz sim, não, a distância, "Nada cadastrado no terreno nem a até 3
 
 **Para que serve:** saber se o terreno já teve uso que contamina (posto, indústria), o que muda o custo e o prazo.
 
-- **Automático**: o cadastro de áreas contaminadas (prefeitura e Cetesb).
+- **Automático**: o cadastro de áreas contaminadas (prefeitura e Cetesb), com **Ver detalhes** (a mesma janela de Restrições e entorno).
 - **Pesquisa do histórico**: campo de texto livre para o que a equipe apurou.
 
 ## O que não é possível em Parâmetros urbanísticos

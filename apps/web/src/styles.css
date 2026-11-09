@@ -5083,3 +5083,18 @@ html[data-tema="escuro"] .reu-ed:hover { background: #282a2c }
 :root:not(#_) .qd-filhos > section.sec.sec.sec { margin: 0 !important; box-shadow: none !important; border: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 12px !important; background: var(--m-card, #fff) !important }
 :root[data-tema="escuro"]:not(#_) .qd-filhos > section.sec.sec.sec { border-color: #2d2f31 !important }
 @media (max-width: 599px) { .qd-filhos { padding: 12px 8px } }
+
+/* Detalhes da contaminação (popup; 9/nov/2026) */
+.dialog:has(.ct-b) { max-width: 780px; width: calc(100vw - 32px) }
+.ct-b { display: flex; flex-direction: column; gap: 16px; padding: 0 24px 24px; max-height: calc(100vh - 160px); overflow: auto }
+.ct-mapa { margin: 0 }
+.ct-mapa svg { width: 100%; height: auto; display: block; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px }
+.ct-carr { padding: 48px 0; text-align: center }
+.ct-leg { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; margin-top: 6px; color: var(--m-on-var, #444746) }
+.ct-leg i { display: inline-block; width: 14px; height: 10px; margin-right: 6px; vertical-align: -1px; border-radius: 2px }
+.ct-leg .ct-t { background: rgba(11,87,208,.12); border: 2px solid #0b57d0 }
+.ct-leg .ct-c { background: rgba(179,38,30,.28); border: 2px solid #b3261e }
+.ct-r h3 { font-size: 15px; font-weight: 500; margin: 0 0 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px }
+.ct-n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #b3261e; color: #fff; font-size: 12px; font-weight: 600; margin-right: 6px }
+.ct-ver { font-size: 13px; margin-left: 4px; white-space: nowrap }
+@media (max-width: 599px) { .ct-b { padding: 0 16px 16px } }
