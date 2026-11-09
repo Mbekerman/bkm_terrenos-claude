@@ -313,7 +313,16 @@ Peças, em `ficha/edicao.tsx`:
 
 1. põe cada gravação numa **fila** (`FILA`), uma de cada vez;
 2. guarda em `VER` a versão que cada gravação devolveu, e a próxima usa a maior entre a da ficha e a guardada;
-3. se o banco responde `40001` (versão antiga de verdade: outra pessoa mexeu), apaga a versão guardada e recarrega a ficha.
+3. se o banco responde versão antiga (`PT409`, HTTP 409; antes `40001`, que o PostgREST repetia sozinho por minutos e o erro nunca chegava ao front), `gravarTerreno` lê de novo a versão e os campos da gravação: se esses campos estão no banco como a ficha os mostra (`visto`, tirado de `f.t`; no Ctrl+Z, o valor que a gravação anterior deixou), quem mudou o terreno mexeu em outro campo (muitas vezes o próprio sistema: a consulta do GeoSampa grava cartório, áreas e zonas logo depois do cadastro) e a gravação é repetida uma vez na versão atual; se mudaram, recusa com o aviso, apaga a versão guardada e recarrega a ficha;
+4. gravação recusada volta o campo ao valor gravado, também numa lista (que grava ao escolher, ainda com o foco nela; antes ela continuava mostrando a opção recusada).
+
+A consulta do GeoSampa depois do cadastro (`novo/consulta.ts`, `consultarTerreno`) dispara `terreno-gravado` a cada lote e no fim da consulta pela poligonal; `useFicha` (`Ficha.tsx`) ouve e recarrega a ficha, para ela mostrar o que chegou e ficar na versão atual.
+
+### Campos que vêm de outra fonte: o carregando
+
+`lib/buscando.tsx` guarda, por terreno, as buscas em segundo plano em curso: `geosampa` (`consultarTerreno` e o "Buscar no GeoSampa" de um SQL), `cartorio` (`cartorioPelaArea`), `frentes` (`atualizarFrentes`) e `entorno` (`buscarEntorno`). Quem busca embrulha a promessa em `buscando(terreno, fonte, p)`; quem mostra usa `<Busca terreno fontes texto? />` (círculo girando, com "Buscando no GeoSampa..." no lugar do "Não informado" quando o campo está vazio) ou `useBuscando`. A ficha abre na hora com o que já tem; o carregando aparece no rótulo dos campos de `FONTE_CAMPO` (cartório, posição na quadra, testada) e no título dos quadros Áreas e dimensões, Índices urbanísticos, Restrições e entorno e Pontos de interesse. Ao terminar, `consultarTerreno` e `cartorioPelaArea` disparam `terreno-gravado` e `ficha/CartorioAuto.tsx` recarrega a ficha e as consultas do terreno.
+
+`ficha/CartorioAuto.tsx` também preenche o cartório de registro de imóveis em São Paulo ao abrir a ficha (o protótipo já fazia, `geoCartorio`): WFS `cartorio_registro_imovel` pela poligonal (a circunscrição com a maior área dentro dela, por amostragem) ou, sem poligonal, pelo pino; grava por `app.cartorio_da_prefeitura`, que nunca troca o digitado. Uma consulta por localização na sessão, só para quem edita.
 
 ### Desfazer e refazer (Ctrl+Z, Ctrl+Y)
 
