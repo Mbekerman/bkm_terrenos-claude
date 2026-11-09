@@ -206,7 +206,9 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
     if (doc && doc.length !== 11 && doc.length !== 14) { toast('O CPF tem 11 dígitos (o CNPJ, 14).', true); return; }
     if (tel && (tel.length < 10 || tel.length > 11)) { toast('Telefone com DDD: 10 ou 11 dígitos.', true); return; }
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('E-mail inválido.', true); return; }
+    /* do proprietário só o nome e a participação são obrigatórios; telefone, e-mail e CPF não (pedido do Moises, 9/nov/2026) */
     const pct = nv.papel === 'proprietario' && nv.pct.trim() ? lerNum(nv.pct) : null;
+    if (nv.papel === 'proprietario' && pct == null) { toast('Informe a participação do proprietário.', true); document.getElementById('pp-p')?.focus(); return; }
     if (pct != null && !(pct > 0 && pct <= 100)) { toast('A participação vai de 0 a 100%.', true); return; }
     const dp = { nome_razao_social: nome, tipo_pessoa: doc.length === 14 ? 'PJ' : 'PF', telefone: tel || null, email: email || null, cpf_cnpj: doc || null };
     setGrav(true);
@@ -249,7 +251,7 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
             <div className="field pp-nome"><label htmlFor="pp-n">Nome</label><input id="pp-n" required autoComplete="off" value={nv.nome} onChange={(e) => setNv({ ...nv, nome: e.target.value })} /></div>
             <div className="field"><label htmlFor="pp-r">Relação</label><select id="pp-r" value={nv.papel} onChange={(e) => setNv({ ...nv, papel: e.target.value, pct: e.target.value === 'proprietario' ? nv.pct : '' })}>
               {Object.entries(RELACAO).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
-            <div className="field"><label htmlFor="pp-p">% de participação</label><Adorno t="pct"><input id="pp-p" inputMode="decimal" data-fmt="pct" disabled={!prop} value={nv.pct} onChange={(e) => setNv({ ...nv, pct: e.target.value })} /></Adorno></div>
+            <div className="field"><label htmlFor="pp-p">% de participação</label><Adorno t="pct"><input id="pp-p" inputMode="decimal" data-fmt="pct" disabled={!prop} required={prop} value={nv.pct} onChange={(e) => setNv({ ...nv, pct: e.target.value })} /></Adorno></div>
             <div className="field"><label htmlFor="pp-t">Telefone</label><input id="pp-t" inputMode="tel" data-fmt="tel" placeholder="(11) 98765-4321" value={nv.tel} onChange={(e) => setNv({ ...nv, tel: e.target.value })} /></div>
             <div className="field"><label htmlFor="pp-e">E-mail</label><input id="pp-e" type="email" placeholder="nome@email.com" value={nv.email} onChange={(e) => setNv({ ...nv, email: e.target.value })} /></div>
             <div className="field"><label htmlFor="pp-c">CPF</label><input id="pp-c" inputMode="numeric" data-fmt="doc" placeholder="000.000.000-00" value={nv.doc} onChange={(e) => setNv({ ...nv, doc: e.target.value })} /></div>
