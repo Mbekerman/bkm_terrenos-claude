@@ -2125,6 +2125,7 @@ begin
     origem_cadastro = v_novo.origem_cadastro, data_identificacao = v_novo.data_identificacao,
     observacoes = v_novo.observacoes, cep = v_novo.cep, logradouro = v_novo.logradouro, numero = v_novo.numero,
     complemento = v_novo.complemento, bairro = v_novo.bairro, municipio_id = v_novo.municipio_id, zona = v_novo.zona,
+    zona_origem = case when v_novo.zona is null then null when v_novo.zona is distinct from t.zona then 'digitado' else t.zona_origem end,
     eixo_comercial_id = v_novo.eixo_comercial_id, referencia_localizacao = v_novo.referencia_localizacao,
     cartorio = nullif(trim(v_novo.cartorio), ''),
     cartorio_origem = case when nullif(trim(v_novo.cartorio), '') is null then null
@@ -2874,6 +2875,29 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- Zona da cidade (região) pelo GeoSampa, em São Paulo (9/nov/2026): o front
+-- acha a subprefeitura da poligonal (ou do pino) e grava a região oficial dela
+-- aqui. Preenche só o vazio ou troca o que veio da prefeitura (o terreno mudou
+-- de lugar); nunca o digitado, nem a zona escolhida antes de existir a origem.
+-- ---------------------------------------------------------------------
+create or replace function app.zona_da_prefeitura(p_terreno uuid, p_zona text)
+returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if p_zona is null or p_zona not in ('leste','oeste','norte','sul','centro') then
+    raise exception 'Zona inválida: %', p_zona using errcode = '22023';
+  end if;
+  if t.zona_origem = 'digitado' or (t.zona is not null and t.zona_origem is null) or t.zona = p_zona then return false; end if;
+  update app.terrenos set zona = p_zona, zona_origem = 'prefeitura' where id = t.id;
+  return true;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- Zonas da análise urbanística, por lote. Troca as zonas de um lote
 -- (p_inscricao; nulo = parte do terreno sem inscrição, pela poligonal) numa
 -- análise nova, que copia as zonas dos outros lotes da vigente; a anterior
@@ -3022,7 +3046,7 @@ grant execute on function
   app.excluir_lugar_entorno(uuid, text), app.restaurar_lugar_entorno(uuid, text),
   app.excluir_ponto_terreno(uuid, uuid), app.restaurar_ponto_terreno(uuid, uuid),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
-  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.registrar_consulta_area(uuid, jsonb, text[]), app.cartorio_da_prefeitura(uuid, text),
+  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.registrar_consulta_area(uuid, jsonb, text[]), app.cartorio_da_prefeitura(uuid, text), app.zona_da_prefeitura(uuid, text),
   app.classificar_topografia(uuid, numeric, numeric), app.registrar_topografia(uuid, numeric, numeric, numeric, numeric, text), app.salvar_topografia_config(uuid, numeric, numeric, numeric, numeric, numeric, numeric, numeric),
   app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.registrar_zonas_lote(uuid, uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
   app.parametros_zona(uuid, uuid, text, text, numeric, text),

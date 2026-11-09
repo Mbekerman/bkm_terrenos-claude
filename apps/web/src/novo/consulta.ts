@@ -199,6 +199,35 @@ async function cartorioBuscar(terrenoId: string, poly: P[] | null, lat: number |
   return v;
 }
 
+/** Zona da cidade (São Paulo; pedido do Moises, 9/nov/2026): a região oficial da prefeitura (Centro, Norte, Sul, Leste, Oeste;
+    nm_regiao_05 da camada subprefeitura_v2 do GeoSampa) da subprefeitura que cobre a maior parte da poligonal; sem poligonal,
+    a do pino. Grava por app.zona_da_prefeitura, que só preenche o vazio ou troca o que veio do GeoSampa, nunca o digitado.
+    Devolve a zona achada ("sul") ou null. */
+export const zonaPelaArea = (terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null) =>
+  buscando(terrenoId, 'zona', zonaBuscar(terrenoId, poly, lat, lng));
+const REGIAO: Record<string, string> = { centro: 'centro', norte: 'norte', sul: 'sul', leste: 'leste', oeste: 'oeste' };
+async function zonaBuscar(terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null) {
+  const campos = 'nm_regiao_05';
+  let r: string | null | undefined = null;
+  if (poly && poly.length >= 3) {
+    const anel = poly.map(([la, ln]) => latLngUtm(la, ln)); anel.push(anel[0]);
+    const g = { type: 'Polygon', coordinates: [anel] };
+    const f = await geoWfs({ typeNames: 'geoportal:subprefeitura_v2', propertyName: campos + ',ge_poligono', CQL_FILTER: `INTERSECTS(ge_poligono,${geoWkt(g)})` });
+    const rs = [...new Set(f.map((x) => x.properties?.nm_regiao_05).filter(Boolean))];
+    r = rs.length > 1 ? geoAreaZonas(g, f.filter((x) => x.geometry), (p) => p.nm_regiao_05)[0]?.sigla : rs[0];
+  } else if (lat != null && lng != null) {
+    const [x, y] = latLngUtm(lat, lng);
+    const f = await geoWfs({ typeNames: 'geoportal:subprefeitura_v2', propertyName: campos, CQL_FILTER: `INTERSECTS(ge_poligono,POINT(${x} ${y}))` });
+    r = f.length === 1 ? f[0].properties?.nm_regiao_05 : null;
+  }
+  const z = r ? REGIAO[String(r).trim().toLowerCase()] : null;
+  if (!z) return null;
+  const { data, error } = await supabase.rpc('zona_da_prefeitura', { p_terreno: terrenoId, p_zona: z });
+  if (error) throw error;
+  if (data) avisarConsultado(terrenoId);
+  return z;
+}
+
 /* ---------- andamento ("Consultando o GeoSampa: N de M"), lido pela lista do mapa ---------- */
 export interface Andamento { terreno: string; feitos: number; total: number }
 let A: Andamento | null = null;
