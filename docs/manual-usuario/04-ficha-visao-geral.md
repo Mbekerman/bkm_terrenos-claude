@@ -137,6 +137,15 @@ Igual à página, com:
 
 A gaveta da ficha e a gaveta de filtros não abrem juntas.
 
+## Excluir ou deletar o terreno
+
+Só para **diretor** e **administrador**: no topo da ficha, à direita do responsável (na gaveta do Mapa, ao lado do ícone **Abrir página**), fica o botão **⋮ Mais ações**. Para os outros papéis o botão não aparece.
+
+- **Excluir terreno** (diretor e administrador): pede confirmação e tira o terreno de todos os lugares para todos: lista, mapa, funil (inclusive o Backlog), busca, tarefas e avisos do sino. Nada é apagado: o terreno fica guardado por **180 dias** e o administrador pode **restaurar** nesse prazo, voltando com tudo (negociação, propostas, tarefas). Passados os 180 dias, o sistema apaga de vez sozinho.
+- **Deletar de vez** (só administrador): apaga **na hora** o terreno e tudo o que é dele (partes, matrículas e SQLs, negociação, ofertas, propostas, reuniões, estudos, documentos, tarefas e o histórico). Não passa pela lista de excluídos e **não tem volta**. A janela mostra o aviso e só libera o botão depois que você digita o nome do terreno (maiúsculas e espaços a mais não importam). Quando os documentos forem para o Google Drive, as pastas do terreno também serão apagadas.
+
+Enquanto o terreno está excluído, a matrícula e os SQLs dele continuam presos a ele: tentar incluí-los em outro terreno mostra "está num terreno excluído". Para usar o número noutro terreno, o administrador restaura ou deleta o excluído.
+
 ## O que não é possível na ficha hoje
 
 - As abas Estudos de massa, Viabilidades, Infraestrutura, Jornada e Documentos.

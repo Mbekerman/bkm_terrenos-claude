@@ -17,6 +17,8 @@ import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
 import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
 import { useToast } from '../components/ui';
+import MenuTerreno from '../components/MenuTerreno';
+import { useNavigate } from 'react-router-dom';
 
 // Ficha do terreno, porte de tools/prototipo/proto.js › pgFicha (topo, abas, fiAbasCaber), proto_fases.js › linhaTopo,
 // proto_funil.js › linhaEtapas e proto_mod.js › abaGeral (Visão geral: Localização e Resumo). Mesma marcação e classes do
@@ -423,6 +425,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   abrirMapa: (lat: number, lng: number, z: number) => void; naGaveta?: boolean;
 }) {
   const [pn] = usePN();
+  const navegar = useNavigate();
   const c = completude(f);
   const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
   const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;
@@ -452,7 +455,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
             {f.negId && !naGaveta && <><span className="fi-sep">·</span><span className="fi-temp"><TempTopo f={f} /></span></>}
           </div>
         </div>
-        <Resp r={f.resp} />
+        <div className="fi-head-d"><Resp r={f.resp} />{!naGaveta && <MenuTerreno t={f} aoSair={() => navegar('/mapa', { replace: true })} />}</div>
       </div>
       <div className="stack">
         {c.pct < 100 && (

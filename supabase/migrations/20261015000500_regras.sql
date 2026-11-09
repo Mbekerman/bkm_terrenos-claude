@@ -2094,6 +2094,7 @@ end $$;
 create or replace function app.tg_inscricao_area()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
+  if coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return null; end if;   -- o terreno está sendo apagado
   if tg_op in ('UPDATE','DELETE') then perform app._sincronizar_area_cadastral(old.terreno_id); end if;
   if tg_op in ('INSERT','UPDATE') and (tg_op = 'INSERT' or new.terreno_id is distinct from old.terreno_id) then
     perform app._sincronizar_area_cadastral(new.terreno_id);
