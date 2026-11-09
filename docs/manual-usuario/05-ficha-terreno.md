@@ -158,7 +158,7 @@ Cinco cartões de área, cada um com sua fonte:
 
 Abaixo:
 
-- **Testada principal** (em metros, duas casas). Precisa ser maior que zero.
+- **Testada principal** (em metros): não se digita. Em São Paulo é a frente do acesso principal, medida pela poligonal (abaixo); nas outras cidades fica vazia e não conta na completude da ficha.
 - **Valor pedido por m²**: calculado (valor pedido ÷ área adotada).
 
 Se as áreas diferem mais de 1% entre si, aparece um aviso.
@@ -170,12 +170,13 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 - **Posição na quadra**: Meio de quadra (uma rua), Esquina (duas ruas que se encontram num canto do terreno), Duas frentes (ruas que não se encontram, como frente e fundos) ou Quadra inteira (três ruas ou mais e quase todo o contorno dando para rua).
 - **Frentes**: uma linha por rua, com os metros de frente. A rua do endereço aparece como "acesso principal". Na esquina, o canto conta para as duas ruas.
 - **Quando mede**: ao cadastrar o terreno, a cada mudança da poligonal (desenho, SQLs incluídos ou tirados) e, nos terrenos antigos, na primeira vez que a aba Terreno é aberta por quem edita.
-- **Testada principal**: vazia, recebe a frente do acesso principal; depois acompanha a poligonal. Se alguém digitou outro valor, o digitado fica e aparece um aviso quando difere mais de 5% da medida.
-- Fora de São Paulo e no computador de desenvolvimento, não mede: a posição e a testada continuam como estavam.
+- **Testada principal**: é sempre a frente do acesso principal e acompanha cada medição.
+- Fora de São Paulo e no computador de desenvolvimento, não mede: a posição e a testada continuam como estavam (sem campo para digitar).
 
 ## O que não é possível na aba Terreno
 
 - Digitar CEP, logradouro, bairro e município (só pelo mapa).
+- Digitar a testada: ela vem da medição pela poligonal (só em São Paulo).
 - Características físicas (formato, ocupação, demolição) e confrontações de divisa: **saíram da ficha** por decisão. As frentes voltaram, medidas pela poligonal (acima).
 - A seção antiga "Proprietários e contatos": foi para dentro das partes.
 - Buscar o GeoSampa num computador de desenvolvimento (só na versão publicada).

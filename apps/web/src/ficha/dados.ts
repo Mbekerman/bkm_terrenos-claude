@@ -196,7 +196,8 @@ export function completude(f: Ficha): { pct: number; faltam: Falta[] } {
     [!!f.zona, 'Zona', 'terreno', 'loc', 'zona'],
     [f.lat != null, 'Ponto no mapa', 'terreno', 'loc', 'end-mapa'],
     [f.area != null, 'Área adotada', 'terreno', 'areas', 'area'],
-    [f.testada != null, 'Testada', 'terreno', 'areas', 'testada_principal_m'],
+    /* a testada só se mede em São Paulo (GeoSampa); nas outras cidades não há como preenchê-la, e não conta */
+    ...(f.municipio === 'São Paulo' && f.uf === 'SP' ? [[f.testada != null, 'Testada', 'terreno', 'areas', 'frentes'] as [boolean, ...Falta]] : []),
     [f.qMat > 0, 'Matrícula', 'terreno', 'lotes', 'em-n'],
     [f.qInsc > 0, 'Inscrição e IPTU', 'terreno', 'lotes', 'es-sql'],
     [f.temProprietario, 'Proprietário', 'terreno', 'partes-cad', 'pp-ed'],

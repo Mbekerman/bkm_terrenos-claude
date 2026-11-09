@@ -123,17 +123,6 @@ function AreaVivo({ f, k, l }: { f: Ficha; k: string; l: string }) {
   });
   return <Adorno t="m2"><input className="av inl" id={`f-${k}`} inputMode="decimal" placeholder="—" aria-label={`Área ${l.toLowerCase()}`} {...props} /></Adorno>;
 }
-function TestadaVivo({ f }: { f: Ficha }) {
-  const salvarT = useSalvar(f), toast = useToast();
-  const { props } = useVivo(metros(f.t.testada_principal_m), (v) => {
-    const n = lerNum(v);
-    if (n != null && !(n > 0)) { toast('A testada precisa ser maior que zero.'); return false; }
-    return salvarT({ testada_principal_m: n });
-  });
-  return <div className="inl-c"><label className="k" htmlFor="f-testada_principal_m">Testada principal</label>
-    <Adorno t="m"><input id="f-testada_principal_m" inputMode="decimal" data-fmt="m" placeholder="Não informada" {...props} /></Adorno></div>;
-}
-
 /* ---------- Frentes (pedido do Moises, 8/nov/2026) ----------
    O terreno inteiro sai da poligonal: as ruas que ela encosta, a testada em cada uma e se é esquina (novo/frentes.ts).
    Medidas sozinhas em São Paulo ao abrir a ficha sem medição e a cada poligonal nova. */
@@ -173,9 +162,7 @@ function useFrentes(f: Ficha) {
 function Frentes({ f }: { f: Ficha }) {
   const { lista, medindo } = useFrentes(f);
   const t = f.t, pos = OPT.posicao[t.posicao_quadra] ?? null;
-  const pri = lista.find((c) => c.fonte === FONTE_FRENTES && c.observacoes === 'Acesso principal');
   const medidas = lista.some((c) => c.fonte === FONTE_FRENTES);
-  const dif = pri?.comprimento_m != null && t.testada_principal_m != null && Math.abs(+t.testada_principal_m - +pri.comprimento_m) / +pri.comprimento_m > 0.05;
   return (
     <div className="frentes" id="frentes">
       <div className="kvg" style={{ marginTop: 14 }}>
@@ -188,7 +175,6 @@ function Frentes({ f }: { f: Ficha }) {
         </div>
       </div>
       {medidas && <div className="hint" style={{ marginTop: 8 }}>Medidas pela poligonal sobre os lotes e as ruas da prefeitura (GeoSampa). Na esquina, o canto conta para as duas ruas.</div>}
-      {dif && <div className="diverg"><Ic n="warn" s={16} />A testada principal ({metros(t.testada_principal_m)} m) difere da medida pela poligonal em {pri!.confrontante} ({metros(pri!.comprimento_m)} m).</div>}
     </div>
   );
 }
@@ -237,8 +223,8 @@ function SecAreas({ f }: { f: Ficha }) {
         {div}
         <div className={`kvg${edita ? ' kvg-ed vivo' : ''}`} style={{ marginTop: 14 }}>
           <div><div className="k">Área adotada</div>{fonte ? <div className="v">{OPT.fonteArea[fonte]?.split(' (')[0]}</div> : <span className="v ni">{edita ? 'Clique na área que vale' : 'Não informada'}</span>}</div>
-          {edita ? <TestadaVivo f={f} />
-            : <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{metros(t.testada_principal_m)} m</div>}</div>}
+          {/* a testada não se digita: é a frente do acesso principal medida pela poligonal (pedido do Moises, 9/nov/2026) */}
+          <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{metros(t.testada_principal_m)} m</div>}</div>
           <div><div className="k">Valor pedido por m²</div>{ad && f.valorPedido ? <div className="v">{brl(f.valorPedido / ad)}</div> : ni}</div>
         </div>
         <Frentes f={f} />

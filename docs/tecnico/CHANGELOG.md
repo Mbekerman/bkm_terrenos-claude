@@ -4,6 +4,7 @@ Toda mudança que entra na `develop` ganha uma linha aqui, no mesmo PR (ver [com
 
 ## 2026-11-09
 
+- #PR Testada sem campo: `ficha/Terreno.tsx` perde `TestadaVivo` e o aviso de divergência; `novo/frentes.ts` grava `testada_principal_m` = frente do acesso principal a toda medição (antes, só vazia ou igual à medida anterior); `completude` (`ficha/dados.ts`) só conta Testada em São Paulo (`municipio`/`uf`, também passados pelo filtro em `filtros/dados.ts`). Pedido do Moises. Sem mudança no banco: a coluna fica e `salvar_terreno` ainda aceita (o front não manda).
 - #247 Busca da barra superior: `mapa/dados.ts` (`carregar`) passa a ler `terrenos` (logradouro, número, CEP), `matriculas.numero` e `inscricoes_municipais.inscricao` da empresa e `bate()` procura também neles, sem acento, e casa matrícula e SQL só pelos dígitos (palavra só de dígitos e pontuação, 3+ dígitos). `Moldura.tsx` leva ao `/mapa` quando se digita em outra página. Completude (`ficha/dados.ts`): o item "Visita técnica" só conta com `INFRA_PORTADA = true` (hoje `false`, a aba Infraestrutura não foi portada); vale para a ficha, o painel e o filtro "ficha com menos de N%". Por quê: o manual (#244) achou o texto da busca prometendo matrícula e SQL sem procurar, e a ficha presa abaixo de 100%. Sem mudança no banco nem em permissão (as tabelas já eram lidas pela ficha com a mesma RLS).
 
 ## 2026-11-08
