@@ -43,7 +43,17 @@ const hLoc = (s: string) => { const d = new Date(s); return `${String(d.getHours
 const completo = (s: string) => { const d = new Date(s); return `${fd(dLoc(s))} · ${d.toLocaleTimeString('pt-BR')},${String(d.getMilliseconds()).padStart(3, '0')}`; };
 
 /* ---------- texto dos logs ---------- */
-export interface Log { id: string; em: string; user: string | null; txt: string; det?: string[]; aba?: string; q?: string; topo?: string }
+export interface Log {
+  id: string; em: string; user: string | null; txt: string; det?: string[]; aba?: string; q?: string; topo?: string;
+  /** consequência automática de outra ação (auditoria.automatico) */
+  auto?: boolean;
+  /** as consequências automáticas recolhidas dentro desta ação (ou do grupo "Atualização automática") */
+  filhos?: Log[];
+  /** grupo de consequências sem ação da pessoa logo antes (não conta como ação) */
+  grupo?: boolean;
+  /** inclusões ou exclusões seguidas do mesmo tipo (vários SQLs de uma vez) viram uma linha só: [chave, plural, item] */
+  junta?: [string, string, string];
+}
 type Ctx = { f: F; nomes: Map<string, string>; partes: Map<string, string>; procs: Map<string, R>; sp: boolean; lotes: Map<string, string>; reus: Map<string, string>; pessoas: Map<string, string> };
 
 const curto = (v: unknown) => { const s = String(v); return s.length > 60 ? s.slice(0, 57) + '…' : s; };
@@ -121,12 +131,15 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
     }
     case 'matriculas':
       return { txt: ins ? `Matrícula adicionada: ${o.numero}` : del ? `Matrícula removida: ${o.numero}` : `Matrícula alterada (${o.numero}): ${lista(mudou(x, d))}`,
-        det: ins ? [o.cartorio, o.area_registrada_m2 != null ? 'Área: ' + m2(o.area_registrada_m2) : null].filter(Boolean) : undefined, aba: 'terreno', q: 'lotes' };
+        det: ins ? [o.cartorio, o.area_registrada_m2 != null ? 'Área: ' + m2(o.area_registrada_m2) : null].filter(Boolean) : undefined, aba: 'terreno', q: 'lotes',
+        junta: del ? ['mat-', 'Matrículas removidas', o.numero] : undefined };
     case 'inscricoes_municipais': {
       const r = c.sp ? 'SQL' : 'Inscrição imobiliária', g = c.sp ? 'o' : 'a';
       const ks = mudou(x, d).filter((k) => k !== 'municipio_id');
       if (!ins && !del && !ks.length) return null;
-      return { txt: ins ? `${r} adicionad${g}: ${o.inscricao}` : del ? `${r} removid${g}: ${o.inscricao}` : `${r} alterad${g} (${o.inscricao}): ${lista(ks)}`, aba: 'terreno', q: 'lotes' };
+      const pl = c.sp ? 'SQLs' : 'Inscrições imobiliárias', gp = c.sp ? 'os' : 'as';
+      return { txt: ins ? `${r} adicionad${g}: ${o.inscricao}` : del ? `${r} removid${g}: ${o.inscricao}` : `${r} alterad${g} (${o.inscricao}): ${lista(ks)}`, aba: 'terreno', q: 'lotes',
+        junta: ins ? ['insc+', `${pl} adicionad${gp}`, o.inscricao] : del ? ['insc-', `${pl} removid${gp}`, o.inscricao] : undefined };
     }
     case 'matricula_partes':
     case 'inscricao_partes': {
@@ -220,14 +233,18 @@ async function carregarLogs(empresa: string, f: F) {
   if (pids.length) ors.push(`depois->>processo_id.in.(${pids})`, `antes->>processo_id.in.(${pids})`);
   if (oids.length) ors.push(`depois->>oferta_id.in.(${oids})`, `antes->>oferta_id.in.(${oids})`);
   if (rids.length) ors.push(`depois->>reuniao_id.in.(${rids})`, `antes->>reuniao_id.in.(${rids})`);
-  const [au, tr] = await Promise.all([
-    supabase.from('auditoria').select('id,tabela,registro_id,acao,antes,depois,user_id,em').eq('empresa_id', empresa)
-      .not('tabela', 'in', '(processos,terreno_entorno,terreno_entorno_buscas,consultas_lote,consultas_area,tarefas_etapa,terreno_pontos_excluidos,terreno_valores)')
-      .or(ors.join(',')).order('em', { ascending: false }).order('id', { ascending: false }).limit(1000),
+  const lerAud = (cols: string) => supabase.from('auditoria').select(cols).eq('empresa_id', empresa)
+    .not('tabela', 'in', '(processos,terreno_entorno,terreno_entorno_buscas,consultas_lote,consultas_area,tarefas_etapa,terreno_pontos_excluidos,terreno_valores)')
+    .or(ors.join(',')).order('em', { ascending: false }).order('id', { ascending: false }).limit(1000);
+  const COLS = 'id,tabela,registro_id,acao,antes,depois,user_id,em';
+  const [au0, tr] = await Promise.all([
+    lerAud(COLS + ',automatico'),
     pids.length
       ? supabase.from('processo_transicoes').select('id,processo_id,evento,de_etapa,para_etapa,de_subetapa,para_subetapa,forcado,comentario,user_id,em').in('processo_id', pids).order('em', { ascending: false })
       : Promise.resolve({ data: [], error: null }),
   ]);
+  /* banco ainda sem a coluna automatico (antes do SQL de 9/nov): lê sem ela, e tudo aparece como antes */
+  const au = au0.error?.code === '42703' ? await lerAud(COLS) : au0;
   if (au.error) throw au.error;
   if (tr.error) throw tr.error;
   const parts = (au.data as R[]).filter((a) => a.tabela === 'reuniao_participantes').map((a) => (a.depois ?? a.antes) as R);
@@ -240,6 +257,32 @@ async function carregarLogs(empresa: string, f: F) {
   if (us.error) throw us.error;
   if (pe.error) throw pe.error;
   return { aud: au.data as R[], trans: tr.data as R[], procs, partes: pt.data as R[], users: us.data as R[], reus: ru.data as R[], pessoas: pe.data as R[] };
+}
+
+/* Consequências automáticas (pedido do Moises, 9/nov/2026): cada uma fica recolhida dentro da última ação da mesma
+ * pessoa, se veio até JANELA_AUTO depois dela; sem ação antes (a medição das frentes ao abrir a ficha, por exemplo), as
+ * seguidas da mesma pessoa viram um grupo "Atualização automática", que não conta como ação. O banco não liga a
+ * consequência à ação: liga-se aqui pela pessoa e pelo tempo. Recebe e devolve do mais recente ao mais antigo. */
+const JANELA_AUTO = 30 * 60 * 1000, JANELA_JUNTA = 2 * 60 * 1000;
+export function agrupar(desc: Log[]): Log[] {
+  const ult = new Map<string, Log>(), out: Log[] = [];
+  for (let i = desc.length - 1; i >= 0; i--) {
+    const h = desc[i], u = h.user ?? '', p = ult.get(u);
+    if (!h.auto) {
+      /* a mesma inclusão seguida (os SQLs marcados de uma vez no mapa): uma linha só, com a lista */
+      if (h.junta && p && !p.grupo && !p.filhos?.length && p.junta?.[0] === h.junta[0] && +new Date(h.em) - +new Date(p.em) <= JANELA_JUNTA) {
+        const itens = [...(p.det?.length && p.txt.startsWith(h.junta[1]) ? p.det : [p.junta[2]]), h.junta[2]];
+        Object.assign(p, { txt: `${h.junta[1]} (${itens.length})`, det: itens, em: h.em });
+        continue;
+      }
+      const x = { ...h }; out.push(x); ult.set(u, x); continue;
+    }
+    const ref = p ? (p.grupo ? p.filhos![0].em : p.em) : null;
+    if (p && ref && +new Date(h.em) - +new Date(ref) <= JANELA_AUTO) { (p.filhos ??= []).unshift(h); continue; }
+    const g: Log = { id: 'g' + h.id, em: h.em, user: h.user, txt: 'Atualização automática', auto: true, grupo: true, filhos: [h] };
+    out.push(g); ult.set(u, g);
+  }
+  return out.reverse();
 }
 
 export function useLogs(f: F) {
@@ -285,7 +328,7 @@ export function useLogs(f: F) {
         const ps = a.tabela === 'reunioes' && a.acao === 'insert' ? naCriacao.get(a.registro_id) : null;
         if (t && ps?.length) t = { ...t, det: [...(t.det ?? []), 'Participantes: ' + ps.join(', ')] };
       }
-      if (t) out.push({ id: 'a' + a.id, em: a.em, user: a.user_id ? nomes.get(a.user_id) ?? 'Sistema' : 'Sistema', ...t });
+      if (t) out.push({ id: 'a' + a.id, em: a.em, user: a.user_id ? nomes.get(a.user_id) ?? 'Sistema' : 'Sistema', ...t, auto: a.automatico === true });
     }
     const TEMPN = (s: string) => s.replace(/\d/g, (n) => TEMP[+n] || n);
     for (const x of trans) {
@@ -302,7 +345,7 @@ export function useLogs(f: F) {
       } as Record<string, string>)[x.evento] ?? x.evento;
       out.push({ id: 't' + x.id, em: x.em, user: x.user_id ? nomes.get(x.user_id) ?? 'Sistema' : 'Sistema', txt, det: det.length ? det : undefined, topo: x.evento === 'temperatura' ? '.fi-temp' : '.tl-topo' });
     }
-    return out.sort((a, b) => (a.em < b.em ? 1 : a.em > b.em ? -1 : 0));
+    return agrupar(out.sort((a, b) => (a.em < b.em ? 1 : a.em > b.em ? -1 : 0)));
   }, [q.data, f]);
   const fotos = useMemo(() => new Map((q.data?.users ?? []).map((u) => [(u.nome || u.email) as string, u.foto_url as string | null])), [q.data]);
   return { logs, fotos, carregando: q.isLoading, erro: q.error };
@@ -342,6 +385,7 @@ function perRot(P: PN['per']) { if (P.k === 'custom' && P.ini) { const f = P.fim
 const diaRot = (d: string) => { const x = diasEntre(d, hojeISO()); return x === 0 ? 'Hoje' : x === 1 ? 'Ontem' : fd(d); };
 const CHEV = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>;
 const CAL_IC = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>;
+const AUTO_IC = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16m0 4v-4h-4" /></svg>;
 const SETA = (d: number) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d < 0 ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'} /></svg>;
 
 function Calendario({ ini0, fim0, aplicar, cancelar }: { ini0?: string; fim0?: string; aplicar: (i: string, f: string) => void; cancelar: () => void }) {
@@ -393,6 +437,8 @@ function Logs({ f, pn, set, irAba }: { f: F; pn: PN; set: (p: Partial<PN>) => vo
   const { logs, fotos, carregando, erro } = useLogs(f);
   const [menu, setMenu] = useState<'user' | 'per' | null>(null), [cal, setCal] = useState(false);
   const [sel, setSel] = useState<string | null>(null);
+  const [abertos, setAbertos] = useState<Set<string>>(() => new Set());
+  const alternar = (id: string) => setAbertos((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const raiz = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!menu) return;
@@ -406,13 +452,15 @@ function Logs({ f, pn, set, irAba }: { f: F; pn: PN; set: (p: Partial<PN>) => vo
   if (!logs.length) return <div className="empty">Nenhum registro.</div>;
   const fx = faixa(pn.per), noPer = fx ? logs.filter((h) => { const d = dLoc(h.em); return d >= fx[0] && d <= fx[1]; }) : logs;
   const tot = new Map<string, number>(), cont = new Map<string, number>();
-  logs.forEach((h) => tot.set(h.user ?? '', (tot.get(h.user ?? '') ?? 0) + 1));
-  noPer.forEach((h) => cont.set(h.user ?? '', (cont.get(h.user ?? '') ?? 0) + 1));
+  /* as contagens são das ações; o grupo "Atualização automática" aparece, mas não conta */
+  logs.forEach((h) => tot.set(h.user ?? '', (tot.get(h.user ?? '') ?? 0) + (h.grupo ? 0 : 1)));
+  noPer.forEach((h) => cont.set(h.user ?? '', (cont.get(h.user ?? '') ?? 0) + (h.grupo ? 0 : 1)));
+  const nPer = noPer.filter((h) => !h.grupo).length;
   const users = [...tot.keys()].sort((a, b) => (cont.get(b) ?? 0) - (cont.get(a) ?? 0) || tot.get(b)! - tot.get(a)! || a.localeCompare(b));
   const us = pn.users.filter((x) => users.includes(x));
   const H = us.length ? noPer.filter((h) => us.includes(h.user ?? '')) : noPer;
   const nSel = us.reduce((a, x) => a + (cont.get(x) ?? 0), 0);
-  const rot = !us.length ? `Todos os usuários (${noPer.length})` : us.length === 1 ? `${us[0]} (${nSel})` : us.length === 2 ? `${us.map((x) => x.split(' ')[0]).join(', ')} (${nSel})` : `${us.length} usuários (${nSel})`;
+  const rot = !us.length ? `Todos os usuários (${nPer})` : us.length === 1 ? `${us[0]} (${nSel})` : us.length === 2 ? `${us.map((x) => x.split(' ')[0]).join(', ')} (${nSel})` : `${us.length} usuários (${nSel})`;
   const rotC = !us.length ? 'Usuários' : us.length === 1 ? us[0].split(' ')[0] : `${us.length} usuários`;
   const perAtivo = !!fx && pn.per.k !== '30d';
   const ck = <span className="pn-ck" aria-hidden="true" />;
@@ -421,12 +469,34 @@ function Logs({ f, pn, set, irAba }: { f: F; pn: PN; set: (p: Partial<PN>) => vo
   for (const h of H) {
     const d = dLoc(h.em);
     if (d !== dia) { dia = d; linhas.push(<div key={'d' + d} className="pn-dia">{diaRot(d)}</div>); }
-    const ir = () => { setSel(h.id); setTimeout(() => setSel((s) => (s === h.id ? null : s)), 4000); mostrarLog(h, irAba); };
+    const ir = (x: Log) => { setSel(x.id); setTimeout(() => setSel((s) => (s === x.id ? null : s)), 4000); mostrarLog(x, irAba); };
+    const nf = h.filhos?.length ?? 0, ab = abertos.has(h.id);
+    /* o grupo sem ação abre e fecha no clique; a ação vai ao que mudou, e a seta abre as consequências */
+    const clique = () => (h.grupo ? alternar(h.id) : ir(h));
+    const fios = nf > 0 && (
+      <button className={`pn-auto-b${ab ? ' aberto' : ''}`} aria-expanded={ab} onClick={(e) => { e.stopPropagation(); alternar(h.id); }}>
+        {CHEV}{nf} {nf > 1 ? 'atualizações automáticas' : 'atualização automática'}</button>
+    );
     linhas.push(
-      <div key={h.id} className={`pn-log${sel === h.id ? ' pn-log-sel' : ''}`} tabIndex={0} role="button" aria-label={`${h.txt}: mostrar na ficha`} onClick={ir} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ir(); } }}>
-        <Av nome={h.user ?? 'Sistema'} foto={fotos.get(h.user ?? '')} />
+      <div key={h.id} className={`pn-log${h.grupo ? ' pn-log-auto' : ''}${sel === h.id ? ' pn-log-sel' : ''}`} tabIndex={0} role="button"
+        aria-label={h.grupo ? `${h.txt}: ${ab ? 'recolher' : 'mostrar'} ${nf}` : `${h.txt}: mostrar na ficha`} aria-expanded={h.grupo ? ab : undefined}
+        onClick={clique} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); clique(); } }}>
+        {h.grupo ? <span className="avatar sm pn-av-auto" aria-hidden="true">{AUTO_IC}</span> : <Av nome={h.user ?? 'Sistema'} foto={fotos.get(h.user ?? '')} />}
         <div className="pn-lc"><div className="pn-lt">{h.txt}</div>{h.det && h.det.length > 0 && <ul className="pn-det">{h.det.map((x, i) => <li key={i}>{x}</li>)}</ul>}
-          <div className="pn-lm" title={completo(h.em)}>{h.user ?? 'Sistema'} · {hLoc(h.em)}</div></div>
+          <div className="pn-lm" title={completo(h.em)}>{h.user ?? 'Sistema'} · {hLoc(h.em)}</div>
+          {fios}
+          {ab && nf > 0 && (
+            <div className="pn-auto">
+              {h.filhos!.map((x) => (
+                <div key={x.id} className={`pn-auto-l${sel === x.id ? ' pn-log-sel' : ''}`} tabIndex={0} role="button" aria-label={`${x.txt}: mostrar na ficha`}
+                  onClick={(e) => { e.stopPropagation(); ir(x); }} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); ir(x); } }}>
+                  <div className="pn-lt">{x.txt}</div>{x.det && x.det.length > 0 && <ul className="pn-det">{x.det.map((y, i) => <li key={i}>{y}</li>)}</ul>}
+                  <div className="pn-lm" title={completo(x.em)}>{hLoc(x.em)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>,
     );
   }
@@ -436,7 +506,7 @@ function Logs({ f, pn, set, irAba }: { f: F; pn: PN; set: (p: Partial<PN>) => vo
         <div className={`pn-dd${menu === 'user' ? ' aberto' : ''}`}>
           <button className={`pn-dd-b${us.length ? ' ativo' : ''}`} aria-haspopup="menu" aria-expanded={menu === 'user'} aria-label={`Filtrar por usuário: ${rot}`} onClick={() => setMenu(menu === 'user' ? null : 'user')}><span className="pn-dd-t">{rotC}</span>{CHEV}</button>
           <div className="pn-menu" role="menu" aria-label="Usuários">
-            <button role="menuitemcheckbox" aria-checked={!us.length} onClick={() => set({ users: [] })}>{ck}<span className="pn-mn">Todos os usuários</span><span className="n">{noPer.length}</span></button>
+            <button role="menuitemcheckbox" aria-checked={!us.length} onClick={() => set({ users: [] })}>{ck}<span className="pn-mn">Todos os usuários</span><span className="n">{nPer}</span></button>
             <div className="pn-msep" />
             {users.map((x) => (
               <button key={x} role="menuitemcheckbox" aria-checked={us.includes(x)} className={cont.get(x) ? '' : 'zero'} onClick={() => set({ users: us.includes(x) ? us.filter((y) => y !== x) : [...us, x] })}>
@@ -563,7 +633,7 @@ export default function Painel({ f, irAba }: { f: F; irAba: (k: string) => void 
   const { logs } = useLogs(f);
   const acoes = useAcoes(f, irAba);
   const tq = useTarefas(f);
-  const nL = logs.length, nA = acoes.length, nT = tq.data?.length ?? 0;
+  const nL = logs.filter((h) => !h.grupo).length, nA = acoes.length, nT = tq.data?.length ?? 0;
   const b = useRef<HTMLDivElement>(null);
   if (!pn.aberto) return (
     <aside className="pn pn-min" aria-label="Ações, tarefas e logs">

@@ -5067,6 +5067,21 @@ html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; 
 .fr-l li:last-child { border-bottom: 0 }
 .fr-l .num { font-variant-numeric: tabular-nums; white-space: nowrap }
 
+/* Logs automáticos recolhidos dentro da ação (pedido do Moises, 9/nov/2026) */
+.pn-auto-b { display: inline-flex; align-items: center; gap: 2px; margin: 4px 0 0 -4px; padding: 2px 8px 2px 2px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 12px; line-height: 18px; font-weight: 500; color: var(--m-primary, #0b57d0); cursor: pointer }
+.pn-auto-b:hover { background: rgba(11,87,208,.08) }
+.pn-auto-b svg { width: 16px; height: 16px; transform: rotate(-90deg); transition: transform .15s }
+.pn-auto-b.aberto svg { transform: none }
+.pn-auto { margin: 6px 0 2px; padding-left: 10px; border-left: 2px solid var(--m-outline-var, #c4c7c5) }
+.pn-auto-l { padding: 4px 6px; margin: 0 -6px 2px 0; border-radius: 6px; cursor: pointer }
+.pn-auto-l:hover { background: rgba(127,127,127,.08) }
+.pn-auto-l .pn-lt { font-size: 13px; line-height: 18px; color: var(--m-on-var, #444746) }
+.pn-auto-l .pn-lm { margin-top: 0 }
+.pn-auto-l.pn-log-sel { background: var(--m-sc, #c2e7ff) }
+.pn-log-auto .pn-lt { color: var(--m-on-var, #444746) }
+.pn-log .avatar.pn-av-auto { background: var(--m-sc-high, #e9eef6) !important; color: var(--m-on-var, #444746) !important }
+:root[data-tema="escuro"] .pn-auto-b { color: #a8c7fa }
+:root[data-tema="escuro"] .pn-log .avatar.pn-av-auto { background: #282a2c !important; color: #c4c7c5 !important }
 /* ---------- marcar pessoas com @ (participantes da reunião; components/Marcar.tsx, 9/nov/2026) ---------- */
 .mkp { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 44px; padding: 5px 10px; border: 1px solid var(--m-outline, var(--borda-controle)); border-radius: var(--raio-sm); background: var(--superficie); cursor: text }
 .mkp.foco { outline: 2px solid var(--m-primary, var(--foco)); outline-offset: -1px; border-color: transparent }

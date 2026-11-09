@@ -242,7 +242,9 @@ Travas que deixam passar com `app.apagando_terreno = '1'` (só `_apagar_terreno`
 
 ### Cliques seguidos viram um log só
 
-Quem clica na temperatura 2 → 3 → 4 não quer três linhas no histórico. `app.juntar_auditoria` (`:247-272`) olha o último log do mesmo registro: se é um `update` do mesmo usuário, nas mesmas colunas, dentro da janela de `app.janela_log()` (7 segundos; 2 minutos quando só a poligonal do terreno mudou), ele é atualizado para o valor final, e some se o valor final é o de antes. A gravação na tabela acontece na hora; só o log é que junta. `processos` fica de fora, porque cada passagem conta no SLA. A temperatura (que mora em `negociacoes`, sem `t_aud`) junta do mesmo jeito em `processo_transicoes`, dentro de `app.definir_temperatura`.
+Quem clica na temperatura 2 → 3 → 4 não quer três linhas no histórico. `app.juntar_auditoria` (`:247-272`) olha o último log do mesmo registro: se é um `update` do mesmo usuário, nas mesmas colunas, dentro da janela de `app.janela_log()` (7 segundos; 2 minutos quando só a poligonal do terreno mudou), ele é atualizado para o valor final, e some se o valor final é o de antes. A gravação na tabela acontece na hora; só o log é que junta. Ação e consequência automática nunca se juntam.
+
+**Consequências automáticas (`automatico`, 9/nov/2026).** O que o sistema grava por consequência de outra ação (consulta do GeoSampa, frentes medidas pela poligonal) fica com `auditoria.automatico = true`, pela função `app.origem_automatica()`: verdadeira quando a requisição traz o cabeçalho `x-bkm-automatico: 1` (o front põe com `automatico()` de `lib/supabase.ts`) ou quando a transação ligou `app.automatico`. Só muda como o log aparece (recolhido dentro da ação no painel); permissão e gravação são as mesmas. `processos` fica de fora, porque cada passagem conta no SLA. A temperatura (que mora em `negociacoes`, sem `t_aud`) junta do mesmo jeito em `processo_transicoes`, dentro de `app.definir_temperatura`.
 
 ### Lixeira do log: desfazer sem apagar
 
