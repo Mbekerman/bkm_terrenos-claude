@@ -304,3 +304,8 @@ html[data-tema="escuro"] .etq-mq.sem { border-color: #444746 } html[data-tema="e
 .pp-acoes { display: inline-flex; gap: 2px; white-space: nowrap }
 html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema="escuro"] .pp-tbl tr.sel td { background: #282a2c }
 @media (max-width: 600px) { .pp-form .pp-nome { grid-column: auto } .pp-bt { grid-column: auto } }
+
+/* Partes da proposta (pedido do Moises, 9/nov/2026): escolha no formulário e etiquetas na lista */
+.pp-partes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.pp-pts { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px }
+.pp-pts .chip.ni { color: var(--texto-suave) }

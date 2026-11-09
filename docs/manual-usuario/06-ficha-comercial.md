@@ -77,16 +77,21 @@ Lista os corretores que trouxeram ofertas deste terreno. Eles "entram automatica
    - **Valor total**;
    - **Forma de pagamento**;
    - **Status**: Apresentada, Em análise ou Rascunho;
+   - **Partes da proposta**: para qual parte (dono) a proposta é feita. Pode ser uma, várias ou todas (**"Marcar todas"**, com três partes ou mais). Se o terreno tem **uma parte só**, ela já vem marcada; com **duas ou mais**, nenhuma vem marcada e o sistema **não deixa registrar** sem escolher pelo menos uma: o campo fica vermelho com o aviso "Escolha pelo menos uma parte". As partes são as cadastradas na aba Terreno;
    - **Apresentada em** (data) e **Validade** (vem com 15 dias depois);
    - **Condições de pagamento** (texto).
 3. Clique em **Registrar**.
 
-**Versões:** cada proposta ganha um número (v1, v2, v3...). O formulário avisa a qual versão a nova responde:
+**Na lista**, cada proposta mostra as partes a que foi feita, em etiquetas logo abaixo do valor. Proposta registrada antes de 9/nov/2026 num terreno com duas ou mais partes aparece com **"Parte não informada"** (não dá para corrigir: proposta não se edita). Parte que foi tirada do terreno aparece com "(saiu)".
 
-- se a nova vem **do outro lado** (BKM responde ao vendedor, ou vice-versa), a anterior vira **Recusada**;
-- se vem **do mesmo lado**, a anterior vira **Substituída**.
+**Versões:** cada proposta ganha um número (v1, v2, v3...), numa sequência só para o terreno. Uma proposta só responde às propostas **das mesmas partes** (basta uma parte em comum; a "Parte não informada" conta como de todas). Depois de escolher as partes, o formulário avisa a qual versão a nova responde, e as propostas em aberto dessas partes mudam assim:
 
-**Mudar o status de uma proposta:** clique no chip do status na linha da proposta e escolha: Rascunho, Apresentada, Em análise, Aceita, Recusada, Expirada, Retirada ou Substituída.
+- se a nova vem **do outro lado** (BKM responde ao vendedor, ou vice-versa), elas viram **Recusadas**;
+- se vem **do mesmo lado**, viram **Substituídas**.
+
+Exemplo: v1 da BKM à Família Souza e v2 da BKM a Carlos Pires ficam as duas em aberto; uma v3 do vendedor para as duas partes recusa a v1 e a v2.
+
+**Mudar o status de uma proposta:** clique no chip do status na linha da proposta e escolha: Rascunho, Apresentada, Em análise, Aceita, Recusada, Expirada, Retirada ou Substituída. O chip só muda na proposta mais recente de cada parte; as que já foram respondidas ficam fixas.
 
 **Regra:** proposta nunca é apagada nem sobrescrita: cada mudança vira histórico.
 

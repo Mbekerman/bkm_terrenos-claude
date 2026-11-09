@@ -69,6 +69,7 @@ Um dono com várias matrículas é **uma** negociação. Vários donos que negoc
 - **Comprado do terreno** só com todas as partes ativas compradas (pendência que nem o gestor força); o checklist de documentos fica com cada parte; relato e pontos de sucesso só na compra do terreno. A compra de uma parte não abre a fase seguinte.
 - **Parte perdida ou descartada** trava a compra: ou sai do terreno (`remover_parte`, com motivo; parte essencial só com gestor ou diretor, e tornar uma parte dispensável também), ou o terreno se encerra. Parte comprada não sai.
 - **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
+- **Proposta** é feita a uma ou mais partes ativas do terreno (`proposta_partes`; pedido do Moises, 9/nov/2026): com uma parte só ela entra sozinha, com duas ou mais escolher é obrigatório, na negociação de uma parte é a dela. Uma proposta responde só às que têm parte em comum (a antiga, sem parte informada, cruza com todas). 
 - **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço e a condição de pagamento de cada uma quando informados); a negociação da parte usa como referência a oferta mais recente que a cobre. Na aba Comercial, o quadro Partes lista cada parte com a área adotada (soma dos lotes), o zoneamento, o valor pedido e o valor por m² (digitar um calcula o outro) e a condição de pagamento; só a oferta, sem proposta.
 - `v_partes`: cada parte com donos, corretores, matrículas, negociação (etapa, subetapa, prazo, status), preço pedido e última proposta. A temperatura é uma só, a da negociação do terreno: `definir_temperatura` recusa a negociação de uma parte.
 
@@ -537,6 +538,8 @@ erDiagram
   processos ||--o{ processo_transicoes : historico
   processos ||--o{ propostas : recebe
   propostas |o--o| propostas : "responde a"
+  propostas ||--o{ proposta_partes : "feita a"
+  terreno_partes ||--o{ proposta_partes : recebe
   terrenos ||--o{ atividades : registra
   processos |o--o{ viabilidades : usa
   terrenos ||--o{ diligencias : investiga
@@ -583,6 +586,10 @@ erDiagram
     uuid oferta_id PK
     uuid parte_id PK
     numeric valor_pedido "da parte, se informado"
+  }
+  proposta_partes {
+    uuid proposta_id PK
+    uuid parte_id PK
   }
   negociacoes {
     uuid processo_id PK

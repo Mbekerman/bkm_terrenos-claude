@@ -222,6 +222,18 @@ create table app.propostas (
   check (validade is null or data_apresentacao is null or validade >= data_apresentacao)
 );
 
+-- Partes a que a proposta foi feita (pedido do Moises, 9/nov/2026): de uma a todas as
+-- partes ativas do terreno; gravadas só por app.registrar_proposta. Proposta antiga
+-- sem linha aqui = "parte não informada" (nunca vira "todas"). Não muda depois de
+-- gravada: o log é o da proposta (sem trigger de auditoria próprio).
+create table app.proposta_partes (
+  proposta_id uuid not null references app.propostas(id) on delete cascade,
+  parte_id    uuid not null references app.terreno_partes(id),
+  empresa_id  uuid not null references app.empresas(id),
+  primary key (proposta_id, parte_id)
+);
+create index on app.proposta_partes (parte_id);
+
 -- ---------------------------------------------------------------------
 -- Tarefas: moram no esquema fluxo (quadros e tarefas, ver 00150), no
 -- quadro do terreno. Aqui o BKM Terrenos liga a tarefa à negociação: o
@@ -426,7 +438,7 @@ create trigger t_aud after insert or update or delete on app.reunioes    for eac
 do $$
 declare t text;
 begin
-  foreach t in array array['ofertas','oferta_partes','viabilidades','processos','negociacoes','processo_transicoes','aprovacoes','propostas','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
+  foreach t in array array['ofertas','oferta_partes','viabilidades','processos','negociacoes','processo_transicoes','aprovacoes','propostas','proposta_partes','atividades','reunioes','reuniao_participantes','diligencias','documentos','documento_versoes'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
     execute format('grant select on app.%I to authenticated', t);

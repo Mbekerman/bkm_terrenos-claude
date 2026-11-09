@@ -3720,4 +3720,46 @@ select pg_temp.ok((select (d->'v'->>'id') = :'tsq' and (d->'t'->>'nome') = 'Soma
   from (select app.ficha_dados(:'emp', (select codigo from app.terrenos where id = :'tsq')) d) x), 'a ficha vem inteira numa chamada');
 select pg_temp.ok(app.ficha_dados(:'emp', 'Z999') is null, 'código que não existe devolve nulo');
 
+-- ---------------------------------------------------------------------
+\echo '# propostas por parte (9/nov/2026)'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Propostas por parte', :'analista', :'sp', pg_temp.quadra(-47.21, -23.21)) returning id as tpp \gset
+select (app.registrar_oferta(:'tpp', 5000000)->>'processo_id') as npp \gset
+select app.registrar_proposta(:'npp', 'bkm', 4000000, 'dinheiro') as q1 \gset
+select pg_temp.ok((select array_agg(parte_id) from app.proposta_partes where proposta_id = :'q1') = (select array_agg(id) from app.terreno_partes where terreno_id = :'tpp'),
+  'com uma parte só, a proposta é dela sem precisar escolher');
+select app.salvar_parte(:'tpp', null, '{"nome":"Vizinho"}') as ppb \gset
+select id as ppa from app.terreno_partes where terreno_id = :'tpp' and id <> :'ppb' \gset
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L)', :'npp', 'bkm', 'dinheiro'), 'com duas partes, escolher a parte é obrigatório');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L, p_partes => %L)', :'npp', 'bkm', 'dinheiro', '{}'), 'lista vazia de partes é recusada');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L, p_partes => array[%L]::uuid[])', :'npp', 'bkm', 'dinheiro', :'pa'),
+  'parte de outro terreno é recusada');
+select app.registrar_proposta(:'npp', 'bkm', 1500000, 'dinheiro', p_partes => array[:'ppb']::uuid[]) as q2 \gset
+select pg_temp.ok((select status from app.propostas where id = :'q1') = 'apresentada' and (select proposta_anterior_id is null from app.propostas where id = :'q2'),
+  'proposta a outra parte não mexe na proposta da primeira');
+select pg_temp.ok((select versao from app.propostas where id = :'q2') = 2, 'a versão continua uma só sequência na negociação');
+select app.atualizar_status_proposta(:'q1', 'em_analise');
+select pg_temp.ok((select status from app.propostas where id = :'q1') = 'em_analise', 'a última proposta de cada parte muda de status, mesmo com outra mais nova');
+select app.registrar_proposta(:'npp', 'vendedor', 6000000, 'dinheiro', p_partes => array[:'ppa', :'ppb', :'ppa']::uuid[]) as q3 \gset
+select pg_temp.ok((select count(*) from app.proposta_partes where proposta_id = :'q3') = 2, 'proposta a todas as partes (repetida conta uma vez)');
+select pg_temp.ok((select status from app.propostas where id = :'q1') = 'recusada' and (select status from app.propostas where id = :'q2') = 'recusada'
+    and (select proposta_anterior_id from app.propostas where id = :'q3') = :'q2'::uuid,
+  'a resposta do outro lado recusa as abertas das partes que ela cruza e responde à mais recente');
+select pg_temp.falha(format('select app.atualizar_status_proposta(%L, %L)', :'q2', 'aceita'), 'proposta que já foi respondida não muda de status');
+select pg_temp.falha(format('select app.excluir_parte(%L)', :'ppb'), 'parte com proposta tem histórico: não se exclui');
+reset role;  -- proposta antiga, de antes das partes
+insert into app.propostas (empresa_id, processo_id, versao, origem, valor_total, forma_pagamento, status)
+  values (:'emp', :'npp', 9, 'bkm', 100, 'dinheiro', 'apresentada') returning id as qv \gset
+select pg_temp.como(:'analista');
+select app.registrar_proposta(:'npp', 'bkm', 4500000, 'dinheiro', p_partes => array[:'ppa']::uuid[]) as q4 \gset
+select pg_temp.ok((select status from app.propostas where id = :'qv') = 'substituida' and (select status from app.propostas where id = :'q3') = 'recusada'
+    and (select versao from app.propostas where id = :'q4') = 10,
+  'proposta antiga, sem parte informada, cruza com qualquer outra');
+select pg_temp.como(:'gestor');
+select app.remover_parte(:'ppb', 'Vendeu para outro');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L, p_partes => array[%L]::uuid[])', :'npp', 'bkm', 'dinheiro', :'ppb'),
+  'parte tirada do terreno não recebe proposta');
+
 \echo 'TODOS OS TESTES PASSARAM'
