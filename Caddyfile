@@ -92,7 +92,7 @@
 	handle /iptu/* {
 		@iptu {
 			method POST GET
-			path /iptu/consultar /iptu/notificacao /iptu/saude
+			path /iptu/consultar /iptu/notificacao /iptu/fila /iptu/situacao /iptu/saude
 		}
 		handle @iptu {
 			reverse_proxy {$IPTU_URL:http://127.0.0.1:9} {

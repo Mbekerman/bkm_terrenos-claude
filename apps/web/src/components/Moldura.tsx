@@ -82,6 +82,7 @@ function Foto({ nome, url }: { nome: string; url: string | null | undefined }) {
 function Perfil() {
   const { usuario, membro, session } = useSessao();
   const [aberto, setAberto] = useState(false);
+  const navegar = useNavigate();
   const ref = useFora<HTMLDivElement>(aberto, () => setAberto(false));
   const nome = usuario?.nome ?? membro?.nome ?? session?.user.email ?? '';
   const papel = membro ? NOME_PAPEL[membro.papel] + (membro.administrador ? ' · Administrador' : '') : '';
@@ -93,6 +94,7 @@ function Perfil() {
       {aberto && (
         <div className="tema-menu" role="menu">
           <div className="perfil-eu"><b>{nome}</b><span>{usuario?.arroba ? `@${usuario.arroba} · ` : ''}{papel}</span></div>
+          {membro?.administrador && <button role="menuitem" onClick={() => { setAberto(false); navegar('/configuracoes/excluidos'); }}>Terrenos excluídos</button>}
           <button role="menuitem" onClick={() => supabase.auth.signOut()}>Sair</button>
         </div>
       )}

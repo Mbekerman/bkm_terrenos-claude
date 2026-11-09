@@ -28,6 +28,7 @@ import { pedirOferta } from './Comercial';
 const SIT_IPTU: Record<string, string> = { nao_informada: 'Não informada', tributado: 'Tributado', isento: 'Isento' };
 const brl = (v: number | null | undefined, d = 0) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: d, maximumFractionDigits: d }));
 const CRIS = Array.from({ length: 18 }, (_, i) => `${i + 1}º CRI`);
+const NO_EXCLUIDO = 'O administrador pode restaurar ou deletar esse terreno em Configurações › Terrenos excluídos.';
 const soma = (v: number[]) => v.reduce((s, x) => s + x, 0);
 /** máscara da inscrição da cidade (0 = dígito) */
 const mascarar = (s: string, m: string) => { const d = digitos(s); let o = '', i = 0; for (const c of m) { if (i >= d.length) break; o += c === '0' ? d[i++] : c; } return o; };
@@ -445,7 +446,8 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         .eq('municipio_id', base?.municipio_id ?? f.t.municipio_id);
     const { data } = await q;
     const x = ((data ?? []) as R[]).find((r) => tipo === 's' || !r.cartorio || !cri || r.cartorio === cri);
-    return x?.terrenos ?? null;
+    /* sem o terreno na resposta: está num terreno excluído (a leitura esconde), que ainda segura o número */
+    return x ? x.terrenos ?? { excluido: true } : null;
   }
   const P = L.partes, base = L.base, rot = base?.rotulo ?? 'Inscrição', sp = base?.codigo === 'geosampa';
   const crisSel = f.t.cartorio && !CRIS.includes(f.t.cartorio) ? [f.t.cartorio, ...CRIS] : CRIS;
@@ -613,6 +615,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     if (!digitos(n)) { toast('Informe o número da matrícula.', true); return; }
     if (L.mats.some((m) => m.numero_norm === digitos(n) && (!m.cartorio || !cri || m.cartorio === cri))) { toast(`A matrícula ${n} já está no terreno.`, true); return; }
     const ou = await outroTerreno('m', digitos(n), cri);
+    if (ou?.excluido) { toast(`A matrícula ${n} está num terreno excluído. ${NO_EXCLUIDO}`, true); return; }
     if (ou) { setDup({ oque: `A matrícula ${n}`, codigo: ou.codigo, nome: ou.nome }); return; }
     const { error } = await supabase.from('matriculas').insert({ empresa_id: empresa!.id, terreno_id: f.id, numero: n, cartorio: cri, area_registrada_m2: lerNum(mat.area) });
     if (error) { toast(error.message, true); return; }
@@ -629,6 +632,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     if (base && d.length !== ndig) { toast(`${rot} incompleto: são ${ndig} dígitos.`, true); return; }
     if (L.insc.some((i) => i.inscricao_norm === d)) { toast(`O ${rot} ${sql} já está no terreno.`, true); return; }
     const ou = await outroTerreno('s', d, null);
+    if (ou?.excluido) { toast(`O ${rot} ${sql} está num terreno excluído. ${NO_EXCLUIDO}`, true); return; }
     if (ou) { setDup({ oque: `O ${rot} ${sql}`, codigo: ou.codigo, nome: ou.nome }); return; }
     setGrav(true);
     try {
