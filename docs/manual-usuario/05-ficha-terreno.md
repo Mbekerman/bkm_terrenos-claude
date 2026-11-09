@@ -176,7 +176,7 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 
 ## IPTU
 
-Logo abaixo de Áreas e dimensões. Mostra, para o terreno inteiro, o **valor venal** (soma dos SQLs), o **IPTU anual** e o **IPTU mensal** (anual ÷ 12), e quantos SQLs ainda não têm IPTU. Embaixo, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.
+Logo abaixo de Áreas e dimensões, já aberto, como Parâmetros urbanísticos. Em cima, o **Panorama do terreno**, a soma de todos os SQLs: valor venal do terreno, da construção e total, **IPTU anual**, **IPTU mensal** (anual ÷ 12, a média do mês, não a parcela), impostos predial e territorial, área do terreno e área construída da Prefeitura, e, juntos, separados por " / ", o valor do m² do terreno, o uso, o padrão e o vencimento da 1ª prestação; diz também quantos SQLs ainda não têm IPTU. Em **Ver SQL por SQL**, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.
 
 - **Buscar na Prefeitura** (só São Paulo, só quem edita): no título do quadro ("Buscar todos na Prefeitura" com mais de um SQL) ou em cada linha ("Buscar"). O sistema emite a notificação de lançamento do IPTU (a "2ª via") no site da Prefeitura e grava o venal e o IPTU do exercício. Cada SQL leva até um minuto; os SQLs vão um de cada vez. Se a Prefeitura não tiver a notificação do ano ainda, vem a do ano anterior.
 - **Detalhe** (na linha trazida da Prefeitura): número da notificação, área do terreno, testada, área construída, uso, padrão, ano da construção, valor do m² do terreno e da construção, fatores, alíquota, descontos, impostos predial e territorial, total do ano e vencimento da 1ª prestação.

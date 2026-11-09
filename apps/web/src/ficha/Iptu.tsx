@@ -68,6 +68,45 @@ function Detalhe({ n }: { n: R }) {
   return <div className="kvg" style={{ padding: '8px 0 4px' }}>{kv.map(([k, v]) => <div key={k}><div className="k">{k}</div><div className={`v${v === '—' ? ' ni' : ''}`}>{v === '—' ? 'Não informado' : v}</div></div>)}</div>;
 }
 
+/** Panorama do terreno (pedido do Moises, 9/nov/2026, como em Parâmetros): a soma de todos os SQLs, aberta; os valores que
+ * não somam (valor do m², padrão, uso) aparecem juntos, separados por " / ". SQL por SQL fica no "Ver SQL por SQL". */
+function Panorama({ linhas }: { linhas: { x: R; v: R | undefined }[] }) {
+  const vs = linhas.map((l) => l.v).filter((v): v is R => !!v);
+  const ns = vs.map((v) => v.notificacao as R | null).filter((n): n is R => !!n);
+  const sem = linhas.length - vs.filter((v) => v.situacao_iptu !== 'nao_informada').length;
+  const somar = (xs: (number | null | undefined)[]) => { const ok = xs.filter((x): x is number => x != null); return ok.length ? ok.reduce((a, b) => a + +b, 0) : null; };
+  const juntos = (xs: (string | null | undefined)[]) => { const u = [...new Set(xs.filter((x): x is string => !!x && x !== '—'))]; return u.length ? u.join(' / ') : '—'; };
+  const anual = somar(vs.map((v) => (v.situacao_iptu === 'isento' ? 0 : v.iptu_valor_anual)));
+  const parcial = (xs: unknown[]) => (xs.length < linhas.length ? ` (${xs.length} de ${linhas.length} SQLs)` : '');
+  const kv: [string, string, string?][] = [
+    ['Valor venal do terreno', brl(somar(vs.map((v) => v.valor_venal_terreno))), parcial(vs)],
+    ['Valor venal da construção', brl(somar(vs.map((v) => v.valor_venal_construcao)))],
+    ['Valor venal total', brl(somar(vs.map(venalDe)))],
+    ['IPTU anual', brl(anual, 2), parcial(vs)],
+    ['IPTU mensal (anual ÷ 12)', anual == null ? '—' : brl(anual / 12, 2)],
+  ];
+  if (ns.length) kv.push(
+    ['Imposto predial', brl(somar(ns.map((n) => n.predial?.imposto_a_pagar)), 2)],
+    ['Imposto territorial', brl(somar(ns.map((n) => n.territorial?.imposto_a_pagar)), 2)],
+    ['Área do terreno (Prefeitura)', ((a) => (a == null ? '—' : m2(a)))(somar(ns.map((n) => n.terreno?.area_total_m2))), parcial(ns)],
+    ['Área construída (Prefeitura)', ((a) => (a == null ? '—' : m2(a)))(somar(ns.map((n) => n.construcao?.area_construida_m2)))],
+    ['Valor do m² do terreno', juntos(ns.map((n) => (n.bases?.terreno_incorporado?.valor_m2 == null ? null : brl(n.bases.terreno_incorporado.valor_m2, 2))))],
+    ['Uso', juntos(ns.map((n) => n.construcao?.uso))],
+    ['Padrão da construção', juntos(ns.map((n) => n.construcao?.padrao))],
+    ['Vencimento da 1ª prestação', juntos(ns.map((n) => (n.pagar?.vencimento_1a_prestacao ? fd(n.pagar.vencimento_1a_prestacao) : null)))],
+  );
+  if (sem > 0) kv.push(['Sem IPTU', `${sem} de ${linhas.length} SQL${linhas.length > 1 ? 's' : ''}`]);
+  const ex = juntos(vs.map((v) => String(v.exercicio)));
+  return (
+    <div className="lz-pan">
+      <div className="geo-st">Panorama do terreno<span className="faint"> · {linhas.length} SQL{linhas.length > 1 ? 's' : ''}{ex !== '—' ? ` · exercício ${ex}` : ''}</span></div>
+      <dl className="lz-par">{kv.map(([k, v, obs]) => (
+        <div className="lz-c" key={k}><dt>{k}</dt><dd>{v === '—' ? <span className="faint">Não informado</span> : k.startsWith('IPTU') ? <b>{v}</b> : v}</dd>{obs ? <div className="lz-d">{obs.trim()}</div> : null}</div>
+      ))}</dl>
+    </div>
+  );
+}
+
 export default function SecIptu({ f }: { f: Ficha }) {
   const { edita } = useSessao();
   const q = useLotes(f), qc = useQueryClient(), toast = useToast();
@@ -85,9 +124,6 @@ export default function SecIptu({ f }: { f: Ficha }) {
     },
   });
   const linhas = insc.map((x) => { const v = vigente(x); return { x, v: v ? ({ ...v, notificacao: qn.data?.[v.id] ?? null } as R) : v }; });
-  const com = linhas.filter((l) => l.v), semIptu = linhas.length - com.filter((l) => l.v!.situacao_iptu !== 'nao_informada').length;
-  const soma = (fn: (v: R) => number | null) => { const vs = com.map((l) => fn(l.v!)).filter((v): v is number => v != null); return vs.length ? vs.reduce((a, b) => a + +b, 0) : null; };
-  const venalTot = soma(venalDe), anualTot = soma((v) => (v.situacao_iptu === 'isento' ? 0 : v.iptu_valor_anual));
 
   const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-lotes', f.id] }); qc.invalidateQueries({ queryKey: ['ficha-iptu', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); qc.invalidateQueries({ queryKey: ['ficha-logs'] }); };
   async function buscar(lista: R[]) {
@@ -114,19 +150,15 @@ export default function SecIptu({ f }: { f: Ficha }) {
 
   const podeBuscar = edita && sp && insc.length > 0;
   return (
-    <Quadro aba="terreno" id="iptu" titulo="IPTU"
+    <Quadro aba="terreno" id="iptu" titulo="IPTU" primeiro
       acoes={podeBuscar ? <div className="qd-acoes"><button className="btn sm text" disabled={!!busc} onClick={() => buscar(insc)}><Ic n="search" s={16} />{busc ? 'Consultando a Prefeitura...' : insc.length > 1 ? 'Buscar todos na Prefeitura' : 'Buscar na Prefeitura'}</button></div> : undefined}>
       <div className="sec-b">
         {!q.data ? <div className="muted">{q.error ? 'Não foi possível carregar os SQLs.' : 'Carregando...'}</div>
           : !insc.length ? <div className="muted">Sem SQL no terreno. Inclua os SQLs em Matrículas e SQLs.</div> : (
             <>
-              <div className="kvg">
-                <div><div className="k">Valor venal do terreno</div>{venalTot == null ? <span className="v ni">Não informado</span> : <div className="v">{brl(venalTot)}</div>}</div>
-                <div><div className="k">IPTU anual</div>{anualTot == null ? <span className="v ni">Não informado</span> : <div className="v">{brl(anualTot, 2)}</div>}</div>
-                <div><div className="k">IPTU mensal</div>{anualTot == null ? <span className="v ni">Não informado</span> : <div className="v">{brl(anualTot / 12, 2)} <span className="faint" style={{ fontSize: 13 }}>anual ÷ 12</span></div>}</div>
-                {semIptu > 0 && <div><div className="k">Sem IPTU</div><div className="v">{semIptu} de {linhas.length} SQL{linhas.length > 1 ? 's' : ''}</div></div>}
-              </div>
-              <div className="tblwrap" style={{ marginTop: 14 }}><table className="mini-tbl"><thead><tr>
+              <Panorama linhas={linhas} />
+              <details className="details lz-lotes"><summary>Ver SQL por SQL ({linhas.length})</summary>
+              <div className="tblwrap" style={{ marginTop: 8 }}><table className="mini-tbl"><thead><tr>
                 <th>SQL</th><th>Exercício</th><th className="r">Venal terreno</th><th className="r">Venal construção</th><th className="r">Venal total</th><th className="r">IPTU anual</th><th className="r">Mensal (anual ÷ 12)</th><th>Fonte</th>{podeBuscar && <th />}
               </tr></thead><tbody>{linhas.map(({ x, v }) => {
                 const n = v?.notificacao as R | null | undefined, ab = aberto === x.id && !!n;
@@ -151,6 +183,7 @@ export default function SecIptu({ f }: { f: Ficha }) {
                   </Fragment>
                 );
               })}</tbody></table></div>
+              </details>
               <p className="hint" style={{ marginTop: 8 }}>
                 {sp ? 'Em São Paulo, o valor venal e o IPTU vêm da notificação de lançamento da Prefeitura (cada busca leva até um minuto por SQL). ' : 'Fora de São Paulo, o IPTU se lança à mão na janela de cada SQL. '}
                 Mensal = IPTU anual ÷ 12. Só vale o exercício mais recente.
