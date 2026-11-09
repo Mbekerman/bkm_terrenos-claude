@@ -148,7 +148,8 @@ apps/web/
 | Arquivo | Papel |
 | --- | --- |
 | `dados.ts` | Definição dos filtros (`FX`, `GRUPOS`), quem passa (`passa`), contagens, leitura de "12 mi"; `carregarFx` lê os dados que os filtros precisam. |
-| `Filtros.tsx` | `useFiltros(ctx)`, a barra (`BarraFx`: botão, chips, Limpar, Visão) e a gaveta (`GavetaFx`). |
+| `Filtros.tsx` | `useFiltros(ctx)`, a barra (`BarraFx`: botão, chips, Limpar, Visão) e a gaveta (`GavetaFx`, com as abas Filtros e Ordenação). |
+| `ordem.ts` | Ordenação da lista (`ORD`, `alternar`, `comparar`, `soOrdValida`): campos das colunas de `COLS_TER` do protótipo. |
 
 ---
 
@@ -427,6 +428,7 @@ A planta (PDF) e o desenho (DXF) do lote, que o protótipo guarda em Documentos,
 - A seleção fica no `sessionStorage` (`bkm-terrenos-filtros-pag`, um objeto por página) e no endereço (`#f=`); o endereço vale primeiro (link recebido abre com o filtro).
 - Filtro antigo ou desconhecido é descartado (`soValidos`).
 - **Visões salvas** em `app.filtros_salvos`: cada um salva as suas; as da empresa, só o administrador (a RLS confere).
+- **Ordenação** (pedido do Moises, 9/nov/2026; só com `ctx === 'mapa'`, `fx.ordena`): `fx.o` é a fila `[{k, dir}]`, `fx.setO`, `fx.cmp(idA, idB)` compara pelos dados de `carregarFx` (que passou a ler `nome`). Guardada no mesmo objeto da sessão (`o`) e no endereço (`#o=`); fora das visões salvas. Em `Mapa.tsx`, com `fx.o` cheia a lista é uma só pela ordem pedida (desempate pela legenda e pelo nome); vazia, a ordem de antes.
 - `ok(id)`: terreno que ainda não está nos dados dos filtros (acabou de entrar) passa, para não sumir logo depois de cadastrado.
 - A gaveta dos filtros, a do filtro da concorrência e a da ficha não abrem juntas (`Mapa.tsx:161`).
 - A página Pipeline (tabela de Terrenos), que também teria filtro próprio no protótipo, não foi portada.

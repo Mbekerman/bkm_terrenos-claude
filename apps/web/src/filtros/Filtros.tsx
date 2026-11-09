@@ -13,22 +13,29 @@ import {
   FX, GRUPOS, ativos, carregarFx, chipTxt, conta, lerNum, limparDependentes, passa, soValidos, tem, tira,
   type Ctx, type DadosFx, type Def, type Filtro,
 } from './dados';
+import { ORD, alternar, comparar, ordTxt, soOrdValida, type Ord } from './ordem';
 
 const GK = 'bkm-terrenos-filtros-pag';
-type Guardado = Record<string, { f: Filtro; v: string | null }>;
+type Guardado = Record<string, { f: Filtro; v: string | null; o?: Ord[] }>;
 const lerG = (): Guardado => { try { return JSON.parse(sessionStorage.getItem(GK) || '{}') || {}; } catch { return {}; } };
 function doEndereco(): Filtro | null {
   try { const h = location.hash.match(/[#&?]f=([^&]+)/); return h ? soValidos(JSON.parse(decodeURIComponent(h[1]))) : null; } catch { return null; }
 }
-function porNoEndereco(f: Filtro) {
-  const h = location.hash.replace(/^#/, '').split('&').filter((x) => x && !x.startsWith('f='));
+function ordDoEndereco(): Ord[] | null {
+  try { const h = location.hash.match(/[#&?]o=([^&]+)/); return h ? soOrdValida(JSON.parse(decodeURIComponent(h[1]))) : null; } catch { return null; }
+}
+function porNoEndereco(f: Filtro, o: Ord[]) {
+  const h = location.hash.replace(/^#/, '').split('&').filter((x) => x && !x.startsWith('f=') && !x.startsWith('o='));
   if (Object.keys(f).length) h.push('f=' + encodeURIComponent(JSON.stringify(f)));
+  if (o.length) h.push('o=' + encodeURIComponent(JSON.stringify(o)));
   history.replaceState(history.state, '', location.pathname + location.search + (h.length ? '#' + h.join('&') : ''));
 }
 
 export interface Fx {
   ctx: Ctx; D: DadosFx | null; f: Filtro; mudar: (f: Filtro) => void; visao: string | null; setVisao: (v: string | null, f?: Filtro) => void; mudou: boolean;
   aberto: boolean; setAberto: (b: boolean) => void; ok: (id: string) => boolean; n: number; eu: string | null;
+  /** ordenação (só onde a página ordena uma lista: hoje, o Mapa); vazia = a ordem própria da página */
+  ordena: boolean; o: Ord[]; setO: (o: Ord[]) => void; cmp: (a: string, b: string) => number;
 }
 
 /** o filtro da página: dados, seleção e quem passa */
@@ -36,19 +43,23 @@ export function useFiltros(ctx: Ctx): Fx {
   const { empresa, session } = useSessao();
   const eu = session?.user.id ?? null;
   const q = useQuery({ queryKey: ['filtros', empresa?.id], enabled: !!empresa, queryFn: () => carregarFx(empresa!.id) });
+  const ordena = ctx === 'mapa';
   const [st, setSt] = useState<{ f: Filtro; v: string | null; m: boolean }>(() => {
     const e = doEndereco();
     if (e) return { f: e, v: null, m: false };
     const g = lerG()[ctx];
     return { f: soValidos(g?.f ?? {}), v: g?.v ?? null, m: false };
   });
+  const [o, setO] = useState<Ord[]>(() => (ordena ? ordDoEndereco() ?? soOrdValida(lerG()[ctx]?.o) : []));
   const [aberto, setAberto] = useState(false);
   useEffect(() => {
-    const g = lerG(); g[ctx] = { f: st.f, v: st.v };
+    const g = lerG(); g[ctx] = { f: st.f, v: st.v, ...(o.length ? { o } : {}) };
     try { sessionStorage.setItem(GK, JSON.stringify(g)); } catch { /* sem sessão */ }
-    porNoEndereco(st.f);
-  }, [st, ctx]);
+    porNoEndereco(st.f, o);
+  }, [st, o, ctx]);
   const D = q.data ?? null;
+  const porId = useMemo(() => new Map((D?.ters ?? []).map((t) => [t.id, t])), [D]);
+  const cmp = useCallback((a: string, b: string) => (D && o.length ? comparar(o, D, porId.get(a), porId.get(b)) : 0), [D, o, porId]);
   const passam = useMemo(() => {
     if (!D) return null;
     return new Set(D.ters.filter((t) => passa(t, ctx, D, st.f, eu)).map((t) => t.id));
@@ -59,7 +70,7 @@ export function useFiltros(ctx: Ctx): Fx {
     ctx, D, f: st.f, visao: st.v, mudou: st.m, aberto, setAberto, eu,
     mudar: (f) => setSt((s) => ({ f: D ? limparDependentes(f, D) : f, v: s.v, m: !!s.v })),
     setVisao: (v, f) => setSt((s) => ({ f: f ? soValidos(f) : s.f, v, m: false })),
-    ok,
+    ok, ordena, o, setO, cmp,
     n: D ? ativos(ctx, D, st.f).length : 0,
   };
 }
@@ -100,6 +111,7 @@ export function BarraFx({ fx }: { fx: Fx }) {
       <button className="fx-btn" aria-pressed={at.length > 0} aria-expanded={fx.aberto} aria-controls="fx-dr" onClick={() => fx.setAberto(!fx.aberto)}>
         <Ic n="filtro" s={18} />Filtros{at.length ? <span className="fx-n">{at.length}</span> : null}</button>
       {D && at.map((d) => <span key={d.k} className="fx-chip">{chipTxt(d, f, D)}<button className="fx-cx" aria-label={`Tirar o filtro ${d.l}`} title="Tirar" onClick={() => fx.mudar(tira(f, d.k))}><Ic n="close" s={16} /></button></span>)}
+      {fx.o.length > 0 && <span className="fx-chip fx-chip-ord" title="Ordenação: abre na aba Ordenação dos filtros">Ordem: {ordTxt(fx.o)}<button className="fx-cx" aria-label="Tirar a ordenação" title="Tirar" onClick={() => fx.setO([])}><Ic n="close" s={16} /></button></span>}
       {at.length > 0 && <button className="linkbtn fx-limpar" onClick={() => { fx.setVisao(null, {}); toast('Filtros limpos.'); }}>Limpar</button>}
       <span className="fx-visw">
         <label className="fx-vis"><span className="sr-only">Visão</span>
@@ -116,6 +128,8 @@ export function BarraFx({ fx }: { fx: Fx }) {
 export function GavetaFx({ fx }: { fx: Fx }) {
   const { D, f, ctx, eu } = fx;
   const [sec, setSec] = useState('funil');
+  const [aba, setAba] = useState<'filtros' | 'ordem'>('filtros');
+  const naOrdem = fx.ordena && aba === 'ordem';
   const [busca, setBusca] = useState<Record<string, string>>({});
   const [salvar, setSalvar] = useState(false);
   const corpo = useRef<HTMLDivElement>(null);
@@ -183,15 +197,30 @@ export function GavetaFx({ fx }: { fx: Fx }) {
   sai();
   return createPortal(<>
     <div className="fx-scrim" onClick={() => fx.setAberto(false)} />
-    <aside id="fx-dr" className="fx-dr" role="dialog" aria-label="Filtros">
-      <div className="fx-h"><h2>Filtros</h2>{Object.keys(f).length > 0 && <button className="linkbtn" onClick={() => fx.setVisao(null, {})}>Limpar tudo</button>}
+    <aside id="fx-dr" className="fx-dr" role="dialog" aria-label={naOrdem ? 'Ordenação' : 'Filtros'}>
+      <div className="fx-h"><h2>{naOrdem ? 'Ordenação' : 'Filtros'}</h2>
+        {naOrdem ? fx.o.length > 0 && <button className="linkbtn" onClick={() => fx.setO([])}>Tirar ordenação</button>
+          : Object.keys(f).length > 0 && <button className="linkbtn" onClick={() => fx.setVisao(null, {})}>Limpar tudo</button>}
         <button className="iconbtn" aria-label="Fechar filtros" title="Fechar (Esc)" onClick={() => fx.setAberto(false)}><Ic n="close" s={22} /></button></div>
+      {fx.ordena && <div className="seg fx-modo" role="tablist" aria-label="Filtros ou ordenação">
+        <button role="tab" aria-selected={!naOrdem} className={!naOrdem ? 'on' : ''} onClick={() => setAba('filtros')}>Filtros{nat ? <span className="fx-sn">{nat}</span> : null}</button>
+        <button role="tab" aria-selected={naOrdem} className={naOrdem ? 'on' : ''} onClick={() => setAba('ordem')}>Ordenação{fx.o.length ? <span className="fx-sn">{fx.o.length}</span> : null}</button></div>}
+      {naOrdem ? <div className="fx-b"><section className="fx-s fx-s1" role="tabpanel"><div className="fx-sb">
+        <div className="fx-hint">Um clique ordena crescente, o segundo decrescente e o terceiro tira o campo. Com vários, o primeiro manda e os seguintes desempatam. Quem não tem o dado fica no fim.</div>
+        <div className="fx-ords">{ORD.map((d) => {
+          const i = fx.o.findIndex((x) => x.k === d.k), st = i >= 0 ? fx.o[i] : null;
+          return <button key={d.k} className="fx-ord" aria-pressed={!!st} onClick={() => fx.setO(alternar(fx.o, d.k))}
+            title={st ? (st.dir === 'asc' ? 'Crescente: clique para decrescente' : 'Decrescente: clique para tirar') : 'Ordenar em ordem crescente'}>
+            <span className="fx-ord-t"><span>{d.l}</span><small>{d.dica}</small></span>
+            {st && fx.o.length > 1 && <span className="fx-ord-n" aria-label={`${i + 1}ª ordem`}>{i + 1}</span>}
+            <span className="fx-ord-d">{st ? (st.dir === 'asc' ? '↑ Crescente' : '↓ Decrescente') : '↕'}</span></button>;
+        })}</div></div></section></div> : <>
       <div className="fx-abas" role="tablist" aria-label="Seções dos filtros">{gs.map((x) =>
         <button key={x.g} role="tab" className="fx-aba" aria-selected={x.g === cur.g} aria-controls="fx-sec-b" title={x.n ? `${x.n} filtro${x.n > 1 ? 's' : ''} nesta seção` : undefined}
           onClick={() => { setSec(x.g); if (corpo.current) corpo.current.scrollTop = 0; }}>{x.l}{x.n ? <span className="fx-sn">{x.n}</span> : null}</button>)}</div>
       <div className="fx-b" ref={corpo}><section className="fx-s fx-s1" id="fx-sec-b" role="tabpanel"><div className="fx-sb">
         {cur.g === 'funil' && ctx === 'kanban' && <div className="fx-hint">No quadro, a fase e a etapa vêm da navegação (Funil › fase › etapa).</div>}
-        {lista}</div></section></div>
+        {lista}</div></section></div></>}
       <div className="fx-f" id="fx-f"><span className="fx-tot">{nat ? `${nat} filtro${nat > 1 ? 's' : ''}` : 'Sem filtros'}</span>
         <button className="btn sm" disabled={!nat} onClick={() => setSalvar(true)}>Salvar visão</button>
         <button className="btn primary sm" onClick={() => fx.setAberto(false)}>Ver {total} terreno{total === 1 ? '' : 's'}</button></div>
