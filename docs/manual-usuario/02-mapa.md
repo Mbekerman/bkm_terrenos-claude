@@ -151,7 +151,7 @@ O card fecha sozinho 1 s depois que o mouse sai dele, quando o mapa se move, no 
 
 **Como usar:**
 
-1. Clique no botão **Régua** no canto de baixo à direita (ou ⋮ › Régua). O botão fica azul e o cursor vira seta.
+1. Clique no botão **Régua** no canto de baixo à direita (ou ⋮ › Régua). O botão fica azul e o cursor vira o dedo indicador.
 2. Cada clique no mapa marca um ponto. A linha mostra a distância de cada trecho e o total. A régua mede em linha reta; não segue a rua.
 3. Para medir uma **área**, marque 3 pontos ou mais e clique no **primeiro ponto**: a forma fecha e mostra a área (m², ou km² acima de 1 km²). O clique seguinte começa outra medida.
 
@@ -187,7 +187,7 @@ O passo a passo do cadastro está em [03. Novo terreno](03-novo-terreno.md). Lei
 2. Escolha de onde sai a rota, de um destes jeitos:
    - no campo **"Saindo de"**, digite um endereço ou o nome de um lugar (loja, estação, prédio) e escolha na lista;
    - escolha **"Minha localização"** (o navegador pede permissão);
-   - **clique no mapa**: num ponto qualquer (vale o endereço dali), num lugar do Google (loja, escola, estação), no pino ou na poligonal de outro terreno, ou num quadrado da concorrência. Ao abrir o quadro, o clique no mapa já escolhe a saída (o cursor vira uma mira); depois de escolhida, o mapa volta ao normal, e para escolher de novo no mapa clique na **mira** ao lado do campo. Enquanto a mira está ligada, o clique não abre a ficha, o card da concorrência nem o quadro do lugar.
+   - **clique no mapa**: num ponto qualquer (vale o endereço dali), num lugar do Google (loja, escola, estação), no pino ou na poligonal de outro terreno, ou num quadrado da concorrência. Ao abrir o quadro, o clique no mapa já escolhe a saída (o cursor vira o dedo indicador); depois de escolhida, o mapa volta ao normal, e para escolher de novo no mapa clique na **mira** ao lado do campo. Enquanto a mira está ligada, o clique não abre a ficha, o card da concorrência nem o quadro do lugar.
 3. A rota aparece no mapa (a pé, pontilhada), com o tempo e a distância. O mapa se ajusta para mostrar a rota inteira, e os quadrados da concorrência ficam apagados enquanto a rota está aberta.
 4. Troque a forma de condução nos botões **Carro, Moto, A pé, Bicicleta e Transporte**: a rota se refaz na hora. O sistema lembra a última escolha.
 5. **"Abrir no Google Maps"** abre a mesma rota no Google Maps, com o trânsito e as alternativas de lá.

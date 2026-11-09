@@ -319,9 +319,10 @@ export class Motor {
     if (this.mercUlt) this.mercado(...this.mercUlt);
     if (this.mercDest) this.mercDest.gmpClickable = !on;
   }
-  /* régua ligada: o cursor do mapa vira a seta em vez da mãozinha (pedido do Moisés, 5/nov/2026); null volta ao do Google */
-  cursorSeta(on: boolean) {
-    this.mapa.setOptions({ draggableCursor: on ? 'default' : null });
+  /* marcando pontos (desenho ou edição da poligonal, régua, saída da rota): o cursor do mapa vira o dedo indicador
+     em vez da mãozinha aberta de arrastar (pedido do Moises, 9/nov/2026; antes, na régua, a seta); null volta ao do Google */
+  cursorDedo(on: boolean) {
+    this.mapa.setOptions({ draggableCursor: on ? 'pointer' : null });
   }
   private rasc: any[] = [];
   rascunho(pts: [number, number][], sel: number | null, editar: boolean, gp: GestosPonto) {
