@@ -31,6 +31,8 @@ gcloud services enable secretmanager.googleapis.com run.googleapis.com cloudbuil
 read -rs V && printf '%s' "$V" | gcloud secrets create iptu-cpf --data-file=- ; unset V
 read -rs V && printf '%s' "$V" | gcloud secrets create iptu-senha --data-file=- ; unset V
 SA="$(gcloud projects describe bkm-terrenos --format='value(projectNumber)')-compute@developer.gserviceaccount.com"
+# projeto novo: a conta padrão também monta o código enviado (sem isso, o deploy dá 403 em storage.objects.get)
+gcloud projects add-iam-policy-binding bkm-terrenos --member="serviceAccount:$SA" --role=roles/run.builder --condition=None
 for s in iptu-cpf iptu-senha; do gcloud secrets add-iam-policy-binding $s --member="serviceAccount:$SA" --role=roles/secretmanager.secretAccessor; done
 
 # 2. Serviço (copia o endereço e a chave publicável do Supabase do terrenos-web-dev)
