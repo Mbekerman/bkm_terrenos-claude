@@ -85,6 +85,28 @@
 		respond 404
 	}
 
+	# IPTU de São Paulo (9/nov/2026): o serviço terrenos-iptu do Cloud Run (services/iptu)
+	# emite a notificação de lançamento no portal da Prefeitura com a Senha Web guardada no
+	# Secret Manager dele e grava o venal e o IPTU com o login de quem pediu. Só as rotas
+	# do serviço; sem IPTU_URL no serviço, responde 502.
+	handle /iptu/* {
+		@iptu {
+			method POST GET
+			path /iptu/consultar /iptu/notificacao /iptu/saude
+		}
+		handle @iptu {
+			reverse_proxy {$IPTU_URL:http://127.0.0.1:9} {
+				header_up Host {upstream_hostport}
+				header_up -Cookie
+				header_down -Set-Cookie
+				transport http {
+					response_header_timeout 180s
+				}
+			}
+		}
+		respond 404
+	}
+
 	# Sem banco configurado no serviço (SUPABASE_URL vazia, como na produção até o primeiro
 	# uso), a raiz leva ao protótipo. Com o banco, a raiz abre o sistema real.
 	@sem_banco expression `{env.SUPABASE_URL} == ""`

@@ -1,0 +1,16 @@
+{
+  "name": "bkm-terrenos-iptu",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Consulta a notificação de lançamento do IPTU de São Paulo (2ª via) e grava valor venal e IPTU no BKM Terrenos",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/servidor.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "pdfjs-dist": "4.10.38",
+    "playwright": "1.49.1"
+  }
+}

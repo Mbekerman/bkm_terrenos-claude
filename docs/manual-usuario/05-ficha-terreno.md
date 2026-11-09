@@ -174,6 +174,17 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 - **Fora de São Paulo** não mede: a testada principal se digita.
 - No computador de desenvolvimento (fora da versão publicada), não mede.
 
+## IPTU
+
+Logo abaixo de Áreas e dimensões. Mostra, para o terreno inteiro, o **valor venal** (soma dos SQLs), o **IPTU anual** e o **IPTU mensal** (anual ÷ 12), e quantos SQLs ainda não têm IPTU. Embaixo, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.
+
+- **Buscar na Prefeitura** (só São Paulo, só quem edita): no título do quadro ("Buscar todos na Prefeitura" com mais de um SQL) ou em cada linha ("Buscar"). O sistema emite a notificação de lançamento do IPTU (a "2ª via") no site da Prefeitura e grava o venal e o IPTU do exercício. Cada SQL leva até um minuto; os SQLs vão um de cada vez. Se a Prefeitura não tiver a notificação do ano ainda, vem a do ano anterior.
+- **Detalhe** (na linha trazida da Prefeitura): número da notificação, área do terreno, testada, área construída, uso, padrão, ano da construção, valor do m² do terreno e da construção, fatores, alíquota, descontos, impostos predial e territorial, total do ano e vencimento da 1ª prestação.
+- **PDF** (na mesma linha): emite de novo a notificação e baixa o PDF.
+- Buscar de novo no mesmo ano com os mesmos valores não muda nada; com valores diferentes, vira uma correção (a anterior fica no histórico).
+- **Fora de São Paulo**, o IPTU continua sendo lançado à mão na janela de cada SQL (Matrículas e SQLs).
+- O que pode dar errado: a Prefeitura pedir captcha ("Tente mais tarde"), recusar a senha do sistema, não ter notificação para o SQL, ou o site estar fora. A mensagem aparece embaixo da tela.
+
 ## O que não é possível na aba Terreno
 
 - Digitar CEP, logradouro, bairro e município (só pelo mapa).

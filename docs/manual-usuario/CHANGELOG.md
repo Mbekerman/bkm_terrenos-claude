@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **IPTU** (aba Terreno, depois de Áreas e dimensões): quadro novo com o valor venal, o IPTU anual e o mensal do terreno e de cada SQL. Em São Paulo, **Buscar na Prefeitura** traz o venal e o IPTU da notificação de lançamento (2ª via), com o detalhe do cálculo e o PDF. (#PRN)
 - **Propostas por parte** (Comercial › Propostas): toda proposta diz para qual parte foi feita (uma, várias ou todas). Com uma parte, ela já vem marcada; com mais de uma, é obrigatório escolher. A lista mostra as partes de cada proposta, Nenhuma proposta recusa ou substitui outra sozinha: com duas em aberto para a mesma parte, o quadro avisa e você muda o status de qualquer uma, exclui uma (lixeira) ou deixa as duas; nos resumos vale a mais recente. (#255)
 
 - **Concorrência no Mapa**: o empreendimento aberto deixa de ficar preto com anel azul para sempre; qualquer clique fora dele (no mapa ou em outra parte da tela) tira o destaque e o quadrado volta à cor dele. (#261)
