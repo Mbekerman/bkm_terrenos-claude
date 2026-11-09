@@ -182,7 +182,10 @@ O passo a passo do cadastro está em [03. Novo terreno](03-novo-terreno.md). Lei
 **Para que serve:** saber quanto tempo se leva de um endereço ou lugar até o terreno (ou até qualquer ponto do mapa), de carro, moto, a pé, de bicicleta ou de transporte público.
 
 1. **Clique direito** no ponto do mapa (ou no pino ou na poligonal de um terreno) › **"Traçar rota até aqui"**. Abre o quadro **"Rota até …"** no canto de cima à esquerda do mapa, e o destino aparece como um pino vermelho. No terreno, o destino é o pino do terreno.
-2. No campo **"Saindo de"**, digite um endereço ou o nome de um lugar (loja, estação, prédio) e escolha na lista, ou escolha **"Minha localização"** (o navegador pede permissão).
+2. Escolha de onde sai a rota, de um destes jeitos:
+   - no campo **"Saindo de"**, digite um endereço ou o nome de um lugar (loja, estação, prédio) e escolha na lista;
+   - escolha **"Minha localização"** (o navegador pede permissão);
+   - **clique no mapa**: num ponto qualquer (vale o endereço dali), num lugar do Google (loja, escola, estação), no pino ou na poligonal de outro terreno, ou num quadrado da concorrência. Ao abrir o quadro, o clique no mapa já escolhe a saída (o cursor vira uma mira); depois de escolhida, o mapa volta ao normal, e para escolher de novo no mapa clique na **mira** ao lado do campo. Enquanto a mira está ligada, o clique não abre a ficha, o card da concorrência nem o quadro do lugar.
 3. A rota aparece no mapa (a pé, pontilhada), com o tempo e a distância. O mapa se ajusta para mostrar a rota inteira, e os quadrados da concorrência ficam apagados enquanto a rota está aberta.
 4. Troque a forma de condução nos botões **Carro, Moto, A pé, Bicicleta e Transporte**: a rota se refaz na hora. O sistema lembra a última escolha.
 5. **"Abrir no Google Maps"** abre a mesma rota no Google Maps, com o trânsito e as alternativas de lá.
