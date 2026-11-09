@@ -34,7 +34,7 @@ const chaveRua = (s: string) => normRua(nomeRef(s)).replace(/^(r|av|al|tv|estr|e
   .replace(/\b(dr|doutor|prof|professor|eng|engenheiro|gen|general|cel|coronel|ttcel|tte|des|pres|sen|dep|cap|sto|santo|sta|santa|s|sao|nsa|n sra|nossa senhora)\b\.?\s*/g, '')
   .replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
 
-/** Mede e grava: posição na quadra, testada principal (quando estava vazia ou era a medida de antes) e uma confrontação
+/** Mede e grava: posição na quadra, testada principal (a frente do acesso principal) e uma confrontação
  * de frente por rua com a testada dela. Fora de São Paulo, ou sem rua achada, não mexe em nada. */
 const MEDIDA = new Map<string, string>();     // terreno → poligonal já medida nesta sessão (ou em curso)
 export async function atualizarFrentes(id: string): Promise<Medicao | null> {
@@ -62,7 +62,6 @@ async function medirEGravar(id: string): Promise<Medicao | null> {
   const pri = med.frentes.find((x) => k0 && chaveRua(x.logradouro) === k0) ?? med.frentes[0];
   const { data: cs } = await supabase.from('confrontacoes').select('id,ordem,comprimento_m,fonte,observacoes').eq('terreno_id', id);
   const auto = (cs ?? []).filter((c: any) => FONTES_AUTO.includes(c.fonte));
-  const antes = auto.find((c: any) => c.fonte === FONTE_FRENTES && c.observacoes === 'Acesso principal')?.comprimento_m;
   if (auto.length) {
     const r = await supabase.from('confrontacoes').delete().in('id', auto.map((c: any) => c.id));
     if (r.error) throw r.error;
@@ -74,11 +73,11 @@ async function medirEGravar(id: string): Promise<Medicao | null> {
   }));
   const r = await supabase.from('confrontacoes').insert(lin);
   if (r.error) throw r.error;
-  /* a testada digitada fica; a vazia ou a que veio da medição de antes acompanha a poligonal */
+  /* a testada principal não se digita: é sempre a frente medida do acesso principal (pedido do Moises, 9/nov/2026) */
   const d: Record<string, unknown> = {};
   if (t.posicao_quadra !== med.posicao) d.posicao_quadra = med.posicao;
   const tAtual = t.testada_principal_m == null ? null : +t.testada_principal_m;
-  if ((tAtual == null || (antes != null && Math.abs(tAtual - +antes) < 0.01)) && tAtual !== pri.testada_m) d.testada_principal_m = pri.testada_m;
+  if (tAtual == null || Math.abs(tAtual - pri.testada_m) >= 0.01) d.testada_principal_m = pri.testada_m;
   if (Object.keys(d).length) {
     const s = await supabase.rpc('salvar_terreno', { p_terreno: id, p_versao: t.versao, p_dados: d });
     if (s.error) throw s.error;
