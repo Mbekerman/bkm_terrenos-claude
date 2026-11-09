@@ -10,6 +10,7 @@ import { empilhar } from '../components/Desfazer';
 import LotesGeo from './LotesGeo';
 import { trocarSqls } from './trocarSqls';
 import { GEO_BASE, type LoteSql } from './geosampa';
+import { atualizarFrentes } from './frentes';
 import { frentes, localDoPonto, nomeBase, nomeRef, nomeUnico, normRua, type Frente, type Local, type P } from './geo';
 
 // Endereço só pelo mapa (pedido do Moises, 6/nov/2026): o endereço não se digita nem se busca na ficha; muda quando a
@@ -31,6 +32,8 @@ const CAMPOS = 'id,codigo,nome,versao,empresa_id,logradouro,numero,bairro,cep,mu
 
 /** depois de salvar a poligonal ou o pino: a rua do terreno ainda encosta na poligonal? Se não, abre a pergunta */
 export async function verificarEndereco(id: string) {
+  /* frentes, esquina e testada acompanham a poligonal (São Paulo) */
+  atualizarFrentes(id).catch((e) => console.warn('frentes', e));
   try {
     const { data: t } = await supabase.from('terrenos').select(CAMPOS).eq('id', id).single();
     const poly = anel(t?.poligono_geojson);
@@ -114,7 +117,7 @@ export default function TrocarEndereco() {
 
   let corpo: React.ReactNode;
   if (c.passo === 'lotes') {
-    return <div className="scrim" data-rasc-livre onMouseDown={(e) => e.target === e.currentTarget && fechar()}><div className="dialog" role="dialog" aria-modal="true">
+    return <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && fechar()}><div className="dialog" role="dialog" aria-modal="true">
       <LotesGeo empresa={empresa.id} L={{ modo: 'ficha', ficha: { codigo: t.codigo, nome: nomeV, poly: c.poly, sqls: c.sqls || [], fechar, incluir: lotes } }} />
     </div></div>;
   } else if (c.passo === 'pergunta') {

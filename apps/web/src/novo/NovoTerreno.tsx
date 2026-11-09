@@ -10,6 +10,7 @@ import { classe, info, type Fase, type TerrenoMapa } from '../mapa/dados';
 import { abrirNovo, escolherKmz, fecharNovo, pedirDesenho, poligonal, atualizarNv, useNovo, voltarPasso1, novoEstado, listaSql, abrirLotes, type Sobre } from './estado';
 import LotesGeo from './LotesGeo';
 import { consultarTerreno } from './consulta';
+import { atualizarFrentes } from './frentes';
 import { GEO_BASE, digitos, loteDoSql, sqlFmt, sqlMascara, type LoteSql } from './geosampa';
 import { areaPoly, centroPoly, fixa, geojson, lerKmz, lotesUniao, m2, nomeBase, nomeUnico, normRua, uniaoPoly, type P } from './geo';
 
@@ -162,6 +163,8 @@ export default function NovoTerreno() {
           /* a consulta completa do GeoSampa em cada SQL e depois pela poligonal, em segundo plano (o andamento aparece na lista do mapa) */
           else consultarTerreno(t.id, nv.poly, (r.data || []).map((x) => ({ id: x.id as string, sql: x.inscricao as string })), (m, e) => toast(m, e));
         }
+        /* em São Paulo, frentes, esquina e testada medidas pela poligonal e pelos lotes da prefeitura, em segundo plano */
+        atualizarFrentes(t.id).catch((e) => console.warn('frentes', e));
         await qc.invalidateQueries({ queryKey: ['mapa'] });
         fecharNovo();
         toast(`${t.codigo} cadastrado.`);
@@ -177,7 +180,7 @@ export default function NovoTerreno() {
           <button type="button" className="btn sm text" onClick={voltarPasso1}>Trocar</button></div></div>
         {!busca && fr.length > 1 && <div className="field full nv-frentes"><span className="lbl-f" id="nv-fr-l">A poligonal tem {fr.length} frentes. Qual é o acesso principal?</span>
           <span className="nv-fr" role="radiogroup" aria-labelledby="nv-fr-l">{fr.map((f, i) => <label key={i} className="opt-radio"><input type="radio" name="nv-pri" value={i} checked={i === pri} onChange={() => escolherFrente(i)} />
-            {f.logradouro}{f.numero ? ', ' + f.numero : ''}{f.m ? <span className="faint">&nbsp;· {num(Math.round(f.m))} m</span> : null}</label>)}</span>
+            {f.logradouro}{f.numero ? ', ' + f.numero : ''}{f.m && !sp ? <span className="faint">&nbsp;· {num(Math.round(f.m))} m</span> : null}</label>)}</span>
           <span className="hint">O nome de referência sai dele; as outras entram em Confrontações como frente.</span></div>}
         <div className="field full"><label htmlFor="n-nome">Nome de referência *</label>
           <input id="n-nome" name="nome" required placeholder={nv.buscando ? 'Buscando a rua...' : 'Ex.: Saúde - Cupecê'} key={(busca ? 'b' : 'p') + pri} defaultValue={nome} onInput={(e) => atualizarNv({ nome: e.currentTarget.value })} /></div>

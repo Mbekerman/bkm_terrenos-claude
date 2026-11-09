@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
-import { useRascunho, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
+import { comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { empilhar } from '../components/Desfazer';
 import { Adorno } from '../lib/mascara';
 import { Ic } from '../components/Moldura';
@@ -43,7 +43,7 @@ export function useLotes(f: Ficha) {
       const [pt, m, i, c, b, cm, ci] = await Promise.all([
         supabase.from('terreno_partes').select('id,nome,pessoa_nome,telefone,email,documento,observacoes,ativa,criado_em').eq('terreno_id', f.id).eq('ativa', true).order('criado_em'),
         supabase.from('matriculas').select('id,numero,numero_norm,cartorio,area_registrada_m2,data_certidao').eq('terreno_id', f.id).order('numero_norm'),
-        supabase.from('inscricoes_municipais').select('id,inscricao,inscricao_norm,municipio_id,area_cadastral_m2,cib,zona_fiscal,origem,endereco_prefeitura,inscricao_valores(id,exercicio,revisao,vigente,valor_venal_terreno,valor_venal_construcao,valor_venal_imovel,situacao_iptu,iptu_valor_anual,iptu_parcelas,iptu_mensal_informado,fonte)').eq('terreno_id', f.id).order('inscricao_norm'),
+        supabase.from('inscricoes_municipais').select('id,inscricao,inscricao_norm,municipio_id,area_cadastral_m2,cib,zona_fiscal,origem,endereco_prefeitura,inscricao_valores(id,exercicio,revisao,vigente,valor_venal_terreno,valor_venal_construcao,valor_venal_imovel,situacao_iptu,iptu_valor_anual,iptu_parcelas,iptu_mensal_informado,fonte,data_verificacao)').eq('terreno_id', f.id).order('inscricao_norm'),
         supabase.from('consultas_lote').select('inscricao_id,consultado_em,base,lote,zonas,poligono_geojson,area_poligono_m2,camadas_com_erro').eq('terreno_id', f.id).order('consultado_em', { ascending: false }),
         f.t.municipio_id ? supabase.from('bases_cadastrais').select('codigo,municipio_id,nome,rotulo,mascara').eq('municipio_id', f.t.municipio_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
         supabase.from('matricula_partes').select('id,matricula_id,parte_id,percentual').eq('terreno_id', f.id),
@@ -195,7 +195,6 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
   const fref = useRef<HTMLFormElement>(null);
   const temP = !!(nv.nome.trim() || nv.tel.trim() || nv.email.trim() || nv.doc.trim() || nv.pct.trim());
   useGuardarRasc(kP, nv, temP);
-  const { aviso } = useRascunho(fref, !nv.id && temP, 'a pessoa', () => setNv(NV0));
   const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-pessoas', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); };
   const editar = (p: R) => setNv({ id: p.id, nome: p.pessoas?.nome_razao_social ?? '', tel: p.pessoas?.telefone ? fmtTel(p.pessoas.telefone) : '', email: p.pessoas?.email ?? '',
     doc: p.pessoas?.cpf_cnpj ? fmtDoc(p.pessoas.cpf_cnpj) : '', pct: p.percentual_participacao != null ? num(+p.percentual_participacao, 2) : '', papel: p.papel });
@@ -259,7 +258,6 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
                 : <LimparRasc chave={kP} mostrar={temP} limpar={() => setNv(NV0)} />}
               <button className="btn sm" disabled={grav}><Ic n={nv.id ? 'check' : 'add'} s={16} />{nv.id ? 'Salvar' : 'Incluir'}</button>
             </div>
-            {aviso}
           </form>
         )}
         {ps.length ? (
@@ -432,8 +430,6 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   useGuardarRasc(kS, sql, !!sql.trim());
   const [grav, setGrav] = useState(false);
   const mref = useRef<HTMLFormElement>(null), sref = useRef<HTMLFormElement>(null);
-  const { aviso: avisoM } = useRascunho(mref, !!(mat.num.trim() || mat.area.trim()), 'a matrícula', () => setMat({ num: '', cri: f.t.cartorio ?? '', area: '' }));
-  const { aviso: avisoS } = useRascunho(sref, !!sql.trim(), `o ${L.base?.rotulo ?? 'SQL'}`, () => setSql(''));
   const [lg, setLg] = useState(false);
   const [dup, setDup] = useState<{ oque: string; codigo: string; nome: string } | null>(null);
   const navegar = useNavigate();
@@ -832,7 +828,6 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                   <div className="field"><label htmlFor="em-a">Área registrada</label><Adorno t="m2"><input id="em-a" inputMode="decimal" value={mat.area} onChange={(e) => setMat({ ...mat, area: e.target.value })} /></Adorno></div>
                   <button className="btn sm"><Ic n="add" s={16} />Incluir</button>
                   <LimparRasc chave={kM} mostrar={!!(mat.num.trim() || mat.area.trim())} limpar={() => setMat({ num: '', cri: f.t.cartorio ?? '', area: '' })} />
-                  {avisoM}
                 </form>
               )}
               {pool('m')}
@@ -847,7 +842,6 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                   <button className="btn sm" disabled={grav}><Ic n="add" s={16} />{grav ? 'Incluindo…' : 'Incluir'}</button>
                   {sp && GEO_BASE && f.poly && <button type="button" className="btn sm text" onClick={() => setLg(true)}><Ic n="layers" s={16} />Escolher no mapa</button>}
                   <LimparRasc chave={kS} mostrar={!!sql.trim()} limpar={() => setSql('')} />
-                  {avisoS}
                 </form>
               )}
               {pool('s')}
@@ -906,7 +900,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         </Dialogo>
       )}
       {lg && f.poly && (
-        <div className="scrim" data-rasc-livre onMouseDown={(e) => e.target === e.currentTarget && setLg(false)}>
+        <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setLg(false)}>
           <div className="dialog" role="dialog" aria-modal="true">
             <LotesGeo empresa={empresa!.id} L={{ modo: 'ficha', ficha: { codigo: f.codigo, nome: f.nome, poly: f.poly, sqls: L.insc.map((i) => i.inscricao_norm), fechar: () => setLg(false), incluir: incluirMapa } }} />
           </div>
@@ -963,7 +957,6 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
   const iref = useRef<HTMLFormElement>(null);
   const temI = ['vt', 'vc', 'iptu', 'mensal', 'fonte'].some((c) => (iptu[c] ?? '').trim() !== '');
   useGuardarRasc(kI, iptu, temI);
-  const { aviso, pedir } = useRascunho(iref, temI, 'o IPTU', () => setIptu(IPTU0));
   useEffect(() => {
     if (!x) return;
     setV(tipo === 'm' ? { numero: x.numero, cartorio: x.cartorio ?? '', area_registrada_m2: x.area_registrada_m2 != null ? num(x.area_registrada_m2, 2) : '', data_certidao: x.data_certidao ?? '' }
@@ -1034,7 +1027,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
       <div className="hint">O percentual é opcional. Sem ele, o que falta para 100% se divide igual entre as partes sem percentual.</div>
     </div>
   );
-  const rodape = <><button className="btn text" onClick={() => pedir(fechar)}>Concluir</button>
+  const rodape = <><button className="btn text" onClick={fechar}>Concluir</button>
     {edita && c && cs.length > 1 && <button className="btn" onClick={() => ops.tirar(kc)}><Ic n="close" s={16} />Tirar da parte {nomeP(c.parte_id)}</button>}
     {edita && <button className="btn" onClick={() => ops.apagar(kc)}><Ic n="lixo" s={16} />{cs.length > 1 ? 'Excluir do terreno' : 'Excluir'}</button>}</>;
   if (tipo === 'm') {
@@ -1083,7 +1076,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
       return r ? <Adorno t="moeda">{i}</Adorno> : i; })()}</div>
   );
   return (
-    <Dialogo titulo={`${rot} ${x.inscricao}`} sub={x.endereco_prefeitura ?? undefined} onFechar={() => pedir(fechar)} rodape={rodape}>
+    <Dialogo titulo={`${rot} ${x.inscricao}`} sub={x.endereco_prefeitura ?? undefined} onFechar={fechar} rodape={rodape}>
       <div className="pt2-g">
         {lin('Área cadastral', edita ? <Adorno t="m2">{txt('area_cadastral_m2', { inputMode: 'decimal' }, lerNum)}</Adorno> : val(x.area_cadastral_m2 != null ? m2(x.area_cadastral_m2) : '—'))}
         {parte}
@@ -1125,7 +1118,6 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
           <div className="hint">Só vale o exercício mais recente: lançar o ano novo substitui o anterior.</div>
         </details>
       )}
-      {aviso}
     </Dialogo>
   );
 }

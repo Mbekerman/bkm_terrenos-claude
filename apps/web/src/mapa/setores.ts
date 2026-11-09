@@ -210,7 +210,9 @@ export function carregarDemo(): Promise<Demo> {
     .catch((e) => { console.warn('demografia', e); promDemo = null; throw e; });
   return promDemo;
 }
-export interface Perfil { pes: number; h: number; m: number; idade: { t: number; h: number; m: number }[]; morD: number; domD: number; tam: number[]; dppo: number; esp: number[]; vag: number; oca: number; idadeND: number; tamND: number; espND: number }
+export interface Perfil { pes: number; h: number; m: number; idade: { t: number; h: number; m: number }[]; morD: number; domD: number; tam: number[]; dppo: number; esp: number[]; vag: number; oca: number; idadeND: number; tamND: number; espND: number;
+  /** idade média estimada: soma de (ponto médio × pessoas) e as pessoas dos setores com os 11 cortes divulgados */
+  idSoma: number; idPes: number }
 const PERF = new WeakMap<Estat, Perfil | null>();
 export function perfilArea(r: Estat, c: any): Perfil | null {
   if (!SET || !DEMO) return null;
@@ -219,7 +221,8 @@ export function perfilArea(r: Estat, c: any): Perfil | null {
   if (D.n !== d.n || D.cd[0] !== d.cd[0] || D.cd[d.n - 1] !== d.cd[d.n - 1]) { PERF.set(r, null); return null; }
   const soma = (i: number, vs: string[]) => { const l = D.v[i]; let s = 0; for (const v of vs) { const x = l[D.col[v]]; if (x == null) return null; s += x; } return s; };
   const M = c.moradores;
-  const o: Perfil = { pes: 0, h: 0, m: 0, idade: c.idade.map(() => ({ t: 0, h: 0, m: 0 })), morD: 0, domD: 0, tam: new Array(c.tamanho.length + 1).fill(0), dppo: 0, esp: c.especie.map(() => 0), vag: 0, oca: 0, idadeND: 0, tamND: 0, espND: 0 };
+  const o: Perfil = { pes: 0, h: 0, m: 0, idade: c.idade.map(() => ({ t: 0, h: 0, m: 0 })), morD: 0, domD: 0, tam: new Array(c.tamanho.length + 1).fill(0), dppo: 0, esp: c.especie.map(() => 0), vag: 0, oca: 0, idadeND: 0, tamND: 0, espND: 0, idSoma: 0, idPes: 0 };
+  const IM: [string, number][] = c.idadeMedia?.faixas ?? [];
   for (const [i, fr] of r.frs) {
     o.pes += d.pop[i] * fr;
     const h = soma(i, [c.sexo.homens]), m = soma(i, [c.sexo.mulheres]); if (h != null && m != null) { o.h += h * fr; o.m += m * fr; }
@@ -232,6 +235,11 @@ export function perfilArea(r: Estat, c: any): Perfil | null {
       else ts.forEach((x: number | null, k: number) => { if (x != null) o.tam[k] += x * fr; });
     }
     c.especie.forEach((e: any, k: number) => { const x = soma(i, [e.var]); if (x != null) o.esp[k] += x * fr; });
+    if (IM.length) {
+      let sp = 0, sm = 0, ok = true;
+      for (const [v, mid] of IM) { const x = soma(i, [v]); if (x == null) { ok = false; break; } sp += x; sm += x * mid; }
+      if (ok) { o.idPes += sp * fr; o.idSoma += sm * fr; }
+    }
     const vg = soma(i, [c.vagos]), oc = soma(i, [c.usoOcasional]); if (vg != null) o.vag += vg * fr; if (oc != null) o.oca += oc * fr;
   }
   o.idadeND = Math.max(0, o.pes - o.idade.reduce((a, g) => a + g.t, 0));

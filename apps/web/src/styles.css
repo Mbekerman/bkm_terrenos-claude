@@ -2184,6 +2184,10 @@ body.vb-aberto { overflow: hidden }
 .lz-sem{padding:4px 0}
 .lz-cam{border-top:1px solid var(--linha);padding-top:10px;margin-top:4px}
 .lz-cam .geo-toca{margin:0}
+.lz-naotoca{margin-top:12px}
+.lz-pan{margin-top:16px}
+.lz-pan .geo-toca{margin-top:12px}
+.lz-lotes{margin-top:16px;border-top:1px solid var(--linha);padding-top:4px}
 @media (max-width:600px){.lz-lote{padding:10px 12px}}
 .lz-exc{padding:8px 0}
 .lz-fontes{margin-top:12px}
@@ -4446,6 +4450,7 @@ body.fab-min .fab .fab-t { max-width: 0; opacity: 0 }
 /* ===== Ficha em abas (decisão do Moisés, 3/nov/2026): botões das seções sempre visíveis no topo, como a janela do cartão de tarefa ===== */
 .fi-head h1 { margin: 2px 0 0 }
 .fi-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 8px; color: var(--m-on-surface-var, #444746); font-size: 14px; line-height: 20px }
+.fi-meta:first-child { margin-top: 0 }
 .fi-meta .fi-sep { color: var(--texto-suave) } .fi-meta .chip { margin: 0 }
 .fi-meta .fi-temp { display: inline-flex; align-items: center; gap: 6px }
 .fi-meta .fi-temp .temp { margin: 0 }
@@ -5035,4 +5040,61 @@ html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; 
 
 /* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
-.scrim.rasc-av { z-index: 70 }
+
+/* Frentes do terreno, em Áreas e dimensões (pedido do Moises, 8/nov/2026) */
+.fr-l { list-style: none; margin: 2px 0 0; padding: 0; max-width: 560px }
+.fr-l li { display: flex; justify-content: space-between; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--m-outline-var, #e3e3e3); font-size: 15px; line-height: 22px }
+.fr-l li:last-child { border-bottom: 0 }
+.fr-l .num { font-variant-numeric: tabular-nums; white-space: nowrap }
+
+/* ---------- marcar pessoas com @ (participantes da reunião; components/Marcar.tsx, 9/nov/2026) ---------- */
+.mkp { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 44px; padding: 5px 10px; border: 1px solid var(--m-outline, var(--borda-controle)); border-radius: var(--raio-sm); background: var(--superficie); cursor: text }
+.mkp.foco { outline: 2px solid var(--m-primary, var(--foco)); outline-offset: -1px; border-color: transparent }
+.field .mkp input, .field .mkp input:focus { flex: 1 1 120px; min-width: 120px; min-height: 30px !important; height: 30px; border: 0 !important; outline: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; font-size: 16px }
+.mk-chip { display: inline-flex; align-items: center; gap: 2px; height: 28px; padding: 0 2px 0 10px; border-radius: 8px; font-size: 14px; background: var(--m-surface-cont, #f0f4f9); border: 1px solid var(--m-outline-var, #c4c7c5); color: var(--m-on-surface, #1f1f1f); white-space: nowrap; max-width: 100% }
+.mk-chip.bkm { background: var(--m-sec-cont, #c2e7ff); border-color: transparent; color: #001d35 }
+.mk-chip button { width: 24px; height: 24px; border: 0; border-radius: 50%; background: none; color: inherit; font-size: 16px; line-height: 1; cursor: pointer }
+.mk-chip button:hover { background: rgba(31,31,31,.08) }
+.mk-txt { position: relative }
+.mk-pop { position: absolute; left: 0; right: 0; top: calc(100% + 4px); min-width: 240px; max-width: 520px }
+.mk-av { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; background: #0b57d0; color: #fff }
+.mk-av.fora { background: #e9eef6; color: #444746 }
+.reu-ed { cursor: pointer }
+.reu-ed:hover { background: var(--m-surface-cont, #f0f4f9) }
+.reu-ed:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
+.reu-acts .btn[href] { text-decoration: none }
+html[data-tema="escuro"] .mkp { background: #282a2c; border-color: #8e918f }
+html[data-tema="escuro"] .mk-chip { background: #1e1f20; border-color: #444746; color: #e3e3e3 }
+html[data-tema="escuro"] .mk-chip.bkm { background: #004a77; color: #c2e7ff }
+html[data-tema="escuro"] .mk-av.fora { background: #333537; color: #c4c7c5 }
+html[data-tema="escuro"] .reu-ed:hover { background: #282a2c }
+.reu-st { display: inline-flex; align-items: center; gap: 4px }
+.reu-st .iconbtn { margin: -6px -8px -6px 0 }
+/* gaveta da ficha sem repetir o cabeçalho (pedido do Moisés, 9/nov/2026): o nome da fase em cima da linha do tempo; fase ·
+   etapa · subetapa só onde a linha do tempo some; a temperatura no cabeçalho da gaveta, ao lado do ícone "Abrir página" */
+.tl-fase { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--m-on-var, #444746); margin: 0 0 8px }
+@media (min-width: 768px) { .tgav .fi-so-cel { display: none !important } }
+.tgav-temp { flex: none } .tgav-temp .temp { margin: 0 }
+@media (max-width: 520px) { .tgav-temp .tl { display: none } }
+
+/* Parâmetros urbanísticos na aba Terreno (9/nov/2026): um quadro com três quadros dentro (Índices, Restrições, Histórico de uso) */
+.qd-filhos { display: flex; flex-direction: column; gap: 12px; padding: 16px var(--q-px, 24px) }
+.qd-filhos > .muted { padding: 8px 0 }
+:root:not(#_) .qd-filhos > section.sec.sec.sec { margin: 0 !important; box-shadow: none !important; border: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 12px !important; background: var(--m-card, #fff) !important }
+:root[data-tema="escuro"]:not(#_) .qd-filhos > section.sec.sec.sec { border-color: #2d2f31 !important }
+@media (max-width: 599px) { .qd-filhos { padding: 12px 8px } }
+
+/* Detalhes da contaminação (popup; 9/nov/2026) */
+.dialog:has(.ct-b) { max-width: 780px; width: calc(100vw - 32px) }
+.ct-b { display: flex; flex-direction: column; gap: 16px; padding: 0 24px 24px; max-height: calc(100vh - 160px); overflow: auto }
+.ct-mapa { margin: 0 }
+.ct-mapa svg { width: 100%; height: auto; display: block; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px }
+.ct-carr { padding: 48px 0; text-align: center }
+.ct-leg { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; margin-top: 6px; color: var(--m-on-var, #444746) }
+.ct-leg i { display: inline-block; width: 14px; height: 10px; margin-right: 6px; vertical-align: -1px; border-radius: 2px }
+.ct-leg .ct-t { background: rgba(11,87,208,.12); border: 2px solid #0b57d0 }
+.ct-leg .ct-c { background: rgba(179,38,30,.28); border: 2px solid #b3261e }
+.ct-r h3 { font-size: 15px; font-weight: 500; margin: 0 0 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px }
+.ct-n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #b3261e; color: #fff; font-size: 12px; font-weight: 600; margin-right: 6px }
+.ct-ver { font-size: 13px; margin-left: 4px; white-space: nowrap }
+@media (max-width: 599px) { .ct-b { padding: 0 16px 16px } }

@@ -187,19 +187,26 @@ async function carregarSeparado(empresa: string, codigo: string): Promise<Ficha 
 
 /** completude: campos que importam para decidir a compra (proto.js › completude); [rótulo, aba] dos que faltam */
 /** [rótulo, aba, seção, campo]: a seção e o campo levam direto ao campo em edição (pedido do Moisés, 5/nov/2026) */
+/** terreno em São Paulo (GeoSampa: área cadastral pela soma dos SQLs, frentes pelos lotes) */
+export const ehSP = (f: { municipio?: string | null; uf?: string | null }) => f.municipio === 'São Paulo' && f.uf === 'SP';
 export type Falta = [string, string, string?, string?];
+/** a aba Infraestrutura já foi portada? enquanto não, a visita técnica não entra na completude */
+export const INFRA_PORTADA = false;
 export function completude(f: Ficha): { pct: number; faltam: Falta[] } {
   const c: [boolean, ...Falta][] = [
     [!!(f.logradouro && f.numero && f.bairro), 'Endereço completo', 'terreno', 'loc', f.logradouro && f.bairro ? 'numero' : 'end-mapa'],
     [!!f.zona, 'Zona', 'terreno', 'loc', 'zona'],
     [f.lat != null, 'Ponto no mapa', 'terreno', 'loc', 'end-mapa'],
     [f.area != null, 'Área adotada', 'terreno', 'areas', 'area'],
-    [f.testada != null, 'Testada', 'terreno', 'areas', 'testada_principal_m'],
+    /* em São Paulo a testada vem da medição pela poligonal (GeoSampa); nas outras cidades, digitada */
+    [f.testada != null, 'Testada', 'terreno', 'areas', ehSP(f) ? 'frentes' : 'testada_principal_m'],
     [f.qMat > 0, 'Matrícula', 'terreno', 'lotes', 'em-n'],
     [f.qInsc > 0, 'Inscrição e IPTU', 'terreno', 'lotes', 'es-sql'],
     [f.temProprietario, 'Proprietário', 'terreno', 'partes-cad', 'pp-ed'],
-    [!!f.zonas, 'Zoneamento', 'parametros', 'analise', 'an-l'],
-    [f.infraNV === 0, 'Visita técnica', 'infra'],
+    [!!f.zonas, 'Zoneamento', 'terreno', 'analise', 'an-l'],
+    /* Visita técnica fica de fora enquanto a aba Infraestrutura não existe no sistema real (só no protótipo):
+       contá-la deixava a ficha presa abaixo de 100% sem ter onde preencher. Volta com o porte da aba (INFRA_PORTADA). */
+    ...(INFRA_PORTADA ? [[f.infraNV === 0, 'Visita técnica', 'infra'] as [boolean, ...Falta]] : []),
     [!!f.valorPedido, 'Valor pedido', 'comercial', 'cond', 'valor'],
     [!!f.temp, 'Temperatura', 'geral', 'temp'],
   ];

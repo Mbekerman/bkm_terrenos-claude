@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -268,10 +268,18 @@ export function usePedido(secs: string[], fn: (p: PedidoCampo) => void) {
     return () => window.removeEventListener('ficha-campo', at);
   }, [chave]);
 }
+/** quadros que moram dentro de outro quadro */
+const QD_PAI: Record<string, string> = { indices: 'param', rest: 'param', histuso: 'param' };
 /** abre o quadro da aba e avisa os quadros na tela */
 export function abrirQuadroJa(aba: string, id: string) { abrirQuadro(aba, id); window.dispatchEvent(new Event('ficha-quadro')); }
 /** abre o quadro da seção (sem mexer na escolha das outras) */
-export function abrirQuadro(aba: string, id: string) { (QD[aba] || (QD[aba] = new Set())).add(id); }
+export function abrirQuadro(aba: string, id: string) {
+  const L = lojaAtiva?.mapa ?? QD, st = L[aba] || (L[aba] = new Set());
+  st.add(id);
+  /* quadro dentro de outro (Parâmetros urbanísticos da aba Terreno): abre também o de fora */
+  if (QD_PAI[id]) st.add(QD_PAI[id]);
+  lojaAtiva?.mudou();
+}
 /** rola até o campo ficar na "altura dos olhos": o primeiro item visível logo abaixo do que fica preso no alto
     (barra das abas e título do quadro); no fim da aba, sem folga para rolar, a aba ganha um respiro embaixo, que sai
     quando a pessoa rola de volta para cima (pedido do Moisés, 6/nov/2026) */
@@ -420,11 +428,19 @@ export async function municipioId(m: EndGoogle | null, f: Ficha): Promise<number
 /** quadro das abas da ficha que abre e fecha pela seta do título; nasce fechado, menos o primeiro da aba; a escolha
     vale na sessão, por aba (proto_ui.js › uiQuadros) */
 const QD: Record<string, Set<string>> = {};
+/** quadros guardados à parte, por terreno: a gaveta do Mapa dá a sua (lembrar.ts), que grava a cada mudança; sem ela,
+    vale o QD da sessão. abrirQuadro (Logs, ações, "ir ao campo") mexe na loja da gaveta aberta. */
+export interface LojaQd { mapa: Record<string, Set<string>>; mudou: () => void }
+export const LojaQdCtx = createContext<LojaQd | null>(null);
+let lojaAtiva: LojaQd | null = null;
+/** a gaveta marca a loja dela como a ativa enquanto está aberta */
+export function ativarLojaQd(l: LojaQd | null) { lojaAtiva = l; }
 export function Quadro({ aba, id, primeiro, titulo, acoes, aberto: forca, children, form }: {
   aba: string; id: string; primeiro?: boolean; titulo: ReactNode; acoes?: ReactNode; aberto?: boolean; children: ReactNode;
   form?: (corpo: ReactNode) => ReactNode;
 }) {
-  const st = QD[aba] || (QD[aba] = new Set());
+  const loja = useContext(LojaQdCtx), L = loja?.mapa ?? QD;
+  const st = L[aba] || (L[aba] = new Set());
   const [, re] = useState(0);
   /* o painel de Logs abre o quadro de fora (abrirQuadro + evento 'ficha-quadro') */
   useEffect(() => { const f = () => re((x) => x + 1); window.addEventListener('ficha-quadro', f); return () => window.removeEventListener('ficha-quadro', f); }, []);
@@ -443,7 +459,7 @@ export function Quadro({ aba, id, primeiro, titulo, acoes, aberto: forca, childr
   });
   if (primeiro && !st.has('§' + id)) { st.add('§' + id); st.add(id); }
   const ab = !!forca || st.has(id);
-  const alternar = () => { if (ab) st.delete(id); else st.add(id); re((x) => x + 1); };
+  const alternar = () => { if (ab) st.delete(id); else st.add(id); loja?.mudou(); re((x) => x + 1); };
   const cab = (
     <div className="sec-h"><h2><button type="button" className="qd-tg" aria-expanded={ab} onClick={alternar}>
       <svg className="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>

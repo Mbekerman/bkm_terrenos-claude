@@ -1,14 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { LapisMapa } from '../novo/TrocarEndereco';
+import { atualizarFrentes, FONTE_FRENTES } from '../novo/frentes';
+import { GEO_BASE } from '../novo/geosampa';
 import { reais as brl, m2 } from '../lib/format';
 import { Adorno, metros } from '../lib/mascara';
-import type { Ficha, R } from './dados';
+import { ehSP, type Ficha, type R } from './dados';
 import PartesLotes from './Partes';
+import SecParametros from './Parametros';
+import SecIptu from './Iptu';
 import {
   CampoVivo, fmtCampo, lerNum, num, OPT, Quadro, SECOES, useListas, useSalvar, useVivo, valoresDe,
   type VivoProps, abrirQuadro, focar, tomarPedido,
@@ -120,6 +125,7 @@ function AreaVivo({ f, k, l }: { f: Ficha; k: string; l: string }) {
   });
   return <Adorno t="m2"><input className="av inl" id={`f-${k}`} inputMode="decimal" placeholder="—" aria-label={`Área ${l.toLowerCase()}`} {...props} /></Adorno>;
 }
+/** fora de São Paulo a testada se digita (não há os lotes da prefeitura para medir; pedido do Moises, 9/nov/2026) */
 function TestadaVivo({ f }: { f: Ficha }) {
   const salvarT = useSalvar(f), toast = useToast();
   const { props } = useVivo(metros(f.t.testada_principal_m), (v) => {
@@ -129,6 +135,62 @@ function TestadaVivo({ f }: { f: Ficha }) {
   });
   return <div className="inl-c"><label className="k" htmlFor="f-testada_principal_m">Testada principal</label>
     <Adorno t="m"><input id="f-testada_principal_m" inputMode="decimal" data-fmt="m" placeholder="Não informada" {...props} /></Adorno></div>;
+}
+
+/* ---------- Frentes (pedido do Moises, 8/nov/2026) ----------
+   O terreno inteiro sai da poligonal: as ruas que ela encosta, a testada em cada uma e se é esquina (novo/frentes.ts).
+   Medidas sozinhas em São Paulo ao abrir a ficha sem medição e a cada poligonal nova. */
+const TENTADO = new Set<string>();   // terreno|poligonal já tentados nesta sessão (fora de SP não há o que medir)
+function useFrentes(f: Ficha) {
+  const { edita } = useSessao();
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ['ficha-frentes', f.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('confrontacoes').select('id,ordem,comprimento_m,confrontante,fonte,observacoes').eq('terreno_id', f.id).eq('tipo', 'frente').order('ordem');
+      if (error) throw error;
+      return (data ?? []) as R[];
+    },
+  });
+  const [medindo, setMedindo] = useState(false);
+  const medir = () => { setMedindo(true); atualizarFrentes(f.id).catch((e) => console.warn('frentes', e)).finally(() => setMedindo(false)); };
+  /* depois de medir (aqui, no mapa ou no cadastro), a lista e a ficha se refazem */
+  useEffect(() => {
+    const h = (e: Event) => { if ((e as CustomEvent).detail === f.id) { qc.invalidateQueries({ queryKey: ['ficha-frentes', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); } };
+    window.addEventListener('frentes-medidas', h);
+    return () => window.removeEventListener('frentes-medidas', h);
+  }, [f.id, qc]);
+  /* sem medição ainda, ou com a poligonal trocada aqui na ficha (SQLs, desenho), mede de novo */
+  const pol = JSON.stringify(f.poly ?? null), antes = useRef<string | null>(null);
+  useEffect(() => {
+    if (!edita || !ehSP(f) || !GEO_BASE || !f.poly || !q.data) return;
+    const mudou = antes.current != null && antes.current !== pol;
+    antes.current = pol;
+    const k = f.id + '|' + pol;
+    if ((mudou || !q.data.some((c) => c.fonte === FONTE_FRENTES)) && !TENTADO.has(k)) { TENTADO.add(k); medir(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pol, q.data, edita]);
+  return { lista: (q.data ?? []).filter((c) => c.confrontante), medindo };
+}
+
+function Frentes({ f }: { f: Ficha }) {
+  const { lista, medindo } = useFrentes(f);
+  const t = f.t, pos = OPT.posicao[t.posicao_quadra] ?? null;
+  const medidas = lista.some((c) => c.fonte === FONTE_FRENTES);
+  return (
+    <div className="frentes" id="frentes">
+      <div className="kvg" style={{ marginTop: 14 }}>
+        <div><div className="k">Posição na quadra</div>{pos && t.posicao_quadra !== 'nao_informado' ? <div className="v">{pos}</div> : <span className="v ni">{medindo ? 'Medindo...' : 'Não informada'}</span>}</div>
+        <div className="full"><div className="k">Frentes{lista.length > 1 ? ` (${lista.length})` : ''}</div>
+          {lista.length ? <ul className="fr-l">{lista.map((c) => (
+            <li key={c.id}><span>{c.confrontante}{c.observacoes === 'Acesso principal' ? <span className="faint"> · acesso principal</span> : null}</span>
+              <span className="num">{c.comprimento_m != null ? `${metros(c.comprimento_m)} m` : '—'}</span></li>))}</ul>
+            : <span className="v ni">{medindo ? 'Medindo pela poligonal...' : 'Não informadas'}</span>}
+        </div>
+      </div>
+      {medidas && <div className="hint" style={{ marginTop: 8 }}>Medidas pela poligonal sobre os lotes e as ruas da prefeitura (GeoSampa). Na esquina, o canto conta para as duas ruas.</div>}
+    </div>
+  );
 }
 
 function SecAreas({ f }: { f: Ficha }) {
@@ -146,6 +208,15 @@ function SecAreas({ f }: { f: Ficha }) {
   const salvarT = useSalvar(f);
   const [grav, setGrav] = useState(false);
   const fonte = t.fonte_area_adotada;
+  /* em São Paulo a cadastral não se digita: é a soma das áreas dos SQLs (GeoSampa); uma digitada antes volta para a soma
+     (pedido do Moises, 9/nov/2026; apagar a cadastral faz o banco refazer a soma) */
+  const sp = ehSP(f), voltou = useRef('');
+  useEffect(() => {
+    if (!edita || !sp || t.area_cadastral_origem !== 'digitada' || voltou.current === f.id) return;
+    voltou.current = f.id;
+    salvarT({ area_cadastral_m2: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [edita, sp, t.area_cadastral_origem, f.id]);
   const escolher = async (fo: string) => {
     if (grav || fo === t.fonte_area_adotada) return;
     const d = dadosArea(f, { ...valoresArea(t), fonte_area_adotada: fo });
@@ -161,13 +232,13 @@ function SecAreas({ f }: { f: Ficha }) {
           return (
             <div key={fo} className={`area${sel ? ' sel' : ''}${pode ? ' pode' : ''}`} id={`area-${fo}`}
               role={pode ? 'radio' : undefined} aria-checked={pode ? sel : undefined} tabIndex={pode ? 0 : undefined}
-              title={pode && !sel ? 'Usar como área adotada' : fo === 'poligonal' ? 'Calculada pelo desenho; muda quando a poligonal é ajustada' : undefined}
+              title={pode && !sel ? 'Usar como área adotada' : fo === 'poligonal' ? 'Calculada pelo desenho; muda quando a poligonal é ajustada' : sp && fo === 'cadastral' ? 'Soma das áreas cadastrais dos SQLs (GeoSampa)' : undefined}
               onClick={(ev) => { if (pode && !(ev.target as HTMLElement).closest('input')) escolher(fo); }}
               onKeyDown={(ev) => { if (pode && (ev.key === 'Enter' || ev.key === ' ') && !(ev.target as HTMLElement).closest('input')) { ev.preventDefault(); escolher(fo); } }}>
               <div className="al">{l} <span className="faint">· {fo === 'cadastral' && v != null ? (t.area_cadastral_origem === 'digitada' ? 'digitada' : 'soma dos SQLs') : s}</span></div>
-              {edita && fo !== 'poligonal'
+              {edita && fo !== 'poligonal' && !(sp && fo === 'cadastral')
                 ? <AreaVivo f={f} k={k} l={l} />
-                : <div className="av">{v == null ? <span className="faint" style={{ fontSize: 14, fontStyle: 'italic' }}>{fo === 'poligonal' ? 'Sem poligonal' : 'Não informada'}</span> : m2(v)}</div>}
+                : <div className="av">{v == null ? <span className="faint" style={{ fontSize: 14, fontStyle: 'italic' }}>{fo === 'poligonal' ? 'Sem poligonal' : sp && fo === 'cadastral' ? 'Sem área nos SQLs' : 'Não informada'}</span> : m2(v)}</div>}
               <div className="as">{sel ? <><Ic n="check" s={14} />Área adotada</> : '\u00a0'}</div>
             </div>
           );
@@ -175,10 +246,12 @@ function SecAreas({ f }: { f: Ficha }) {
         {div}
         <div className={`kvg${edita ? ' kvg-ed vivo' : ''}`} style={{ marginTop: 14 }}>
           <div><div className="k">Área adotada</div>{fonte ? <div className="v">{OPT.fonteArea[fonte]?.split(' (')[0]}</div> : <span className="v ni">{edita ? 'Clique na área que vale' : 'Não informada'}</span>}</div>
-          {edita ? <TestadaVivo f={f} />
+          {/* em São Paulo a testada não se digita: é a frente do acesso principal medida pela poligonal (pedido do Moises, 9/nov/2026) */}
+          {edita && !sp ? <TestadaVivo f={f} />
             : <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{metros(t.testada_principal_m)} m</div>}</div>}
           <div><div className="k">Valor pedido por m²</div>{ad && f.valorPedido ? <div className="v">{brl(f.valorPedido / ad)}</div> : ni}</div>
         </div>
+        <Frentes f={f} />
       </div>
     </Quadro>
   );
@@ -211,8 +284,10 @@ export default function AbaTerreno({ f }: { f: Ficha }) {
     <div className="stack">
       <SecGenerica f={f} id="ident" primeiro />
       <SecGenerica f={f} id="loc" />
+      <SecParametros f={f} />
       <PartesLotes f={f} />
       <SecAreas f={f} />
+      <SecIptu f={f} />
     </div>
   );
 }
