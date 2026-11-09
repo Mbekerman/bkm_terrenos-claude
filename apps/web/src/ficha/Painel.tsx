@@ -114,7 +114,6 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       for (const k of mudou(x, d)) {
         if (SEM_LOG.has(k)) continue;
         if (k === 'area_adotada_m2') {
-          if (d?.fonte_area_adotada === 'estimativa' && x?.fonte_area_adotada === 'estimativa') { linhas.push(`Área estimada: ${valTxt('area_documental_m2', x?.[k], c)} → ${valTxt('area_documental_m2', d?.[k], c)}`); secs.add('areas'); q0 ??= 'areas'; }
           continue;
         }
         if (k === 'historico_uso') { linhas.push('Histórico de uso alterado'); secs.add('histuso'); q0 ??= 'histuso'; continue; }

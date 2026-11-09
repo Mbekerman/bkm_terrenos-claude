@@ -115,7 +115,7 @@ Cada linha tem uma **seta** que leva à aba onde o dado mora.
 | **Endereço** | Logradouro, número, bairro | Lápis **"Editar no mapa"**: abre a página Mapa com a poligonal em edição (ver [05](05-ficha-terreno.md#endereço-e-localização)). |
 | **Município e região** | Município · UF · Zona | O seletor de **Zona** (Norte, Sul, Leste, Oeste, Centro...) se edita ali mesmo. Em São Paulo a zona vem sozinha do GeoSampa (região oficial da subprefeitura); trocada à mão, fica a sua. |
 | **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Terreno › Parâmetros urbanísticos (a seta abre a seção em Índices urbanísticos). |
-| **Área adotada** | Área e a fonte | O seletor de **fonte** troca a área adotada ali mesmo. |
+| **Área adotada** | Área e a fonte | O seletor de **fonte** troca a área adotada ali mesmo (a Cadastral aparece sempre; as outras, quando preenchidas). |
 | **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido | **Ainda não disponível**: ficam vazias até a viabilidade chegar ao sistema real. |
 | **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Entorno). |
 | **Valor pedido na entrada** | Valor da **primeira** oferta, com a data | Aba Comercial. |
