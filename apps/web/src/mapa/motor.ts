@@ -397,12 +397,15 @@ export class Motor {
   }
   /** rota (Traçar rota até aqui): o destino aparece logo; a linha e a origem quando a rota chega */
   rotaLimpar() { this.rt.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.rt = []; }
-  rota(d: { lat: number; lng: number }, o?: { lat: number; lng: number } | null, path?: { lat: number; lng: number }[] | null, pe?: boolean) {
+  /** soltar: a saída se arrasta (mãozinha) e, solta, devolve o ponto novo; enquadrar = false mantém a vista (depois do arraste) */
+  rota(d: { lat: number; lng: number }, o?: { lat: number; lng: number } | null, path?: { lat: number; lng: number }[] | null, pe?: boolean,
+    soltar?: (p: { lat: number; lng: number }) => void, enquadrar = true) {
     const { google } = window;
     this.rotaLimpar();
-    const mk = (p: { lat: number; lng: number }, cls: string, titulo: string) => {
+    const mk = (p: { lat: number; lng: number }, cls: string, titulo: string, arrasta?: boolean) => {
       const el = document.createElement('div'); el.className = cls;
-      return new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(p.lat, p.lng), content: el, title: titulo, gmpClickable: false, zIndex: 950 });
+      return new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(p.lat, p.lng), content: el, title: titulo,
+        gmpClickable: false, gmpDraggable: !!arrasta, zIndex: arrasta ? 960 : 950 });
     };
     if (path?.length) {
       /* a pé, pontilhada, como no Google Maps; os outros modos, linha cheia com contorno */
@@ -413,9 +416,17 @@ export class Motor {
         this.rt.push(new google.maps.Polyline({ map: this.mapa, path, strokeColor: '#1a73e8', strokeWeight: 5, strokeOpacity: 1, clickable: false, zIndex: 40 }));
       }
     }
-    if (o) this.rt.push(mk(o, 'rt-o', 'Origem'));
     this.rt.push(mk(d, 'rt-d', 'Destino'));
-    if (path?.length) {
+    if (o) {
+      const m = mk(o, 'rt-o', soltar ? 'Saída: arraste para mudar' : 'Saída', !!soltar);
+      if (soltar) m.addListener('dragend', () => {
+        const ps: any = m.position;
+        const lat = typeof ps?.lat === 'function' ? ps.lat() : ps?.lat, lng = typeof ps?.lng === 'function' ? ps.lng() : ps?.lng;
+        if (typeof lat === 'number' && typeof lng === 'number') soltar({ lat, lng });
+      });
+      this.rt.push(m);
+    }
+    if (path?.length && enquadrar) {
       const b = new google.maps.LatLngBounds();
       path.forEach((p) => b.extend(p));
       this.mapa.fitBounds(b, { top: 80, left: 400, right: 80, bottom: 60 });

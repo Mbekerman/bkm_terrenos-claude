@@ -104,19 +104,32 @@ export function QuadroRota({ motor, destino, fechar, pegar }: { motor: Motor | n
   useEffect(() => { motor?.rota(destino); return () => motor?.rotaLimpar(); }, [motor, destino]);
   useEffect(() => { inp.current?.focus(); }, []);
 
+  /* a saída arrastada no mapa (pedido do Moises, 9/nov/2026): vale o endereço de onde ela foi solta, e a rota se refaz
+     sem reenquadrar o mapa, para a pessoa continuar ajustando no mesmo lugar */
+  const arrastou = useRef(false);
+  const soltar = (p: PontoRota) => {
+    arrastou.current = true;
+    const prov = 'Ponto no mapa';
+    setNoMapa(false); setLista(false); setSug(null);
+    setQ(prov); atual.current = prov;
+    setOrigem({ lat: p.lat, lng: p.lng, nome: prov });
+    nomeDoPonto(p).then((n) => { if (atual.current === prov) { setQ(n); atual.current = n; setOrigem((o) => (o && o.lat === p.lat && o.lng === p.lng ? { ...o, nome: n } : o)); } });
+  };
+
   /* cada origem ou modo novo refaz a rota */
   useEffect(() => {
     if (!origem || !motor) return;
     let vivo = true;
     setCalc(true); setMsg(null);
-    const o = origem;
+    const o = origem, enquadrar = !arrastou.current;
+    arrastou.current = false;
     calcularRota(o, destino, modo).then((r) => {
       if (!vivo) return;
-      setRes(r); motor.rota(destino, o, r.path, modo === 'WALK');
+      setRes(r); motor.rota(destino, o, r.path, modo === 'WALK', soltar, enquadrar);
     }).catch((e) => {
       if (!vivo) return;
       console.warn('Rota', e);
-      setRes(null); motor.rota(destino, o);
+      setRes(null); motor.rota(destino, o, null, false, soltar);
       const de = MODOS.find((x) => x.k === modo)!.de;
       setMsg(e instanceof SemRota
         ? { t: `O Google não tem rota ${de} entre esses dois pontos.`, erro: true }
