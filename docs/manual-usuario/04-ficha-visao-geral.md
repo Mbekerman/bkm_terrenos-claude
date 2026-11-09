@@ -100,7 +100,7 @@ Duas metades: **à esquerda o mapa, à direita o Resumo**. Em tela estreita, o m
 
 - Mostra a poligonal em azul e o pino.
 - A **roda do mouse rola a página**; **Shift + roda** dá zoom.
-- **Dois cliques sobre a poligonal** começam a edição ali mesmo: arraste os pontos; clique direito ou dois cliques num ponto abrem o menu do ponto; **clique no mini-mapa fora da poligonal, dois cliques ou Enter salvam**; clique fora do mini-mapa ou **Esc** cancelam; Ctrl+Z desfaz.
+- **Dois cliques em qualquer ponto dentro da poligonal** (não só sobre a linha) começam a edição ali mesmo: arraste os pontos; clique direito ou dois cliques num ponto abrem o menu do ponto; **clique no mini-mapa fora da poligonal, dois cliques ou Enter salvam**; clique fora do mini-mapa ou **Esc** cancelam; Ctrl+Z desfaz.
 - **Dois cliques no resto do mapa** abrem a página Mapa centrada no ponto, com o terreno selecionado.
 - Sem poligonal, aparece "Sem localização."
 
