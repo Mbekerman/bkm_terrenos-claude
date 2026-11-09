@@ -73,6 +73,9 @@ create table app.terrenos (
   bairro                text,
   municipio_id          uuid not null references app.municipios(id),
   zona                  text check (zona in ('leste','oeste','norte','sul','centro','sudeste','sudoeste','nordeste','noroeste')),  -- mesma lista para qualquer cidade
+  -- de onde veio a zona (9/nov/2026): em São Paulo, 'prefeitura' = a região oficial (nm_regiao_05) da subprefeitura no
+  -- GeoSampa, pela poligonal ou pelo pino; o usuário troca e vira 'digitado', que o GeoSampa nunca sobrescreve
+  zona_origem           text check (zona_origem in ('prefeitura','digitado')),
   eixo_comercial_id     uuid references app.eixos_comerciais(id),
   referencia_localizacao text,
   -- cartório de registro de imóveis da circunscrição (3/nov/2026): vem da prefeitura (em São Paulo, a camada

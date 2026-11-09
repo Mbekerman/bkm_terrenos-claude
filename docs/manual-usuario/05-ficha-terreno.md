@@ -37,7 +37,7 @@ Campos que **se editam** no lugar:
 |---|---|
 | **Número** | Só informativo: não mexe no pino nem na poligonal. Se for diferente dos números de porta dos SQLs do terreno, aparece **"Número diferente do cadastro da prefeitura"** ("O número informado diverge dos números cadastrados no município para os lotes selecionados"), com **Cancelar** e **"Alterar mesmo assim"**. |
 | **Complemento** | Texto livre. |
-| **Zona** | Norte, Sul, Leste, Oeste, Centro, Sudeste, Sudoeste, Nordeste, Noroeste. |
+| **Zona** | Norte, Sul, Leste, Oeste, Centro, Sudeste, Sudoeste, Nordeste, Noroeste. Em São Paulo vem sozinha do GeoSampa ao abrir a ficha e aparece marcada "do GeoSampa": é a região oficial da prefeitura (Centro, Norte, Sul, Leste ou Oeste) da subprefeitura onde fica a maior parte da poligonal. Enquanto busca, um círculo girando aparece ao lado do nome do campo. Se você trocar, vale o que você escolheu, e o GeoSampa não sobrescreve mais. A zona que já estava escolhida antes desta busca existir também não é trocada. |
 | **Cartório de registro de imóveis** | Em São Paulo vem do GeoSampa e aparece marcado "do GeoSampa": pela poligonal (a circunscrição que cobre a maior parte do terreno) ao abrir a ficha, mesmo sem SQL. Enquanto busca, um círculo girando aparece ao lado do nome do campo. Se você trocar, vale o que você escolheu, e o GeoSampa não sobrescreve mais. |
 | **Referência** | Ponto de referência ("em frente ao mercado X"). |
 
