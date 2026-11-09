@@ -107,7 +107,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
           if (d?.fonte_area_adotada === 'estimativa' && x?.fonte_area_adotada === 'estimativa') { linhas.push(`Área estimada: ${valTxt('area_documental_m2', x?.[k], c)} → ${valTxt('area_documental_m2', d?.[k], c)}`); secs.add('areas'); q0 ??= 'areas'; }
           continue;
         }
-        if (k === 'historico_uso') { linhas.push('Histórico de uso alterado'); secs.add('parametros'); continue; }
+        if (k === 'historico_uso') { linhas.push('Histórico de uso alterado'); secs.add('histuso'); q0 ??= 'histuso'; continue; }
         const cp = CAMPO[k];
         if (!cp) continue;
         if (k === 'municipio_id') continue;
@@ -117,7 +117,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       if (!linhas.length) return null;
       const s1 = secs.size === 1 ? [...secs][0] : null;
       const txt = linhas.length === 1 ? linhas[0] : s1 && SECOES[s1] ? `${SECOES[s1].titulo} editado` : s1 === 'areas' ? 'Áreas e dimensões editadas' : 'Ficha editada';
-      return { txt, det: linhas.length > 1 ? linhas : undefined, aba: s1 === 'parametros' ? 'parametros' : 'terreno', q: q0 };
+      return { txt, det: linhas.length > 1 ? linhas : undefined, aba: 'terreno', q: q0 };
     }
     case 'matriculas':
       return { txt: ins ? `Matrícula adicionada: ${o.numero}` : del ? `Matrícula removida: ${o.numero}` : `Matrícula alterada (${o.numero}): ${lista(mudou(x, d))}`,
@@ -186,7 +186,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       return null;
     }
     case 'documentos': return ins ? { txt: `Documento enviado: ${o.nome ?? o.tipo_documento}`, aba: 'documentos' } : null;
-    case 'analises_urbanisticas': return ins ? { txt: `Análise urbanística registrada${o.fonte ? ` (${o.fonte})` : ''}`, aba: 'parametros' } : null;
+    case 'analises_urbanisticas': return ins ? { txt: `Análise urbanística registrada${o.fonte ? ` (${o.fonte})` : ''}`, aba: 'terreno', q: 'indices' } : null;
     case 'terreno_viabilidades_tecnicas':
       return x?.situacao !== d?.situacao ? { txt: `Viabilidade técnica · ${o.servico}: ${VT_SIT[x?.situacao] ?? 'Não solicitada'} → ${VT_SIT[d?.situacao] ?? d?.situacao}`, aba: 'infra' } : null;
     case 'estudos_massa': return ins ? { txt: `Estudo de massa pedido: ${o.nome ?? ''}`, aba: 'massa' } : null;

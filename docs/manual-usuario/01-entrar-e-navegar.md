@@ -71,7 +71,7 @@ Toda tela tem seu próprio endereço, e o link copiado do navegador abre a mesma
 | `/mapa/A123/ficha` | Mapa com a ficha do A123 aberta na gaveta |
 | `/terrenos/novo` | Cadastro de terreno |
 | `/terrenos/A123` | Ficha do A123 (Visão geral) |
-| `/terrenos/A123/terreno`, `/comercial`, `/parametros`, `/entorno` | Ficha na aba indicada |
+| `/terrenos/A123/terreno`, `/comercial`, `/entorno` | Ficha na aba indicada (`/parametros`, endereço antigo, abre a aba Terreno) |
 | `/funil` | Funil, nível das fases |
 | `/funil/<fase>` e `/funil/<fase>/<etapa>` | Funil descendo para etapas e subetapas |
 

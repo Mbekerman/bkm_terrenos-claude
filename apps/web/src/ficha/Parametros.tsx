@@ -11,10 +11,13 @@ import { Adorno, metros } from '../lib/mascara';
 import { CAMADA, geoLinhas, geoVals, type LinhaToca } from '../lib/camadas';
 import { consultarArea } from '../novo/consulta';
 import type { Ficha, R } from './dados';
-import { focar, lerNum, num, numStr, proximoCampo, Quadro, usePedido, useSalvar } from './edicao';
+import { CONT_KS, DetalhesContaminacao, registrosCont } from './Contaminacao';
+import { abrirQuadroJa, focar, lerNum, num, numStr, proximoCampo, Quadro, usePedido, useSalvar } from './edicao';
 
-// Aba Parâmetros da ficha (proto.js › abaUrbanismo(t,'param')): Parâmetros urbanísticos por lote e zona (proto_zonas.js ›
-// secAnaliseUrb; no banco v_lote_zonas e v_urbanismo_vigente), Restrições e entorno e Histórico de uso (proto_restricoes.js).
+// Seção Parâmetros urbanísticos da aba Terreno (antes aba própria; pedido do Moises, 9/nov/2026), logo depois de Endereço e
+// localização, com três quadros: Índices urbanísticos por lote e zona (proto_zonas.js › secAnaliseUrb; no banco v_lote_zonas e
+// v_urbanismo_vigente), Restrições e entorno e Histórico de uso (proto_restricoes.js). Os índices não mostram CA básico,
+// CA mínimo, lote e frente mínimos nem outorga onerosa (pedido do Moises, 9/nov/2026; os dados continuam no catálogo).
 // O terreno não guarda tipo de empreendimento: Mercado, HIS e HMP lado a lado (decisão do Moisés, 4/nov/2026).
 
 const TIPOS: [string, string][] = [['mercado', 'Mercado'], ['his', 'HIS'], ['hmp', 'HMP']];
@@ -22,9 +25,10 @@ const TIPO_N = Object.fromEntries(TIPOS);
 const MACROS: Record<string, string> = { MC: 'Consolidação', ME: 'Estruturação', MOC: 'Ocupação Controlada' };
 const EXC_K = ['ca_minimo', 'ca_basico', 'ca_maximo', 'to_maximo', 'gabarito_m', 'gabarito_sem_limite', 'recuo_frente_m', 'recuo_lateral_m', 'recuo_lateral_alto_m',
   'cota_parte_m2', 'max_unidades', 'permeabilidade', 'lote_minimo_m2', 'frente_minima_m', 'outorga_gratuita'];
-const EXC_CAMPOS: [string, string][] = [['ca_minimo', 'CA mínimo'], ['ca_basico', 'CA básico'], ['ca_maximo', 'CA máximo'], ['to_maximo', 'Taxa de ocupação'],
+/* no Alterar valores, só o que os índices mostram (CA básico fica: entra no potencial sem outorga) */
+const EXC_CAMPOS: [string, string][] = [['ca_basico', 'CA básico'], ['ca_maximo', 'CA máximo'], ['to_maximo', 'Taxa de ocupação'],
   ['recuo_frente_m', 'Recuo de frente (m)'], ['recuo_lateral_m', 'Recuo lateral e de fundo, até 10 m de altura (m)'], ['recuo_lateral_alto_m', 'Recuo lateral e de fundo, acima (m)'],
-  ['cota_parte_m2', 'Cota-parte máxima (m²)'], ['max_unidades', 'Unidades por lote'], ['lote_minimo_m2', 'Lote mínimo (m²)'], ['frente_minima_m', 'Frente mínima (m)']];
+  ['cota_parte_m2', 'Cota-parte máxima (m²)'], ['max_unidades', 'Unidades por lote']];
 
 const ni = <span className="ni">—</span>;
 const V = (v: any, suf = '', d = 2): ReactNode => (v == null ? ni : (suf === ' m' ? metros(v) : num(v, d)) + suf);
@@ -74,25 +78,30 @@ function useParam(f: Ficha) {
 }
 type D = NonNullable<ReturnType<typeof useParam>['data']>;
 
-export default function AbaParametros({ f }: { f: Ficha }) {
+/** a seção da aba Terreno: um quadro que abre e fecha, com os três quadros dentro */
+export default function SecParametros({ f }: { f: Ficha }) {
   const q = useParam(f);
-  if (q.isLoading) return <section className="sec"><div className="sec-b"><div className="muted">Carregando…</div></div></section>;
-  if (q.error || !q.data) return <section className="sec"><div className="sec-b"><div className="muted">Não foi possível carregar os parâmetros: {String((q.error as any)?.message ?? q.error)}</div></div></section>;
   return (
-    <div className="stack">
-      <SecAnalise f={f} d={q.data} />
-      <SecRestricoes f={f} d={q.data} />
-      <SecHistUso f={f} d={q.data} />
-    </div>
+    <Quadro aba="terreno" id="param" titulo="Parâmetros urbanísticos">
+      <div className="qd-filhos">
+        {q.isLoading ? <div className="muted">Carregando…</div>
+          : q.error || !q.data ? <div className="muted">Não foi possível carregar os parâmetros: {String((q.error as any)?.message ?? q.error)}</div>
+          : <>
+            <SecAnalise f={f} d={q.data} />
+            <SecRestricoes f={f} d={q.data} />
+            <SecHistUso f={f} d={q.data} />
+          </>}
+      </div>
+    </Quadro>
   );
 }
 
-/* ---------- Parâmetros urbanísticos ---------- */
+/* ---------- Índices urbanísticos ---------- */
 function SecAnalise({ f, d }: { f: Ficha; d: D }) {
   const { edita } = useSessao();
   const [reg, setReg] = useState(false);
   /* "Zoneamento" do que falta na ficha: abre Registrar zonas, com o foco no lote */
-  usePedido(['analise'], () => { if (edita) { setReg(true); focar('an-l'); } });
+  usePedido(['analise'], () => { abrirQuadroJa('terreno', 'indices'); if (edita) { setReg(true); focar('an-l'); } });
   const sjc = d.base?.codigo === 'geosanja';
   const R = d.res;
   const merc = d.lz.filter((r) => r.tipo === 'mercado');
@@ -102,15 +111,14 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
   const zonasArea = Object.entries(merc.reduce((o: Record<string, number>, z) => ((o[z.sigla] = (o[z.sigla] || 0) + Number(z.area_abrangida_m2 || 0)), o), {})).sort((x, y) => y[1] - x[1]);
   const pot = (k: string) => {
     const L = d.lz.filter((r) => r.tipo === k), na = L.filter((r) => r.parametro_id && r.permitido === false).map((r) => r.sigla), sem = L.filter((r) => r.permitido !== false && r.ca_maximo == null).map((r) => r.sigla);
-    const v = R?.[`potencial_${k}_m2`], caMax = Math.max(...L.filter((r) => r.permitido !== false).map((r) => Number(r.ca_maximo ?? -1)));
-    return <div className="kv" key={k}><dt>Potencial {TIPO_N[k]}</dt><dd>{v != null ? <b>{m2(v)}</b> : <span className="ni">{na.length ? 'Não admitido em ' + [...new Set(na)].join(', ') : sem.length ? 'Falta o CA de ' + [...new Set(sem)].join(', ') : 'Não calculado'}</span>}
-      {caMax > 0 ? <span className="muted"> · CA máx. {num(caMax, 3)}</span> : null}</dd></div>;
+    const v = R?.[`potencial_${k}_m2`];
+    return <div className="kv" key={k}><dt>Potencial {TIPO_N[k]}</dt><dd>{v != null ? <b>{m2(v)}</b> : <span className="ni">{na.length ? 'Não admitido em ' + [...new Set(na)].join(', ') : sem.length ? 'Falta o CA de ' + [...new Set(sem)].join(', ') : 'Não calculado'}</span>}</dd></div>;
   };
   const somaLotes = d.ins.reduce((s, i) => s + Number(i.area_cadastral_m2 || 0), 0), sobra = f.area && somaLotes && f.area - somaLotes > 1 ? f.area - somaLotes : null;
   const fontes = [...new Map(d.lz.filter((r) => r.parametro_id).map((r) => [r.parametro_id, d.cat.get(r.parametro_id)] as [unknown, R | undefined]).filter((x) => x[1])).values()] as R[];
   const sig = new Map(d.lz.map((r) => [r.zoneamento_id, r.sigla]));
   return (
-    <Quadro aba="parametros" id="analise" primeiro titulo="Parâmetros urbanísticos" aberto={reg || undefined}
+    <Quadro aba="terreno" id="indices" primeiro titulo="Índices urbanísticos" aberto={reg || undefined}
       acoes={edita && !reg ? <button className="btn sm zn-reg" aria-label="Registrar zonas" title="Registrar zonas" onClick={() => setReg(true)}><Ic n="add" s={16} /><span className="oc-m">Registrar zonas</span></button> : null}>
       <div className="sec-b">
         {reg ? <FormZonas f={f} d={d} sjc={sjc} fechar={() => setReg(false)} /> : null}
@@ -175,9 +183,6 @@ function Zona({ f, d, z, sjc }: { f: Ficha; d: D; z: R; sjc: boolean }) {
     const dica = [q && q.tipo !== k ? 'regra de mercado' : '', x?.potencial_maximo_m2 != null ? 'potencial ' + m2(x.potencial_maximo_m2) : ''].filter(Boolean).join(' · ');
     return cel('CA máximo ' + TIPO_N[k], !q ? ni : x!.permitido === false ? <span className="ni">Não admitido</span> : <b>{V(x!.ca_maximo, '', 3)}</b>, x?.permitido === false ? '' : dica, 'ca_maximo');
   };
-  const ogs = TIPOS.map((t) => t[0]).filter((k) => Ls[k]?.permitido !== false && Ls[k]?.parametro_id), og = (k: string) => Ls[k]?.outorga_gratuita;
-  const ogTxt = (v: any) => (v === true ? <span className="chip good">Gratuita</span> : v === false ? 'Paga acima do básico' : ni);
-  const outorga = new Set(ogs.map(og)).size <= 1 ? ogTxt(og(ogs[0] || 'mercado')) : ogs.map((k) => `${TIPO_N[k]}: ${og(k) === true ? 'gratuita' : og(k) === false ? 'paga' : '—'}`).join(' · ');
   /* a mesma regra em texto nos três tipos aparece uma vez só */
   const regras = Object.entries(TIPOS.reduce((o: Record<string, string[]>, [k]) => { const t = Ls[k]?.regras; if (t) (o[t] ||= []).push(TIPO_N[k]); return o; }, {}));
   const ate = sjc ? 'até o 2º pavimento' : 'até 10 m de altura';
@@ -190,8 +195,6 @@ function Zona({ f, d, z, sjc }: { f: Ficha; d: D; z: R; sjc: boolean }) {
     : <>
       <dl className="lz-par">
         {TIPOS.map(([k]) => caTipo(k))}
-        {cel('CA básico', V(l.ca_basico, '', 3), l.potencial_basico_m2 != null ? `sem outorga ${m2(l.potencial_basico_m2)}` : '', 'ca_basico')}
-        {cel('CA mínimo', V(l.ca_minimo, '', 3), '', 'ca_minimo')}
         {cel('Taxa de ocupação', V(l.to_maximo, '', 2), p.to_corte_m2 ? `${num(p.to_maximo, 2)} em lote até ${num(p.to_corte_m2)} m²; ${num(p.to_lote_grande, 2)} acima${f.area == null ? ' (sem área adotada, vale a de lote grande)' : ''}` : '', 'to_maximo')}
         {cel('Gabarito', gab, '', alt.has('gabarito_sem_limite') ? 'gabarito_sem_limite' : 'gabarito_m')}
         {cel('Recuo de frente', V(l.recuo_frente_m, ' m'), '', 'recuo_frente_m')}
@@ -199,9 +202,6 @@ function Zona({ f, d, z, sjc }: { f: Ficha; d: D; z: R; sjc: boolean }) {
         {cel('Cota-parte máxima', l.cota_parte_m2 != null ? num(l.cota_parte_m2) + ' m² por unidade' : ni, l.cota_parte_m2 != null && area ? `até ${num(Math.floor(area / Number(l.cota_parte_m2)))} unidades nesta área` : '', 'cota_parte_m2')}
         {l.max_unidades != null ? cel('Unidades por lote', num(l.max_unidades), '', 'max_unidades') : null}
         {cel('Permeabilidade mínima', P(l.permeabilidade), '', 'permeabilidade')}
-        {cel('Lote mínimo', V(l.lote_minimo_m2, ' m²', 0), '', 'lote_minimo_m2')}
-        {cel('Frente mínima', V(l.frente_minima_m, ' m'), '', 'frente_minima_m')}
-        {cel('Outorga onerosa', outorga, '', 'outorga_gratuita')}
       </dl>
       {regras.map(([t, ks]) => <div className="lz-regra" key={t}>{regras.length > 1 ? <b>{ks.join(', ')}: </b> : null}{t}</div>)}
     </>;
@@ -223,7 +223,7 @@ function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null 
     ...Object.fromEntries(EXC_CAMPOS.map(([k]) => [k, /_m$/.test(k) ? metros(raw[k]) : numStr(raw[k])])),
     permeabilidade: raw.permeabilidade != null ? numStr(Math.round(raw.permeabilidade * 1000) / 10, 1) : '',
     gabSt: raw.gabarito_sem_limite ? 'sem' : raw.gabarito_m != null ? 'limitado' : '', gab: metros(raw.gabarito_m),
-    outorga: raw.outorga_gratuita == null ? '' : raw.outorga_gratuita ? '1' : '0', fonte: raw.excecao_fonte ?? '', macro: z.macrozona ?? '',
+    fonte: raw.excecao_fonte ?? '', macro: z.macrozona ?? '',
   }));
   const vR = useRef(v);
   vR.current = v;
@@ -234,11 +234,10 @@ function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null 
     const e: R = Object.fromEntries(EXC_CAMPOS.map(([k]) => [k, lerNum(v[k])]));
     const pm = lerNum(v.permeabilidade); e.permeabilidade = pm == null ? null : Math.round(pm * 10) / 1000;
     e.gabarito_m = v.gabSt === 'limitado' ? lerNum(v.gab) : null; e.gabarito_sem_limite = v.gabSt === 'sem' ? true : v.gabSt === 'limitado' ? false : null;
-    e.outorga_gratuita = v.outorga === '' ? null : v.outorga === '1';
     if (v.gabSt === 'limitado' && !(e.gabarito_m > 0)) return 'Informe a altura do gabarito limitado.';
     if (e.to_maximo != null && !(e.to_maximo > 0 && e.to_maximo <= 1)) return 'Taxa de ocupação vai de 0 a 1.';
     if (e.permeabilidade != null && !(e.permeabilidade > 0 && e.permeabilidade <= 1)) return 'Permeabilidade vai de 0 a 100%.';
-    if (['ca_minimo', 'ca_basico', 'ca_maximo', 'cota_parte_m2', 'max_unidades', 'lote_minimo_m2', 'frente_minima_m'].some((k) => e[k] != null && !(e[k] > 0))) return 'CA, cota-parte, unidades, lote e frente: número maior que zero, ou vazio para seguir o catálogo.';
+    if (['ca_basico', 'ca_maximo', 'cota_parte_m2', 'max_unidades'].some((k) => e[k] != null && !(e[k] > 0))) return 'CA, cota-parte e unidades: número maior que zero, ou vazio para seguir o catálogo.';
     if (['recuo_frente_m', 'recuo_lateral_m', 'recuo_lateral_alto_m'].some((k) => e[k] != null && e[k] < 0)) return 'Recuo não pode ser negativo.';
     /* a fonte é opcional (decisão do Moisés, 6/nov/2026) */
     e.excecao_fonte = EXC_K.some((k) => e[k] != null) ? v.fonte.trim() || null : null;
@@ -276,7 +275,6 @@ function FormExc({ f, raw, p, sjc, z, fechar }: { f: Ficha; raw: R; p: R | null 
         placeholder={p?.permeabilidade != null ? 'Catálogo: ' + num(p.permeabilidade * 100, 0) + '%' : 'A lei não fixa'} {...x} /></Adorno></div>
       <div className="field"><label htmlFor={`ze-g${z.id}`}>Gabarito</label><select id={`ze-g${z.id}`} value={v.gabSt} onChange={m('gabSt', true)} {...x}><option value="">Segue o catálogo</option><option value="limitado">Limitado</option><option value="sem">Sem limite</option></select></div>
       <div className="field"><label htmlFor={`ze-gv${z.id}`}>Altura do gabarito</label><Adorno t="m"><input id={`ze-gv${z.id}`} inputMode="decimal" data-fmt="m" value={v.gab} onChange={m('gab')} disabled={v.gabSt !== 'limitado'} {...x} /></Adorno></div>
-      <div className="field"><label htmlFor={`ze-o${z.id}`}>Outorga onerosa</label><select id={`ze-o${z.id}`} value={v.outorga} onChange={m('outorga', true)} {...x}><option value="">Segue o catálogo</option><option value="1">Gratuita</option><option value="0">Paga acima do básico</option></select></div>
       <div className="field full"><label htmlFor={`ze-f${z.id}`}>Fonte da alteração (opcional)</label><input id={`ze-f${z.id}`} value={v.fonte} onChange={m('fonte')} placeholder="Consulta prévia, operação urbana, certidão, projeto aprovado..." {...x} /></div>
     </div>
       <div className="hint" style={{ marginTop: 8 }}>Cada valor grava ao sair do campo. Vazio segue o catálogo.</div>
@@ -342,18 +340,13 @@ function parZona(d: D, z: R, sjc: boolean): [string, string][] {
   const ate = sjc ? 'até o 2º pav.' : 'até 10 m';
   const recLat = l.recuo_lateral_m == null && l.recuo_lateral_alto_m == null ? '—' : l.recuo_lateral_alto_m == null ? metros(l.recuo_lateral_m) + ' m'
     : `${l.recuo_lateral_m == null || Number(l.recuo_lateral_m) === 0 ? 'Dispensado' : metros(l.recuo_lateral_m) + ' m'} ${ate}; ${metros(l.recuo_lateral_alto_m)} m acima`;
-  const og = (v: any) => (v === true ? 'Gratuita' : v === false ? 'Paga acima do básico' : '—');
-  const ogs = TIPOS.map((t) => t[0]).filter((k) => Ls[k]?.permitido !== false && Ls[k]?.parametro_id);
   return [
     ...TIPOS.map(([k, n]) => ['CA máximo ' + n, !Ls[k]?.parametro_id ? '—' : Ls[k]!.permitido === false ? 'Não admitido' : T(Ls[k]!.ca_maximo, '', 3)] as [string, string]),
-    ['CA básico', T(l.ca_basico, '', 3)], ['CA mínimo', T(l.ca_minimo, '', 3)], ['Taxa de ocupação', T(l.to_maximo, '', 2)],
+    ['Taxa de ocupação', T(l.to_maximo, '', 2)],
     ['Gabarito', l.gabarito_sem_limite ? 'Sem limite' : l.gabarito_m != null ? metros(l.gabarito_m) + ' m' : '—'],
     ['Recuo de frente', T(l.recuo_frente_m, ' m')], ['Recuos laterais e fundo', recLat],
     ['Cota-parte máxima', l.cota_parte_m2 != null ? num(l.cota_parte_m2) + ' m²' : '—'],
     ['Permeabilidade mínima', l.permeabilidade == null ? '—' : num(l.permeabilidade * 100, 0) + '%'],
-    ['Lote mínimo', T(l.lote_minimo_m2, ' m²', 0)], ['Frente mínima', T(l.frente_minima_m, ' m')],
-    ['Outorga onerosa', new Set(ogs.map((k) => Ls[k]?.outorga_gratuita)).size <= 1 ? og(Ls[ogs[0] || 'mercado']?.outorga_gratuita)
-      : ogs.map((k) => `${TIPO_N[k]}: ${Ls[k]?.outorga_gratuita === true ? 'gratuita' : Ls[k]?.outorga_gratuita === false ? 'paga' : '—'}`).join(' · ')],
   ];
 }
 
@@ -473,8 +466,9 @@ function restDados(d: D): Rest | null {
 function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
   const { edita } = useSessao();
   const qc = useQueryClient(), toast = useToast();
-  const [busc, setBusc] = useState(false);
-  const sp = d.base?.codigo === 'geosampa', r = sp ? restDados(d) : null;
+  const [busc, setBusc] = useState(false), [ctAb, setCtAb] = useState(false);
+  const sp = d.base?.codigo === 'geosampa', r = sp ? restDados(d) : null, regs = r ? registrosCont(r.camadas) : [];
+  const verCt = <button className="linkbtn ct-ver" onClick={() => setCtAb(true)}>Ver detalhes</button>;
   const consultar = async () => {
     if (busc || !f.poly) return;
     setBusc(true);
@@ -485,7 +479,7 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
     } catch (e) { console.error(e); toast('Não foi possível consultar o GeoSampa agora. Tente de novo em instantes.'); } finally { setBusc(false); }
   };
   const acoes = sp && edita && f.poly ? <button className="btn sm text" disabled={busc} onClick={consultar}><Ic n="search" s={16} />{busc ? 'Consultando...' : d.area ? 'Consultar de novo' : 'Consultar pela poligonal'}</button> : null;
-  if (!sp) return <Quadro aba="parametros" id="rest" titulo="Restrições e entorno"><div className="sec-b"><div className="muted">Não disponível nesta cidade. O que a prefeitura traz está em cada lote, acima.</div></div></Quadro>;
+  if (!sp) return <Quadro aba="terreno" id="rest" titulo="Restrições e entorno"><div className="sec-b"><div className="muted">Não disponível nesta cidade. O que a prefeitura traz está em cada lote, acima.</div></div></Quadro>;
   const orig = r ? (r.fonte === 'poligonal' ? `GeoSampa pela poligonal do terreno, ${fdh(r.em)}${r.user ? ' por ' + r.user : ''}` : `GeoSampa por ${r.n} lote${r.n! > 1 ? 's' : ''} (inscrições), último em ${fdh(r.em)}`) : '';
   const linha = ([tema, o]: Item) => {
     const cel = (v: ReactNode) => <div className="rs-l" key={tema}><span className="k">{tema}</span><span className="v">{v}</span></div>;
@@ -495,14 +489,16 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
     const grav = o.grav || CAMADA[ks[0]]?.[3] || '';
     if (o.sn) return cel(vals.length ? <><span className={`chip ${grav}`}>Sim</span> <span className="faint">{vals.join(', ')}</span></> : erro ? <span className="faint">Não respondeu</span> : 'Não');
     if (!vals.length) return cel(erro ? <span className="faint">Não respondeu</span> : o.vazio || 'Não');
-    return cel(vals.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className={`chip ${o.info ? '' : grav}`}>{v}</span></span>));
+    const ct = ks.some((k) => CONT_KS.includes(k)) && regs.length;
+    return cel(<>{vals.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className={`chip ${o.info ? '' : grav}`}>{v}</span></span>)}{ct ? <> {verCt}</> : null}</>);
   };
   return (
-    <Quadro aba="parametros" id="rest" titulo="Restrições e entorno" acoes={acoes}>
+    <Quadro aba="terreno" id="rest" titulo="Restrições e entorno" acoes={acoes}>
       <div className="sec-b">
         <div className="hint rs-fonte">{r ? orig : f.poly ? 'Sem consulta ao GeoSampa: consulte pela poligonal ou inclua os SQLs em Terreno › Matrículas e SQLs.' : 'Desenhe a poligonal do terreno para consultar.'}</div>
         {REST_GRUPOS.map(([g, itens]) => <div className="rs-g" key={g}><div className="rs-gt">{g}</div>{itens.map(linha)}</div>)}
       </div>
+      {ctAb ? <DetalhesContaminacao regs={regs} poly={f.poly} fechar={() => setCtAb(false)} /> : null}
     </Quadro>
   );
 }
@@ -511,8 +507,8 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
 function SecHistUso({ f, d }: { f: Ficha; d: D }) {
   const { edita } = useSessao();
   const sp = d.base?.codigo === 'geosampa', r = sp ? restDados(d) : null;
-  const [txt, setTxt] = useState<string>(f.t.historico_uso ?? '');
-  const ks = ['area_contaminada_reabilitada_svma', 'GEOSAMPA_area_contaminada_sigac', 'area_contaminada_reabilitada_svma@30', 'GEOSAMPA_area_contaminada_sigac@30'];
+  const [txt, setTxt] = useState<string>(f.t.historico_uso ?? ''), [ctAb, setCtAb] = useState(false);
+  const ks = CONT_KS, regs = r ? registrosCont(r.camadas) : [];
   const ac = r ? [...new Set(ks.flatMap((k) => (r.camadas[k] || []).map((x) => { try { return CAMADA[k][2](x) + (x._dist_m > 0 ? ` (a ${num(x._dist_m)} m)` : /@/.test(k) ? '' : ' (no terreno)'); } catch { return null; } })).filter(Boolean) as string[])] : [];
   const salvarT = useSalvar(f);
   const gravar = async () => {
@@ -521,11 +517,12 @@ function SecHistUso({ f, d }: { f: Ficha; d: D }) {
     await salvarT({ historico_uso: v || null });
   };
   return (
-    <Quadro aba="parametros" id="histuso" titulo="Histórico de uso">
+    <Quadro aba="terreno" id="histuso" titulo="Histórico de uso">
       <div className="sec-b">
         <div className="rs-l"><span className="k">Cadastro de áreas contaminadas (prefeitura e Cetesb)</span><span className="v">
           {!sp ? <span className="faint">Não disponível nesta cidade</span> : !r ? <span className="faint">Sem consulta ao GeoSampa</span>
-            : ac.length ? ac.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className="chip warn">{v}</span></span>) : 'Nada cadastrado no terreno nem a até 30 m'}</span></div>
+            : ac.length ? <>{ac.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className="chip warn">{v}</span></span>)}{regs.length ? <> <button className="linkbtn ct-ver" onClick={() => setCtAb(true)}>Ver detalhes</button></> : null}</> : 'Nada cadastrado no terreno nem a até 30 m'}</span></div>
+        {ctAb ? <DetalhesContaminacao regs={regs} poly={f.poly} fechar={() => setCtAb(false)} /> : null}
         <div className="field" style={{ marginTop: 12 }}><label htmlFor="hu-t">Pesquisa do histórico</label>
           <textarea id="hu-t" readOnly={!edita} value={txt} onChange={(e) => setTxt(e.target.value)} onBlur={gravar}
             placeholder="Fotos aéreas antigas, matrícula, Cetesb, vizinhos: o que funcionou aqui e em volta (posto, indústria, oficina...)" /></div>

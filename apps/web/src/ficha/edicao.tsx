@@ -268,12 +268,16 @@ export function usePedido(secs: string[], fn: (p: PedidoCampo) => void) {
     return () => window.removeEventListener('ficha-campo', at);
   }, [chave]);
 }
+/** quadros que moram dentro de outro quadro */
+const QD_PAI: Record<string, string> = { indices: 'param', rest: 'param', histuso: 'param' };
 /** abre o quadro da aba e avisa os quadros na tela */
 export function abrirQuadroJa(aba: string, id: string) { abrirQuadro(aba, id); window.dispatchEvent(new Event('ficha-quadro')); }
 /** abre o quadro da seção (sem mexer na escolha das outras) */
 export function abrirQuadro(aba: string, id: string) {
-  const L = lojaAtiva?.mapa ?? QD;
-  (L[aba] || (L[aba] = new Set())).add(id);
+  const L = lojaAtiva?.mapa ?? QD, st = L[aba] || (L[aba] = new Set());
+  st.add(id);
+  /* quadro dentro de outro (Parâmetros urbanísticos da aba Terreno): abre também o de fora */
+  if (QD_PAI[id]) st.add(QD_PAI[id]);
   lojaAtiva?.mudou();
 }
 /** rola até o campo ficar na "altura dos olhos": o primeiro item visível logo abaixo do que fica preso no alto

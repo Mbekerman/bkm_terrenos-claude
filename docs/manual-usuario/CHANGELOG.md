@@ -8,6 +8,8 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **Detalhes da contaminação** (Terreno › Parâmetros urbanísticos, em Restrições e entorno e Histórico de uso): "Ver detalhes" abre uma janela com o mapa de lotes do GeoSampa (terreno em azul, registros numerados em vermelho) e tudo o que a prefeitura guarda de cada registro: lote, atividade, origem e data do cadastro, processo; na área contaminada, classificação, endereço, contaminantes e restrições. (#263)
+- **Parâmetros urbanísticos viraram seção da aba Terreno**, logo depois de Endereço e localização (a aba Parâmetros saiu; o link antigo abre a aba Terreno). Dentro, três quadros: **Índices urbanísticos** (zonas, potencial, panorama e lote por lote), **Restrições e entorno** e **Histórico de uso**. Nos índices saíram CA básico, CA mínimo, lote mínimo, frente mínima e outorga onerosa (também do "Alterar valores", menos o CA básico); no potencial saiu o "CA máx." ao lado, que já aparece logo abaixo. (#263)
 - **Rota: saída escolhida no mapa** (Mapa › Traçar rota até aqui): além de digitar, clique num ponto, num lugar do Google, noutro terreno ou num concorrente para escolher de onde sai a rota; a mira ao lado do campo liga a escolha de novo. (#264)
 
 - **Barra de cima em tela grande**: o logo da BKM e o avatar não vão mais para o meio em monitores largos. O logo fica sempre alinhado com o menu lateral e o avatar no canto direito, com a mesma margem. Com o menu aberto, a página também ocupa a largura toda (antes ficava centrada com sobra dos dois lados). (#265)
