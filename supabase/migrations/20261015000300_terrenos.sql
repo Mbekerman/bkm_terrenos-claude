@@ -385,7 +385,9 @@ create table app.terreno_pessoas (
   parte_id                uuid references app.terreno_partes(id),  -- dono (ou representante) de qual parte
   observacoes             text,
   unique (terreno_id, pessoa_id, papel),
-  check (papel = 'proprietario' or percentual_participacao is null)
+  check (papel = 'proprietario' or percentual_participacao is null),
+  -- do proprietário só o nome (em app.pessoas) e a participação são obrigatórios; telefone, e-mail e CPF/CNPJ não (Moises, 9/nov/2026)
+  constraint terreno_pessoas_participacao_dono check (papel <> 'proprietario' or percentual_participacao is not null)
 );
 
 -- Participações conhecidas dos proprietários somam no máximo 100% (em cada parte, quando há partes).
