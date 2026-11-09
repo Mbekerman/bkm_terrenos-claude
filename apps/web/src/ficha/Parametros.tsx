@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useRascunho, mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
+import { mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -293,7 +293,6 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
   const fref = useRef<HTMLFormElement | null>(null);
   const sujoZ = !!fonte.trim() || zs.some((z) => mudou(z, { sigla: '', area: '', macro: '' }));
   useGuardarRasc(kZ, { lote, fonte, zs }, sujoZ);
-  const { aviso } = useRascunho(fref, sujoZ, 'as zonas', fechar);
   const mz = (i: number, k: string, v: string) => setZs((o) => o.map((z, j) => (j === i ? { ...z, [k]: v } : z)));
   const salvar = async (ev: FormEvent) => {
     ev.preventDefault();
@@ -327,7 +326,6 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
         </div>
       ))}
       <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kZ} mostrar={sujoZ} limpar={() => { setFonte(''); setZs(ZS0()); }} /><button type="button" className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar zonas</button></div>
-      {aviso}
     </form>
   );
 }
