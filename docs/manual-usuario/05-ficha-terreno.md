@@ -38,7 +38,7 @@ Campos que **se editam** no lugar:
 | **Número** | Só informativo: não mexe no pino nem na poligonal. Se for diferente dos números de porta dos SQLs do terreno, aparece **"Número diferente do cadastro da prefeitura"** ("O número informado diverge dos números cadastrados no município para os lotes selecionados"), com **Cancelar** e **"Alterar mesmo assim"**. |
 | **Complemento** | Texto livre. |
 | **Zona** | Norte, Sul, Leste, Oeste, Centro, Sudeste, Sudoeste, Nordeste, Noroeste. |
-| **Cartório de registro de imóveis** | Em São Paulo vem do GeoSampa e aparece marcado "do GeoSampa". Se você trocar, vale o que você escolheu, e o GeoSampa não sobrescreve mais. |
+| **Cartório de registro de imóveis** | Em São Paulo vem do GeoSampa e aparece marcado "do GeoSampa": pela poligonal (a circunscrição que cobre a maior parte do terreno) ao abrir a ficha, mesmo sem SQL. Enquanto busca, um círculo girando aparece ao lado do nome do campo. Se você trocar, vale o que você escolheu, e o GeoSampa não sobrescreve mais. |
 | **Referência** | Ponto de referência ("em frente ao mercado X"). |
 
 ## Partes
@@ -59,11 +59,13 @@ O lápis abre a janela **"Editar pessoas da parte"**: o formulário em cima e a 
 |---|---|
 | **Título da parte** | Obrigatório, sem repetir outro título do terreno. |
 | **Nome** | Obrigatório. |
-| **Telefone** | Com DDD (10 ou 11 dígitos). |
-| **E-mail** | Precisa ser válido. |
-| **CPF/CNPJ** | 11 dígitos (CPF) ou 14 (CNPJ). |
-| **% de participação** | Só para quem é Proprietário; de 0 a 100%. |
+| **Telefone** | Opcional. Se preencher, com DDD (10 ou 11 dígitos). |
+| **E-mail** | Opcional. Se preencher, precisa ser válido. |
+| **CPF/CNPJ** | Opcional. Se preencher, 11 dígitos (CPF) ou 14 (CNPJ). |
+| **% de participação** | Obrigatória para quem é Proprietário, de 0 a 100%; nas outras relações fica desligada. |
 | **Relação** | Proprietário, Cônjuge, Representante, Procurador, Parente, Contato ou Outros. |
+
+Do proprietário, só o **nome** e a **participação** são obrigatórios; o resto pode ficar em branco e completar depois, sem contar como pendência da ficha.
 
 **Dica:** cadastre também o procurador e o contato do dia a dia, não só os donos. Quem é proprietário conta para o item "Proprietário" da completude.
 

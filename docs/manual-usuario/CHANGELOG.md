@@ -8,7 +8,16 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+<<<<<<< HEAD
 - **Editar a poligonal com dois cliques** (Mapa e mini-mapa da Visão geral): vale em qualquer ponto dentro da poligonal, não só exatamente sobre a linha. Sobre o pino, os dois cliques continuam sem editar. (#270)
+=======
+<<<<<<< HEAD
+- **Proprietário da parte** (Terreno › Partes › lápis): só o **nome** e a **% de participação** são obrigatórios. Telefone, e-mail e CPF/CNPJ são opcionais e não contam como pendência. (#274)
+=======
+- **Campos que vêm de fora mostram que estão buscando**: a ficha abre na hora com o que já tem e, enquanto o GeoSampa ou o Google ainda respondem, aparece um círculo girando no campo ou no quadro (cartório, posição na quadra, testada, Áreas e dimensões, Índices urbanísticos, Restrições e entorno, Pontos de interesse), com "Buscando no GeoSampa..." quando o campo ainda está vazio. Quando a busca termina, a ficha se atualiza sozinha. O **cartório** de São Paulo agora vem também sem SQL, pela poligonal. Corrigida a ficha que ficava carregando depois de uma gravação recusada por edição simultânea. (#272)
+- **Ficha logo depois do cadastro**: um campo escolhido enquanto o GeoSampa ainda preenchia o terreno (por exemplo a **Zona**) podia ser recusado sem a tela mostrar, e continuava contando como faltando. Agora a gravação passa quando ninguém mexeu naquele campo, a ficha se atualiza sozinha à medida que o GeoSampa responde (o cartório aparece na hora) e, se uma gravação for recusada, o campo volta ao valor gravado. (#271)
+>>>>>>> origin/develop
+>>>>>>> origin/develop
 - **IPTU** (Terreno › IPTU): o botão **PDF** de cada SQL aparece mesmo antes de o valor ser trazido da Prefeitura (exercício do ano). A Senha Web da Prefeitura pode ser de CPF ou de CNPJ. (#266)
 - **Detalhes da contaminação** (Terreno › Parâmetros urbanísticos, em Restrições e entorno e Histórico de uso): "Ver detalhes" abre uma janela com o mapa de lotes do GeoSampa (terreno em azul, registros numerados em vermelho) e tudo o que a prefeitura guarda de cada registro: lote, atividade, origem e data do cadastro, processo; na área contaminada, classificação, endereço, contaminantes e restrições. (#263)
 - **Parâmetros urbanísticos viraram seção da aba Terreno**, logo depois de Endereço e localização (a aba Parâmetros saiu; o link antigo abre a aba Terreno). Dentro, três quadros: **Índices urbanísticos** (zonas, potencial, panorama e lote por lote), **Restrições e entorno** e **Histórico de uso**. Nos índices saíram CA básico, CA mínimo, lote mínimo, frente mínima e outorga onerosa (também do "Alterar valores", menos o CA básico); no potencial saiu o "CA máx." ao lado, que já aparece logo abaixo. (#263)
