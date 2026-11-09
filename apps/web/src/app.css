@@ -355,3 +355,26 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
    O SVG do logo tem 4 px de folga à esquerda na largura de 120 px, por isso o recuo da esquerda é 8. */
 .layout, .top-in, body.menu-min .layout { max-width: none }
 @media (min-width: 900px) { .top { padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)) } }
+
+/* Seção IPTU (pedido do Moises, 9/nov/2026): venais em caixas como as de Áreas, lado a lado quando cabem; o resto em duplas;
+ * IPTU anual e mensal por último, em destaque; enquanto a Prefeitura não respondeu, a seção toda carrega */
+.iptu-pan { margin-top: 4px }
+.fi-aba .areas.iptu-venal, .areas.iptu-venal { grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); margin-bottom: 12px }
+.iptu-pares { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px }
+.iptu-pares .area .av { font-size: 18px }
+.iptu-dest .area { background: #d3e3fd }
+.iptu-dest .area .al { color: #041e49 }
+.iptu-dest .area .av { font-size: 24px; line-height: 30px; font-weight: 400; color: #041e49 }
+:root[data-tema="escuro"] .iptu-dest .area { background: #004a77 }
+:root[data-tema="escuro"] .iptu-dest .area :is(.al, .av) { color: #c2e7ff }
+.iptu-erro { color: #b3261e }
+.iptu-corpo { position: relative }
+.iptu-corpo.carregando > :not(.iptu-load) { opacity: .45; pointer-events: none }
+.iptu-corpo.carregando::after { content: ''; position: absolute; inset: 0; border-radius: 12px; pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.75) 50%, transparent 80%); background-size: 200% 100%; animation: iptu-brilho 1.4s linear infinite }
+:root[data-tema="escuro"] .iptu-corpo.carregando::after { background-image: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.08) 50%, transparent 80%) }
+@keyframes iptu-brilho { from { background-position: 150% 0 } to { background-position: -50% 0 } }
+.iptu-load { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--m-primary, #0b57d0); margin: 0 0 8px }
+.iptu-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: iptu-gira .8s linear infinite }
+@keyframes iptu-gira { to { transform: rotate(360deg) } }
+@media (prefers-reduced-motion: reduce) { .iptu-corpo.carregando::after, .iptu-spin { animation: none } }

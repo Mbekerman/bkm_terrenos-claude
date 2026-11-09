@@ -10,6 +10,8 @@
 //   GET  /saude
 //   POST /consultar    { inscricao_id, exercicio? }  → grava e devolve o valor
 //   POST /notificacao  { inscricao_id, exercicio }   → devolve o PDF (não grava)
+//   POST /fila         { inscricao_ids }             → põe na fila (segundo plano) e responde na hora
+//   POST /situacao     { inscricao_ids }             → na_fila, consultando, ok ou erro de cada SQL
 
 import http from 'node:http';
 import { emitir, ErroPortal } from './portal.js';
@@ -48,19 +50,36 @@ function contar(uid) {
   l.push(agora); usos.set(uid, l);
 }
 
-/** Login, permissão de edição e a inscrição (SQL de São Paulo de um terreno da empresa). */
-async function preparar(req, corpo) {
+async function autenticar(req) {
   const token = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1];
   if (!token) throw new ErroPedido(401, 'SEM_LOGIN', 'Entre no sistema para consultar o IPTU.');
-  const u = await usuario(token);
-  const id = String(corpo?.inscricao_id ?? '');
-  if (!/^[0-9a-f-]{36}$/i.test(id)) throw new ErroPedido(400, 'PEDIDO', 'Inscrição inválida.');
-  const [ins] = await rest(token, `inscricoes_municipais?id=eq.${id}&select=id,empresa_id,inscricao_norm,municipios(codigo_ibge)`);
-  if (!ins) throw new ErroPedido(404, 'SEM_INSCRICAO', 'SQL não encontrado nos seus terrenos.');
-  if (ins.municipios?.codigo_ibge !== SAO_PAULO || !/^\d{11}$/.test(ins.inscricao_norm)) throw new ErroPedido(400, 'FORA_DE_SP', 'A consulta do IPTU pela Prefeitura só existe para SQL de São Paulo.');
+  return { token, u: await usuario(token) };
+}
+
+const ehId = (x) => /^[0-9a-f-]{36}$/i.test(String(x ?? ''));
+const ehSP = (ins) => ins.municipios?.codigo_ibge === SAO_PAULO && /^\d{11}$/.test(ins.inscricao_norm ?? '');
+
+/** Inscrições que a pessoa enxerga (a RLS do banco decide). */
+async function lerInscricoes(token, ids) {
+  if (!ids.length) return [];
+  return rest(token, `inscricoes_municipais?id=in.(${ids.join(',')})&select=id,empresa_id,inscricao_norm,municipios(codigo_ibge)`);
+}
+
+async function exigirEdicao(token, empresas) {
   const edicao = await rest(token, 'rpc/empresas_edicao', { method: 'POST', body: '{}' });
   const ids = (edicao ?? []).map((x) => (typeof x === 'string' ? x : x?.empresas_edicao ?? Object.values(x ?? {})[0]));
-  if (!ids.includes(ins.empresa_id)) throw new ErroPedido(403, 'SEM_PERMISSAO', 'Só quem edita a ficha consulta o IPTU na Prefeitura.');
+  if (empresas.some((e) => !ids.includes(e))) throw new ErroPedido(403, 'SEM_PERMISSAO', 'Só quem edita a ficha consulta o IPTU na Prefeitura.');
+}
+
+/** Login, permissão de edição e a inscrição (SQL de São Paulo de um terreno da empresa). */
+async function preparar(req, corpo) {
+  const { token, u } = await autenticar(req);
+  const id = String(corpo?.inscricao_id ?? '');
+  if (!ehId(id)) throw new ErroPedido(400, 'PEDIDO', 'Inscrição inválida.');
+  const [ins] = await lerInscricoes(token, [id]);
+  if (!ins) throw new ErroPedido(404, 'SEM_INSCRICAO', 'SQL não encontrado nos seus terrenos.');
+  if (!ehSP(ins)) throw new ErroPedido(400, 'FORA_DE_SP', 'A consulta do IPTU pela Prefeitura só existe para SQL de São Paulo.');
+  await exigirEdicao(token, [ins.empresa_id]);
   contar(u.id);
   return { token, ins };
 }
@@ -69,7 +88,11 @@ const anoSP = () => Number(new Intl.DateTimeFormat('en', { timeZone: 'America/Sa
 
 async function consultar(req, corpo) {
   const { token, ins } = await preparar(req, corpo);
-  const pedido = Number(corpo.exercicio) || null;
+  return gravar(token, ins, Number(corpo.exercicio) || null);
+}
+
+/** Emite a notificação, lê o PDF e grava a revisão em app.inscricao_valores com o login da pessoa. */
+async function gravar(token, ins, pedido) {
   // sem exercício: o do ano; sem notificação dele ainda (começo do ano), o anterior
   let pdf, exercicio = pedido ?? anoSP();
   try { pdf = await emitir(ins.inscricao_norm, exercicio); }
@@ -98,6 +121,68 @@ async function consultar(req, corpo) {
   return { valor: linha, novo: true };
 }
 
+// ---- Fila em segundo plano -------------------------------------------------------------
+// O front põe na fila os SQLs de São Paulo do terreno ao cadastrar e ao incluir SQLs, e
+// segue a vida; o serviço consulta um por vez e grava no banco. A situação de cada SQL
+// (na_fila, consultando, ok, erro) fica na memória por 1 hora, para a ficha mostrar o
+// carregamento. O login guardado é o de quem pôs na fila (vence em cerca de 1 hora).
+const MAX_FILA = 60, GUARDA_MS = 3600_000;
+const situacoes = new Map(); // inscricao_id → { estado, code?, error?, em }
+const pendentes = []; // { token, uid, ins }
+let rodando = false;
+
+function marcar(id, estado, extra = {}) { situacoes.set(id, { estado, ...extra, em: Date.now() }); }
+function limparVelhas() { const agora = Date.now(); for (const [k, v] of situacoes) if (agora - v.em > GUARDA_MS && v.estado !== 'na_fila' && v.estado !== 'consultando') situacoes.delete(k); }
+
+async function trabalhar() {
+  if (rodando) return;
+  rodando = true;
+  try {
+    while (pendentes.length) {
+      const { token, uid, ins } = pendentes.shift();
+      marcar(ins.id, 'consultando');
+      try { contar(uid); await gravar(token, ins, null); marcar(ins.id, 'ok'); }
+      catch (e) {
+        const conhecido = e instanceof ErroPedido || e instanceof ErroPortal || e instanceof ErroLeitura;
+        console.warn(`iptu fila erro ${conhecido ? e.code : e?.name ?? 'Erro'}`);
+        marcar(ins.id, 'erro', { code: conhecido ? e.code : 'INTERNO', error: conhecido ? e.message : 'Erro interno no serviço do IPTU.' });
+      }
+    }
+  } finally { rodando = false; }
+}
+
+function idsDo(corpo) {
+  const ids = [...new Set(Array.isArray(corpo?.inscricao_ids) ? corpo.inscricao_ids.map(String) : [])];
+  if (ids.length > MAX_FILA || ids.some((x) => !ehId(x))) throw new ErroPedido(400, 'PEDIDO', 'Lista de inscrições inválida.');
+  return ids;
+}
+
+async function enfileirar(req, corpo) {
+  const { token, u } = await autenticar(req);
+  const ids = idsDo(corpo);
+  const lidas = (await lerInscricoes(token, ids)).filter(ehSP);
+  if (!lidas.length) return { na_fila: [] };
+  await exigirEdicao(token, [...new Set(lidas.map((i) => i.empresa_id))]);
+  limparVelhas();
+  const novos = [];
+  for (const ins of lidas) {
+    const s = situacoes.get(ins.id);
+    if (s && (s.estado === 'na_fila' || s.estado === 'consultando')) continue;
+    if (pendentes.length >= MAX_FILA) { marcar(ins.id, 'erro', { code: 'FILA_CHEIA', error: 'Muitas consultas na fila. Tente em alguns minutos.' }); continue; }
+    pendentes.push({ token, uid: u.id, ins }); marcar(ins.id, 'na_fila'); novos.push(ins.id);
+  }
+  void trabalhar();
+  return { na_fila: novos };
+}
+
+async function situacao(req, corpo) {
+  const { token } = await autenticar(req);
+  const ids = idsDo(corpo);
+  const vistas = await lerInscricoes(token, ids); // só devolve o que a pessoa enxerga
+  limparVelhas();
+  return Object.fromEntries(vistas.map((i) => [i.id, situacoes.get(i.id) ?? null]).filter(([, v]) => v).map(([k, v]) => [k, { estado: v.estado, code: v.code, error: v.error }]));
+}
+
 async function notificacao(req, corpo) {
   const { ins } = await preparar(req, corpo);
   const ex = Number(corpo.exercicio);
@@ -124,6 +209,8 @@ const servidor = http.createServer(async (req, res) => {
     if (!SUPABASE_URL || !SUPABASE_KEY) throw new ErroPedido(503, 'CONFIG', 'Serviço sem SUPABASE_URL ou SUPABASE_KEY.');
     const corpo = await lerCorpo(req);
     if (caminho === '/consultar') return json(res, 200, await consultar(req, corpo));
+    if (caminho === '/fila') return json(res, 202, await enfileirar(req, corpo));
+    if (caminho === '/situacao') return json(res, 200, await situacao(req, corpo));
     if (caminho === '/notificacao') {
       const { pdf, nome } = await notificacao(req, corpo);
       res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${nome}"`, 'Cache-Control': 'no-store' });
