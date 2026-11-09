@@ -55,8 +55,8 @@ function Detalhe({ n }: { n: R }) {
 }
 
 /** Panorama do terreno (pedido do Moises, 9/nov/2026): a soma de todos os SQLs. Os três valores venais em caixas como as
- * de Áreas e dimensões, lado a lado quando cabem; embaixo, em duplas, áreas da Prefeitura, impostos e, por último e em
- * destaque, IPTU anual e mensal. SQL por SQL fica no "Ver SQL por SQL". */
+ * de Áreas e dimensões, três por linha mesmo na gaveta mais estreita; embaixo, em dupla, as áreas da Prefeitura e, por último
+ * e em destaque, IPTU anual e mensal (impostos, valor do m², padrão, uso e vencimento saíram, pedido do Moises; ficam no Detalhe). SQL por SQL fica no "Ver SQL por SQL". */
 function Panorama({ linhas }: { linhas: { x: R; v: R | undefined }[] }) {
   const vs = linhas.map((l) => l.v).filter((v): v is R => !!v);
   const ns = vs.map((v) => v.notificacao as R | null).filter((n): n is R => !!n);
@@ -75,9 +75,6 @@ function Panorama({ linhas }: { linhas: { x: R; v: R | undefined }[] }) {
   const pares: [string, string][][] = [];
   if (ns.length) pares.push(
     [['Área total do terreno', area(somar(ns.map((n) => n.terreno?.area_total_m2)))], ['Área construída', area(somar(ns.map((n) => n.construcao?.area_construida_m2)))]],
-    [['Imposto predial', brl(somar(ns.map((n) => n.predial?.imposto_a_pagar)), 2)], ['Imposto territorial', brl(somar(ns.map((n) => n.territorial?.imposto_a_pagar)), 2)]],
-    [['Valor do m² do terreno', juntos(ns.map((n) => (n.bases?.terreno_incorporado?.valor_m2 == null ? null : brl(n.bases.terreno_incorporado.valor_m2, 2))))], ['Padrão da construção', juntos(ns.map((n) => n.construcao?.padrao))]],
-    [['Uso', juntos(ns.map((n) => n.construcao?.uso))], ['Vencimento da 1ª prestação', juntos(ns.map((n) => (n.pagar?.vencimento_1a_prestacao ? fd(n.pagar.vencimento_1a_prestacao) : null)))]],
   );
   const ex = juntos(vs.map((v) => String(v.exercicio)));
   const cel = ([k, v]: [string, string], cls = '') => (
@@ -89,7 +86,7 @@ function Panorama({ linhas }: { linhas: { x: R; v: R | undefined }[] }) {
       <div className="geo-st">Panorama do terreno<span className="faint"> · {linhas.length} SQL{linhas.length > 1 ? 's' : ''}{ex !== '—' ? ` · exercício ${ex}` : ''}{pv ? ` · valores de ${pv}` : ''}{sem > 0 ? ` · ${sem} sem IPTU` : ''}</span></div>
       <div className="areas iptu-venal">{venais.map((c) => cel(c))}</div>
       {pares.length > 0 && <div className="iptu-pares">{pares.flatMap((p) => p.map((c) => cel(c, ' iptu-k')))}</div>}
-      {pn && pn !== pv ? <div className="hint">Áreas e impostos da Prefeitura de {pn}.</div> : null}
+      {pn && pn !== pv ? <div className="hint">Áreas da Prefeitura de {pn}.</div> : null}
       <div className="iptu-pares iptu-dest">{cel(['IPTU anual', brl(anual, 2)], ' iptu-k')}{cel(['IPTU mensal (anual ÷ 10)', brl(mensal, 2)], ' iptu-k')}</div>
     </div>
   );

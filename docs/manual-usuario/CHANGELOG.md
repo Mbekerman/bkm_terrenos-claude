@@ -8,7 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
-- **IPTU** (Terreno › IPTU): o quadro nasce fechado, como os outros da aba; abre pela seta do título. (#277)
+- **IPTU** (Terreno › IPTU): o quadro nasce fechado, como os outros da aba; abre pela seta do título. Os três valores venais cabem numa linha também na gaveta da ficha. O panorama mostra só os venais, as áreas e o IPTU anual e mensal: impostos, valor do m², padrão, uso e vencimento ficam no Detalhe de cada SQL. A busca automática, que não saía, passou a funcionar. (#277)
 - **Editar a poligonal com dois cliques** (Mapa e mini-mapa da Visão geral): vale em qualquer ponto dentro da poligonal, não só exatamente sobre a linha. Sobre o pino, os dois cliques continuam sem editar. (#270)
 - **IPTU** (Terreno › IPTU): em São Paulo o IPTU vem sozinho da Prefeitura ao cadastrar o terreno e a cada SQL incluído, por trás, sem travar o cadastro; enquanto não chega, a seção fica carregando. Em São Paulo o venal e o IPTU não se digitam mais; fora de São Paulo, sem busca, se lançam na própria seção ou na janela do SQL. IPTU mensal = anual ÷ 10 (antes ÷ 12). Valores venais em três caixas como as de Áreas e o resto em duplas, com IPTU anual e mensal em destaque. (#268)
 - **Cores do mapa no satélite** (Mapa, pinos, poligonais, legenda e bolinhas da lista): Backlog passou de cinza para amarelo-claro, Obras de azul-marinho para lavanda, Entregue de cinza para verde-menta e Descartado de cinza-escuro para cinza-claro. Nos quatro, o ponto do pino e o código ficam escuros. Antes, esses terrenos sumiam sobre a imagem de satélite. (#267)
