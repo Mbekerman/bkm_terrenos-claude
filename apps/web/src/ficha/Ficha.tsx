@@ -13,6 +13,7 @@ import AbaComercial from './Comercial';
 import Painel, { Avancos, usePN } from './Painel';
 import AbaEntorno, { EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
+import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
 import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
 import { useToast } from '../components/ui';
@@ -331,7 +332,7 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
           {edita ? lin('Endereço', end, <LapisMapa codigo={f.codigo} />) : lin('Endereço', end)}
           {edita ? lin('Município e região', <span className="kv-vivo">{[f.municipio, f.uf].filter(Boolean).join(' · ')}{f.municipio ? ' · ' : ''}
             <Vivo ini={f.t.zona ?? ''} imediato gravar={(v) => salvarT({ zona: v || null })}>{(p) =>
-              <select className="inl-x" aria-label="Zona" {...p}><option value="">Zona não informada</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>Zona {l}</option>)}</select>}</Vivo></span>)
+              <select className="inl-x" aria-label="Zona" {...p}><option value="">Zona não informada</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>Zona {l}</option>)}</select>}</Vivo><Busca terreno={f.id} fontes={['zona']} /></span>)
             : lin('Município e região', mun)}
           {lin('Zoneamento', f.zonas, ir('terreno', 'Ver os parâmetros urbanísticos', 'indices'))}
           {edita ? lin('Área adotada', <span className="kv-vivo">{f.area != null ? m2(f.area) + ' · ' : ''}
