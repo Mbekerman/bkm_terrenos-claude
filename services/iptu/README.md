@@ -20,16 +20,19 @@ npm ci && npm test   # leitura do PDF com uma notificação fictícia; não fala
 
 ## Implantar (uma vez, no Cloud Shell do projeto `bkm-terrenos`)
 
-A senha é digitada só no Cloud Shell, sem aparecer na tela nem no histórico. Nunca cole a
+A senha é digitada só na tela do Secret Manager (no terminal, um bloco colado com `read -s` já
+engoliu as linhas seguintes e deixou a senha no histórico, 9/nov/2026). Nunca cole a
 senha em chat, e-mail, repositório ou no banco.
 
 ```sh
 gcloud config set project bkm-terrenos
 gcloud services enable secretmanager.googleapis.com run.googleapis.com cloudbuild.googleapis.com
 
-# 1. Segredos (digite o CPF e depois a senha; Enter em cada um)
-read -rs V && printf '%s' "$V" | gcloud secrets create iptu-cpf --data-file=- ; unset V
-read -rs V && printf '%s' "$V" | gcloud secrets create iptu-senha --data-file=- ; unset V
+# 1. Segredos: crie pela tela, nunca pelo terminal
+#    https://console.cloud.google.com/security/secret-manager/create?project=bkm-terrenos
+#    iptu-cpf   = CPF (11) ou CNPJ (14), só os números
+#    iptu-senha = a Senha Web
+#    Cole os comandos abaixo um por vez.
 SA="$(gcloud projects describe bkm-terrenos --format='value(projectNumber)')-compute@developer.gserviceaccount.com"
 # projeto novo: a conta padrão também monta o código enviado (sem isso, o deploy dá 403 em storage.objects.get)
 gcloud projects add-iam-policy-binding bkm-terrenos --member="serviceAccount:$SA" --role=roles/run.builder --condition=None
@@ -55,4 +58,4 @@ curl -s $URL/iptu/saude   # {"ok":true,"credencial":true}
 
 `--max-instances 1`: a fila é em memória e a Prefeitura recebe um pedido por vez.
 Atualizar o código depois: repetir o `gcloud run deploy` (os segredos e variáveis ficam).
-Trocar a senha: `read -rs V && printf '%s' "$V" | gcloud secrets versions add iptu-senha --data-file=- ; unset V` e um novo deploy.
+Trocar a senha: na tela do Secret Manager, abrir `iptu-senha` › Nova versão (desativando as anteriores) e repetir o `gcloud run deploy`.
