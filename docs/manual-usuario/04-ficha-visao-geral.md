@@ -32,7 +32,7 @@ A temperatura diz o quanto a negociação está promissora. São 5 barras: **Mui
 
 Mostra quanto dos 12 itens que importam para decidir a compra está preenchido. A bolinha vermelha diz quantos faltam. Clique para ver a lista; escolha um item e o sistema **abre a aba, abre o campo em edição e rola até ele**, que acende em verde-limão por um instante.
 
-Os 12 itens:
+Os 11 itens:
 
 | Item | Onde se preenche |
 |---|---|
@@ -45,13 +45,12 @@ Os 12 itens:
 | Inscrição e IPTU | Terreno › Matrículas e SQLs |
 | Proprietário | Terreno › Partes (lápis da parte) |
 | Zoneamento | Parâmetros › Registrar zonas (ou automático pelo GeoSampa) |
-| Visita técnica | Infraestrutura (**ainda não disponível** no sistema real) |
 | Valor pedido | Comercial › Condições pedidas (ou registrar oferta) |
 | Temperatura | Topo da ficha |
 
 Quando você rola e o topo sai da vista, a barra das abas mostra um **botão de alerta** com a bolinha vermelha, que abre a mesma lista.
 
-**Limitação:** como a aba Infraestrutura ainda não está no sistema real, o item "Visita técnica" pode ficar pendente sem ter onde preencher pela tela.
+**Visita técnica** não entra na conta enquanto a aba Infraestrutura não existir no sistema real (ela só está no protótipo): antes, ela deixava toda ficha presa abaixo de 100% sem ter onde preencher. Volta para a lista quando a aba for portada.
 
 ## Barra das abas
 

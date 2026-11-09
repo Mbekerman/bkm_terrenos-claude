@@ -28,6 +28,8 @@ export interface TerrenoMapa {
   id: string; codigo: string; nome: string; bairro: string | null; zona: string | null; municipio: string | null;
   corretor: string | null; lat: number | null; lng: number | null; poly: [number, number][] | null; area: number | null;
   procs: Proc[];
+  /** o que a busca da barra superior procura além dos campos acima: endereço (logradouro, número, CEP), matrículas e SQLs */
+  endereco?: string; matriculas?: string[]; sqls?: string[];
 }
 export interface Item { k: string; nome: string; cor: string; g: string; fg: string; desce: boolean }
 export type Apag = Record<string, string[]>;
@@ -121,12 +123,21 @@ export function areaPoly(pts: [number, number][] | null): number | null {
 }
 export const areaDe = (t: TerrenoMapa) => t.area ?? areaPoly(t.poly);
 
-/** busca da barra superior: todas as palavras em código, nome, bairro, zona, município ou corretor */
+/** busca da barra superior: todas as palavras em código, nome, endereço, bairro, zona, município, corretor,
+ *  matrícula ou SQL. Palavra com dígito também casa sem a pontuação: "001.002.0003-4" acha "00100200034"
+ *  e vice-versa, e "12345" acha a matrícula "12.345". */
 export function bate(t: TerrenoMapa, q: string): boolean {
   q = q.trim().toLowerCase();
   if (!q) return true;
-  const hay = [t.codigo, t.nome, t.bairro, t.zona, t.municipio, t.corretor].filter(Boolean).join(' ').toLowerCase();
-  return q.split(/\s+/).every((w) => hay.includes(w));
+  const sem = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const docs = [...(t.matriculas ?? []), ...(t.sqls ?? [])];
+  const hay = sem([t.codigo, t.nome, t.endereco, t.bairro, t.zona, t.municipio, t.corretor, ...docs].filter(Boolean).join(' ').toLowerCase());
+  const digs = docs.map((d) => d.replace(/\D/g, '')).filter(Boolean);
+  return q.split(/\s+/).every((w) => {
+    if (hay.includes(sem(w))) return true;
+    const d = w.replace(/\D/g, '');
+    return d.length >= 3 && d.length === w.replace(/[.\-/\s]/g, '').length && digs.some((x) => x.includes(d));
+  });
 }
 
 function anel(g: unknown): [number, number][] | null {
@@ -140,14 +151,18 @@ function anel(g: unknown): [number, number][] | null {
 
 /** terrenos do mapa e a configuração do funil da empresa */
 export async function carregar(empresa: string): Promise<{ fases: Fase[]; terrenos: TerrenoMapa[] }> {
-  const [m, f, e, s, p] = await Promise.all([
+  const [m, f, e, s, p, te, ma, si] = await Promise.all([
     supabase.from('v_mapa').select('id,codigo,nome,bairro,zona,municipio,corretor_principal,latitude,longitude,poligono_geojson,area_adotada_m2').eq('empresa_id', empresa),
     supabase.from('fases_modelo').select('codigo,nome,ordem,entrada,ativo').eq('empresa_id', empresa).order('ordem'),
     supabase.from('etapas_modelo').select('fase,codigo,nome,ordem').eq('empresa_id', empresa).order('ordem'),
     supabase.from('subetapas_modelo').select('fase,etapa,codigo,nome,ordem,ativo').eq('empresa_id', empresa).order('ordem'),
     supabase.from('processos').select('terreno_id,fase,etapa_atual,subetapa_atual,status,data_inicio').eq('empresa_id', empresa).is('parte_id', null).order('data_inicio'),
+    /* para a busca da barra superior: endereço, matrículas e SQLs */
+    supabase.from('terrenos').select('id,logradouro,numero,cep').eq('empresa_id', empresa),
+    supabase.from('matriculas').select('terreno_id,numero').eq('empresa_id', empresa),
+    supabase.from('inscricoes_municipais').select('terreno_id,inscricao').eq('empresa_id', empresa),
   ]);
-  for (const r of [m, f, e, s, p]) if (r.error) throw r.error;
+  for (const r of [m, f, e, s, p, te, ma, si]) if (r.error) throw r.error;
   type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   const fases: Fase[] = (f.data as R[]).map((x) => ({
     k: x.codigo, nome: x.nome, entrada: !!x.entrada, ativo: x.ativo !== false,
@@ -157,10 +172,14 @@ export async function carregar(empresa: string): Promise<{ fases: Fase[]; terren
     })),
   }));
   const procs = (p.data as R[]).map((x) => ({ t: x.terreno_id as string, fase: x.fase, etapa: x.etapa_atual, sub: x.subetapa_atual, status: x.status }));
+  const end = Object.fromEntries((te.data as R[]).map((x) => [x.id, [x.logradouro, x.numero, x.cep].filter(Boolean).join(' ')]));
+  const porTer = (rs: R[], k: string) => { const o: Record<string, string[]> = {}; for (const r of rs) if (r[k]) (o[r.terreno_id] ??= []).push(String(r[k])); return o; };
+  const mats = porTer(ma.data as R[], 'numero'), sqls = porTer(si.data as R[], 'inscricao');
   const terrenos: TerrenoMapa[] = (m.data as R[]).map((x) => ({
     id: x.id, codigo: x.codigo, nome: x.nome ?? x.codigo, bairro: x.bairro, zona: x.zona, municipio: x.municipio, corretor: x.corretor_principal,
     lat: x.latitude, lng: x.longitude, poly: anel(x.poligono_geojson), area: x.area_adotada_m2,
     procs: procs.filter((q) => q.t === x.id).map(({ fase, etapa, sub, status }) => ({ fase, etapa, sub, status })),
+    endereco: end[x.id] || undefined, matriculas: mats[x.id], sqls: sqls[x.id],
   }));
   return { fases, terrenos };
 }
