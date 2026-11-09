@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useRascunho, mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -12,6 +12,7 @@ import type { Ficha, R } from './dados';
 import Temperatura from './Temperatura';
 import { lerNum, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido, Vivo } from './edicao';
 import { daParte, ptArea, useLotes } from './Partes';
+import { ComMencoes, MarcarPessoas, TextoMencao, useGente, type Gente, type Marcado } from '../components/Marcar';
 
 // Aba Comercial da ficha (proto.js › abaComercialFicha = abaGeral(t,'neg') + abaComercial + abaNegociacao; proto_lotes.js ›
 // secPartesCom; proto_mod.js › secReunioes). Negociação, Condições pedidas, Partes (o pedido de cada parte, oferta_partes),
@@ -47,7 +48,7 @@ export function useComercial(f: Ficha) {
         supabase.from('terreno_corretores').select('corretor_id,principal').eq('terreno_id', f.id),
         supabase.from('corretores').select('id,creci,imobiliaria,ativo,pessoas(nome_razao_social)').eq('empresa_id', empresa!.id),
         neg ? supabase.from('propostas').select('*,proposta_partes(parte_id)').eq('processo_id', neg).order('versao') : nada,
-        supabase.from('reunioes').select('*,reuniao_participantes(id,lado,nome,user_id,pessoa_id,pessoas(nome_razao_social))').eq('terreno_id', f.id).order('inicio', { ascending: false }),
+        supabase.from('reunioes').select('*,reuniao_participantes(id,lado,nome,email,user_id,pessoa_id,pessoas(nome_razao_social))').eq('terreno_id', f.id).order('inicio', { ascending: false }),
         // todas as partes, também as tiradas do terreno: a proposta antiga pode ter sido feita a uma delas
         supabase.from('terreno_partes').select('id,nome,ativa,criado_em').eq('terreno_id', f.id).order('criado_em'),
       ]);
@@ -86,7 +87,6 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
   const fref = useRef<HTMLFormElement>(null);
   const temOf = Object.values(v).some((x) => x.trim() !== '');
   useGuardarRasc(kOf, v, temOf);
-  const { aviso, pedir } = useRascunho(fref, temOf, 'a oferta', fechar);
   const m = (k: string) => (ev: { target: { value: string } }) => setV((o) => ({ ...o, [k]: ev.target.value }));
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -105,7 +105,7 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
     fechar();
   }
   return (
-    <Dialogo titulo="Registrar oferta" onFechar={() => pedir(fechar)} rodape={<><LimparRasc chave={kOf} mostrar={temOf} limpar={() => setV(OF0)} /><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
+    <Dialogo titulo="Registrar oferta" onFechar={fechar} rodape={<><LimparRasc chave={kOf} mostrar={temOf} limpar={() => setV(OF0)} /><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
       <form id="f-of" ref={fref} onSubmit={enviar}><div className="fields">
         <div className="field"><label htmlFor="o-c">Corretor</label><select id="o-c" value={v.cid} onChange={m('cid')}><option value="">Sem corretor / direto</option>
           {corretores.filter((c) => c.ativo !== false).map((c) => <option key={c.id} value={c.id}>{c.nome}{c.imobiliaria ? ' · ' + c.imobiliaria : ''}</option>)}</select></div>
@@ -116,7 +116,6 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
         <div className="field full"><label htmlFor="o-o">Observação sobre a forma de pagamento</label><input id="o-o" value={v.obs} onChange={m('obs')} /></div>
         <div className="field full"><label htmlFor="o-a">Aceita permuta</label><input id="o-a" value={v.aceita} onChange={m('aceita')} /></div>
       </div></form>
-      {aviso}
     </Dialogo>
   );
 }
@@ -390,7 +389,6 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const fref = useRef<HTMLFormElement>(null);
   const sujoPr = form && mudou(v, ini);
   useGuardarRasc(kPr, v, sujoPr);
-  const { aviso } = useRascunho(fref, sujoPr, 'a proposta', () => setForm(false));
   const m = (k: string) => (ev: { target: { value: string } }) => setV((x) => ({ ...x, [k]: ev.target.value }));
   const n = c.props.length;
   async function enviar(ev: FormEvent) {
@@ -467,7 +465,6 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
             <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kPr} mostrar={sujoPr} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar</button></div>
           </form>
         )}
-        {aviso}
         {sobre.length > 0 && <div className="banner warn pp-sobre" role="status"><Ic n="warn" s={20} /><div>
           <div className="bt">Propostas em aberto para a mesma parte</div>
           {sobre.map((x) => <div key={x.vs.join('-')}>v{x.vs[0]} e v{x.vs[1]}: {x.partes}</div>)}
@@ -498,101 +495,152 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
 /* ---------- Reuniões ---------- */
 const MOD: Record<string, string> = { presencial: 'Presencial', online: 'Online' };
 const LOC: Record<string, string> = { bkm: 'Na BKM', externo: 'Externa' };
+const ST_REU: Record<string, string> = { realizada: 'Realizada', agendada: 'Agendada', cancelada: 'Cancelada' };
 const hora = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const dataLocal = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+/** link digitado: sem http, ganha https:// */
+const linkOk = (s: string) => { const t = s.trim(); return !t ? '' : /^https?:\/\//i.test(t) ? t : 'https://' + t; };
 
+/** participante gravado → pessoa marcada no campo (o nome do colega vem da equipe) */
+function marcadoDe(p: R, bkm: Gente[]): Marcado {
+  if (p.user_id) return { id: p.id, k: 'u:' + p.user_id, nome: bkm.find((g) => g.user_id === p.user_id)?.nome ?? 'Colega', user_id: p.user_id, lado: 'bkm' };
+  if (p.pessoa_id) return { id: p.id, k: 'p:' + p.pessoa_id, nome: p.pessoas?.nome_razao_social ?? '—', pessoa_id: p.pessoa_id, lado: p.lado };
+  if (p.email) return { id: p.id, k: 'e:' + p.email, nome: p.nome ?? p.email, email: p.email, lado: p.lado };
+  return { id: p.id, k: 'n:' + String(p.nome ?? '').toLowerCase(), nome: p.nome ?? '—', lado: p.lado };
+}
+const linhaDe = (m: Marcado) => (m.user_id ? { lado: 'bkm', user_id: m.user_id } : m.pessoa_id ? { lado: m.lado, pessoa_id: m.pessoa_id }
+  : { lado: m.lado, nome: m.nome, email: m.email ?? null });
+const lerMarc = (s: string): Marcado[] => { try { const v = JSON.parse(s || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };
+
+// Reunião: registrar e editar no mesmo formulário (editar: clicar na reunião; pedido do Moises, 9/nov/2026). Participantes
+// marcados com @: colegas da BKM (avisados no sino pelo banco, app.tg_participante_mencao) e pessoas de fora cadastradas
+// no terreno com e-mail ou nome digitado (ficam registradas como participantes; o convite por e-mail espera o Google Agenda).
+// Online tem o link da reunião, digitado por ora.
 function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
   const { edita, empresa, membro } = useSessao();
   const toast = useToast(), recarregar = useRecarregar();
+  const gente = useGente(f.id).data, bkm = gente?.bkm ?? [], fora = gente?.fora ?? [];
   const ativa = c.proc?.status === 'ativo';
   const [form, setForm] = useState(false);
+  const [ed, setEd] = useState<R | null>(null);
   const [v, setV] = useState<Record<string, string>>({});
   const [grav, setGrav] = useState(false);
   const [ini, setIni] = useState<Record<string, string>>({});
   const fref = useRef<HTMLFormElement>(null);
-  const kRe = `${f.id}:reuniao`, sujoRe = form && mudou(v, ini);
+  const kRe = `${f.id}:reuniao${ed ? ':' + ed.id : ''}`, sujoRe = form && mudou(v, ini);
   useGuardarRasc(kRe, v, sujoRe);
-  const { aviso } = useRascunho(fref, sujoRe, 'a reunião', () => setForm(false));
+  const eu: Marcado[] = membro ? [{ k: 'u:' + membro.user_id, nome: bkm.find((g) => g.user_id === membro.user_id)?.nome ?? membro.nome ?? 'Eu', user_id: membro.user_id, lado: 'bkm' }] : [];
   const abrir = () => {
-    const o = { status: 'realizada', data: hojeISO(), hora: '10:00', modalidade: 'presencial', local: 'bkm', endereco: '', pbkm: membro?.nome ?? '', pext: '', pauta: '', resumo: '', enc: '' };
-    setV(comRasc(kRe, o)); setIni(o);
+    const o = { status: 'realizada', data: hojeISO(), hora: '10:00', modalidade: 'presencial', local: 'bkm', endereco: '', link: '', pbkm: JSON.stringify(eu), pext: '[]', pauta: '', resumo: '', enc: '' };
+    setEd(null); setV(comRasc(`${f.id}:reuniao`, o)); setIni(o);
     abrirQuadro('comercial', 'reunioes');
     setForm(true);
   };
+  const editar = (r: R) => {
+    const ps = ((r.reuniao_participantes ?? []) as R[]).map((p) => marcadoDe(p, bkm));
+    const o = {
+      status: r.status, data: dataLocal(r.inicio), hora: hora(r.inicio), modalidade: r.modalidade, local: r.local ?? 'bkm', endereco: r.endereco ?? '', link: r.link ?? '',
+      pbkm: JSON.stringify(ps.filter((p) => p.lado === 'bkm')), pext: JSON.stringify(ps.filter((p) => p.lado !== 'bkm')),
+      pauta: r.pauta ?? '', resumo: r.resumo ?? '', enc: r.encaminhamentos ?? '',
+    };
+    setEd(r); setV(comRasc(`${f.id}:reuniao:${r.id}`, o)); setIni(o);
+    setForm(true);
+    /* o formulário fica no lugar da reunião: só leva o cursor para ele, sem acender o campo */
+    setTimeout(() => { const el = document.getElementById('ru-s'); el?.focus({ preventScroll: true }); el?.closest('form')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 60);
+  };
+  const fechar = () => { setForm(false); setEd(null); };
   const m = (k: string) => (ev: { target: { value: string } }) => setV((x) => ({ ...x, [k]: ev.target.value }));
+  const mt = (k: string) => (txt: string) => setV((x) => ({ ...x, [k]: txt }));
+  const mm = (k: string) => (l: Marcado[]) => setV((x) => ({ ...x, [k]: JSON.stringify(l) }));
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
     if (grav) return;
     const inicio = new Date(`${v.data}T${v.hora || '00:00'}`);
     if (isNaN(+inicio)) { toast('Informe a data.', true); return; }
     if (v.status === 'realizada' && inicio > new Date()) { toast('Reunião realizada não pode ter data futura.', true); return; }
+    const pres = v.modalidade === 'presencial', rea = v.status === 'realizada', link = pres ? '' : linkOk(v.link);
+    if (link && !/^https?:\/\/\S+$/i.test(link)) { toast('O link da reunião não pode ter espaços.', true); focar('ru-l'); return; }
     setGrav(true);
-    const pres = v.modalidade === 'presencial', rea = v.status === 'realizada';
-    const { data, error } = await supabase.from('reunioes').insert({
-      empresa_id: empresa!.id, terreno_id: f.id, processo_id: f.negId, status: v.status, inicio: inicio.toISOString(), modalidade: v.modalidade,
+    const dados = {
+      status: v.status, inicio: inicio.toISOString(), modalidade: v.modalidade, link: link || null,
       local: pres ? v.local : null, endereco: pres && v.local === 'externo' ? v.endereco.trim() || null : null, pauta: v.pauta.trim() || null,
       resumo: rea ? v.resumo.trim() || null : null, encaminhamentos: rea ? v.enc.trim() || null : null,
-    }).select('id').single();
+    };
+    const { data, error } = ed
+      ? await supabase.from('reunioes').update(dados).eq('id', ed.id).select('id').single()
+      : await supabase.from('reunioes').insert({ ...dados, empresa_id: empresa!.id, terreno_id: f.id, processo_id: f.negId }).select('id').single();
     if (!error) {
-      const nomes = (s: string) => s.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
-      const ps = [...nomes(v.pbkm).map((nome) => ({ lado: 'bkm', nome })), ...nomes(v.pext).map((nome) => ({ lado: 'outro', nome }))]
-        .map((p) => ({ ...p, empresa_id: empresa!.id, reuniao_id: (data as R).id }));
-      if (ps.length) { const r = await supabase.from('reuniao_participantes').insert(ps); if (r.error) toast(r.error.message, true); }
+      const rid = (data as R).id as string, novos = [...lerMarc(v.pbkm), ...lerMarc(v.pext)];
+      const antes = ed ? ((ed.reuniao_participantes ?? []) as R[]).map((p) => p.id as string) : [];
+      const sai = antes.filter((id) => !novos.some((n) => n.id === id));
+      const entra = novos.filter((n) => !n.id).map((n) => ({ ...linhaDe(n), empresa_id: empresa!.id, reuniao_id: rid }));
+      if (sai.length) { const r = await supabase.from('reuniao_participantes').delete().in('id', sai); if (r.error) toast(r.error.message, true); }
+      if (entra.length) { const r = await supabase.from('reuniao_participantes').insert(entra); if (r.error) toast(r.error.message, true); }
     }
     setGrav(false);
     if (error) { toast(error.message, true); return; }
     apagarRasc(kRe);
-    setForm(false);
+    fechar();
     recarregar();
-    toast('Reunião registrada.');
+    toast(ed ? 'Reunião alterada.' : 'Reunião registrada.');
   }
   async function feita(r: R) {
     const { error } = await supabase.from('reunioes').update({ status: 'realizada' }).eq('id', r.id);
     if (error) toast(error.message, true); else recarregar();
   }
-  const part = (r: R, bkm: boolean) => ((r.reuniao_participantes ?? []) as R[]).filter((p) => (p.lado === 'bkm') === bkm)
-    .map((p) => p.nome || p.pessoas?.nome_razao_social || (p.user_id === membro?.user_id ? membro?.nome : '') || '—').join(', ');
+  const part = (r: R, ladoBkm: boolean) => ((r.reuniao_participantes ?? []) as R[]).filter((p) => (p.lado === 'bkm') === ladoBkm)
+    .map((p) => marcadoDe(p, bkm)).map((x) => (x.user_id || x.pessoa_id || x.email ? '@' : '') + x.nome).join(', ');
   const ms = c.reus, agora = new Date();
   const radio = (k: string, opts: Record<string, string>, rot: string) => (
     <div className="field"><span className="lbl" id={`ru-${k}-l`}>{rot}</span><span className="seg3" role="radiogroup" aria-labelledby={`ru-${k}-l`}>
       {Object.entries(opts).map(([a, b]) => <label key={a} className="opt-radio"><input type="radio" name={k} value={a} checked={v[k] === a} onChange={m(k)} />{b}</label>)}</span></div>
   );
+  const formulario = (
+    <form ref={fref} className="reu-form" onSubmit={enviar} aria-label={ed ? 'Editar reunião' : 'Registrar reunião'}><div className="editgrid">
+      <div className="field"><label htmlFor="ru-s">Situação</label><select id="ru-s" value={v.status} onChange={m('status')}>
+        {Object.entries(ST_REU).filter(([k]) => ed || k !== 'cancelada').map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
+      <div className="field"><label htmlFor="ru-d">Data</label><input id="ru-d" type="date" required value={v.data} onChange={m('data')} /></div>
+      <div className="field"><label htmlFor="ru-h">Hora</label><input id="ru-h" type="time" value={v.hora} onChange={m('hora')} /></div>
+      {radio('modalidade', MOD, 'Modalidade')}
+      {v.modalidade === 'presencial' && radio('local', LOC, 'Onde')}
+      {v.modalidade === 'presencial' && v.local === 'externo' && <div className="field"><label htmlFor="ru-e">Endereço</label><input id="ru-e" value={v.endereco} onChange={m('endereco')} placeholder="Escritório do vendedor, no terreno..." /></div>}
+      {v.modalidade === 'online' && <div className="field ru-link"><label htmlFor="ru-l">Link da reunião</label><input id="ru-l" inputMode="url" value={v.link} onChange={m('link')} placeholder="https://meet.google.com/..." /></div>}
+      <div className="field full"><label htmlFor="ru-pb">Participantes da BKM</label>
+        <MarcarPessoas id="ru-pb" opcoes={bkm} valor={lerMarc(v.pbkm)} onChange={mm('pbkm')} placeholder="Digite @ e o nome" vazio="Ninguém da equipe com esse nome" /></div>
+      <div className="field full"><label htmlFor="ru-pe">Participantes externos</label>
+        <MarcarPessoas id="ru-pe" opcoes={fora} valor={lerMarc(v.pext)} onChange={mm('pext')} livre="outro"
+          placeholder={fora.length ? 'Digite @ e o nome (pessoas do terreno com e-mail) ou um nome' : 'Nome do vendedor, corretor, advogado'} /></div>
+      <div className="field full"><label htmlFor="ru-p">Pauta</label><TextoMencao id="ru-p" value={v.pauta} onChange={mt('pauta')} colegas={bkm} /></div>
+      {v.status === 'realizada' && <>
+        <div className="field full"><label htmlFor="ru-r">O que foi tratado</label><TextoMencao area id="ru-r" value={v.resumo} onChange={mt('resumo')} colegas={bkm} placeholder="Posições de cada lado, valores citados, objeções" /></div>
+        <div className="field full"><label htmlFor="ru-n">Encaminhamentos</label><TextoMencao area id="ru-n" value={v.enc} onChange={mt('enc')} colegas={bkm} placeholder="Quem faz o quê, até quando" /></div>
+      </>}
+    </div><div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kRe} mostrar={sujoRe} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={fechar}>Cancelar</button>
+      <button className="btn primary" disabled={grav}>{ed ? 'Salvar' : 'Registrar reunião'}</button></div></form>
+  );
   return (
     <Quadro aba="comercial" id="reunioes" titulo={<>Reuniões{ms.length ? <> <span className="h-n">{ms.length}</span></> : null}</>}
       acoes={<span className="sec-acoes">{ativa && edita && !form && <button className="btn primary sm" onClick={abrir}><Ic n="add" s={16} />Registrar reunião</button>}</span>}>
       <div className="sec-b">
-        {form && (
-          <form ref={fref} className="reu-form" onSubmit={enviar}><div className="editgrid">
-            <div className="field"><label htmlFor="ru-s">Situação</label><select id="ru-s" value={v.status} onChange={m('status')}><option value="realizada">Realizada</option><option value="agendada">Agendada</option></select></div>
-            <div className="field"><label htmlFor="ru-d">Data</label><input id="ru-d" type="date" required value={v.data} onChange={m('data')} /></div>
-            <div className="field"><label htmlFor="ru-h">Hora</label><input id="ru-h" type="time" value={v.hora} onChange={m('hora')} /></div>
-            {radio('modalidade', MOD, 'Modalidade')}
-            {v.modalidade === 'presencial' && radio('local', LOC, 'Onde')}
-            {v.modalidade === 'presencial' && v.local === 'externo' && <div className="field"><label htmlFor="ru-e">Endereço</label><input id="ru-e" value={v.endereco} onChange={m('endereco')} placeholder="Escritório do vendedor, no terreno..." /></div>}
-            <div className="field"><label htmlFor="ru-pb">Participantes da BKM</label><input id="ru-pb" value={v.pbkm} onChange={m('pbkm')} /></div>
-            <div className="field"><label htmlFor="ru-pe">Participantes externos</label><input id="ru-pe" value={v.pext} onChange={m('pext')} placeholder="Vendedor, corretor, advogado" /></div>
-            <div className="field full"><label htmlFor="ru-p">Pauta</label><input id="ru-p" value={v.pauta} onChange={m('pauta')} /></div>
-            {v.status === 'realizada' && <>
-              <div className="field full"><label htmlFor="ru-r">O que foi tratado</label><textarea id="ru-r" value={v.resumo} onChange={m('resumo')} placeholder="Posições de cada lado, valores citados, objeções" /></div>
-              <div className="field full"><label htmlFor="ru-n">Encaminhamentos</label><textarea id="ru-n" value={v.enc} onChange={m('enc')} placeholder="Quem faz o quê, até quando" /></div>
-            </>}
-          </div><div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kRe} mostrar={sujoRe} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar reunião</button></div></form>
-        )}
-        {aviso}
+        {form && !ed && formulario}
         {ms.length ? (
           <div className="reus">{ms.map((r) => {
-            const bk = part(r, true), ex = part(r, false);
+            if (form && ed?.id === r.id) return <div key={r.id}>{formulario}</div>;
+            const bk = part(r, true), ex = part(r, false), pode = edita && !form;
             return (
-              <article key={r.id} className={`reu ${r.status}`}>
+              <article key={r.id} className={`reu ${r.status}${pode ? ' reu-ed' : ''}`} data-mid={r.id}
+                {...(pode ? { role: 'button', tabIndex: 0, 'aria-label': `Editar a reunião de ${fd(dataLocal(r.inicio))}`, onClick: (e: MouseEvent) => { if (!(e.target as HTMLElement).closest('a,button')) editar(r); },
+                  onKeyDown: (e: KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); editar(r); } } } : {})}>
                 <div className="reu-h"><div><div className="reu-t">{fd(dataLocal(r.inicio))} · {hora(r.inicio)}</div>
                   <div className="reu-m">{MOD[r.modalidade]}{r.modalidade === 'presencial' ? ' · ' + LOC[r.local] + (r.endereco ? ' · ' + r.endereco : '') : ''}</div></div>
-                  <span className="reu-acts">{r.status === 'agendada' ? <><span className="chip blue">Agendada</span>
-                    {ativa && edita && new Date(r.inicio) <= agora && <button className="btn sm" onClick={() => feita(r)}><Ic n="check" s={16} />Marcar realizada</button>}</>
-                    : r.status === 'cancelada' ? <span className="chip">Cancelada</span> : <span className="chip good">Realizada</span>}</span></div>
+                  <span className="reu-acts">{r.link && r.status !== 'cancelada' && <a className="btn sm" href={r.link} target="_blank" rel="noopener noreferrer"><Ic n="link" s={16} />{r.status === 'agendada' ? 'Entrar na reunião' : 'Link da reunião'}</a>}
+                    <span className="reu-st">{r.status === 'agendada' ? <span className="chip blue">Agendada</span> : r.status === 'cancelada' ? <span className="chip">Cancelada</span> : <span className="chip good">Realizada</span>}
+                      {pode && <button className="iconbtn sm" aria-label="Editar reunião" title="Editar reunião" onClick={() => editar(r)}><Ic n="edit" s={18} /></button>}</span>
+                    {r.status === 'agendada' && ativa && edita && new Date(r.inicio) <= agora && <button className="btn sm" onClick={() => feita(r)}><Ic n="check" s={16} />Marcar realizada</button>}</span></div>
                 {(bk || ex) && <div className="reu-p"><span><b>BKM</b> {bk || '—'}</span><span><b>Externos</b> {ex || '—'}</span></div>}
-                {r.pauta && <div className="reu-x"><span className="k">Pauta</span>{r.pauta}</div>}
-                {r.resumo && <div className="reu-x"><span className="k">Tratado</span>{r.resumo}</div>}
-                {r.encaminhamentos && <div className="reu-x"><span className="k">Encaminhamentos</span>{r.encaminhamentos}</div>}
+                {r.pauta && <div className="reu-x"><span className="k">Pauta</span><ComMencoes texto={r.pauta} colegas={bkm} /></div>}
+                {r.resumo && <div className="reu-x"><span className="k">Tratado</span><ComMencoes texto={r.resumo} colegas={bkm} /></div>}
+                {r.encaminhamentos && <div className="reu-x"><span className="k">Encaminhamentos</span><ComMencoes texto={r.encaminhamentos} colegas={bkm} /></div>}
               </article>
             );
           })}</div>

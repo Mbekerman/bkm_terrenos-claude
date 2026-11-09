@@ -44,9 +44,10 @@ No computador, clicar no **pino**, na **poligonal** ou na **lupa** da linha abre
 - clicar noutro terreno troca o terreno da gaveta;
 - **X** ou **Esc** fecham;
 - **"Abrir página"** leva à ficha em tela própria;
-- a largura da gaveta se arrasta pela borda esquerda (mínimo 640 px, nunca sobre a lista); dois cliques na borda voltam ao padrão; o sistema lembra a largura.
+- a largura da gaveta se arrasta pela borda esquerda (mínimo 640 px, nunca sobre a lista); dois cliques na borda voltam ao padrão; o sistema lembra a largura;
+- **a gaveta lembra onde você parou em cada terreno**: a aba, a posição da rolagem e quais quadros estavam abertos ou fechados em cada aba. Ao reabrir a gaveta daquele terreno (depois de fechar, trocar de terreno ou até fechar o navegador), tudo volta como estava. Terreno que nunca foi aberto começa na Visão geral, do topo. Fica guardado neste navegador, para os 50 terrenos abertos mais recentemente; em outro computador ou navegador, a gaveta começa do zero.
 
-A gaveta tem tudo que a ficha tem e se edita igual. Ver [04](04-ficha-visao-geral.md).
+A gaveta tem tudo que a ficha tem e se edita igual; o código, o nome e a temperatura ficam no cabeçalho dela, e o ícone ao lado ("Abrir página") leva à ficha em tela própria. Ver [04](04-ficha-visao-geral.md).
 
 ## Legenda
 
@@ -172,8 +173,26 @@ Comércios, escolas e hospitais do próprio Google ficam sempre visíveis no map
 
 - **Clique direito** em qualquer ponto do mapa › **"Novo terreno aqui"**: começa o desenho da poligonal com o primeiro ponto ali.
 - **Dois cliques** no vazio do mapa fazem o mesmo.
+- Sobre o pino ou dentro da poligonal de um terreno já cadastrado, o clique direito **não** mostra "Novo terreno aqui": o menu traz o código e o nome do terreno e só "Traçar rota até aqui".
 
-O passo a passo do cadastro está em [03. Novo terreno](03-novo-terreno.md). Leitura não tem esse menu.
+O passo a passo do cadastro está em [03. Novo terreno](03-novo-terreno.md). Leitura e Básico não têm "Novo terreno aqui" (só a rota).
+
+## Traçar rota até um ponto
+
+**Para que serve:** saber quanto tempo se leva de um endereço ou lugar até o terreno (ou até qualquer ponto do mapa), de carro, moto, a pé, de bicicleta ou de transporte público.
+
+1. **Clique direito** no ponto do mapa (ou no pino ou na poligonal de um terreno) › **"Traçar rota até aqui"**. Abre o quadro **"Rota até …"** no canto de cima à esquerda do mapa, e o destino aparece como um pino vermelho. No terreno, o destino é o pino do terreno.
+2. No campo **"Saindo de"**, digite um endereço ou o nome de um lugar (loja, estação, prédio) e escolha na lista, ou escolha **"Minha localização"** (o navegador pede permissão).
+3. A rota aparece no mapa (a pé, pontilhada), com o tempo e a distância. O mapa se ajusta para mostrar a rota inteira, e os quadrados da concorrência ficam apagados enquanto a rota está aberta.
+4. Troque a forma de condução nos botões **Carro, Moto, A pé, Bicicleta e Transporte**: a rota se refaz na hora. O sistema lembra a última escolha.
+5. **"Abrir no Google Maps"** abre a mesma rota no Google Maps, com o trânsito e as alternativas de lá.
+6. Feche no **X** ou com **Esc**; a rota sai do mapa.
+
+Bom saber:
+- Carro e moto **não contam o trânsito** do momento (o quadro avisa). Para o trânsito, use "Abrir no Google Maps".
+- A rota de **moto** é do Google, que ainda a trata como teste: confira o trajeto.
+- **Transporte público** mostra as linhas usadas (ônibus, metrô, trem), saindo agora. Só funciona onde a cidade publica os horários no Google (São Paulo, sim); fora disso aparece "O Google não tem rota de transporte público entre esses dois pontos".
+- Por ora só no computador (no celular, o toque longo no mapa ainda não abre o menu).
 
 ## Editar a poligonal de um terreno
 

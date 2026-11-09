@@ -92,7 +92,7 @@ As variáveis do serviço Cloud Run e o caminho do deploy estão em [deploy-e-am
 2. Se ela falhar ou não devolver nenhuma rota, o `DistanceMatrixService` do Maps JS (a API antiga, de reserva).
 3. Se as duas falharem, a **linha reta** (haversine, `distM`), avisada como tal (`rota_a_pe = false` em `salvar_entorno`).
 
-O protótipo usa ainda `directions/v2:computeRoutes` (rota desenhada no mapa) com o `DirectionsService` de reserva (`proto_gmap.js:139-146`); no React não há rota desenhada.
+**Rota desenhada no mapa** (React desde 9/nov/2026, "Traçar rota até aqui"): `mapa/rota.ts`, `POST https://routes.googleapis.com/directions/v2:computeRoutes`, um pedido por origem × modo, com `routingPreference: TRAFFIC_UNAWARE` em carro e moto (com trânsito o pedido vira o SKU Pro). Modos: `DRIVE`, `TWO_WHEELER` (Brasil está na lista de cobertura de duas rodas do Google, conferida em 9/nov/2026; a documentação diz que é cobrado mais caro), `WALK`, `BICYCLE` e `TRANSIT` (testado em São Paulo em 9/nov: ônibus e metrô). Reserva: `DirectionsService` do Maps JS (só se a Directions API estiver ativada; não tem moto). A origem vem do `AutocompleteSuggestion` (Places novo, token de sessão; um `fetchFields(['location'])` ao escolher), com `Place.searchByText` de reserva. O protótipo tem a mesma rota em `proto_gmap.js:139-146`.
 
 **Custo.** Cobrança por elemento (origem × destino); **a conferir**. Um terreno com 40 lugares no entorno gera 40 elementos por busca.
 
@@ -167,6 +167,7 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 - `novo/consulta.ts`: a lista `GEO_CAMADAS` (camada, geometria, raio em metros, atributos guardados), `consultarLote` → RPC `app.registrar_consulta_lote` (também completa área, CIB, zona fiscal, cartório e a análise urbanística), `consultarArea` → `app.registrar_consulta_area`, `consultarTerreno` (todos os SQLs, uma nova tentativa, depois a poligonal; andamento "N de M").
 - `novo/LotesGeo.tsx`: mapa de lotes das quadras (desenho em SVG; vêm marcados os lotes com 20% ou mais dentro; a quadra só entra com 10 m² ou mais de lote dentro; conferência no banco de quem já está em outro terreno com prazo de 20 s).
 - `novo/frentes.ts`: frentes do terreno pela poligonal (`lote_cidadao` num raio de 20 m e `v_logradouro_segmento` num raio de 60 m em volta da poligonal).
+- `novo/viasCalc.ts` (usado por `consulta.ts` › `viasDaArea`, no lote e na poligonal): a classificação viária da CET só das ruas de frente, ligadas pelo `codlog`, uma por rua com a mais alta; e a rua sem saída, deduzida da rede de `v_logradouro_segmento` num raio de 400 m (o GeoSampa não tem esse dado pronto). Custa dois pedidos a mais por consulta (lotes a 20 m e eixos a 400 m).
 - `lib/camadas.ts`: como cada camada aparece (tema, texto, gravidade).
 - Protótipo: `proto_geosampa.js`, `proto_lotesgeo.js`, `proto_restricoes.js` (e a planta em PDF e o DXF do lote, que o React ainda não gera).
 
@@ -228,12 +229,12 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 
 **Onde.**
 - Arquivos: `docs/dados/setores-<município>-2022.json` (geometria simplificada a ~1 m e valores) e `docs/dados/demografia-<município>-2022.json`, servidos em `/prototipo/dados/` (o `Dockerfile` copia `docs/dados` para `/srv/prototipo/dados`).
-- Metodologia (fonte única para protótipo, React e teste do banco): `tools/setores/metodologia_renda.json` (16 faixas, cores, fator familiar 1,6, PNAD 2.148 → 2.956), `metodologia_densidade.json` (10 faixas), `demografia.json` (grupos de idade e domicílio).
+- Metodologia (fonte única para protótipo, React e teste do banco): `tools/setores/metodologia_renda.json` (16 faixas, cores, fator familiar 1,6, PNAD 2.148 → 2.956), `metodologia_densidade.json` (10 faixas), `demografia.json` (grupos de idade e domicílio e, em `idadeMedia`, os pontos médios da idade média estimada, só no front).
 - React: `mapa/setores.ts` (`SET_MUN`, `:17`; carrega e junta os municípios), `mapa/CamadasSetor.tsx`, `ficha/Entorno.tsx`.
 - Protótipo: `proto_setores.js` (`SET_MUN` lá também).
 - Banco: `app.setores_censitarios`, `app.setor_valores`, `app.perfil_area`, `app.perfil_terreno` (carga gerada pela mesma ferramenta).
 
-**Regras que não se mudam sem o Moisés.** Faixas fixas, nunca quantis; renda sempre "estimada", com o V06004 original à vista; setor em sigilo fica sem cor, "não divulgado", nunca zero; idade só nos cortes exatos do IBGE.
+**Regras que não se mudam sem o Moisés.** Faixas fixas, nunca quantis; renda sempre "estimada", com o V06004 original à vista; setor em sigilo fica sem cor, "não divulgado", nunca zero; idade só nos cortes exatos do IBGE (a idade média é a única estimativa, pedida pelo Moisés em 9/nov/2026, e sempre dita "estimada").
 
 **Custo.** Nenhum. **Limites:** a primeira geração de São Paulo baixa cerca de 600 MB. Os arquivos de São Paulo têm 5,2 MB (setores) e 4,4 MB (demografia), e o navegador baixa tudo na primeira vez que liga a camada.
 

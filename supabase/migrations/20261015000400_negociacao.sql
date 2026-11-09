@@ -311,6 +311,7 @@ create table app.reunioes (
   modalidade      text not null check (modalidade in ('presencial','online')),
   local           text check (local in ('bkm','externo')),        -- só presencial
   endereco        text,                                           -- local externo
+  link            text check (link is null or (link ~* '^https?://\S+$' and length(link) <= 2000)),  -- online: link da reunião, digitado (Moises, 9/nov/2026)
   pauta           text,
   resumo          text,                                           -- o que foi tratado, escrito por quem participou
   encaminhamentos text,
@@ -319,7 +320,8 @@ create table app.reunioes (
   atualizado_em   timestamptz not null default now(),
   atualizado_por  uuid,
   constraint reuniao_local_so_presencial check ((modalidade = 'presencial') = (local is not null)),
-  constraint reuniao_endereco_so_externo check (local is distinct from 'bkm' or endereco is null)
+  constraint reuniao_endereco_so_externo check (local is distinct from 'bkm' or endereco is null),
+  constraint reuniao_link_so_online check (link is null or modalidade = 'online')
 );
 create index on app.reunioes (terreno_id, inicio desc);
 create index on app.reunioes (processo_id, inicio desc);
@@ -434,6 +436,7 @@ create trigger t_aud after insert or update or delete on app.propostas   for eac
 create trigger t_aud after insert or update or delete on app.documentos  for each row execute function app.tg_auditoria();
 create trigger t_upd before update on app.reunioes for each row execute function app.tg_atualizado_em();
 create trigger t_aud after insert or update or delete on app.reunioes    for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.reuniao_participantes for each row execute function app.tg_auditoria();  -- quem entrou e saiu da reunião, nos logs da ficha
 
 do $$
 declare t text;

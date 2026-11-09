@@ -68,7 +68,7 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Parâmetros, Estudos d
 **Como andar pelas abas:**
 
 - Clique na aba.
-- A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (cursor de mãozinha). Solta com força, ela continua rodando e freia aos poucos.
+- A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (com o mouse em cima, o cursor é o dedinho, como em qualquer botão; vira mão fechada enquanto você segura o botão do mouse). Solta com força, ela continua rodando e freia aos poucos.
 - As **setas** no fim da barra vão para a aba anterior e a próxima.
 - O **⋮ "Mais ações"** lista todas as abas, com a atual marcada.
 
@@ -128,8 +128,10 @@ Linhas sem dado mostram "Não informado" ou "Falta preencher".
 
 Igual à página, com:
 
+- o **cabeçalho** com o código, o nome, a **temperatura** e o ícone **Abrir página** (o nome aparece ao parar o mouse), que leva à ficha em tela própria;
+- o topo da ficha sem repetir o cabeçalho: no lugar da linha "fase · etapa · subetapa", o nome da fase fica em cima da linha do tempo, que já marca a etapa e a subetapa; ficam "Cadastrado em" (e a situação, quando é Stand By, Perdido ou Descartado), o responsável e "Ficha N% completa". No celular, onde a linha do tempo some, a fase · etapa · subetapa continua no topo;
+
 - **X** ou **Esc** para fechar;
-- **"Abrir página"** para ir à ficha em tela própria;
 - a borda esquerda arrastável (mínimo 640 px; dois cliques voltam ao padrão);
 - clicar noutro terreno no mapa troca o terreno da gaveta.
 

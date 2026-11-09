@@ -41,7 +41,7 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 | **WhatsApp** | Planejado, depois do e-mail |
 | **Tema escuro** e seletor de tema | Só no protótipo; a primeira versão é só no tema claro |
 | **Celular** revisado (toque longo para editar a poligonal e criar terreno, lista de lotes no lugar do mapa, etiquetas pelo toque) | A fazer depois do computador |
-| Menção com **@** em textos | Só no protótipo (depende das tarefas e das reuniões completas) |
+| Menção com **@** em textos | Nas **reuniões** já funciona (participantes e textos; ver [aba Comercial](06-ficha-comercial.md#reuniões)); nas tarefas, só no protótipo |
 | Camada de **lotes vagos** no mapa (prospecção pelo GeoSampa) | Ideia em estudo, sem decisão |
 | **Assistente de IA** para perguntas sobre os terrenos | Em discussão, depois do porte |
 | Acesso de **corretor ou advogado** de fora | Fora do escopo atual |

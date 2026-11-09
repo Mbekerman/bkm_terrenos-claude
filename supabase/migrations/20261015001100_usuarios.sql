@@ -308,6 +308,36 @@ create trigger t_mencoes after insert or update of resumo, resultado on app.ativ
 create trigger t_mencoes after insert or update of pauta, resumo, encaminhamentos on app.reunioes
   for each row execute function app.tg_mencoes('pauta', 'resumo', 'encaminhamentos');
 
+-- Participante da BKM marcado com @ na reunião (pedido do Moises, 9/nov/2026): a pessoa é
+-- avisada como numa menção (sino e, pela preferência, e-mail), uma vez por reunião; quem já foi
+-- mencionado no texto da mesma reunião não recebe outro aviso. Quem é de fora (pessoa do
+-- terreno ou nome digitado) só fica registrado como participante: o convite por e-mail espera
+-- a ligação com o Google Agenda.
+create or replace function app.tg_participante_mencao()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+declare r app.reunioes; v_autor text;
+begin
+  if new.user_id is null or new.user_id is not distinct from auth.uid() then return new; end if;
+  if tg_op = 'UPDATE' and new.user_id is not distinct from old.user_id then return new; end if;
+  if not exists (select 1 from app.membros where empresa_id = new.empresa_id and user_id = new.user_id) then return new; end if;
+  select * into r from app.reunioes where id = new.reuniao_id;
+  insert into app.mencoes (empresa_id, terreno_id, origem_tabela, origem_id, user_id)
+  values (new.empresa_id, r.terreno_id, 'reunioes', r.id, new.user_id)
+  on conflict do nothing;
+  if found then
+    v_autor := coalesce((select nome from app.usuarios where user_id = auth.uid()),
+                        (select nome from app.membros where user_id = auth.uid() and empresa_id = new.empresa_id), 'Alguém');
+    perform app._notificar(new.empresa_id, new.user_id, 'mencao',
+      v_autor || ' marcou você na reunião de ' || to_char(r.inicio at time zone 'America/Sao_Paulo', 'DD/MM "às" HH24:MI'),
+      r.terreno_id, 'reunioes', r.id);
+  end if;
+  return new;
+end $$;
+create trigger t_mencao_participante after insert or update of user_id on app.reuniao_participantes
+  for each row execute function app.tg_participante_mencao();
+
 -- ---------------------------------------------------------------------
 -- RLS e permissões
 -- ---------------------------------------------------------------------
@@ -335,7 +365,7 @@ grant select, insert, update, delete on app.empresa_dominios to authenticated;
 create trigger t_aud after insert or update or delete on app.empresa_dominios for each row execute function app.tg_auditoria();
 
 revoke execute on function app.gerar_arroba(text, uuid), app.tg_usuario_novo(), app.tg_usuario_login(), app._aplicar_equipe_prevista(uuid, uuid, text),
-  app.hook_antes_de_criar_usuario(jsonb), app.mudar_arroba(uuid, text), app.salvar_minha_foto(text), app.tg_mencoes() from public;
+  app.hook_antes_de_criar_usuario(jsonb), app.mudar_arroba(uuid, text), app.salvar_minha_foto(text), app.tg_mencoes(), app.tg_participante_mencao() from public;
 grant execute on function app.mudar_arroba(uuid, text), app.salvar_minha_foto(text) to authenticated;
 grant usage on schema app to supabase_auth_admin;
 grant execute on function app.hook_antes_de_criar_usuario(jsonb) to supabase_auth_admin;

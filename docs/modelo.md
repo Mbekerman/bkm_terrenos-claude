@@ -673,6 +673,7 @@ erDiagram
     text modalidade "presencial | online"
     text local "bkm | externo (so presencial)"
     text endereco
+    text link "online: link da reuniao, digitado"
     text pauta
     text resumo
     text encaminhamentos

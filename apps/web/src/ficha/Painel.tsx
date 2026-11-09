@@ -44,7 +44,7 @@ const completo = (s: string) => { const d = new Date(s); return `${fd(dLoc(s))} 
 
 /* ---------- texto dos logs ---------- */
 export interface Log { id: string; em: string; user: string | null; txt: string; det?: string[]; aba?: string; q?: string; topo?: string }
-type Ctx = { f: F; nomes: Map<string, string>; partes: Map<string, string>; procs: Map<string, R>; sp: boolean; lotes: Map<string, string> };
+type Ctx = { f: F; nomes: Map<string, string>; partes: Map<string, string>; procs: Map<string, R>; sp: boolean; lotes: Map<string, string>; reus: Map<string, string>; pessoas: Map<string, string> };
 
 const curto = (v: unknown) => { const s = String(v); return s.length > 60 ? s.slice(0, 57) + '…' : s; };
 const NI = new Set(['nao_informado', 'nao_informada', 'nao_avaliada']);
@@ -81,7 +81,7 @@ const ROT: Record<string, string> = {
   zona_fiscal: 'zona fiscal', endereco_prefeitura: 'endereço', origem: 'origem', nome: 'nome', pessoa_nome: 'pessoa principal', telefone: 'telefone', email: 'e-mail',
   documento: 'CPF/CNPJ', observacoes: 'observação', valor_pedido: 'valor', forma_pagamento_pedida: 'forma de pagamento', observacao_pagamento: 'condições', aceita_permuta: 'aceita permuta',
   comissao_pct: 'comissão', comissao_valor: 'comissão', corretor_id: 'corretor', validade: 'validade', status: 'status', data_oferta: 'data', forma_pagamento: 'condição', area_m2: 'área',
-  inicio: 'data', pauta: 'pauta', resumo: 'o que foi tratado', encaminhamentos: 'encaminhamentos', modalidade: 'modalidade', local: 'local', duracao_min: 'duração',
+  inicio: 'data', link: 'link da reunião', pauta: 'pauta', resumo: 'o que foi tratado', encaminhamentos: 'encaminhamentos', modalidade: 'modalidade', local: 'local', duracao_min: 'duração',
 };
 const lista = (ks: string[]) => [...new Set(ks.map((k) => ROT[k] ?? k.replace(/_/g, ' ')))].join(', ');
 const PROP_ST: Record<string, string> = { rascunho: 'Rascunho', apresentada: 'Apresentada', em_analise: 'Em análise', aceita: 'Aceita', recusada: 'Recusada', expirada: 'Expirada', retirada: 'Retirada', substituida: 'Substituída' };
@@ -177,6 +177,14 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       const ks = mudou(x, d).filter((k) => !['na_agenda', 'gerar_meet'].includes(k));
       return ks.length ? { txt: `Reunião alterada (${dt}): ${lista(ks)}`, aba: 'comercial', q: 'reunioes' } : null;
     }
+    case 'reuniao_participantes': {
+      // quem entrou ou saiu da reunião (os incluídos junto com a reunião vão no log dela, em useLogs)
+      const quem = o.user_id ? c.nomes.get(o.user_id) ?? 'colega' : o.pessoa_id ? c.pessoas.get(o.pessoa_id) ?? 'pessoa' : o.nome ?? '—';
+      const dt = c.reus.get(o.reuniao_id) ?? '';
+      if (ins) return { txt: `Participante incluído na reunião${dt ? ` de ${dt}` : ''}: ${quem}`, aba: 'comercial', q: 'reunioes' };
+      if (del) return { txt: `Participante tirado da reunião${dt ? ` de ${dt}` : ''}: ${quem}`, aba: 'comercial', q: 'reunioes' };
+      return null;
+    }
     case 'documentos': return ins ? { txt: `Documento enviado: ${o.nome ?? o.tipo_documento}`, aba: 'documentos' } : null;
     case 'analises_urbanisticas': return ins ? { txt: `Análise urbanística registrada${o.fonte ? ` (${o.fonte})` : ''}`, aba: 'parametros' } : null;
     case 'terreno_viabilidades_tecnicas':
@@ -200,16 +208,18 @@ function txtAprov(a: R, c: Ctx, destNome: (p: R, tipo: string, d: string) => str
 }
 
 async function carregarLogs(empresa: string, f: F) {
-  const [pr, of, pt] = await Promise.all([
+  const [pr, of, pt, ru] = await Promise.all([
     supabase.from('processos').select('id,fase,parte_id').eq('terreno_id', f.id),
     supabase.from('ofertas').select('id').eq('terreno_id', f.id),
     supabase.from('terreno_partes').select('id,nome').eq('terreno_id', f.id),
+    supabase.from('reunioes').select('id,inicio').eq('terreno_id', f.id),
   ]);
-  for (const x of [pr, of, pt]) if (x.error) throw x.error;
-  const procs = pr.data as R[], pids = procs.map((p) => p.id), oids = (of.data as R[]).map((o) => o.id);
+  for (const x of [pr, of, pt, ru]) if (x.error) throw x.error;
+  const procs = pr.data as R[], pids = procs.map((p) => p.id), oids = (of.data as R[]).map((o) => o.id), rids = (ru.data as R[]).map((r) => r.id);
   const ors = [`registro_id.eq.${f.id}`, `depois->>terreno_id.eq.${f.id}`, `antes->>terreno_id.eq.${f.id}`];
   if (pids.length) ors.push(`depois->>processo_id.in.(${pids})`, `antes->>processo_id.in.(${pids})`);
   if (oids.length) ors.push(`depois->>oferta_id.in.(${oids})`, `antes->>oferta_id.in.(${oids})`);
+  if (rids.length) ors.push(`depois->>reuniao_id.in.(${rids})`, `antes->>reuniao_id.in.(${rids})`);
   const [au, tr] = await Promise.all([
     supabase.from('auditoria').select('id,tabela,registro_id,acao,antes,depois,user_id,em').eq('empresa_id', empresa)
       .not('tabela', 'in', '(processos,terreno_entorno,terreno_entorno_buscas,consultas_lote,consultas_area,tarefas_etapa,terreno_pontos_excluidos,terreno_valores)')
@@ -220,10 +230,16 @@ async function carregarLogs(empresa: string, f: F) {
   ]);
   if (au.error) throw au.error;
   if (tr.error) throw tr.error;
-  const uids = [...new Set([...(au.data as R[]), ...(tr.data as R[])].map((x) => x.user_id).filter(Boolean)), f.t.responsavel_id].filter(Boolean);
-  const us = uids.length ? await supabase.from('usuarios').select('user_id,nome,email,foto_url').in('user_id', uids) : { data: [], error: null };
+  const parts = (au.data as R[]).filter((a) => a.tabela === 'reuniao_participantes').map((a) => (a.depois ?? a.antes) as R);
+  const uids = [...new Set([...(au.data as R[]), ...(tr.data as R[])].map((x) => x.user_id).concat(parts.map((p) => p.user_id)).filter(Boolean)), f.t.responsavel_id].filter(Boolean);
+  const peids = [...new Set(parts.map((p) => p.pessoa_id).filter(Boolean))];
+  const [us, pe] = await Promise.all([
+    uids.length ? supabase.from('usuarios').select('user_id,nome,email,foto_url').in('user_id', uids) : Promise.resolve({ data: [], error: null }),
+    peids.length ? supabase.from('pessoas').select('id,nome_razao_social').in('id', peids) : Promise.resolve({ data: [], error: null }),
+  ]);
   if (us.error) throw us.error;
-  return { aud: au.data as R[], trans: tr.data as R[], procs, partes: pt.data as R[], users: us.data as R[] };
+  if (pe.error) throw pe.error;
+  return { aud: au.data as R[], trans: tr.data as R[], procs, partes: pt.data as R[], users: us.data as R[], reus: ru.data as R[], pessoas: pe.data as R[] };
 }
 
 export function useLogs(f: F) {
@@ -231,9 +247,22 @@ export function useLogs(f: F) {
   const q = useQuery({ queryKey: ['ficha-logs', f.id, f.versao], enabled: !!empresa, queryFn: () => carregarLogs(empresa!.id, f) });
   const logs = useMemo<Log[]>(() => {
     if (!q.data) return [];
-    const { aud, trans, procs, partes, users } = q.data;
+    const { aud, trans, procs, partes, users, reus, pessoas } = q.data;
     const nomes = new Map(users.map((u) => [u.user_id as string, (u.nome || u.email) as string]));
-    const ctx: Ctx = { f, nomes, partes: new Map(partes.map((p) => [p.id, p.nome])), procs: new Map(procs.map((p) => [p.id, p])), sp: !f.municipio || /^São Paulo$/i.test(f.municipio), lotes: new Map() };
+    const ctx: Ctx = { f, nomes, partes: new Map(partes.map((p) => [p.id, p.nome])), procs: new Map(procs.map((p) => [p.id, p])), sp: !f.municipio || /^São Paulo$/i.test(f.municipio), lotes: new Map(),
+      reus: new Map(reus.map((r) => [r.id as string, `${fd(dLoc(r.inicio))} ${hLoc(r.inicio)}`])), pessoas: new Map(pessoas.map((p) => [p.id as string, p.nome_razao_social as string])) };
+    /* participantes gravados junto com a reunião (até 15 s depois, pela mesma pessoa) entram no log da reunião, não um por um */
+    const reuIns = new Map(aud.filter((a) => a.tabela === 'reunioes' && a.acao === 'insert').map((a) => [a.registro_id as string, a]));
+    const naCriacao = new Map<string, string[]>(), pular = new Set<string>();
+    for (const a of aud) {
+      if (a.tabela !== 'reuniao_participantes' || a.acao !== 'insert') continue;
+      const r = reuIns.get(a.depois?.reuniao_id);
+      if (!r || r.user_id !== a.user_id || Math.abs(+new Date(a.em) - +new Date(r.em)) > 15000) continue;
+      const o = a.depois as R;
+      const quem = o.user_id ? ctx.nomes.get(o.user_id) ?? 'colega' : o.pessoa_id ? ctx.pessoas.get(o.pessoa_id) ?? 'pessoa' : o.nome ?? '—';
+      naCriacao.set(o.reuniao_id, [...(naCriacao.get(o.reuniao_id) ?? []), quem]);
+      pular.add(a.id);
+    }
     /* o número de cada matrícula e SQL, tirado dos próprios logs, para os logs das etiquetas nas partes */
     for (const a of aud) if (a.tabela === 'matriculas' || a.tabela === 'inscricoes_municipais') { const o = a.depois ?? a.antes ?? {}; ctx.lotes.set(a.registro_id, a.tabela === 'matriculas' ? `Matrícula ${o.numero}` : `${ctx.sp ? 'SQL' : 'Inscrição'} ${o.inscricao}`); }
     const faseN = (k: string) => f.fases.find((x) => x.k === k);
@@ -250,7 +279,12 @@ export function useLogs(f: F) {
         if (vistos.has(k) && a.depois?.status !== 'aprovado') continue;
         vistos.add(k);
         t = txtAprov(a, ctx, destNome);
-      } else t = txtAud(a, ctx);
+      } else if (pular.has(a.id)) continue;
+      else {
+        t = txtAud(a, ctx);
+        const ps = a.tabela === 'reunioes' && a.acao === 'insert' ? naCriacao.get(a.registro_id) : null;
+        if (t && ps?.length) t = { ...t, det: [...(t.det ?? []), 'Participantes: ' + ps.join(', ')] };
+      }
       if (t) out.push({ id: 'a' + a.id, em: a.em, user: a.user_id ? nomes.get(a.user_id) ?? 'Sistema' : 'Sistema', ...t });
     }
     const TEMPN = (s: string) => s.replace(/\d/g, (n) => TEMP[+n] || n);
