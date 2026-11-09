@@ -267,6 +267,9 @@ Referência: o Google Maps atual. Código: `apps/web/src/pages/Mapa.tsx` e `apps
 - **A vista (centro e zoom) fica guardada**: o mapa abre onde a pessoa deixou.
 - **Lista lateral** de itens ao lado do mapa, com a **largura arrastável** pela borda (mínimo = só as bolinhas), guardada no
   navegador; dois cliques voltam ao padrão. Cada linha: bolinha com o código na cor da etapa, nome, informação curta e lupa.
+- **Cor que aparece no satélite**: pino e poligonal (preenchimento a 18%) precisam ser vistos sobre a imagem. Cinza e azul-marinho
+  somem; situação "neutra" usa tom claro (Backlog amarelo-claro `#fff176`, Descartado cinza-claro `#d9d4cf`) com o ponto e o
+  código em tom escuro. Nunca pino cinza: parece lugar do Google.
 - **Pino sem balão e sem número dentro** (só um ponto). Clicar no pino seleciona: o pino acende e a linha se destaca na lista
   (rolando só a lista). Clique no vazio tira a seleção. No desktop, o clique abre a gaveta da ficha; no celular, um cartão sobre
   o mapa com X.
