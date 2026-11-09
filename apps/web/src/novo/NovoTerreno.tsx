@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase, mensagemErro } from '../lib/supabase';
+import { automatico, supabase, mensagemErro } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Bi, Ic } from '../components/Moldura';
@@ -152,7 +152,7 @@ export default function NovoTerreno() {
         /* as outras ruas em volta viram confrontações de frente */
         const outras = fr.filter((x, i) => i !== pri || normRua(x.logradouro) !== normRua(f0?.logradouro || ''));
         if (outras.length) {
-          const r = await supabase.from('confrontacoes').insert(outras.map((x, i) => ({ empresa_id: empresa!.id, terreno_id: t.id, ordem: i + 1, tipo: 'frente', comprimento_m: x.m ? +x.m.toFixed(2) : null, confrontante: x.logradouro + (x.numero ? ', ' + x.numero : ''), fonte: 'Localização da poligonal' })));
+          const r = await automatico(supabase.from('confrontacoes').insert(outras.map((x, i) => ({ empresa_id: empresa!.id, terreno_id: t.id, ordem: i + 1, tipo: 'frente', comprimento_m: x.m ? +x.m.toFixed(2) : null, confrontante: x.logradouro + (x.numero ? ', ' + x.numero : ''), fonte: 'Localização da poligonal' }))));
           if (r.error) console.warn('confrontações', r.error);
         }
         /* os SQLs incluídos entram no terreno sem parte, como no mapa de lotes da prefeitura */
@@ -257,8 +257,9 @@ function IncluirSql({ lista, fechar, empresa }: { lista: LoteSql[]; fechar: Reac
     try {
       /* SQL que já está em outro terreno não entra */
       const { data: ja } = await supabase.from('inscricoes_municipais').select('terrenos(codigo)').eq('empresa_id', empresa).eq('inscricao_norm', d).limit(1);
-      const cod = (ja?.[0] as { terrenos?: { codigo?: string } } | undefined)?.terrenos?.codigo;
+      const cod = (ja?.[0] as { terrenos?: { codigo?: string } | null } | undefined)?.terrenos?.codigo;
       if (cod) { toast(`O SQL ${sqlFmt(d)} já está no ${cod}.`, true); return; }
+      if (ja?.length) { toast(`O SQL ${sqlFmt(d)} está num terreno excluído. O administrador pode restaurar ou deletar esse terreno em Configurações.`, true); return; }
       const lote = await loteDoSql(d);
       listaSql([...(novoEstado().sql || []), lote]);
       setTxt('');

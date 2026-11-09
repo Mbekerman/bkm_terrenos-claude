@@ -197,6 +197,10 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 .etq-form .field { flex: 1 1 150px; min-width: min(100%, 150px) }
 .etq-form .field.grow { flex: 2 1 190px; min-width: min(100%, 190px) }
 .fi-aba .areas { grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)) }
+/* áreas e dimensões: as 4 fontes lado a lado quando cabem, senão em dois pares (pedido do Moises, 9/nov/2026) */
+.areas4 { container-type: inline-size }
+.fi-aba .areas4 .areas { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+@container (min-width: 640px) { .fi-aba .areas4 .areas { grid-template-columns: repeat(4, minmax(0, 1fr)) } }
 .fi-aba .cond { grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)) }
 .fi-aba .fields, .dialog .fields { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) }
 .dialog.mini .fields { grid-template-columns: 1fr }

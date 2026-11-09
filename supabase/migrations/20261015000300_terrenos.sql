@@ -59,6 +59,11 @@ create table app.terrenos (
   observacoes           text,
   arquivado_em          timestamptz,
   motivo_arquivamento   text,
+  -- Excluído (pedido do Moises, 9/nov/2026): diretor ou administrador tira o terreno de todos os lugares
+  -- (a RLS de leitura esconde); fica guardado 180 dias e a rotina diária apaga de vez (app.purgar_terrenos_excluidos).
+  -- O administrador restaura em Configurações › Terrenos excluídos. Ver 20261015001700_exclusao_terreno.sql.
+  excluido_em           timestamptz,
+  excluido_por          uuid,
 
   -- 2. Endereço e localização
   cep                   text check (cep is null or cep ~ '^\d{8}$'),  -- só dígitos (trigger normaliza)
@@ -68,6 +73,9 @@ create table app.terrenos (
   bairro                text,
   municipio_id          uuid not null references app.municipios(id),
   zona                  text check (zona in ('leste','oeste','norte','sul','centro','sudeste','sudoeste','nordeste','noroeste')),  -- mesma lista para qualquer cidade
+  -- de onde veio a zona (9/nov/2026): em São Paulo, 'prefeitura' = a região oficial (nm_regiao_05) da subprefeitura no
+  -- GeoSampa, pela poligonal ou pelo pino; o usuário troca e vira 'digitado', que o GeoSampa nunca sobrescreve
+  zona_origem           text check (zona_origem in ('prefeitura','digitado')),
   eixo_comercial_id     uuid references app.eixos_comerciais(id),
   referencia_localizacao text,
   -- cartório de registro de imóveis da circunscrição (3/nov/2026): vem da prefeitura (em São Paulo, a camada
@@ -106,7 +114,8 @@ create table app.terrenos (
                           (round(extensions.st_area(extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(poligono_geojson::text), 4326))::extensions.geography)::numeric, 0)) stored,
   area_adotada_m2       numeric(12,2) check (area_adotada_m2 > 0),
   -- 'poligonal': a adotada é a área do desenho, recalculada pelo trigger t_norm a cada gravação
-  fonte_area_adotada    text check (fonte_area_adotada in ('documental','cadastral','levantamento','estimativa','poligonal')),
+  -- nasce 'cadastral' e só a topográfica ('levantamento') toma o lugar sozinha (pedido do Moises, 9/nov/2026; a estimativa saiu)
+  fonte_area_adotada    text not null default 'cadastral' check (fonte_area_adotada in ('documental','cadastral','levantamento','poligonal')),
   testada_principal_m   numeric(8,2) check (testada_principal_m > 0),
   desnivel_estimado_m   numeric(6,2),
   posicao_quadra        text not null default 'nao_informado' check (posicao_quadra in ('nao_informado','meio_quadra','esquina','duas_frentes','quadra_inteira')),
@@ -150,6 +159,7 @@ create table app.terrenos (
 );
 create index on app.terrenos (empresa_id, situacao_cadastral);
 create index on app.terrenos using gist (poligono);
+create index on app.terrenos (empresa_id, excluido_em) where excluido_em is not null;
 
 -- Partes do terreno: cada dono, ou grupo de donos que negocia junto, com os
 -- seus lotes, matrículas e inscrições. Sem parte cadastrada (ou com uma só),
@@ -351,7 +361,7 @@ create trigger t_revisao before insert or update on app.inscricao_valores for ea
 create or replace function app.tg_inscricao_historico()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  if auth.uid() is null then return old; end if;
+  if auth.uid() is null or coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return old; end if;   -- sistema ou deletar terreno
   if exists (select 1 from app.inscricao_valores where inscricao_id = old.id) then
     raise exception 'A inscrição tem histórico de IPTU e valor venal: não se apaga' using errcode = '23514';
   end if;
@@ -500,6 +510,7 @@ create or replace function app.tg_matricula_leva_sqls()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if tg_op = 'DELETE' then
+    if coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return old; end if;   -- deletar terreno: as etiquetas saem juntas
     update app.inscricao_partes set matricula_parte_id = null, parte_id = null where matricula_parte_id = old.id;
     return old;
   end if;
@@ -689,7 +700,7 @@ create or replace function app.tg_analise_substituida()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare v_status text;
 begin
-  if auth.uid() is null then return coalesce(new, old); end if;
+  if auth.uid() is null or coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return coalesce(new, old); end if;
   if tg_table_name = 'analises_urbanisticas' then
     if old.status = 'substituida' then
       raise exception 'Análise substituída é histórico: não muda' using errcode = '23514';
@@ -871,11 +882,24 @@ begin
     new.topo_perfil := null; new.topo_declividade_pct := null; new.topo_inclinacao_pct := null; new.topo_terra_m3m2 := null; new.topo_desnivel_m := null;
     new.topo_fonte := null; new.topo_calculado_em := null; new.topo_calculado_por := null;
   end if;
-  -- adotada pela cadastral: segue a cadastral (a soma dos SQLs muda sozinha); sem cadastral, fica sem adotada
-  if new.fonte_area_adotada = 'cadastral' then
-    if new.area_cadastral_m2 is null then new.area_adotada_m2 := null; new.fonte_area_adotada := null;
-    else new.area_adotada_m2 := new.area_cadastral_m2; end if;
+  -- área adotada (pedido do Moises, 9/nov/2026): nasce pela cadastral e, sem escolha, volta para ela; a topográfica
+  -- digitada (nova ou trocada) é a única que toma o lugar sozinha; a pessoa ainda escolhe outra à mão
+  if tg_op = 'INSERT' then
+    if new.area_levantamento_m2 is not null then new.fonte_area_adotada := 'levantamento'; end if;
+  elsif new.area_levantamento_m2 is not null and new.area_levantamento_m2 is distinct from old.area_levantamento_m2 then
+    new.fonte_area_adotada := 'levantamento';
   end if;
+  -- a fonte escolhida ficou sem área: volta para a cadastral
+  if new.fonte_area_adotada is null
+     or (new.fonte_area_adotada = 'documental' and new.area_documental_m2 is null)
+     or (new.fonte_area_adotada = 'levantamento' and new.area_levantamento_m2 is null)
+     or (new.fonte_area_adotada = 'poligonal' and new.poligono_geojson is null) then
+    new.fonte_area_adotada := 'cadastral';
+  end if;
+  if new.fonte_area_adotada = 'documental' then new.area_adotada_m2 := new.area_documental_m2; end if;
+  if new.fonte_area_adotada = 'levantamento' then new.area_adotada_m2 := new.area_levantamento_m2; end if;
+  -- adotada pela cadastral: segue a cadastral (a soma dos SQLs muda sozinha); sem cadastral, fica sem área até ela chegar
+  if new.fonte_area_adotada = 'cadastral' then new.area_adotada_m2 := new.area_cadastral_m2; end if;
   if new.fonte_area_adotada = 'poligonal' then
     new.area_adotada_m2 := round(extensions.st_area(extensions.st_makevalid(extensions.st_setsrid(
       extensions.st_geomfromgeojson(new.poligono_geojson::text), 4326))::extensions.geography)::numeric, 0);
@@ -900,7 +924,7 @@ create trigger t_quadro after insert on app.terrenos for each row execute functi
 create or replace function app.ve_terreno(p_terreno uuid, p_user uuid default auth.uid())
 returns boolean language sql stable security definer set search_path = '' as $$
   select exists (select 1 from app.terrenos t join app.membros m on m.empresa_id = t.empresa_id and m.user_id = p_user
-                 where t.id = p_terreno) $$;
+                 where t.id = p_terreno and t.excluido_em is null) $$;
 grant execute on function app.ve_terreno(uuid, uuid) to authenticated;
 insert into fluxo.objeto_tipos (tipo, funcao) values ('terreno', 'app.ve_terreno');
 

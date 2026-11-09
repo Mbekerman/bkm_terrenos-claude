@@ -37,7 +37,7 @@ Campos que **se editam** no lugar:
 |---|---|
 | **Número** | Só informativo: não mexe no pino nem na poligonal. Se for diferente dos números de porta dos SQLs do terreno, aparece **"Número diferente do cadastro da prefeitura"** ("O número informado diverge dos números cadastrados no município para os lotes selecionados"), com **Cancelar** e **"Alterar mesmo assim"**. |
 | **Complemento** | Texto livre. |
-| **Zona** | Norte, Sul, Leste, Oeste, Centro, Sudeste, Sudoeste, Nordeste, Noroeste. |
+| **Zona** | Norte, Sul, Leste, Oeste, Centro, Sudeste, Sudoeste, Nordeste, Noroeste. Em São Paulo vem sozinha do GeoSampa ao abrir a ficha e aparece marcada "do GeoSampa": é a região oficial da prefeitura (Centro, Norte, Sul, Leste ou Oeste) da subprefeitura onde fica a maior parte da poligonal. Enquanto busca, um círculo girando aparece ao lado do nome do campo. Se você trocar, vale o que você escolheu, e o GeoSampa não sobrescreve mais. A zona que já estava escolhida antes desta busca existir também não é trocada. |
 | **Cartório de registro de imóveis** | Em São Paulo vem do GeoSampa e aparece marcado "do GeoSampa": pela poligonal (a circunscrição que cobre a maior parte do terreno) ao abrir a ficha, mesmo sem SQL. Enquanto busca, um círculo girando aparece ao lado do nome do campo. Se você trocar, vale o que você escolheu, e o GeoSampa não sobrescreve mais. |
 | **Referência** | Ponto de referência ("em frente ao mercado X"). |
 
@@ -146,17 +146,16 @@ Mostra a **área da parte** e a **divergência Matrícula × Prefeitura** (a ár
 
 ## Áreas e dimensões
 
-Cinco cartões de área, cada um com sua fonte:
+Quatro cartões de área, nesta ordem: lado a lado quando cabem, senão em dois pares (Documental e Cadastral em cima, Topográfica e Poligonal embaixo).
 
 | Cartão | De onde vem |
 |---|---|
 | **Documental** | Digitada (da matrícula). |
 | **Cadastral** | Em São Paulo, não se digita: é a soma das áreas dos SQLs do terreno (só quando todos têm área), refeita a cada SQL incluído, excluído ou consultado; uma área digitada antes volta para a soma ao abrir a ficha. Nas outras cidades, digitada. |
-| **Levantamento** | Digitada (levantamento topográfico). **Ao digitar, vira a área adotada** (pode trocar depois). |
-| **Estimativa** | Digitada. |
+| **Topográfica** | Digitada (levantamento topográfico). **Ao digitar ou trocar o valor, vira a área adotada**, mesmo que outra tivesse sido escolhida (pode trocar depois). |
 | **Poligonal** | Calculada pelo desenho, em m² inteiros. Nunca se digita. Muda quando a poligonal é ajustada. |
 
-**Área adotada:** clique num cartão preenchido para escolhê-lo ("Clique na área que vale"). A adotada fica em azul com "Área adotada". Se a adotada é a Poligonal, ela acompanha cada ajuste do desenho.
+**Área adotada:** todo terreno nasce com a **Cadastral** como adotada (enquanto os SQLs não trazem a área, aparece "Cadastral · sem área ainda"). A única que toma o lugar sozinha é a **Topográfica**, quando é digitada. Para escolher outra, clique num cartão preenchido; a adotada fica em azul com "Área adotada". Se a área escolhida é apagada, a adotada volta para a Cadastral. Se a adotada é a Poligonal, ela acompanha cada ajuste do desenho. Não há mais área estimada.
 
 Abaixo:
 

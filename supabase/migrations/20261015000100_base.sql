@@ -218,7 +218,11 @@ create table app.auditoria (
   -- e o registro da volta ao valor de antes aponta para ele
   desfeito_em  timestamptz,
   desfeito_por uuid,
-  desfaz_id    bigint references app.auditoria(id)
+  desfaz_id    bigint references app.auditoria(id),
+  -- consequência automática de uma ação (consulta do GeoSampa, frentes medidas pela poligonal...), não ação de quem
+  -- está usando: o painel de Logs mostra a ação e recolhe estas dentro dela (pedido do Moises, 9/nov/2026).
+  -- Vem de app.origem_automatica(): o cabeçalho x-bkm-automatico da requisição ou app.automatico na transação.
+  automatico  boolean not null default false
 );
 create index on app.auditoria (empresa_id, tabela, registro_id);
 create index on app.auditoria (empresa_id, em desc, id desc);
@@ -247,6 +251,17 @@ returns text[] language sql immutable set search_path = '' as $$
   where k not in ('atualizado_em', 'atualizado_por', 'versao')
     and (a -> k) is distinct from (b -> k) $$;
 
+-- A gravação é automática (consequência de outra ação, feita pelo próprio sistema)? O front manda o cabeçalho
+-- x-bkm-automatico: 1 nessas requisições; uma função do servidor pode ligar app.automatico na transação.
+-- Só muda como o log aparece (recolhido dentro da ação); a gravação e a permissão são as mesmas.
+create or replace function app.origem_automatica()
+returns boolean
+language sql stable set search_path = ''
+as $$
+  select coalesce(current_setting('app.automatico', true), '') = '1'
+      or coalesce(nullif(current_setting('request.headers', true), '')::json->>'x-bkm-automatico', '') = '1'
+$$;
+
 create or replace function app.juntar_auditoria(p_tabela text, p_old jsonb, p_new jsonb)
 returns boolean
 language plpgsql security definer set search_path = ''
@@ -262,6 +277,7 @@ begin
   order by em desc, id desc limit 1;
   if not found or u.acao <> 'update' or u.user_id is distinct from auth.uid()
      or u.desfeito_em is not null or u.desfaz_id is not null  -- o desfazer e o desfeito não se juntam com nada
+     or u.automatico <> app.origem_automatica()               -- ação e consequência automática ficam separadas
      or u.em < clock_timestamp() - app.janela_log(p_tabela, v_cols)
      or app.colunas_mudadas(u.antes, u.depois) <> v_cols then
     return false;
@@ -286,8 +302,9 @@ begin
   if tg_op = 'UPDATE' and v_old = v_new then return new; end if;
   if tg_op = 'UPDATE' and tg_table_name <> 'processos' and coalesce(current_setting('app.desfazendo', true), '') <> '1'
      and app.juntar_auditoria(tg_table_name, v_old, v_new) then return new; end if;
-  insert into app.auditoria (empresa_id, tabela, registro_id, acao, antes, depois)
-  values ((v_row->>'empresa_id')::uuid, tg_table_name, coalesce(v_row->>'id', v_row->>'tarefa_id', v_row->>'comentario_id', v_row->>'user_id')::uuid, lower(tg_op), v_old, v_new);
+  insert into app.auditoria (empresa_id, tabela, registro_id, acao, antes, depois, automatico)
+  values ((v_row->>'empresa_id')::uuid, tg_table_name, coalesce(v_row->>'id', v_row->>'tarefa_id', v_row->>'comentario_id', v_row->>'user_id')::uuid, lower(tg_op), v_old, v_new,
+          app.origem_automatica());
   return coalesce(new, old);
 end $$;
 

@@ -13,7 +13,7 @@ export interface SubFx { k: string; nome: string }
 export interface EtapaFx { k: string; nome: string; subs: SubFx[] }
 export interface FaseFx { k: string; nome: string; ativo: boolean; etapas: EtapaFx[] }
 export interface TerFx {
-  id: string; uf: string | null; cidade: string | null; zona: string | null; bairro: string | null; temp: number | null;
+  id: string; nome: string; codigo: string | null; uf: string | null; cidade: string | null; zona: string | null; bairro: string | null; temp: number | null;
   pedido: number | null; area: number | null; proposta: number | null; vgv: number | null; corretores: string[]; forma: string | null;
   origem: string | null; zonas: string[]; resp: string | null; ident: string | null; pct: number; procs: ProcFx[];
 }
@@ -21,7 +21,7 @@ export interface DadosFx { fases: FaseFx[]; ters: TerFx[]; corretores: [string, 
 
 export async function carregarFx(emp: string): Promise<DadosFx> {
   const [v, t, p, f, e, s, mat, ins, pes, inf, itI, cor] = await Promise.all([
-    supabase.from('v_terrenos').select('id,uf,municipio,zona,bairro,logradouro,numero,temperatura,valor_pedido,area_adotada_m2,proposta_ativa_valor,vgv,corretor_ids,forma_pagamento_pedida,origem_cadastro,zonas_siglas,responsavel_id,data_identificacao').eq('empresa_id', emp),
+    supabase.from('v_terrenos').select('id,nome,codigo,uf,municipio,zona,bairro,logradouro,numero,temperatura,valor_pedido,area_adotada_m2,proposta_ativa_valor,vgv,corretor_ids,forma_pagamento_pedida,origem_cadastro,zonas_siglas,responsavel_id,data_identificacao').eq('empresa_id', emp),
     supabase.from('terrenos').select('id,latitude,testada_principal_m,situacao_ocupacao').eq('empresa_id', emp),
     supabase.from('processos').select('terreno_id,fase,etapa_atual,subetapa_atual,status,data_inicio').eq('empresa_id', emp).is('parte_id', null).order('data_inicio'),
     supabase.from('fases_modelo').select('codigo,nome,ordem,ativo').eq('empresa_id', emp).order('ordem'),
@@ -60,7 +60,7 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
       ocupacao: r.situacao_ocupacao, qMat: qM[x.id] ?? 0, qInsc: qI[x.id] ?? 0, temProprietario: (qP[x.id] ?? 0) > 0, zonas: zs(x.zonas_siglas).join(' / ') || null,
       infraNV: qNV[x.id] ?? 0, valorPedido: x.valor_pedido, temp: x.temperatura } as unknown as Ficha;
     return {
-      id: x.id, uf: x.uf, cidade: x.municipio, zona: x.zona, bairro: x.bairro, temp: x.temperatura, pedido: x.valor_pedido == null ? null : +x.valor_pedido,
+      id: x.id, nome: x.nome ?? '', codigo: x.codigo ?? null, uf: x.uf, cidade: x.municipio, zona: x.zona, bairro: x.bairro, temp: x.temperatura, pedido: x.valor_pedido == null ? null : +x.valor_pedido,
       area: x.area_adotada_m2 == null ? null : +x.area_adotada_m2, proposta: x.proposta_ativa_valor == null ? null : +x.proposta_ativa_valor,
       vgv: x.vgv == null ? null : +x.vgv, corretores: x.corretor_ids ?? [], forma: x.forma_pagamento_pedida, origem: x.origem_cadastro,
       zonas: zs(x.zonas_siglas), resp: x.responsavel_id, ident: x.data_identificacao, pct: completude(fic).pct, procs: procs[x.id] ?? [],

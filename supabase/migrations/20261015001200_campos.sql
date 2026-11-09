@@ -62,7 +62,7 @@ insert into app.campos_catalogo (chave, origem, coluna, titulo, tipo, unidade, o
   ('terreno.area_levantamento_m2','terreno','area_levantamento_m2','Área do levantamento','numero','m²',null,null,true,true,true,22),
   ('terreno.area_poligonal_m2','terreno','area_poligonal_m2','Área da poligonal','numero','m²',null,null,false,true,true,23),
   ('terreno.area_adotada_m2','terreno','area_adotada_m2','Área adotada','numero','m²',null,null,false,true,true,24),
-  ('terreno.fonte_area_adotada','terreno','fonte_area_adotada','Fonte da área adotada','lista',null,'{documental,cadastral,levantamento,estimativa,poligonal}',null,false,false,false,25),
+  ('terreno.fonte_area_adotada','terreno','fonte_area_adotada','Fonte da área adotada','lista',null,'{documental,cadastral,levantamento,poligonal}',null,false,false,false,25),
   ('terreno.testada_principal_m','terreno','testada_principal_m','Testada principal','numero','m',null,null,true,true,true,26),
   -- medido pelas cotas (app.registrar_topografia); o relevo digitado saiu em 4/nov/2026 (decisão do Moisés)
   ('terreno.topo_perfil','terreno','topo_perfil','Perfil topográfico','lista',null,'{plano,inclinado,acidentado_leve,acidentado_mediano,acidentado_intenso,acidentado_agudo,acidentado_critico}',null,false,true,true,27),

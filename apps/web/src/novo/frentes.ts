@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Frentes do terreno: consulta no GeoSampa e gravação no terreno. A conta em si (pura, testável) está em frentesCalc.ts.
-import { supabase } from '../lib/supabase';
+import { automatico, supabase } from '../lib/supabase';
 import { GEO_BASE, geoAneis, geoWfs, latLngUtm } from './geosampa';
 import { nomeRef, normRua, type P } from './geo';
 import { medirFrentes, type Medicao } from './frentesCalc';
@@ -64,7 +64,7 @@ async function medirEGravar(id: string): Promise<Medicao | null> {
   const { data: cs } = await supabase.from('confrontacoes').select('id,ordem,comprimento_m,fonte,observacoes').eq('terreno_id', id);
   const auto = (cs ?? []).filter((c: any) => FONTES_AUTO.includes(c.fonte));
   if (auto.length) {
-    const r = await supabase.from('confrontacoes').delete().in('id', auto.map((c: any) => c.id));
+    const r = await automatico(supabase.from('confrontacoes').delete().in('id', auto.map((c: any) => c.id)));
     if (r.error) throw r.error;
   }
   const ord0 = Math.max(0, ...(cs ?? []).filter((c: any) => !FONTES_AUTO.includes(c.fonte)).map((c: any) => c.ordem));
@@ -72,7 +72,7 @@ async function medirEGravar(id: string): Promise<Medicao | null> {
     empresa_id: t.empresa_id, terreno_id: id, ordem: ord0 + i + 1, tipo: 'frente', comprimento_m: x.testada_m,
     confrontante: nomeRuaPrefeitura(x.logradouro), fonte: FONTE_FRENTES, observacoes: x === pri ? 'Acesso principal' : null,
   }));
-  const r = await supabase.from('confrontacoes').insert(lin);
+  const r = await automatico(supabase.from('confrontacoes').insert(lin));
   if (r.error) throw r.error;
   /* a testada principal não se digita: é sempre a frente medida do acesso principal (pedido do Moises, 9/nov/2026) */
   const d: Record<string, unknown> = {};
@@ -80,7 +80,7 @@ async function medirEGravar(id: string): Promise<Medicao | null> {
   const tAtual = t.testada_principal_m == null ? null : +t.testada_principal_m;
   if (tAtual == null || Math.abs(tAtual - pri.testada_m) >= 0.01) d.testada_principal_m = pri.testada_m;
   if (Object.keys(d).length) {
-    const s = await supabase.rpc('salvar_terreno', { p_terreno: id, p_versao: t.versao, p_dados: d });
+    const s = await automatico(supabase.rpc('salvar_terreno', { p_terreno: id, p_versao: t.versao, p_dados: d }));
     if (s.error) throw s.error;
   }
   return med;

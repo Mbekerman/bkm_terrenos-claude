@@ -118,12 +118,16 @@ Mostra as **tarefas em aberto** do terreno. Como as tarefas ainda não foram por
 
 **Clicar num log** abre a aba e o quadro do item e acende o campo alterado.
 
+**Só as suas ações aparecem; o que o sistema faz por consequência fica recolhido.** Quando você inclui SQLs ou muda a poligonal, o sistema consulta o GeoSampa (análise urbanística, zona fiscal, área e CIB do SQL, cartório) e mede as frentes e a testada. Essas atualizações não aparecem como linhas soltas: ficam dentro da sua ação, atrás de **"N atualizações automáticas"**; clique para abrir e veja cada uma (e clique numa delas para ir ao campo). O número da aba **Logs** e os números do filtro de usuários contam só as ações. Quando não há ação sua logo antes (por exemplo, a medição das frentes ao abrir a ficha), elas aparecem num item **"Atualização automática"**, recolhido, que não entra na contagem.
+
+**Vários SQLs de uma vez viram uma linha só:** "SQLs adicionados (4)", com a lista. O mesmo vale para matrículas removidas juntas.
+
 **Regras:**
 
 - Todos da empresa veem os logs.
 - Cliques seguidos no mesmo campo (mesma pessoa, menos de 7 s entre um e outro) viram um log só, do valor de antes ao final; se voltar ao valor de antes, o log some. A gravação é sempre na hora; só o registro junta.
 - Ajustes na poligonal a menos de 2 minutos um do outro viram um log só.
-- O histórico nunca é apagado.
+- O histórico nunca é apagado. As atualizações automáticas continuam gravadas; só aparecem recolhidas.
 
 **Ainda não disponível:** o **olhinho** (ver o terreno como se a alteração não tivesse acontecido) e a **lixeira** (desfazer de verdade uma alteração antiga) dos logs. Para desfazer o que você acabou de fazer, use o **Ctrl+Z** (ver [01](01-entrar-e-navegar.md#desfazer-e-refazer-ctrlz-e-ctrly)).
 
