@@ -127,7 +127,7 @@ export default function SecIptu({ f }: { f: Ficha }) {
                 {semIptu > 0 && <div><div className="k">Sem IPTU</div><div className="v">{semIptu} de {linhas.length} SQL{linhas.length > 1 ? 's' : ''}</div></div>}
               </div>
               <div className="tblwrap" style={{ marginTop: 14 }}><table className="mini-tbl"><thead><tr>
-                <th>SQL</th><th>Exercício</th><th className="r">Venal terreno</th><th className="r">Venal construção</th><th className="r">Venal total</th><th className="r">IPTU anual</th><th className="r">Mensal</th><th>Fonte</th>{podeBuscar && <th />}
+                <th>SQL</th><th>Exercício</th><th className="r">Venal terreno</th><th className="r">Venal construção</th><th className="r">Venal total</th><th className="r">IPTU anual</th><th className="r">Mensal (anual ÷ 12)</th><th>Fonte</th>{podeBuscar && <th />}
               </tr></thead><tbody>{linhas.map(({ x, v }) => {
                 const n = v?.notificacao as R | null | undefined, ab = aberto === x.id && !!n;
                 return (
