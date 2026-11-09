@@ -37,7 +37,7 @@ Campos que **se editam** no lugar:
 |---|---|
 | **Número** | Só informativo: não mexe no pino nem na poligonal. Se for diferente dos números de porta dos SQLs do terreno, aparece **"Número diferente do cadastro da prefeitura"** ("O número informado diverge dos números cadastrados no município para os lotes selecionados"), com **Cancelar** e **"Alterar mesmo assim"**. |
 | **Complemento** | Texto livre. |
-| **Zona** | Norte, Sul, Leste, Oeste, Centro, Sudeste, Sudoeste, Nordeste, Noroeste. |
+| **Zona** | Norte, Sul, Leste, Oeste, Centro, Sudeste, Sudoeste, Nordeste, Noroeste. Em São Paulo vem sozinha do GeoSampa ao abrir a ficha e aparece marcada "do GeoSampa": é a região oficial da prefeitura (Centro, Norte, Sul, Leste ou Oeste) da subprefeitura onde fica a maior parte da poligonal. Enquanto busca, um círculo girando aparece ao lado do nome do campo. Se você trocar, vale o que você escolheu, e o GeoSampa não sobrescreve mais. A zona que já estava escolhida antes desta busca existir também não é trocada. |
 | **Cartório de registro de imóveis** | Em São Paulo vem do GeoSampa e aparece marcado "do GeoSampa": pela poligonal (a circunscrição que cobre a maior parte do terreno) ao abrir a ficha, mesmo sem SQL. Enquanto busca, um círculo girando aparece ao lado do nome do campo. Se você trocar, vale o que você escolheu, e o GeoSampa não sobrescreve mais. |
 | **Referência** | Ponto de referência ("em frente ao mercado X"). |
 
@@ -146,17 +146,16 @@ Mostra a **área da parte** e a **divergência Matrícula × Prefeitura** (a ár
 
 ## Áreas e dimensões
 
-Cinco cartões de área, cada um com sua fonte:
+Quatro cartões de área, nesta ordem: lado a lado quando cabem, senão em dois pares (Documental e Cadastral em cima, Topográfica e Poligonal embaixo).
 
 | Cartão | De onde vem |
 |---|---|
 | **Documental** | Digitada (da matrícula). |
 | **Cadastral** | Em São Paulo, não se digita: é a soma das áreas dos SQLs do terreno (só quando todos têm área), refeita a cada SQL incluído, excluído ou consultado; uma área digitada antes volta para a soma ao abrir a ficha. Nas outras cidades, digitada. |
-| **Levantamento** | Digitada (levantamento topográfico). **Ao digitar, vira a área adotada** (pode trocar depois). |
-| **Estimativa** | Digitada. |
+| **Topográfica** | Digitada (levantamento topográfico). **Ao digitar ou trocar o valor, vira a área adotada**, mesmo que outra tivesse sido escolhida (pode trocar depois). |
 | **Poligonal** | Calculada pelo desenho, em m² inteiros. Nunca se digita. Muda quando a poligonal é ajustada. |
 
-**Área adotada:** clique num cartão preenchido para escolhê-lo ("Clique na área que vale"). A adotada fica em azul com "Área adotada". Se a adotada é a Poligonal, ela acompanha cada ajuste do desenho.
+**Área adotada:** todo terreno nasce com a **Cadastral** como adotada (enquanto os SQLs não trazem a área, aparece "Cadastral · sem área ainda"). A única que toma o lugar sozinha é a **Topográfica**, quando é digitada. Para escolher outra, clique num cartão preenchido; a adotada fica em azul com "Área adotada". Se a área escolhida é apagada, a adotada volta para a Cadastral. Se a adotada é a Poligonal, ela acompanha cada ajuste do desenho. Não há mais área estimada.
 
 Abaixo:
 
@@ -178,10 +177,10 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 
 ## IPTU
 
-Logo abaixo de Áreas e dimensões, já aberto, como Parâmetros urbanísticos. Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
+Logo abaixo de Áreas e dimensões. Nasce fechado, como os outros quadros da aba (abre pela seta do título). Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
 
-- três caixas, como as de Áreas e dimensões: **valor venal do terreno**, **da construção** e **total** (lado a lado quando cabem);
-- embaixo, em duplas: **área total do terreno** e **área construída** (da Prefeitura), **imposto predial** e **imposto territorial**, valor do m² do terreno e padrão da construção, uso e vencimento da 1ª prestação (quando há mais de um valor, separados por " / ");
+- três caixas, como as de Áreas e dimensões: **valor venal do terreno**, **da construção** e **total**, este em destaque (três por linha, também na gaveta da ficha);
+- embaixo, em dupla: **área total do terreno** e **área construída** (da Prefeitura);
 - por último, em destaque: **IPTU anual** e **IPTU mensal** (anual ÷ 10, as 10 prestações da Prefeitura).
 
 O título do panorama diz o exercício e quantos SQLs ainda não têm IPTU. Em **Ver SQL por SQL**, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.

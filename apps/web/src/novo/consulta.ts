@@ -6,7 +6,7 @@
 // se falhar. Depois, as mesmas camadas pela poligonal do terreno (Restrições e entorno; app.registrar_consulta_area).
 // A planta (PDF) e o desenho (DXF) do lote vão para Documentos quando a ficha tiver a aba Documentos.
 import { useSyncExternalStore } from 'react';
-import { supabase } from '../lib/supabase';
+import { automatico, supabase } from '../lib/supabase';
 import { GEO_BASE, digitos, geoAneis, geoAreaAnel, geoNoAnel, geoWfs, geoWkt, latLngUtm, utmLatLng } from './geosampa';
 import type { P } from './geo';
 import { medirFrentes } from './frentesCalc';
@@ -137,8 +137,9 @@ async function geoPA(poly: P[]) {
 }
 const geojsonUtm = (an: number[][]) => ({ type: 'Polygon', coordinates: [an.map((p) => { const [la, ln] = utmLatLng(p[0], p[1]); return [+ln.toFixed(7), +la.toFixed(7)]; })] });
 
-/** consulta completa de um SQL; false quando o GeoSampa não achou o lote ou não respondeu */
-export async function consultarLote(inscricaoId: string, sql: string) {
+/** consulta completa de um SQL; false quando o GeoSampa não achou o lote ou não respondeu.
+ * auto: feita pelo sistema depois de incluir SQLs (o log fica recolhido dentro dessa ação); o botão "Buscar no GeoSampa", não. */
+export async function consultarLote(inscricaoId: string, sql: string, auto = false) {
   const d = digitos(sql);
   const lotes = await geoWfs({ typeNames: 'geoportal:lote_cidadao', CQL_FILTER: `cd_setor_fiscal='${d.slice(0, 3)}' AND cd_quadra_fiscal='${d.slice(3, 6)}' AND cd_lote='${d.slice(6, 10)}'` });
   const lote = lotes.find((f) => String(f.properties.cd_digito_sql) === d[10] && f.properties.tx_situ_lote !== 'INATIVO' && f.geometry);
@@ -149,22 +150,24 @@ export async function consultarLote(inscricaoId: string, sql: string) {
   await viasDaArea(anel, camadas, props, erros);
   const pa = await geoPA(anel.slice(0, -1).map((p) => utmLatLng(p[0], p[1]))).catch(() => null);
   if (pa) props.quota_ambiental = [{ pa }];
-  const { error } = await supabase.rpc('registrar_consulta_lote', {
+  const q = supabase.rpc('registrar_consulta_lote', {
     p_inscricao: inscricaoId, p_lote: lote.properties, p_poligono: geojsonUtm(anel), p_area_poligono: Math.round(geoAreaAnel(anel) * 100) / 100,
     p_camadas: props, p_zonas: zonas, p_camadas_com_erro: erros,
   });
+  const { error } = await (auto ? automatico(q) : q);
   if (error) throw error;
   return true;
 }
 /** as mesmas camadas pela poligonal do terreno (Restrições e entorno) */
-export async function consultarArea(terrenoId: string, poly: P[]) {
+export async function consultarArea(terrenoId: string, poly: P[], auto = false) {
   const anel = poly.map(([la, ln]) => latLngUtm(la, ln)); anel.push(anel[0]);
   const { camadas, erros } = await geoConsultar({ type: 'Polygon', coordinates: [anel] });
   const props = atributos(camadas);
   await viasDaArea(anel, camadas, props, erros);
   const pa = await geoPA(poly).catch(() => null);
   if (pa) props.quota_ambiental = [{ pa }];
-  const { error } = await supabase.rpc('registrar_consulta_area', { p_terreno: terrenoId, p_camadas: props, p_camadas_com_erro: erros });
+  const q = supabase.rpc('registrar_consulta_area', { p_terreno: terrenoId, p_camadas: props, p_camadas_com_erro: erros });
+  const { error } = await (auto ? automatico(q) : q);
   if (error) throw error;
   return erros.length;
 }
@@ -199,6 +202,35 @@ async function cartorioBuscar(terrenoId: string, poly: P[] | null, lat: number |
   return v;
 }
 
+/** Zona da cidade (São Paulo; pedido do Moises, 9/nov/2026): a região oficial da prefeitura (Centro, Norte, Sul, Leste, Oeste;
+    nm_regiao_05 da camada subprefeitura_v2 do GeoSampa) da subprefeitura que cobre a maior parte da poligonal; sem poligonal,
+    a do pino. Grava por app.zona_da_prefeitura, que só preenche o vazio ou troca o que veio do GeoSampa, nunca o digitado.
+    Devolve a zona achada ("sul") ou null. */
+export const zonaPelaArea = (terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null) =>
+  buscando(terrenoId, 'zona', zonaBuscar(terrenoId, poly, lat, lng));
+const REGIAO: Record<string, string> = { centro: 'centro', norte: 'norte', sul: 'sul', leste: 'leste', oeste: 'oeste' };
+async function zonaBuscar(terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null) {
+  const campos = 'nm_regiao_05';
+  let r: string | null | undefined = null;
+  if (poly && poly.length >= 3) {
+    const anel = poly.map(([la, ln]) => latLngUtm(la, ln)); anel.push(anel[0]);
+    const g = { type: 'Polygon', coordinates: [anel] };
+    const f = await geoWfs({ typeNames: 'geoportal:subprefeitura_v2', propertyName: campos + ',ge_poligono', CQL_FILTER: `INTERSECTS(ge_poligono,${geoWkt(g)})` });
+    const rs = [...new Set(f.map((x) => x.properties?.nm_regiao_05).filter(Boolean))];
+    r = rs.length > 1 ? geoAreaZonas(g, f.filter((x) => x.geometry), (p) => p.nm_regiao_05)[0]?.sigla : rs[0];
+  } else if (lat != null && lng != null) {
+    const [x, y] = latLngUtm(lat, lng);
+    const f = await geoWfs({ typeNames: 'geoportal:subprefeitura_v2', propertyName: campos, CQL_FILTER: `INTERSECTS(ge_poligono,POINT(${x} ${y}))` });
+    r = f.length === 1 ? f[0].properties?.nm_regiao_05 : null;
+  }
+  const z = r ? REGIAO[String(r).trim().toLowerCase()] : null;
+  if (!z) return null;
+  const { data, error } = await supabase.rpc('zona_da_prefeitura', { p_terreno: terrenoId, p_zona: z });
+  if (error) throw error;
+  if (data) avisarConsultado(terrenoId);
+  return z;
+}
+
 /* ---------- andamento ("Consultando o GeoSampa: N de M"), lido pela lista do mapa ---------- */
 export interface Andamento { terreno: string; feitos: number; total: number }
 let A: Andamento | null = null;
@@ -225,13 +257,13 @@ async function consultarTudo(terrenoId: string, poly: P[] | null, ins: { id: str
       let ok = false;
       for (let t = 0; t < 2 && !ok; t++) {
         if (t) await espera(1500);
-        try { ok = await consultarLote(i.id, i.sql); } catch (e) { console.warn('GeoSampa', i.sql, e); }
+        try { ok = await consultarLote(i.id, i.sql, true); } catch (e) { console.warn('GeoSampa', i.sql, e); }
       }
       if (!ok) falhas++;
       else gravado(terrenoId);
       mudar({ terreno: terrenoId, feitos: A!.feitos + 1, total: ins.length });
     }
-    if (poly && poly.length >= 3) { try { await consultarArea(terrenoId, poly); gravado(terrenoId); } catch (e) { areaOk = false; console.warn('GeoSampa área', e); } }
+    if (poly && poly.length >= 3) { try { await consultarArea(terrenoId, poly, true); gravado(terrenoId); } catch (e) { areaOk = false; console.warn('GeoSampa área', e); } }
   } finally { mudar(null); }
   const n = ins.length;
   if (falhas) aviso(`GeoSampa consultado; ${falhas} SQL${falhas > 1 ? 's' : ''} não respondeu. Use "Buscar no GeoSampa" no SQL.`, true);

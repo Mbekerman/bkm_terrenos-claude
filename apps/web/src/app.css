@@ -197,6 +197,10 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 .etq-form .field { flex: 1 1 150px; min-width: min(100%, 150px) }
 .etq-form .field.grow { flex: 2 1 190px; min-width: min(100%, 190px) }
 .fi-aba .areas { grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)) }
+/* áreas e dimensões: as 4 fontes lado a lado quando cabem, senão em dois pares (pedido do Moises, 9/nov/2026) */
+.areas4 { container-type: inline-size }
+.fi-aba .areas4 .areas { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+@container (min-width: 640px) { .fi-aba .areas4 .areas { grid-template-columns: repeat(4, minmax(0, 1fr)) } }
 .fi-aba .cond { grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)) }
 .fi-aba .fields, .dialog .fields { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) }
 .dialog.mini .fields { grid-template-columns: 1fr }
@@ -343,13 +347,14 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .mp-rt-s { display: flex; flex-direction: column; min-width: 0 } .mp-rt-s .muted { font-size: 12px }
 /* com a rota aberta, os quadrados da concorrência ficam apagados para a linha aparecer (ficam por cima dela no Google) */
 .mapa-area.rota-on .mk.g:not(.mk-dest) { opacity: .12 }
-/* escolher a saída da rota no mapa (9/nov/2026): mira ao lado da busca e cursor de mira no mapa */
+/* escolher a saída da rota no mapa (9/nov/2026): mira ao lado da busca e dedo indicador no mapa (antes a mira; Moises, 9/nov/2026) */
 .mp-rt-busca { padding-right: 4px }
 .mp-rt-mira { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 18px; background: transparent; color: #444746; cursor: pointer }
 .mp-rt-mira:hover { background: rgba(68,71,70,.08) }
 .mp-rt-mira.on { background: #c2e7ff; color: #001d35 }
 .mp-rt-dica { margin-top: -4px; font-size: 12px; color: #444746 }
-.mapa-area.rota-pega .mapa, .mapa-area.rota-pega .mapa div, .mapa-area.rota-pega .mapa .pin, .mapa-area.rota-pega .mapa .mk { cursor: crosshair !important }
+.mapa-area.rota-pega .mapa, .mapa-area.rota-pega .mapa div, .mapa-area.rota-pega .mapa .pin, .mapa-area.rota-pega .mapa .mk { cursor: pointer !important }
+.mapa-area.rota-pega .mapa.leaflet-dragging, .mapa-area.rota-pega .mapa.leaflet-dragging div { cursor: grabbing !important }
 .mapa-area.rota-on.rota-pega .mk.g:not(.mk-dest) { opacity: .6 }
 /* cabeçalho e moldura na largura toda (pedido do Moises, 9/nov/2026): em tela grande o logo e o perfil iam para o meio, porque .top-in e .layout tinham largura máxima centrada.
    O desenho do logo começa na mesma linha do menu lateral (12 px, a borda dos botões do menu) e o perfil termina a 12 px da direita, a mesma margem.
@@ -360,13 +365,20 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 /* Seção IPTU (pedido do Moises, 9/nov/2026): venais em caixas como as de Áreas, lado a lado quando cabem; o resto em duplas;
  * IPTU anual e mensal por último, em destaque; enquanto a Prefeitura não respondeu, a seção toda carrega */
 .iptu-pan { margin-top: 4px }
-.fi-aba .areas.iptu-venal, .areas.iptu-venal { grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); margin-bottom: 12px }
+.fi-aba .areas.iptu-venal, .areas.iptu-venal { grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 8px; margin-bottom: 12px }
+.iptu-venal .area { padding: 10px 12px; min-width: 0 }
+.iptu-venal .area .al { min-height: 0 }
+.iptu-venal .area .av { font-size: 17px; line-height: 22px; overflow-wrap: anywhere }
 .iptu-pares { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px }
 .iptu-pares .area .av { font-size: 18px }
 .iptu-dest .area { background: #d3e3fd }
+.iptu-venal .area.iptu-tot .al { color: #1f1f1f; font-weight: 500 }
+.iptu-venal .area.iptu-tot .av { font-weight: 600; color: #0b57d0 }
 .iptu-dest .area .al { color: #041e49 }
 .iptu-dest .area .av { font-size: 24px; line-height: 30px; font-weight: 400; color: #041e49 }
 :root[data-tema="escuro"] .iptu-dest .area { background: #004a77 }
+:root[data-tema="escuro"] .iptu-venal .area.iptu-tot .al { color: #e3e3e3 }
+:root[data-tema="escuro"] .iptu-venal .area.iptu-tot .av { color: #a8c7fa }
 :root[data-tema="escuro"] .iptu-dest .area :is(.al, .av) { color: #c2e7ff }
 .iptu-erro { color: #b3261e }
 .iptu-corpo { position: relative }
@@ -379,3 +391,12 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .iptu-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: iptu-gira .8s linear infinite }
 @keyframes iptu-gira { to { transform: rotate(360deg) } }
 @media (prefers-reduced-motion: reduce) { .iptu-corpo.carregando::after, .iptu-spin { animation: none } }
+
+/* marcando pontos no mapa (desenho e edição da poligonal no Mapa e no mini-mapa, régua): o dedo indicador em vez da
+   mãozinha aberta de arrastar, e na régua a seta; arrastando o mapa, a mão fechada (pedido do Moises, 9/nov/2026; antes,
+   mira no desenho). No Google vale o draggableCursor (Motor.cursorMarcar, MiniMapa). Aqui, e não no styles.css, que o build.py
+   do protótipo sobrescreve. */
+:is(.mapa, .mini-mapa).modo, :is(.mapa, .mini-mapa).modo .leaflet-grab, :is(.mapa, .mini-mapa).modo .leaflet-interactive { cursor: pointer }
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
+:is(.mapa, .mini-mapa).modo.leaflet-dragging, :is(.mapa, .mini-mapa).modo.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive),
+.mapa.regua.leaflet-dragging, .mapa.regua.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive) { cursor: grabbing }

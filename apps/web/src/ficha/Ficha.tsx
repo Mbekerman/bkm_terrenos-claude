@@ -13,9 +13,12 @@ import AbaComercial from './Comercial';
 import Painel, { Avancos, usePN } from './Painel';
 import AbaEntorno, { EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
+import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
 import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
 import { useToast } from '../components/ui';
+import MenuTerreno from '../components/MenuTerreno';
+import { useNavigate } from 'react-router-dom';
 
 // Ficha do terreno, porte de tools/prototipo/proto.js › pgFicha (topo, abas, fiAbasCaber), proto_fases.js › linhaTopo,
 // proto_funil.js › linhaEtapas e proto_mod.js › abaGeral (Visão geral: Localização e Resumo). Mesma marcação e classes do
@@ -331,13 +334,13 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
           {edita ? lin('Endereço', end, <LapisMapa codigo={f.codigo} />) : lin('Endereço', end)}
           {edita ? lin('Município e região', <span className="kv-vivo">{[f.municipio, f.uf].filter(Boolean).join(' · ')}{f.municipio ? ' · ' : ''}
             <Vivo ini={f.t.zona ?? ''} imediato gravar={(v) => salvarT({ zona: v || null })}>{(p) =>
-              <select className="inl-x" aria-label="Zona" {...p}><option value="">Zona não informada</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>Zona {l}</option>)}</select>}</Vivo></span>)
+              <select className="inl-x" aria-label="Zona" {...p}><option value="">Zona não informada</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>Zona {l}</option>)}</select>}</Vivo><Busca terreno={f.id} fontes={['zona']} /></span>)
             : lin('Município e região', mun)}
           {lin('Zoneamento', f.zonas, ir('terreno', 'Ver os parâmetros urbanísticos', 'indices'))}
           {edita ? lin('Área adotada', <span className="kv-vivo">{f.area != null ? m2(f.area) + ' · ' : ''}
-            <Vivo ini={f.t.fonte_area_adotada ?? ''} imediato gravar={(v) => { const d = dadosArea(f, { ...valoresArea(f.t), fonte_area_adotada: v }); if (typeof d === 'string') { toast(d); return false; } return salvarT(d); }}>{(p) =>
+            <Vivo ini={f.t.fonte_area_adotada ?? 'cadastral'} imediato gravar={(v) => { const d = dadosArea(f, { ...valoresArea(f.t), fonte_area_adotada: v }); if (typeof d === 'string') { toast(d); return false; } return salvarT(d); }}>{(p) =>
               fonteSel('g-fonteArea', { ...p, className: 'inl-x', 'aria-label': 'Fonte da área adotada' } as any,
-                Object.entries(FONTE_AREA).filter(([k]) => k === f.t.fonte_area_adotada || (k === 'poligonal' ? f.t.area_poligonal_m2 != null : k !== 'estimativa' && f.t[`area_${k}_m2`] != null)), 'Sem área adotada')}</Vivo>
+                Object.entries(FONTE_AREA).filter(([k]) => k === 'cadastral' || k === f.t.fonte_area_adotada || (k === 'poligonal' ? f.t.area_poligonal_m2 != null : f.t[`area_${k}_m2`] != null)), null)}</Vivo>
             </span>, ir('terreno', 'Ver as áreas'))
             : lin('Área adotada', f.area != null ? dois(m2(f.area), f.fonteArea ? FONTE_AREA[f.fonteArea] : null) : '', ir('terreno', 'Ver as áreas'))}
           {lin('Unidades do estudo válido', f.unidades != null ? `${num(f.unidades)} unidades` : '', ir('viabilidade', 'Ver os estudos de viabilidade'))}
@@ -422,6 +425,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   abrirMapa: (lat: number, lng: number, z: number) => void; naGaveta?: boolean;
 }) {
   const [pn] = usePN();
+  const navegar = useNavigate();
   const c = completude(f);
   const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
   const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;
@@ -451,7 +455,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
             {f.negId && !naGaveta && <><span className="fi-sep">·</span><span className="fi-temp"><TempTopo f={f} /></span></>}
           </div>
         </div>
-        <Resp r={f.resp} />
+        <div className="fi-head-d"><Resp r={f.resp} />{!naGaveta && <MenuTerreno t={f} aoSair={() => navegar('/mapa', { replace: true })} />}</div>
       </div>
       <div className="stack">
         {c.pct < 100 && (
