@@ -220,4 +220,3 @@ Lotes que não se encostam são recusados. O **Ctrl+Z** volta tudo como estava, 
 - Marcar pontos de interesse da empresa no mapa (eles ficam só na ficha, aba Entorno).
 - Ver imagens de satélite antigas (régua de tempo): a API do Google Maps para sites não oferece.
 - Importar KMZ/KML pelo mapa: isso fica no [Novo terreno](03-novo-terreno.md).
-- Achar terreno por matrícula ou SQL pela busca (ver [01](01-entrar-e-navegar.md#busca-de-cima)).

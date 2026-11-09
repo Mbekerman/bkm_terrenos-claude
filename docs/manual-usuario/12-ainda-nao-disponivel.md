@@ -22,7 +22,7 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 |---|---|
 | **Estudos de massa** (pedido ao arquiteto, tipologias, CA, eficiência, estudo válido) | Só no protótipo |
 | **Viabilidades** (estudo de viabilidade estática, DRE, modelos, "Rentabilidade abaixo da mínima") | Só no protótipo. Por isso Unidades e VGV do Resumo ficam vazios. |
-| **Infraestrutura** (relevo em 7 perfis, visita técnica, viabilidades técnicas de energia, água, esgoto e gás) | Só no protótipo. Por isso "Perfil topográfico" fica vazio e "Visita técnica" fica pendente na completude. |
+| **Infraestrutura** (relevo em 7 perfis, visita técnica, viabilidades técnicas de energia, água, esgoto e gás) | Só no protótipo. Por isso "Perfil topográfico" fica vazio; a "Visita técnica" fica fora da completude até a aba chegar. |
 | **Jornada** (as fases do terreno, "Abrir antes da hora") | Só no protótipo |
 | **Documentos** (envio com versão, pastas no Google Drive, planta e desenho do GeoSampa) | Só no protótipo; pastas no Drive no plano |
 

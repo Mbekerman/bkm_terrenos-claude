@@ -80,7 +80,7 @@ apps/web/
 
 | Arquivo | Papel |
 | --- | --- |
-| `Moldura.tsx` | Barra superior (logo, selo do ambiente, busca, sino, perfil), menu lateral recolhível, barra inferior do celular, FAB "Novo terreno" e as janelas globais (`NovoTerreno`, `TrocarEndereco`). Passa a busca da barra às telas pelo `Outlet context` (`ContextoMoldura`). Tem também `Ic` e `Bi` (ícones), `SeloAmbiente`, `Logo`, `Perfil` e `Sino`. |
+| `Moldura.tsx` | Barra superior (logo, selo do ambiente, busca, sino, perfil), menu lateral recolhível, barra inferior do celular, FAB "Novo terreno" e as janelas globais (`NovoTerreno`, `TrocarEndereco`). Passa a busca da barra às telas pelo `Outlet context` (`ContextoMoldura`); digitar fora do Mapa leva a `/mapa`. Quem filtra é `bate()` em `mapa/dados.ts`: código, nome, endereço, bairro, zona, município, corretor, matrículas e SQLs (estes também só pelos dígitos). Tem também `Ic` e `Bi` (ícones), `SeloAmbiente`, `Logo`, `Perfil` e `Sino`. |
 | `ui.tsx` | `Dialogo` (janela modal), `ToastProvider`/`useToast` (aviso de 3,2 s), `Carregando`, `Erro`, `Marca`, `Icon`. Tem sobras de outubro sem uso (`ChipStatus`, `ChipDoc`, `Avatar`). |
 | `Desfazer.tsx` | Ctrl+Z / Ctrl+Y globais (ver [seção 7](#7-edição-na-ficha)). |
 | `Rascunho.tsx` | Aviso de formulário não registrado e rascunho guardado no navegador (ver [seção 7](#7-edição-na-ficha)). |
@@ -101,7 +101,7 @@ apps/web/
 
 | Arquivo | Papel |
 | --- | --- |
-| `dados.ts` | `carregarFicha(empresa, codigo)`: tenta `app.ficha_dados` (uma chamada) e, se a função não existir no banco, cai nos pedidos separados (`semFuncao`, `dados.ts:105`). Monta o objeto `Ficha` (topo, linha do tempo, contagens, completude). Constantes de rótulo (`FONTE_AREA`, `ZONA`, `TEMP`, `TP_N`). |
+| `dados.ts` | `carregarFicha(empresa, codigo)`: tenta `app.ficha_dados` (uma chamada) e, se a função não existir no banco, cai nos pedidos separados (`semFuncao`, `dados.ts:105`). Monta o objeto `Ficha` (topo, linha do tempo, contagens, completude). A completude tem 11 itens; "Visita técnica" só entra com `INFRA_PORTADA = true`, a ligar quando a aba Infraestrutura for portada. Constantes de rótulo (`FONTE_AREA`, `ZONA`, `TEMP`, `TP_N`). |
 | `Ficha.tsx` | Topo (código, nome, fase · etapa · subetapa, temperatura), linha do tempo, barra de abas em "roleta" com inércia e ⋮, Visão geral (mini-mapa e Resumo), alerta do que falta. `useFicha` e `usePreCarregarFicha` (`Ficha.tsx:338`, `:345`). |
 | `Gaveta.tsx` | A ficha na gaveta da direita da página Mapa (`/mapa/A123/ficha`), com largura arrastável. |
 | `edicao.tsx` | Edição no lugar: `SECOES` (campos de cada quadro), `useSalvar` (fila de gravações por `app.salvar_terreno`), `useVivo`/`Vivo`/`CampoVivo`, `Quadro` (abre e fecha pela seta), `CamposEndereco`, `pedirCampo`/`focar`/`acender` (levar a um campo e acendê-lo). |
