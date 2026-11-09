@@ -62,7 +62,10 @@ Temas:
 
 - **Ambiental**: Perímetro de qualificação ambiental (Quota Ambiental; Lei 16.402/2016, Mapa 3), inundação em 5, 25 e 100 anos, córrego a até 30 m, árvores na calçada a até 30 m, vegetação significativa, área contaminada no terreno e a até 30 m, parque ou unidade de conservação, manancial.
 - **Patrimônio**: bem tombado, área envoltória (Conpresp, Condephaat, Iphan), interesse arqueológico, ZEPEC.
-- **Vias e redes**: classificação viária da CET, melhoramento viário, vila a até 20 m, linha de alta tensão e ferrovia a até 30 m, distância da rede da Comgás, influência do Metrô ou da CPTM.
+- **Vias e redes**: classificação viária da CET, melhoramento viário, vila ou rua sem saída, linha de alta tensão e ferrovia a até 30 m, distância da rede da Comgás, influência do Metrô ou da CPTM.
+  - **Classificação viária (CET)**: só as ruas que são frente do terreno (as mesmas das frentes medidas pela poligonal), uma linha por rua. A CET classifica a rua por trechos de quarteirão; quando os trechos junto do terreno têm classificações diferentes, vale a mais alta e a outra aparece entre parênteses, por exemplo "R Sebastião Sisson: Coletora (trecho Local)". Rua de frente que a CET não classifica aparece como "sem classificação".
+  - **Vila ou rua sem saída**: vila enquadrada pela prefeitura a até 20 m, com a distância, ou rua de frente sem saída. O GeoSampa não tem um cadastro de ruas sem saída: o sistema deduz pela rede de ruas da prefeitura (até 400 m em volta), olhando se a rua de frente só sai por um caminho que termina. Viela, passagem e escadaria aparecem como "só passagem de pedestres". É uma dedução; confira no mapa antes de decidir.
+  - **Melhoramento viário** e **faixa não edificável** mostram a lei, o tipo, a largura da faixa (quando a prefeitura informa) e quanto do terreno a faixa atinge, em m². **Córrego**, **vila**, **alta tensão** e **ferrovia** mostram a distância até o terreno ("encosta no terreno" quando toca).
 - **Riscos e interferências**: risco geológico, restrição geotécnica, faixa não edificável.
 
 Cada linha diz sim, não, a distância, "Nada cadastrado no terreno nem a até 30 m" ou "Não respondeu" (quando a fonte falhou).

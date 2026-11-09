@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **Restrições e entorno** (Parâmetros, São Paulo): a classificação viária da CET lista só as ruas que são frente do terreno, uma linha por rua (antes vinham todas as ruas a até 30 m e a mesma rua repetida por trecho); "Vila a até 20 m" virou **Vila ou rua sem saída**; melhoramento viário e faixa não edificável mostram quanto do terreno atingem; córrego, vila, alta tensão e ferrovia mostram a distância. Vale para consultas novas: clique em "Consultar de novo". (#260)
 - **Perfil da população do entorno** (aba Entorno) ganhou a **densidade demográfica** (habitantes por km²) e a **idade média** estimada. (#PRN)
 - **Gaveta da ficha no Mapa lembra onde você parou**, por terreno: a aba, a rolagem e os quadros abertos e fechados voltam como estavam ao reabrir, também depois de fechar o navegador (últimos 50 terrenos, neste navegador). (#257)
 - **Traçar rota até aqui** (Mapa): o clique direito traz a opção de traçar a rota de um endereço, um lugar ou da sua localização até o ponto clicado, de carro, moto, a pé, de bicicleta ou de transporte público, com tempo, distância e "Abrir no Google Maps". Sobre um terreno já cadastrado, o clique direito não mostra mais "Novo terreno aqui". Leitura também usa a rota. (#254)

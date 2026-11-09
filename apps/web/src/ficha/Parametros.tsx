@@ -432,7 +432,7 @@ const REST_GRUPOS: [string, Item[]][] = [
     ['Classificação viária (CET)', { k: ['classificacao_viaria_cet'], info: 1 }],
     ['Melhoramento viário', { k: ['geoconvias_lei_melhoramento_vigente'] }],
     ['Faixa não edificável', { k: ['geoconvias_faixa_nao_edificavel'] }],
-    ['Vila a até 20 m', { k: ['enquadramento_vila'] }],
+    ['Vila ou rua sem saída', { k: ['enquadramento_vila', 'rua_sem_saida'] }],
     ['Linha de alta tensão a até 30 m', { k: ['linha_alta_tensao_v2', 'linha_subterranea_alta_tensao'] }],
     ['Ferrovia a até 30 m', { k: ['ferrovia_mdc_v2'] }],
     ['Rede da Comgás', { k: ['rede_comgas'], info: 1, vazio: 'Nenhuma a até 100 m' }]]],
