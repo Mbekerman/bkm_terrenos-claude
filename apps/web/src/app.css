@@ -350,3 +350,8 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .mp-rt-dica { margin-top: -4px; font-size: 12px; color: #444746 }
 .mapa-area.rota-pega .mapa, .mapa-area.rota-pega .mapa div, .mapa-area.rota-pega .mapa .pin, .mapa-area.rota-pega .mapa .mk { cursor: crosshair !important }
 .mapa-area.rota-on.rota-pega .mk.g:not(.mk-dest) { opacity: .6 }
+/* cabeçalho e moldura na largura toda (pedido do Moises, 9/nov/2026): em tela grande o logo e o perfil iam para o meio, porque .top-in e .layout tinham largura máxima centrada.
+   O desenho do logo começa na mesma linha do menu lateral (12 px, a borda dos botões do menu) e o perfil termina a 12 px da direita, a mesma margem.
+   O SVG do logo tem 4 px de folga à esquerda na largura de 120 px, por isso o recuo da esquerda é 8. */
+.layout, .top-in, body.menu-min .layout { max-width: none }
+@media (min-width: 900px) { .top { padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)) } }
