@@ -77,18 +77,27 @@ Lista os corretores que trouxeram ofertas deste terreno. Eles "entram automatica
    - **Valor total**;
    - **Forma de pagamento**;
    - **Status**: Apresentada, Em análise ou Rascunho;
+   - **Partes da proposta**: para qual parte (dono) a proposta é feita. Pode ser uma, várias ou todas (**"Marcar todas"**, com três partes ou mais). Se o terreno tem **uma parte só**, ela já vem marcada; com **duas ou mais**, nenhuma vem marcada e o sistema **não deixa registrar** sem escolher pelo menos uma: o campo fica vermelho com o aviso "Escolha pelo menos uma parte". As partes são as cadastradas na aba Terreno;
    - **Apresentada em** (data) e **Validade** (vem com 15 dias depois);
    - **Condições de pagamento** (texto).
 3. Clique em **Registrar**.
 
-**Versões:** cada proposta ganha um número (v1, v2, v3...). O formulário avisa a qual versão a nova responde:
+**Na lista**, cada proposta mostra as partes a que foi feita, em etiquetas logo abaixo do valor. Proposta registrada antes de 9/nov/2026 num terreno com duas ou mais partes aparece com **"Parte não informada"** (conta como de todas as partes). Parte que foi tirada do terreno aparece com "(saiu)".
 
-- se a nova vem **do outro lado** (BKM responde ao vendedor, ou vice-versa), a anterior vira **Recusada**;
-- se vem **do mesmo lado**, a anterior vira **Substituída**.
+**Versões:** cada proposta ganha um número (v1, v2, v3...), numa sequência só para o terreno.
 
-**Mudar o status de uma proposta:** clique no chip do status na linha da proposta e escolha: Rascunho, Apresentada, Em análise, Aceita, Recusada, Expirada, Retirada ou Substituída.
+**Nenhuma proposta mexe em outra.** Registrar uma proposta nova não recusa nem substitui as que estão em aberto, mesmo que sejam das mesmas partes. Em vez disso:
 
-**Regra:** proposta nunca é apagada nem sobrescrita: cada mudança vira histórico.
+- no formulário, ao escolher uma parte que já tem proposta em aberto (Rascunho, Apresentada ou Em análise), aparece o aviso "Já há proposta em aberto para …";
+- no quadro, enquanto houver duas ou mais propostas em aberto com uma parte em comum, aparece o alerta **"Propostas em aberto para a mesma parte"**, com as versões e as partes.
+
+Você decide o que fazer: mudar o status de uma delas, excluir uma ou deixar as duas abertas. Nos resumos do terreno (Última proposta, filtros, Pipeline) vale a **mais recente**.
+
+**Mudar o status de uma proposta:** clique no chip do status de **qualquer** proposta da lista e escolha: Rascunho, Apresentada, Em análise, Aceita, Recusada, Expirada, Retirada ou Substituída.
+
+**Excluir uma proposta:** clique na lixeira ao lado do status e confirme. Ela sai da lista; o registro da exclusão fica nos Logs. Proposta com documento anexado não se exclui (mude o status).
+
+**Regra:** proposta não se edita: para corrigir valor ou condição, registre outra e exclua ou mude o status da antiga. Tudo fica nos Logs.
 
 ## Reuniões
 

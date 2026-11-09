@@ -139,7 +139,7 @@ export function MarcarPessoas({ id, opcoes, valor, onChange, livre, placeholder,
     else if (e.key === 'Backspace' && !txt && valor.length) onChange(valor.slice(0, -1));
   };
   return (
-    <div className={`mk${foco ? ' foco' : ''}`} onMouseDown={(e) => { if (e.target === e.currentTarget) { e.preventDefault(); inp.current?.focus(); } }}>
+    <div className={`mkp${foco ? ' foco' : ''}`} onMouseDown={(e) => { if (e.target === e.currentTarget) { e.preventDefault(); inp.current?.focus(); } }}>
       {valor.map((m) => (
         <span key={m.k} className={`mk-chip${m.user_id ? ' bkm' : ''}`} title={m.email || undefined}>
           {m.user_id || m.pessoa_id || m.email ? '@' : ''}{m.nome}

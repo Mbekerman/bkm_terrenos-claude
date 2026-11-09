@@ -8,6 +8,8 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **Propostas por parte** (Comercial › Propostas): toda proposta diz para qual parte foi feita (uma, várias ou todas). Com uma parte, ela já vem marcada; com mais de uma, é obrigatório escolher. A lista mostra as partes de cada proposta, Nenhuma proposta recusa ou substitui outra sozinha: com duas em aberto para a mesma parte, o quadro avisa e você muda o status de qualquer uma, exclui uma (lixeira) ou deixa as duas; nos resumos vale a mais recente. (#255)
+
 - **Concorrência no Mapa**: o empreendimento aberto deixa de ficar preto com anel azul para sempre; qualquer clique fora dele (no mapa ou em outra parte da tela) tira o destaque e o quadrado volta à cor dele. (#261)
 - **Reuniões** (Comercial): participantes marcados com **@** (colegas da BKM, avisados no sino, e pessoas de fora do terreno com e-mail, só registradas); @ na pauta, no que foi tratado e nos encaminhamentos; campo **Link da reunião** na online, com "Entrar na reunião"; clicar na reunião abre a edição, com a situação Cancelada e logs de cada mudança. (#256)
 - **Gaveta da ficha no Mapa**: o topo da ficha não repete mais o cabeçalho. Código e nome ficam só no cabeçalho, que ganha a temperatura; "Abrir página" virou um ícone; a linha "fase · etapa · subetapa" saiu (o nome da fase fica em cima da linha do tempo; no celular continua). Na página própria da ficha nada muda. (#259)

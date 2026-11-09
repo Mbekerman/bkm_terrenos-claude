@@ -306,6 +306,12 @@ html[data-tema="escuro"] .etq-mq.sem { border-color: #444746 } html[data-tema="e
 .pp-acoes { display: inline-flex; gap: 2px; white-space: nowrap }
 html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema="escuro"] .pp-tbl tr.sel td { background: #282a2c }
 @media (max-width: 600px) { .pp-form .pp-nome { grid-column: auto } .pp-bt { grid-column: auto } }
+
+/* Partes da proposta (pedido do Moises, 9/nov/2026): escolha no formulário e etiquetas na lista */
+.pp-partes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.pp-pts { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px }
+.pp-pts .chip.ni { color: var(--texto-suave) }
+.pp-sobre { margin-bottom: 16px } .pp-sobre .bt { font-weight: 500 }
 /* Traçar rota até aqui (mapa/Rota.tsx; pedido do Moises, 9/nov/2026) */
 .mp-rt { position: absolute; top: 64px; left: 12px; z-index: 520; width: 360px; max-width: calc(100% - 24px); display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px; background: #fff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 4px 12px rgba(0,0,0,.12); font-size: 14px; color: #1f1f1f }
 .mp-rt-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-right: -8px }

@@ -32,7 +32,7 @@ const brl = (v: number | null | undefined) => (v == null ? '—' : Number(v).toL
 const numTxt = (v: number | null | undefined) => (v == null ? '' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
 const ni = (x = 'Não informado') => <span className="ni">{x}</span>;
 
-export interface Com { ofertas: R[]; ref: R | null; proc: R | null; tcor: R[]; corretores: R[]; props: R[]; reus: R[]; motivo: string | null }
+export interface Com { ofertas: R[]; ref: R | null; proc: R | null; tcor: R[]; corretores: R[]; props: R[]; reus: R[]; motivo: string | null; partes: R[] }
 
 export function useComercial(f: Ficha) {
   const { empresa } = useSessao();
@@ -40,17 +40,19 @@ export function useComercial(f: Ficha) {
     queryKey: ['ficha-com', f.id, f.negId], enabled: !!empresa,
     queryFn: async (): Promise<Com> => {
       const neg = f.negId, nada = Promise.resolve({ data: null, error: null });
-      const [of, ng, pr, tc, co, pp, ru] = await Promise.all([
+      const [of, ng, pr, tc, co, pp, ru, pt] = await Promise.all([
         supabase.from('ofertas').select('id,data_oferta,valor_pedido,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,validade,status,corretor_id,criado_em,oferta_partes(parte_id,valor_pedido,forma_pagamento)')
           .eq('terreno_id', f.id).order('data_oferta').order('criado_em'),
         neg ? supabase.from('negociacoes').select('oferta_referencia_id').eq('processo_id', neg).maybeSingle() : nada,
         neg ? supabase.from('processos').select('id,status,etapa_atual,subetapa_atual,subetapa_desde,motivo_encerramento,detalhe_encerramento').eq('id', neg).maybeSingle() : nada,
         supabase.from('terreno_corretores').select('corretor_id,principal').eq('terreno_id', f.id),
         supabase.from('corretores').select('id,creci,imobiliaria,ativo,pessoas(nome_razao_social)').eq('empresa_id', empresa!.id),
-        neg ? supabase.from('propostas').select('*').eq('processo_id', neg).order('versao') : nada,
+        neg ? supabase.from('propostas').select('*,proposta_partes(parte_id)').eq('processo_id', neg).order('versao') : nada,
         supabase.from('reunioes').select('*,reuniao_participantes(id,lado,nome,email,user_id,pessoa_id,pessoas(nome_razao_social))').eq('terreno_id', f.id).order('inicio', { ascending: false }),
+        // todas as partes, também as tiradas do terreno: a proposta antiga pode ter sido feita a uma delas
+        supabase.from('terreno_partes').select('id,nome,ativa,criado_em').eq('terreno_id', f.id).order('criado_em'),
       ]);
-      for (const r of [of, ng, pr, tc, co, pp, ru]) if (r.error) throw r.error;
+      for (const r of [of, ng, pr, tc, co, pp, ru, pt]) if (r.error) throw r.error;
       const ofertas = (of.data ?? []) as R[], proc = (pr.data as R) ?? null;
       const refId = (ng.data as R | null)?.oferta_referencia_id;
       const ref = ofertas.find((o) => o.id === refId)
@@ -62,7 +64,7 @@ export function useComercial(f: Ficha) {
         motivo = (m.data as R[] | null)?.[0]?.nome ?? proc.motivo_encerramento;
       }
       const corretores = ((co.data ?? []) as R[]).map((c) => ({ ...c, nome: c.pessoas?.nome_razao_social ?? '—' })).sort((a, b) => a.nome.localeCompare(b.nome));
-      return { ofertas, ref, proc, tcor: (tc.data ?? []) as R[], corretores, props: (pp.data ?? []) as R[], reus: (ru.data ?? []) as R[], motivo };
+      return { ofertas, ref, proc, tcor: (tc.data ?? []) as R[], corretores, props: (pp.data ?? []) as R[], reus: (ru.data ?? []) as R[], motivo, partes: (pt.data ?? []) as R[] };
     },
   });
 }
@@ -356,6 +358,14 @@ function SecCorretores({ f, c }: { f: Ficha; c: Com }) {
 }
 
 /* ---------- Propostas ---------- */
+// Partes da proposta (pedidos do Moises, 9/nov/2026): de uma a todas as partes ativas; com uma parte só ela já vem marcada,
+// com mais de uma nasce em branco e não registra sem escolher. Nenhuma proposta mexe em outra: com duas ou mais em aberto e
+// parte em comum (a antiga, sem parte, conta como de todas), o quadro avisa e quem edita decide (status de qualquer uma,
+// excluir uma ou deixar as duas). Nos resumos do terreno vale a última feita.
+const ptsDe = (p: R): string[] => (p.proposta_partes ?? []).map((x: R) => x.parte_id);
+const cruzam = (a: string[], b: string[]) => !a.length || !b.length || a.some((x) => b.includes(x));
+const ABERTA = ['rascunho', 'apresentada', 'em_analise'];
+
 function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const { edita } = useSessao();
   const toast = useToast(), recarregar = useRecarregar();
@@ -366,7 +376,16 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const [grav, setGrav] = useState(false);
   const [ini, setIni] = useState<Record<string, string>>({});
   const kPr = `${f.id}:proposta`;
-  const abrir = () => { const o = { origem: 'bkm', valor: '', forma: 'dinheiro', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '' }; setV(comRasc(kPr, o)); setIni(o); abrirQuadro('comercial', 'propostas'); setForm(true); };
+  const ativas = c.partes.filter((x) => x.ativa), nomeParte = (id: string) => c.partes.find((x) => x.id === id)?.nome ?? 'Parte';
+  const [errPt, setErrPt] = useState(false);
+  const abrir = () => {
+    const o = { origem: 'bkm', valor: '', forma: 'dinheiro', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '', partes: ativas.length === 1 ? ativas[0].id : '' };
+    const r = comRasc(kPr, o);
+    r.partes = (r.partes ?? '').split(',').filter((id: string) => ativas.some((x) => x.id === id)).join(',') || o.partes; // rascunho com parte que saiu
+    setV(r); setIni(o); setErrPt(false); abrirQuadro('comercial', 'propostas'); setForm(true);
+  };
+  const sel = (v.partes ?? '').split(',').filter(Boolean);
+  const marcar = (id: string) => { setErrPt(false); setV((x) => { const a = (x.partes ?? '').split(',').filter(Boolean); return { ...x, partes: (a.includes(id) ? a.filter((y) => y !== id) : [...a, id]).join(',') }; }); };
   const fref = useRef<HTMLFormElement>(null);
   const sujoPr = form && mudou(v, ini);
   useGuardarRasc(kPr, v, sujoPr);
@@ -374,12 +393,16 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const n = c.props.length;
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
+    if (!sel.length) {
+      setErrPt(true); toast('Falta escolher para qual parte é a proposta.', true);
+      document.getElementById('pp-pt')?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return;
+    }
     const valor = lerNum(v.valor);
     if (!valor || valor <= 0) { toast('Informe o valor total.', true); return; }
     setGrav(true);
     const { error } = await supabase.rpc('registrar_proposta', {
       p_processo: f.negId, p_origem: v.origem, p_valor: valor, p_forma: v.forma, p_condicoes: v.cond.trim() || null,
-      p_data_apresentacao: v.data || null, p_validade: v.validade || null, p_status: v.status,
+      p_data_apresentacao: v.data || null, p_validade: v.validade || null, p_status: v.status, p_partes: sel,
     });
     setGrav(false);
     if (error) { toast(error.message, true); return; }
@@ -392,7 +415,25 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
     const { error } = await supabase.rpc('atualizar_status_proposta', { p_proposta: p.id, p_status: s });
     if (error) toast(error.message, true); else recarregar();
   }
+  async function excluir(p: R) {
+    if (!confirm(`Excluir a proposta v${p.versao} (${brl(p.valor_total)})? Ela some da lista; o registro fica nos Logs.`)) return;
+    const { error } = await supabase.rpc('excluir_proposta', { p_proposta: p.id });
+    if (error) { toast(error.message, true); return; }
+    recarregar();
+    toast(`Proposta v${p.versao} excluída.`);
+  }
   const chain = c.props.slice().reverse();
+  const abertas = chain.filter((p) => ABERTA.includes(p.status));
+  const nomesDe = (ids: string[]) => (ids.length ? ids.map(nomeParte).join(', ') : 'parte não informada');
+  // grupos de propostas em aberto com parte em comum (cada par que se cruza)
+  const sobre: { vs: number[]; partes: string }[] = [];
+  abertas.forEach((a, i) => abertas.slice(i + 1).forEach((b) => {
+    if (!cruzam(ptsDe(a), ptsDe(b))) return;
+    const comuns = ptsDe(a).length && ptsDe(b).length ? ptsDe(a).filter((x) => ptsDe(b).includes(x)) : (ptsDe(a).length ? ptsDe(a) : ptsDe(b));
+    sobre.push({ vs: [b.versao, a.versao], partes: nomesDe(comuns) });
+  }));
+  // no formulário: abertas que já cobrem alguma das partes escolhidas
+  const jaAbertas = sel.length ? abertas.filter((p) => cruzam(ptsDe(p), sel)) : [];
   return (
     <Quadro aba="comercial" id="propostas" titulo="Propostas"
       acoes={<span className="sec-acoes">{ativa && edita && !form && <button className="btn primary sm" onClick={abrir}><Ic n="add" s={16} />Nova proposta</button>}</span>}>
@@ -407,20 +448,40 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
               <div className="field"><label htmlFor="pp-s">Status</label><select id="pp-s" value={v.status} onChange={m('status')}><option value="apresentada">Apresentada</option><option value="em_analise">Em análise</option><option value="rascunho">Rascunho</option></select></div>
               <div className="field"><label htmlFor="pp-d">Apresentada em</label><input id="pp-d" type="date" value={v.data} onChange={m('data')} /></div>
               <div className="field"><label htmlFor="pp-val">Validade</label><input id="pp-val" type="date" value={v.validade} onChange={m('validade')} /></div>
+              <div className={`field full${errPt ? ' campo-erro' : ''}`} id="pp-pt" role="group" aria-labelledby="pp-pt-l">
+                <label id="pp-pt-l">{ativas.length > 1 ? 'Partes da proposta' : 'Parte da proposta'}</label>
+                {ativas.length ? (
+                  <div className="pp-partes">{ativas.map((x) => {
+                    const on = sel.includes(x.id);
+                    return <button key={x.id} type="button" className="fx-op" aria-pressed={on} onClick={() => marcar(x.id)}>{on && <Ic n="check" s={16} />}{x.nome}</button>;
+                  })}
+                  {ativas.length > 2 && sel.length < ativas.length && <button type="button" className="btn text sm" onClick={() => { setErrPt(false); setV((x) => ({ ...x, partes: ativas.map((y) => y.id).join(',') })); }}>Marcar todas</button>}</div>
+                ) : <div className="muted">O terreno não tem parte: cadastre uma na aba Terreno.</div>}
+                {errPt && <div className="campo-msg">Escolha pelo menos uma parte.</div>}
+              </div>
               <div className="field full"><label htmlFor="pp-c">Condições de pagamento</label><textarea id="pp-c" value={v.cond} onChange={m('cond')} placeholder="Entrada, parcelas, permuta, torna, condição suspensiva" /></div>
             </div>
-            <div className="hint">{n ? `Responde à v${n}. Se vier do outro lado, a v${n} vira Recusada; se vier do mesmo lado, vira Substituída.` : 'Primeira proposta da negociação.'}</div>
+            {jaAbertas.length > 0 && <div className="diverg"><Ic n="warn" s={16} />{jaAbertas.length > 1 ? 'Já há propostas em aberto' : 'Já há proposta em aberto'} para {nomesDe(sel.filter((x) => jaAbertas.some((p) => !ptsDe(p).length || ptsDe(p).includes(x))))}: {jaAbertas.map((p) => `v${p.versao}`).join(', ')}. Nenhuma muda sozinha: depois de registrar, mude o status ou exclua a que não vale.</div>}
             <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kPr} mostrar={sujoPr} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar</button></div>
           </form>
         )}
+        {sobre.length > 0 && <div className="banner warn pp-sobre" role="status"><Ic n="warn" s={20} /><div>
+          <div className="bt">Propostas em aberto para a mesma parte</div>
+          {sobre.map((x) => <div key={x.vs.join('-')}>v{x.vs[0]} e v{x.vs[1]}: {x.partes}</div>)}
+          <div className="muted">Nos resumos do terreno vale a mais recente. Mude o status, exclua uma ou deixe as duas.</div>
+        </div></div>}
         {chain.length ? (
-          <div className="chain" style={{ marginTop: form ? 16 : 0 }}>{chain.map((p, i) => (
+          <div className="chain" style={{ marginTop: form ? 16 : 0 }}>{chain.map((p) => (
             <div key={p.id} className={`pnode ${p.origem}`}><span className="pd">v{p.versao}</span><div className="pc">
-              <div className="ph"><span><span className="pv">{brl(p.valor_total)}</span> <span className="muted" style={{ fontSize: 13 }}><span className="p-sep">· </span>{p.origem === 'bkm' ? 'BKM' : 'Vendedor'}{p.versao > 1 ? ` responde à v${p.versao - 1}` : ''}</span></span>
-                <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{i === 0 && ativa && edita
-                  ? <select aria-label="Status da proposta" className="chip chip-sel" value={p.status} onChange={(e) => status(p, e.target.value)}>
-                    {Object.entries(ST_PROP).filter(([k]) => k !== 'substituida' || p.status === k).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+              <div className="ph"><span><span className="pv">{brl(p.valor_total)}</span> <span className="muted" style={{ fontSize: 13 }}><span className="p-sep">· </span>{p.origem === 'bkm' ? 'BKM' : 'Vendedor'}</span></span>
+                <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{ativa && edita
+                  ? <><select aria-label={`Status da proposta v${p.versao}`} className="chip chip-sel" value={p.status} onChange={(e) => status(p, e.target.value)}>
+                    {Object.entries(ST_PROP).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+                    <button type="button" className="iconbtn sm" title="Excluir proposta" aria-label={`Excluir a proposta v${p.versao}`} onClick={() => excluir(p)}><Ic n="lixo" s={18} /></button></>
                   : <span className={`chip ${ST_PROP_COR[p.status] ?? ''}`}>{ST_PROP[p.status]}</span>}</span></div>
+              <div className="pp-pts">{ptsDe(p).length
+                ? ptsDe(p).map((id) => { const x = c.partes.find((y) => y.id === id); return <span key={id} className="chip" title={x && !x.ativa ? 'Parte tirada do terreno' : undefined}>{nomeParte(id)}{x && !x.ativa ? ' (saiu)' : ''}</span>; })
+                : <span className="chip ni">Parte não informada</span>}</div>
               <div className="pm">{FORMA[p.forma_pagamento]}{p.data_apresentacao ? ` · apresentada ${fd(p.data_apresentacao)}` : ''}{p.validade ? ` · válida até ${fd(p.validade)}` : ''}</div>
               {p.condicoes_pagamento && <div className="pt">{p.condicoes_pagamento}</div>}
             </div></div>
