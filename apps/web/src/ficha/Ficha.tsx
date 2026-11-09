@@ -181,6 +181,10 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
       if (ev.pointerType !== 'mouse' || ev.button !== 0) return;
       cancelAnimationFrame(anim.current);
       px = ev.clientX; sx = b.scrollLeft; arrastou = false; id = ev.pointerId; ult = [[performance.now(), b.scrollLeft]];
+      if (b.scrollWidth > b.clientWidth + 1) { // mão fechada só com o botão apertado, mesmo se soltar fora da barra
+        b.classList.add('segurando');
+        window.addEventListener('pointerup', () => b.classList.remove('segurando'), { once: true });
+      }
     };
     const move = (ev: PointerEvent) => {
       if (px == null || ev.pointerId !== id) return;
