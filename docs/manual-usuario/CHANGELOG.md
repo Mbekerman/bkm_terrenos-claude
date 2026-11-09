@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **Completude: Proprietário** só conta como preenchido quando cada parte do terreno tem proprietários somando 100% de participação. (#279)
 - **Arrastar a saída da rota** (Mapa › Traçar rota até aqui): a bolinha da saída se arrasta com o mouse (mãozinha); ao soltar, a rota é recalculada do lugar novo. (#275)
 - **Janelas que se movem** (em todo o sistema): toda janela que abre por cima da tela e os quadros sobre o mapa (setor, concorrência, rota) se arrastam pelo título para ver o que está atrás; o fundo escurecido clareia depois de mover, e dois cliques no título devolvem a janela ao lugar. Ver [Entrar e se localizar](01-entrar-e-navegar.md#mover-as-janelas-pop-ups-pela-tela). (#269)
 - **Cursor ao marcar pontos no mapa** (Mapa e mini-mapa da Visão geral): ao desenhar ou editar a poligonal ou escolher a saída da rota no mapa, o cursor é o **dedo indicador**, não mais a mãozinha aberta de arrastar nem a mira. Na régua continua a seta. Arrastando o mapa, continua a mão fechada. (#276)
