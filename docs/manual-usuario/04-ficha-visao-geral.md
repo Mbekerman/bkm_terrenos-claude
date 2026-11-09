@@ -88,7 +88,7 @@ Quem pode editar (analista, gestor, diretor) vê cada valor como um campo com ca
 2. Saia do campo (Tab, Enter, ou clique fora) ou escolha na lista: **grava na hora**.
 3. **Esc** volta o valor que estava antes.
 
-As gravações vão em fila, na ordem em que você fez. Se outra pessoa mudou a ficha ao mesmo tempo, o sistema recusa a gravação velha para não apagar o que ela fez; recarregue a página e repita.
+As gravações vão em fila, na ordem em que você fez. Se outra pessoa (ou o sistema, como a consulta do GeoSampa) mudou **o mesmo campo** depois que você abriu a ficha, o sistema recusa a sua gravação para não apagar o que ela fez, e o campo volta ao valor gravado; recarregue a página e repita. Mudança em outro campo não atrapalha.
 
 Leitura e Básico veem os valores como texto, sem campos.
 

@@ -312,7 +312,10 @@ Peças, em `ficha/edicao.tsx`:
 
 1. põe cada gravação numa **fila** (`FILA`), uma de cada vez;
 2. guarda em `VER` a versão que cada gravação devolveu, e a próxima usa a maior entre a da ficha e a guardada;
-3. se o banco responde `PT409` (versão antiga de verdade: outra pessoa mexeu; `40001` também é aceito, do banco antigo), apaga a versão guardada e recarrega a ficha.
+3. se o banco responde versão antiga (`PT409`, HTTP 409; antes `40001`, que o PostgREST repetia sozinho por minutos e o erro nunca chegava ao front), `gravarTerreno` lê de novo a versão e os campos da gravação: se esses campos estão no banco como a ficha os mostra (`visto`, tirado de `f.t`; no Ctrl+Z, o valor que a gravação anterior deixou), quem mudou o terreno mexeu em outro campo (muitas vezes o próprio sistema: a consulta do GeoSampa grava cartório, áreas e zonas logo depois do cadastro) e a gravação é repetida uma vez na versão atual; se mudaram, recusa com o aviso, apaga a versão guardada e recarrega a ficha;
+4. gravação recusada volta o campo ao valor gravado, também numa lista (que grava ao escolher, ainda com o foco nela; antes ela continuava mostrando a opção recusada).
+
+A consulta do GeoSampa depois do cadastro (`novo/consulta.ts`, `consultarTerreno`) dispara `terreno-gravado` a cada lote e no fim da consulta pela poligonal; `useFicha` (`Ficha.tsx`) ouve e recarrega a ficha, para ela mostrar o que chegou e ficar na versão atual.
 
 ### Campos que vêm de outra fonte: o carregando
 
