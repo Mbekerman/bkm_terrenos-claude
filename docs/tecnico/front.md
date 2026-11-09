@@ -114,7 +114,7 @@ apps/web/
 | `Contaminacao.tsx` | Popup "Ver detalhes" da contaminação: registros SIGAC e SVMA com todos os atributos e o recorte do mapa de lotes do GeoSampa (WMS) com o terreno e os registros. |
 | `Parametros.tsx` | Seção Parâmetros urbanísticos da aba Terreno (`SecParametros`, quadro `param` com os quadros `indices`, `rest` e `histuso` dentro, em `.qd-filhos`; desde 9/nov/2026): panorama do terreno (parâmetros de todos os lotes unidos por " / ", camadas somadas e o "não toca" uma vez só), zonas por lote (em "Ver lote por lote"), potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
 | `Entorno.tsx` + `entorno.ts` | Aba Entorno: pontos de interesse (busca no Google, rota a pé, excluir/restaurar), renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
-| `Painel.tsx` | Painel lateral: quadro de avanço no topo e as abas Ações, Tarefas e Logs (sem olhinho nem lixeira). |
+| `Painel.tsx` | Painel lateral: quadro de avanço no topo e as abas Ações, Tarefas e Logs (sem olhinho nem lixeira). Os logs automáticos (`auditoria.automatico`) ficam recolhidos dentro da última ação da mesma pessoa (`agrupar`, janela de 30 min); a aba conta só ações. Gravação feita pelo sistema como consequência leva `automatico(...)` (`lib/supabase.ts`). |
 | `Avanco.tsx` | Quadro de avanço: subetapa, prazo, pendências, Avançar / Pedir aprovação / Concluir, Stand By / Perdido / Descartado, aprovar e recusar. Só por RPC. |
 | `MiniMapa.tsx` | Mini-mapa da Visão geral, com edição da poligonal no lugar. |
 | `Temperatura.tsx` | Os cinco níveis; clicar de novo no marcado volta a "não avaliada". |

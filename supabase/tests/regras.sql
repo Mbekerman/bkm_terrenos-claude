@@ -3786,6 +3786,21 @@ select pg_temp.ok((select (d->'v'->>'id') = :'tsq' and (d->'t'->>'nome') = 'Soma
 select pg_temp.ok(app.ficha_dados(:'emp', 'Z999') is null, 'código que não existe devolve nulo');
 
 -- ---------------------------------------------------------------------
+\echo '# logs automáticos (9/nov/2026)'
+select pg_temp.como(:'analista');
+select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"historico_uso":"ação da pessoa"}') \gset
+select pg_temp.ok((select not automatico from app.auditoria where tabela = 'terrenos' and registro_id = :'tsq' order by id desc limit 1), 'gravação comum: ação da pessoa');
+select set_config('request.headers', '{"x-bkm-automatico":"1"}', false);
+select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"historico_uso":"consequência"}') \gset
+select pg_temp.ok((select automatico and depois->>'historico_uso' = 'consequência' from app.auditoria where tabela = 'terrenos' and registro_id = :'tsq' order by id desc limit 1),
+  'com o cabeçalho x-bkm-automatico, o log é automático e não se junta ao da pessoa (mesmo campo, menos de 7 s)');
+select pg_temp.ok((select count(*) = 2 from app.auditoria where tabela = 'terrenos' and registro_id = :'tsq' and depois->>'historico_uso' in ('ação da pessoa', 'consequência')), 'os dois logs ficam');
+select set_config('request.headers', '', false);
+reset role;
+select set_config('app.automatico', '1', false);
+select pg_temp.ok(app.origem_automatica(), 'app.automatico na transação também marca');
+select set_config('app.automatico', '', false);
+select pg_temp.ok(not app.origem_automatica(), 'sem marca, ação da pessoa');
 \echo '# propostas por parte (9/nov/2026)'
 select pg_temp.como(:'analista');
 insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
