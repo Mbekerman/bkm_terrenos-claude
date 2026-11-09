@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **Reuniões** (Comercial): participantes marcados com **@** (colegas da BKM, avisados no sino, e pessoas de fora do terreno com e-mail, só registradas); @ na pauta, no que foi tratado e nos encaminhamentos; campo **Link da reunião** na online, com "Entrar na reunião"; clicar na reunião abre a edição, com a situação Cancelada e logs de cada mudança. (#256)
 - **Gaveta da ficha no Mapa**: o topo da ficha não repete mais o cabeçalho. Código e nome ficam só no cabeçalho, que ganha a temperatura; "Abrir página" virou um ícone; a linha "fase · etapa · subetapa" saiu (o nome da fase fica em cima da linha do tempo; no celular continua). Na página própria da ficha nada muda. (#259)
 - **Restrições e entorno** (Parâmetros, São Paulo): a classificação viária da CET lista só as ruas que são frente do terreno, uma linha por rua (antes vinham todas as ruas a até 30 m e a mesma rua repetida por trecho); "Vila a até 20 m" virou **Vila ou rua sem saída**; melhoramento viário e faixa não edificável mostram quanto do terreno atingem; córrego, vila, alta tensão e ferrovia mostram a distância. Vale para consultas novas: clique em "Consultar de novo". (#260)
 - **Perfil da população do entorno** (aba Entorno) ganhou a **densidade demográfica** (habitantes por km²) e a **idade média** estimada. (#PRN)

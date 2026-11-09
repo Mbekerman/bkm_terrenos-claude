@@ -98,8 +98,19 @@ Lista os corretores que trouxeram ofertas deste terreno. Eles "entram automatica
 
 1. Clique em **"Registrar reunião"**.
 2. Escolha **Realizada** ou **Agendada**.
-3. Preencha: data e hora, **Presencial** ou **Online**, **Na BKM** ou **Externa** (com o endereço: "Escritório do vendedor, no terreno..."), **Participantes da BKM**, **Participantes externos** ("Vendedor, corretor, advogado"), **Pauta**, **O que foi tratado** ("Posições de cada lado, valores citados, objeções") e **Encaminhamentos** ("Quem faz o quê, até quando").
-4. Clique em **Registrar**.
+3. Preencha: data e hora, **Presencial** ou **Online**, **Na BKM** ou **Externa** (com o endereço: "Escritório do vendedor, no terreno..."), **Link da reunião** (só na Online, digitado: cole o endereço do Meet, Zoom ou Teams; sem "https://", o sistema completa), **Participantes da BKM**, **Participantes externos**, **Pauta**, **O que foi tratado** ("Posições de cada lado, valores citados, objeções") e **Encaminhamentos** ("Quem faz o quê, até quando").
+4. Clique em **Registrar reunião**.
+
+**Participantes com @:**
+
+- **Participantes da BKM:** digite **@** e parte do nome (sem acento, em qualquer ordem de letras) e escolha na lista com as setas e **Enter**, ou com o clique. Você já vem marcado. Cada colega marcado recebe um aviso no sino ("Fulano marcou você na reunião de 25/11 às 10:00"), que abre a reunião. Quem já foi citado com @ no texto da mesma reunião não recebe aviso repetido.
+- **Participantes externos:** a lista traz as pessoas **de fora cadastradas neste terreno que têm e-mail**: as pessoas das partes (proprietário, cônjuge, procurador...), os corretores do terreno e o contato principal de cada parte. Quem não está na lista entra pelo nome: digite e tecle **Enter** (ou vírgula). Marcar alguém de fora **só registra** a pessoa como participante: o sistema ainda não manda e-mail nem convite para ela.
+- Para tirar alguém, clique no **×** do nome (ou **Backspace** com o campo vazio).
+- Na **Pauta**, em **O que foi tratado** e em **Encaminhamentos**, digitar **@** abre a lista dos colegas; o @ escolhido entra no texto, aparece destacado e avisa a pessoa no sino.
+
+Na lista, a reunião online com link mostra **"Entrar na reunião"** (agendada) ou **"Link da reunião"** (realizada), que abrem o link numa aba nova.
+
+**Editar:** clique na reunião (ou no lápis ao lado da situação). O formulário abre no lugar dela, com tudo o que foi gravado; mude o que precisar, inclusive os participantes e a situação (Agendada, Realizada ou **Cancelada**), e clique em **Salvar**. Cada mudança fica nos Logs ("Reunião alterada: ...", "Participante incluído na reunião de ...", "Participante tirado da reunião de ..."). Quem tem perfil Leitura só vê.
 
 Uma reunião **Agendada** ganha o botão **"Marcar realizada"** quando acontece.
 
@@ -111,7 +122,7 @@ Ofertas, propostas e reuniões geram aviso no sino de quem acompanha o terreno, 
 
 ## O que não é possível na aba Comercial hoje
 
-- **Ainda não disponível:** criar a reunião no Google Agenda, convidar os participantes, gerar link do Meet e receber a gravação e o resumo do Gemini. Hoje a reunião fica só no sistema.
+- **Ainda não disponível:** criar a reunião no Google Agenda, convidar os participantes por e-mail, gerar o link do Meet sozinho e receber a gravação e o resumo do Gemini. Hoje a reunião fica só no sistema: o link é digitado e o participante de fora só fica registrado.
 - **Ainda não disponível:** o quadro de negociação separada por parte (cada parte com sua própria etapa, propostas e botão de avançar).
 - **Ainda não disponível:** a próxima tarefa no quadro Negociação (entra com as tarefas).
 - **Ainda não disponível:** o aviso "Rentabilidade abaixo da mínima" (depende do estudo de viabilidade).
