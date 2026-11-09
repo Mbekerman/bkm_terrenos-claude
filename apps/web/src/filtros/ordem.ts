@@ -1,5 +1,5 @@
 /* Ordenação dos terrenos (pedido do Moises, 9/nov/2026): segunda aba da gaveta de filtros, com os campos das colunas da
-   tabela de Terrenos do protótipo (COLS_TER em tools/prototipo/proto_tabela.js). Um clique ordena crescente, o segundo
+   tabela de Terrenos do protótipo (COLS_TER em tools/prototipo/proto_tabela.js), mais código, etapa e subetapa (9/nov/2026). Um clique ordena crescente, o segundo
    decrescente e o terceiro tira aquele campo; vários campos valem juntos na ordem em que foram escolhidos (o primeiro
    manda, os seguintes desempatam). Quem não tem o dado vai sempre para o fim, nos dois sentidos. */
 import type { DadosFx, TerFx } from './dados';
@@ -9,10 +9,28 @@ type V = string | number | null;
 export interface DefOrd { k: string; l: string; dica: string; v: (t: TerFx, D: DadosFx) => V }
 
 const ZONA: Record<string, string> = { leste: 'Leste', oeste: 'Oeste', norte: 'Norte', sul: 'Sul', centro: 'Centro', sudeste: 'Sudeste', sudoeste: 'Sudoeste', nordeste: 'Nordeste', noroeste: 'Noroeste' };
+/** posição no funil do processo aberto (ativo ou Stand By) da fase mais adiante: fase, etapa e, com `sub`, subetapa;
+    sem processo aberto, null (vai para o fim) */
+function posFunil(t: TerFx, D: DadosFx, sub: boolean): number | null {
+  let melhor: number | null = null;
+  for (const p of t.procs) {
+    if (p.status !== 'ativo' && p.status !== 'stand_by') continue;
+    const fi = D.fases.findIndex((f) => f.k === p.fase);
+    if (fi < 0) continue;
+    const et = D.fases[fi].etapas, ei = et.findIndex((e) => e.k === p.etapa);
+    const si = sub && ei >= 0 && p.sub ? et[ei].subs.findIndex((s) => s.k === p.sub) + 1 : 0;
+    const v = fi * 1e6 + (ei + 1) * 1e3 + si;
+    if (melhor == null || fi * 1e6 > Math.floor(melhor / 1e6) * 1e6) melhor = v;
+  }
+  return melhor;
+}
 const nomeDe = (L: [string, string][], id: string | null | undefined) => (id ? L.find((x) => x[0] === id)?.[1] ?? null : null);
 
 export const ORD: DefOrd[] = [
   { k: 'ter', l: 'Terreno', dica: 'pelo nome', v: (t) => t.nome || null },
+  { k: 'cod', l: 'Código', dica: 'A001, A002…', v: (t) => t.codigo },
+  { k: 'etapa', l: 'Etapa', dica: 'ordem do funil, na fase mais adiante', v: (t, D) => posFunil(t, D, false) },
+  { k: 'sub', l: 'Subetapa', dica: 'ordem do funil, dentro de cada etapa', v: (t, D) => posFunil(t, D, true) },
   { k: 'cid', l: 'Cidade', dica: 'município', v: (t) => t.cidade },
   { k: 'zona', l: 'Região', dica: 'Zona Norte, Sul…', v: (t) => (t.zona ? ZONA[t.zona] ?? t.zona : null) },
   { k: 'area', l: 'Imóvel', dica: 'pela área adotada', v: (t) => t.area },
