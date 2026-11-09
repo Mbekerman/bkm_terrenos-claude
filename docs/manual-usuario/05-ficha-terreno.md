@@ -59,11 +59,13 @@ O lápis abre a janela **"Editar pessoas da parte"**: o formulário em cima e a 
 |---|---|
 | **Título da parte** | Obrigatório, sem repetir outro título do terreno. |
 | **Nome** | Obrigatório. |
-| **Telefone** | Com DDD (10 ou 11 dígitos). |
-| **E-mail** | Precisa ser válido. |
-| **CPF/CNPJ** | 11 dígitos (CPF) ou 14 (CNPJ). |
-| **% de participação** | Só para quem é Proprietário; de 0 a 100%. |
+| **Telefone** | Opcional. Se preencher, com DDD (10 ou 11 dígitos). |
+| **E-mail** | Opcional. Se preencher, precisa ser válido. |
+| **CPF/CNPJ** | Opcional. Se preencher, 11 dígitos (CPF) ou 14 (CNPJ). |
+| **% de participação** | Obrigatória para quem é Proprietário, de 0 a 100%; nas outras relações fica desligada. |
 | **Relação** | Proprietário, Cônjuge, Representante, Procurador, Parente, Contato ou Outros. |
+
+Do proprietário, só o **nome** e a **participação** são obrigatórios; o resto pode ficar em branco e completar depois, sem contar como pendência da ficha.
 
 **Dica:** cadastre também o procurador e o contato do dia a dia, não só os donos. Quem é proprietário conta para o item "Proprietário" da completude.
 
