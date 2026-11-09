@@ -175,24 +175,25 @@ Comércios, escolas e hospitais do próprio Google ficam sempre visíveis no map
 
 - **Clique direito** em qualquer ponto do mapa › **"Novo terreno aqui"**: começa o desenho da poligonal com o primeiro ponto ali.
 - **Dois cliques** no vazio do mapa fazem o mesmo.
-- Sobre o pino ou dentro da poligonal de um terreno já cadastrado, o clique direito **não** mostra "Novo terreno aqui": o menu traz o código e o nome do terreno e só "Traçar rota até aqui".
+- Sobre o pino ou dentro da poligonal de um terreno já cadastrado, o clique direito **não** mostra "Novo terreno aqui": o menu traz o código e o nome do terreno e só "Traçar rota a partir daqui".
 
 O passo a passo do cadastro está em [03. Novo terreno](03-novo-terreno.md). Leitura e Básico não têm "Novo terreno aqui" (só a rota).
 
-## Traçar rota até um ponto
+## Traçar rota a partir de um ponto
 
-**Para que serve:** saber quanto tempo se leva de um endereço ou lugar até o terreno (ou até qualquer ponto do mapa), de carro, moto, a pé, de bicicleta ou de transporte público.
+**Para que serve:** saber quanto tempo se leva do terreno (ou de qualquer ponto do mapa) até um endereço ou lugar, ou no sentido contrário, de carro, moto, a pé, de bicicleta ou de transporte público.
 
-1. **Clique direito** no ponto do mapa (ou no pino ou na poligonal de um terreno) › **"Traçar rota até aqui"**. Abre o quadro **"Rota até …"** no canto de cima à esquerda do mapa, e o destino aparece como um pino vermelho. No terreno, o destino é o pino do terreno.
-2. Escolha de onde sai a rota, de um destes jeitos:
-   - no campo **"Saindo de"**, digite um endereço ou o nome de um lugar (loja, estação, prédio) e escolha na lista;
+1. **Clique direito** no ponto do mapa (ou no pino ou na poligonal de um terreno) › **"Traçar rota a partir daqui"**. Abre o quadro **"Rota a partir de …"** no canto de cima à esquerda do mapa, e o ponto aparece como uma bolinha preta e branca (a saída). No terreno, a saída é o pino do terreno.
+2. Escolha para onde vai a rota, de um destes jeitos:
+   - no campo **"Indo para"**, digite um endereço ou o nome de um lugar (loja, estação, prédio) e escolha na lista;
    - escolha **"Minha localização"** (o navegador pede permissão);
-   - **clique no mapa**: num ponto qualquer (vale o endereço dali), num lugar do Google (loja, escola, estação), no pino ou na poligonal de outro terreno, ou num quadrado da concorrência. Ao abrir o quadro, o clique no mapa já escolhe a saída (o cursor vira o dedo indicador); depois de escolhida, o mapa volta ao normal, e para escolher de novo no mapa clique na **mira** ao lado do campo. Enquanto a mira está ligada, o clique não abre a ficha, o card da concorrência nem o quadro do lugar.
-   - **arrastando a saída**: com a rota traçada, passe o mouse sobre a bolinha da saída (o cursor vira mãozinha), segure e arraste até outro lugar. Ao soltar, a saída passa a ser o endereço dali e a rota é recalculada, sem mudar o enquadramento do mapa.
-3. A rota aparece no mapa (a pé, pontilhada), com o tempo e a distância. O mapa se ajusta para mostrar a rota inteira, e os quadrados da concorrência ficam apagados enquanto a rota está aberta.
-4. Troque a forma de condução nos botões **Carro, Moto, A pé, Bicicleta e Transporte**: a rota se refaz na hora. O sistema lembra a última escolha.
-5. **"Abrir no Google Maps"** abre a mesma rota no Google Maps, com o trânsito e as alternativas de lá.
-6. Feche no **X** ou com **Esc**; a rota sai do mapa.
+   - **clique no mapa**: num ponto qualquer (vale o endereço dali), num lugar do Google (loja, escola, estação), no pino ou na poligonal de outro terreno, ou num quadrado da concorrência. Ao abrir o quadro, o clique no mapa já escolhe a chegada (o cursor vira o dedo indicador); depois de escolhida, o mapa volta ao normal, e para escolher de novo no mapa clique na **mira** ao lado do campo. Enquanto a mira está ligada, o clique não abre a ficha, o card da concorrência nem o quadro do lugar.
+3. A rota aparece no mapa (a pé, pontilhada), com o tempo e a distância, e a chegada é um pino quadriculado preto e branco. O mapa se ajusta para mostrar a rota inteira, e os quadrados da concorrência ficam apagados enquanto a rota está aberta.
+4. **Arraste os pontos** para ajustar a rota: passe o mouse sobre a bolinha da saída ou sobre o pino quadriculado da chegada (o cursor vira o dedo e o ponto cresce um pouco), segure e solte em outro lugar. A rota é recalculada a partir do endereço de onde o ponto foi solto, sem mudar o enquadramento do mapa.
+5. O botão **⇅**, ao lado do X, **inverte o sentido**: a rota passa a ir do ponto escolhido até o ponto do clique direito ("Rota até …"), e o campo vira "Saindo de". Clique de novo para voltar.
+6. Troque a forma de condução nos botões **Carro, Moto, A pé, Bicicleta e Transporte**: a rota se refaz na hora. O sistema lembra a última escolha.
+7. **"Abrir no Google Maps"** abre a mesma rota no Google Maps, com o trânsito e as alternativas de lá.
+8. Feche no **X** ou com **Esc**; a rota sai do mapa.
 
 Bom saber:
 - Carro e moto **não contam o trânsito** do momento (o quadro avisa). Para o trânsito, use "Abrir no Google Maps".

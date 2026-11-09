@@ -1008,7 +1008,7 @@ export default function Mapa() {
               <button role="menuitem" autoFocus={!novo} onClick={() => {
                 const m = menu; setMenu(null); setMkBox(null); setSetor(null); motor.current?.lugarFechar();
                 setRota(t && t.lat != null && t.lng != null ? { lat: t.lat, lng: t.lng, nome: `${t.codigo} · ${t.nome}` } : { lat: m.lat, lng: m.lng });
-              }}><Ic n="rota" s={18} />Traçar rota até aqui</button>
+              }}><Ic n="rota" s={18} />Traçar rota a partir daqui</button>
             </div>
           );
         })()}
