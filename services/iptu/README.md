@@ -43,6 +43,10 @@ gcloud run deploy terrenos-iptu --source services/iptu --region southamerica-eas
   --allow-unauthenticated --set-env-vars "$ENVS" \
   --set-secrets IPTU_CPF=iptu-cpf:latest,IPTU_SENHA=iptu-senha:latest
 
+# a organização não deixa abrir para allUsers: desliga só a checagem do Google neste serviço
+# (o login do Supabase continua exigido em /consultar e /notificacao)
+gcloud run services update terrenos-iptu --region southamerica-east1 --no-invoker-iam-check
+
 # 3. Ligar o sistema ao serviço (dev primeiro; produção depois do merge na main)
 URL=$(gcloud run services describe terrenos-iptu --region southamerica-east1 --format='value(status.url)')
 gcloud run services update terrenos-web-dev --region southamerica-east1 --update-env-vars IPTU_URL=$URL
