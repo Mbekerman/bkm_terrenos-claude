@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **Rota a partir do ponto** (Mapa, clique direito): a opção virou "Traçar rota a partir daqui" e a rota vai do ponto do clique direito até o ponto escolhido, com o botão ⇅ para inverter o sentido. Os dois pontos se arrastam (o cursor vira o dedo e o ponto cresce), e a chegada é um pino quadriculado preto e branco. (#287)
 - **Temperatura do terreno** (topo da ficha, cabeçalho da gaveta do Mapa e aba Comercial): a temperatura passou a ser do terreno e aparece sempre, também no Backlog (terreno sem oferta), onde antes sumia. A que já existia continua. A mudança aparece nos Logs como "Temperatura: antes → depois". (#281)
 - **Completude: Proprietário** só conta como preenchido quando cada parte do terreno tem proprietários somando 100% de participação. (#279)
 - **Arrastar a saída da rota** (Mapa › Traçar rota até aqui): a bolinha da saída se arrasta com o mouse (mãozinha); ao soltar, a rota é recalculada do lugar novo. (#275)
