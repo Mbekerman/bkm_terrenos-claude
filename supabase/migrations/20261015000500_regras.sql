@@ -1958,7 +1958,7 @@ begin
   perform app.exigir_editor(t.empresa_id);
   if t.latitude is null then raise exception 'O terreno não está localizado' using errcode = '23514'; end if;
   if abs(t.latitude - p_latitude) > 1e-7 or abs(t.longitude - p_longitude) > 1e-7 then
-    raise exception 'A localização do terreno mudou durante a busca; busque de novo' using errcode = '40001';
+    raise exception 'A localização do terreno mudou durante a busca; busque de novo' using errcode = 'PT409';
   end if;
   if jsonb_typeof(coalesce(p_itens, '[]')) <> 'array' then raise exception 'Itens devem ser uma lista' using errcode = '22023'; end if;
 
@@ -2058,7 +2058,7 @@ begin
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(t.empresa_id);
   if t.latitude is null or abs(t.latitude - p_latitude) > 1e-7 or abs(t.longitude - p_longitude) > 1e-7 then
-    raise exception 'A localização do terreno mudou durante a medição; meça de novo' using errcode = '40001';
+    raise exception 'A localização do terreno mudou durante a medição; meça de novo' using errcode = 'PT409';
   end if;
   insert into app.terreno_ponto_distancias (terreno_id, ponto_id, empresa_id, latitude, longitude,
                                             distancia_pe_m, duracao_pe_s, distancia_carro_m, duracao_carro_s, calculado_em)
@@ -2114,7 +2114,7 @@ begin
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(t.empresa_id);
   if p_versao is distinct from t.versao then
-    raise exception 'Esta ficha foi alterada por outra pessoa. Recarregue antes de salvar.' using errcode = '40001';
+    raise exception 'Esta ficha foi alterada por outra pessoa. Recarregue antes de salvar.' using errcode = 'PT409';
   end if;
   if exists (select 1 from jsonb_object_keys(p_dados) k where k = any(fixos)) then
     raise exception 'Campos de controle não podem ser alterados por aqui' using errcode = '22023';
@@ -2187,7 +2187,7 @@ begin
   end if;
   foreach c in array v_cols loop
     if to_jsonb(t) -> c is distinct from a.depois -> c then
-      raise exception 'O campo % mudou depois desta alteração: desfaça primeiro a mudança mais recente', c using errcode = '40001';
+      raise exception 'O campo % mudou depois desta alteração: desfaça primeiro a mudança mais recente', c using errcode = 'PT409';
     end if;
   end loop;
   select jsonb_object_agg(x, a.antes -> x) into v_dados from unnest(v_cols) x;

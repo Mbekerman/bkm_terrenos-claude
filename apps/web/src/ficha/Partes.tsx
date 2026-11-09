@@ -14,6 +14,7 @@ import { digitos, GEO_BASE, loteDoSql } from '../novo/geosampa';
 import { consultarLote, consultarTerreno, useConsultaGeo } from '../novo/consulta';
 import type { Ficha, R } from './dados';
 import { lerNum, num, Quadro } from './edicao';
+import { buscando } from '../lib/buscando';
 import { useNavigate } from 'react-router-dom';
 import LotesGeo from '../novo/LotesGeo';
 import type { LoteSql } from '../novo/geosampa';
@@ -1052,7 +1053,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
   const venal = vv ? (vv.valor_venal_imovel ?? (vv.valor_venal_terreno != null && vv.valor_venal_construcao != null ? +vv.valor_venal_terreno + +vv.valor_venal_construcao : vv.valor_venal_terreno)) : null;
   async function buscar() {
     setBusc(true);
-    try { const ok = await consultarLote(x!.id, x!.inscricao); toast(ok ? 'GeoSampa consultado.' : 'O GeoSampa não achou o lote deste SQL.', !ok); recarregar(); }
+    try { const ok = await buscando(f.id, 'geosampa', consultarLote(x!.id, x!.inscricao)); toast(ok ? 'GeoSampa consultado.' : 'O GeoSampa não achou o lote deste SQL.', !ok); recarregar(); }
     catch (e: any) { toast(e?.message ?? String(e), true); } finally { setBusc(false); }
   }
   async function lancar(ev: FormEvent) {

@@ -73,7 +73,7 @@ Seu papel é Leitura ou Básico. Peça a promoção a um administrador.
 O site da prefeitura cai às vezes. Use "Tentar de novo" ou "Buscar de novo" mais tarde. A consulta só funciona no endereço publicado do sistema.
 
 **A gravação foi recusada porque outra pessoa mudou a ficha.**
-Duas pessoas editaram ao mesmo tempo. Recarregue a página (F5), confira o valor atual e repita sua alteração.
+Alguém (outra pessoa ou o próprio sistema) mudou **o mesmo campo** depois que você abriu a ficha. Recarregue a página (F5), confira o valor atual e repita sua alteração. Mudança em outro campo não recusa mais a sua: a gravação passa sozinha.
 
 **O mapa abriu num lugar estranho.**
 O mapa abre onde você o deixou. Use a busca de endereço ou clique num terreno da lista.
