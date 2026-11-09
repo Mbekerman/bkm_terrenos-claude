@@ -320,13 +320,12 @@ Peças, em `ficha/edicao.tsx`:
 - No desenho e na edição da poligonal, o próprio desenho trata o Ctrl+Z antes (desfaz o ponto) e marca o evento (`defaultPrevented`); o ouvinte global vem depois.
 - Isto é diferente da **lixeira dos logs** do protótipo (`app.desfazer_alteracao`, que registra "Desfeito por"), que ainda não foi portada.
 
-### Rascunho e aviso de formulário não registrado
+### Rascunho de formulário não registrado
 
 `components/Rascunho.tsx`. Formulários de inclusão (proposta, oferta, reunião, pessoa...) não gravam no lugar: têm um botão Registrar. Para não perder o que foi digitado:
 
-- `useRascunho(ref, sujo, nome, descartar)`: com algo digitado e não registrado, se a pessoa clica fora (botão, aba, link, outro campo), aparece "Você não registrou …" com **Continuar preenchendo** e **Sair sem registrar**. Sair da página usa o aviso do próprio navegador (`beforeunload`).
 - `useGuardarRasc(chave, valor, temAlgo)`, `comRasc`, `lerRasc`, `apagarRasc`: o que foi digitado fica no `localStorage` em `bkm-terrenos-rasc:<terreno>:<formulário>` e volta preenchido ao reabrir. Só registrar ou **Limpar dados** apagam; não expira.
-- Janelas que o formulário abre por cima (o mapa de lotes do "Escolher no mapa") ficam fora da conta pelo atributo `data-rasc-livre`.
+- Sair do formulário sem registrar não pergunta nada. O hook `useRascunho` (aviso "Você não registrou …" e `beforeunload`, de 6/nov) saiu em 9/nov/2026 a pedido do Moises: com o rascunho guardado, o aviso só interrompia. O atributo `data-rasc-livre` saiu junto.
 
 ### Quadros que abrem e fecham, e "ir ao campo"
 
@@ -537,7 +536,7 @@ npm run preview             # serve o dist
 3. Escreva o componente com **a mesma marcação e as mesmas classes** do protótipo; no topo, o comentário "porte de `proto_x.js › função`".
 4. Ler: `useQuery` com chave `['<nome>', ...]`. Gravar: RPC quando houver regra; `insert`/`update` direto só nas tabelas sem regra.
 5. Depois de gravar, invalide as chaves que mudam (ficha, mapa, funil...). Se a gravação se desfaz sem efeito colateral, `empilhar` para o Ctrl+Z.
-6. Formulário de inclusão: `useRascunho` + `useGuardarRasc`. Edição de campo da ficha: `CampoVivo`/`useSalvar`.
+6. Formulário de inclusão: `comRasc` + `useGuardarRasc` + `LimparRasc`. Edição de campo da ficha: `CampoVivo`/`useSalvar`.
 7. Estilo só do React em `app.css`.
 8. Ligue a rota em `App.tsx` (e o item do menu em `Moldura.tsx`, `NAV`).
 9. Atualize `versao.json`, o CLAUDE.md (o que mudou na tela) e este manual (ver [como-manter.md](como-manter.md)). A partir daí, o protótipo daquela tela congela (ADR 0001).
