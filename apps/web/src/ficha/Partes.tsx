@@ -242,7 +242,7 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
   const prop = nv.papel === 'proprietario';
   const somaPct = soma(ps.filter((p) => p.papel === 'proprietario' && p.percentual_participacao != null).map((p) => +p.percentual_participacao));
   return (
-    <Dialogo titulo={`Pessoas · ${pa.nome}`} onFechar={fechar} rodape={<button className="btn primary" onClick={fechar}>Concluir</button>}>
+    <Dialogo titulo={`Pessoas · ${pa.nome}`} onFechar={fechar} acao={edita && !nv.id ? <LimparRasc chave={kP} mostrar={temP} limpar={() => setNv(NV0)} /> : null} rodape={<button className="btn primary" onClick={fechar}>Concluir</button>}>
       <div className="pp-dlg">
         {edita && (
           <form className="pp-form" ref={fref} onSubmit={gravar}>
@@ -254,8 +254,7 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
             <div className="field"><label htmlFor="pp-e">E-mail</label><input id="pp-e" type="email" placeholder="nome@email.com" value={nv.email} onChange={(e) => setNv({ ...nv, email: e.target.value })} /></div>
             <div className="field"><label htmlFor="pp-c">CPF</label><input id="pp-c" inputMode="numeric" data-fmt="doc" placeholder="000.000.000-00" value={nv.doc} onChange={(e) => setNv({ ...nv, doc: e.target.value })} /></div>
             <div className="pp-bt">
-              {nv.id ? <button type="button" className="btn text sm" onClick={() => { apagarRasc(kP); setNv(NV0); }}>Cancelar</button>
-                : <LimparRasc chave={kP} mostrar={temP} limpar={() => setNv(NV0)} />}
+              {nv.id && <button type="button" className="btn text sm" onClick={() => { apagarRasc(kP); setNv(NV0); }}>Cancelar</button>}
               <button className="btn sm" disabled={grav}><Ic n={nv.id ? 'check' : 'add'} s={16} />{nv.id ? 'Salvar' : 'Incluir'}</button>
             </div>
           </form>

@@ -115,7 +115,7 @@ O que **não** entra: movimentos no funil (avançar etapa, Stand By, Perdido...)
 
 ### Rascunhos de formulários
 
-Os formulários de inclusão (registrar oferta, proposta, reunião, zonas, matrícula, SQL, IPTU, pessoa da parte) guardam no seu navegador o que você está digitando, por terreno e por formulário. Se você fechar o formulário, a aba ou o navegador, o texto volta quando reabrir. O rascunho nunca expira; só sai quando você registra ou clica em **"Limpar dados"** do formulário.
+Os formulários de inclusão (registrar oferta, proposta, reunião, zonas, matrícula, SQL, IPTU, pessoa da parte) guardam no seu navegador o que você está digitando, por terreno e por formulário. Se você fechar o formulário, a aba ou o navegador, o texto volta quando reabrir. O rascunho nunca expira; só sai quando você registra ou clica em **"Limpar dados"** do formulário (na janela das pessoas da parte, ele fica ao lado do título, por exemplo "Pessoas · Vendedor 1").
 
 Por isso, sair do formulário sem registrar (clicar noutro botão, trocar de aba, fechar a janela, sair da página ou clicar em **"Cancelar"**) não pergunta nada: o que você digitou continua guardado e volta quando reabrir o formulário.
 

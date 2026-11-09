@@ -105,8 +105,10 @@ export function ChipDoc({ s }: { s: SituacaoDoc }) {
 // ---------------------------------------------------------------------
 // Diálogo (bottom sheet no celular)
 // ---------------------------------------------------------------------
-export function Dialogo({ titulo, sub, onFechar, children, rodape }: {
+export function Dialogo({ titulo, sub, onFechar, children, rodape, acao }: {
   titulo: string; sub?: string; onFechar: () => void; children: ReactNode; rodape?: ReactNode;
+  /** botão pequeno logo depois do título, na mesma linha (ex.: "Limpar dados") */
+  acao?: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const fechar = useRef(onFechar);
@@ -124,7 +126,7 @@ export function Dialogo({ titulo, sub, onFechar, children, rodape }: {
       <div className="dialog" role="dialog" aria-modal="true" aria-label={titulo} ref={ref}>
         <div className="dh">
           <div>
-            <h2>{titulo}</h2>
+            {acao ? <div className="dh-t"><h2>{titulo}</h2>{acao}</div> : <h2>{titulo}</h2>}
             {sub && <div className="muted" style={{ marginTop: 4 }}>{sub}</div>}
           </div>
           <button className="iconbtn" onClick={onFechar} aria-label="Fechar"><Icon n="close" /></button>

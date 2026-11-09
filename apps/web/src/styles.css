@@ -327,6 +327,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; color: var(--texto) }
 .scrim { position: fixed; inset: 0; background: rgba(29, 46, 92, .45); z-index: 40; display: grid; place-items: center; padding: var(--e4) }
 .dialog { background: var(--superficie); border-radius: var(--raio-xl); width: min(640px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: var(--e8); display: flex; flex-direction: column; gap: var(--e4) }
 .dh { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--e3) }
+.dh-t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
 .dh h2 { font-size: 32px; line-height: 40px; font-weight: 300; display: flex; align-items: center; gap: var(--e3) }
 .df { display: flex; justify-content: flex-end; gap: var(--e2); flex-wrap: wrap; padding-top: var(--e2) }
 .passo { font-size: 12px; line-height: 16px; letter-spacing: .25em; text-transform: uppercase; color: var(--texto-suave) }

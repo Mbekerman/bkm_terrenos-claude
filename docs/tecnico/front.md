@@ -327,7 +327,7 @@ Peças, em `ficha/edicao.tsx`:
 
 `components/Rascunho.tsx`. Formulários de inclusão (proposta, oferta, reunião, pessoa...) não gravam no lugar: têm um botão Registrar. Para não perder o que foi digitado:
 
-- `useGuardarRasc(chave, valor, temAlgo)`, `comRasc`, `lerRasc`, `apagarRasc`: o que foi digitado fica no `localStorage` em `bkm-terrenos-rasc:<terreno>:<formulário>` e volta preenchido ao reabrir. Só registrar ou **Limpar dados** apagam; não expira.
+- `useGuardarRasc(chave, valor, temAlgo)`, `comRasc`, `lerRasc`, `apagarRasc`: o que foi digitado fica no `localStorage` em `bkm-terrenos-rasc:<terreno>:<formulário>` e volta preenchido ao reabrir. Só registrar ou **Limpar dados** apagam; não expira. `Dialogo` (`components/ui.tsx`) aceita `acao`, um botão logo depois do título (`.dh-t`); a janela "Pessoas · <parte>" põe o Limpar dados ali, porque no fim do formulário ele espremia o Incluir na última coluna da grade.
 - Sair do formulário sem registrar não pergunta nada. O hook `useRascunho` (aviso "Você não registrou …" e `beforeunload`, de 6/nov) saiu em 9/nov/2026 a pedido do Moises: com o rascunho guardado, o aviso só interrompia. O atributo `data-rasc-livre` saiu junto.
 
 ### Quadros que abrem e fecham, e "ir ao campo"
