@@ -168,7 +168,7 @@ export default function SecIptu({ f }: { f: Ficha }) {
   const acao = podeBuscar || podeLancar;
   const carregando = pend.length > 0 || (sp && !!ids && (!qs.isFetched || !qn.isFetched));
   return (
-    <Quadro aba="terreno" id="iptu" titulo="IPTU" primeiro
+    <Quadro aba="terreno" id="iptu" titulo="IPTU"
       acoes={podeBuscar ? <div className="qd-acoes"><button className="btn sm text" disabled={ocupado} onClick={() => buscar(insc)}><Ic n="search" s={16} />{busc ? 'Consultando a Prefeitura...' : insc.length > 1 ? 'Buscar todos de novo' : 'Buscar de novo'}</button></div> : undefined}>
       <div className="sec-b">
         {!q.data ? <div className="muted">{q.error ? 'Não foi possível carregar os SQLs.' : 'Carregando...'}</div>

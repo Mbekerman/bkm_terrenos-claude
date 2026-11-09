@@ -178,7 +178,7 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 
 ## IPTU
 
-Logo abaixo de Áreas e dimensões, já aberto, como Parâmetros urbanísticos. Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
+Logo abaixo de Áreas e dimensões. Nasce fechado, como os outros quadros da aba (abre pela seta do título). Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
 
 - três caixas, como as de Áreas e dimensões: **valor venal do terreno**, **da construção** e **total** (lado a lado quando cabem);
 - embaixo, em duplas: **área total do terreno** e **área construída** (da Prefeitura), **imposto predial** e **imposto territorial**, valor do m² do terreno e padrão da construção, uso e vencimento da 1ª prestação (quando há mais de um valor, separados por " / ");
