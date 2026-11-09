@@ -30,7 +30,7 @@ A avaliação anterior, de 2/nov/2026, fechou 7 falhas graves e 13 médias do ba
 1. **Navegador → Supabase.** A mais importante. O navegador fala direto com o banco pela API do PostgREST; tudo que tem `grant` pode ser chamado sem passar pela tela. Por isso a regra 2 (regra no banco) **é** a segurança do sistema.
 2. **Google → Supabase Auth → gatilhos do banco.** Quem entra e com que papel.
 3. **Navegador → Caddy → prefeituras.** Os proxies `/geosampa` e `/geosanja` trazem conteúdo de terceiros para a origem do app.
-4. **Dados de fora gravados pelo navegador** (GeoSampa, Google Places, laser): o banco recebe como se o analista tivesse digitado.
+4. **Dados de fora gravados pelo navegador** (GeoSampa, Google Places, laser, OpenStreetMap): o banco recebe como se o analista tivesse digitado. O OpenStreetMap (Overpass, desde #248) é chamado direto do navegador, sem chave e sem o Caddy: recebe só o retângulo em volta da poligonal, e os nomes de rua que volta são texto (renderizados como texto).
 5. **GitHub → Cloud Build → Cloud Run** e **GitHub Actions → banco de produção**: quem consegue pôr código no ar ou ler o segredo do banco.
 6. **Mesmo projeto Supabase do monitor de mercado** (`public.im_*`): outro sistema, outro dono de dados, mesmo `auth.users`.
 7. **Servidor (`service_role`) e `pg_cron`**: rodam com privilégio alto sobre dados que os usuários escreveram.

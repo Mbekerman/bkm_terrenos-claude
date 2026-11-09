@@ -6,11 +6,11 @@ import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { LapisMapa } from '../novo/TrocarEndereco';
-import { atualizarFrentes, FONTE_FRENTES } from '../novo/frentes';
+import { atualizarFrentes, FONTE_FRENTES, FONTES_MEDIDAS } from '../novo/frentes';
 import { GEO_BASE } from '../novo/geosampa';
 import { reais as brl, m2 } from '../lib/format';
 import { Adorno, metros } from '../lib/mascara';
-import type { Ficha, R } from './dados';
+import { ehSP, type Ficha, type R } from './dados';
 import PartesLotes from './Partes';
 import {
   CampoVivo, fmtCampo, lerNum, num, OPT, Quadro, SECOES, useListas, useSalvar, useVivo, valoresDe,
@@ -149,11 +149,11 @@ function useFrentes(f: Ficha) {
   /* sem medição ainda, ou com a poligonal trocada aqui na ficha (SQLs, desenho), mede de novo */
   const pol = JSON.stringify(f.poly ?? null), antes = useRef<string | null>(null);
   useEffect(() => {
-    if (!edita || !GEO_BASE || !f.poly || !q.data) return;
+    if (!edita || (ehSP(f) && !GEO_BASE) || !f.poly || !q.data) return;
     const mudou = antes.current != null && antes.current !== pol;
     antes.current = pol;
     const k = f.id + '|' + pol;
-    if ((mudou || !q.data.some((c) => c.fonte === FONTE_FRENTES)) && !TENTADO.has(k)) { TENTADO.add(k); medir(); }
+    if ((mudou || !q.data.some((c) => FONTES_MEDIDAS.includes(c.fonte))) && !TENTADO.has(k)) { TENTADO.add(k); medir(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pol, q.data, edita]);
   return { lista: (q.data ?? []).filter((c) => c.confrontante), medindo };
@@ -162,7 +162,7 @@ function useFrentes(f: Ficha) {
 function Frentes({ f }: { f: Ficha }) {
   const { lista, medindo } = useFrentes(f);
   const t = f.t, pos = OPT.posicao[t.posicao_quadra] ?? null;
-  const medidas = lista.some((c) => c.fonte === FONTE_FRENTES);
+  const medidas = lista.find((c) => FONTES_MEDIDAS.includes(c.fonte))?.fonte;
   return (
     <div className="frentes" id="frentes">
       <div className="kvg" style={{ marginTop: 14 }}>
@@ -174,7 +174,7 @@ function Frentes({ f }: { f: Ficha }) {
             : <span className="v ni">{medindo ? 'Medindo pela poligonal...' : 'Não informadas'}</span>}
         </div>
       </div>
-      {medidas && <div className="hint" style={{ marginTop: 8 }}>Medidas pela poligonal sobre os lotes e as ruas da prefeitura (GeoSampa). Na esquina, o canto conta para as duas ruas.</div>}
+      {medidas && <div className="hint" style={{ marginTop: 8 }}>{medidas === FONTE_FRENTES ? 'Medidas pela poligonal sobre os lotes e as ruas da prefeitura (GeoSampa).' : 'Medidas pela poligonal desenhada e pelas ruas do OpenStreetMap: confira se a poligonal segue as divisas.'} Na esquina, o canto conta para as duas ruas.</div>}
     </div>
   );
 }
@@ -194,6 +194,15 @@ function SecAreas({ f }: { f: Ficha }) {
   const salvarT = useSalvar(f);
   const [grav, setGrav] = useState(false);
   const fonte = t.fonte_area_adotada;
+  /* em São Paulo a cadastral não se digita: é a soma das áreas dos SQLs (GeoSampa); uma digitada antes volta para a soma
+     (pedido do Moises, 9/nov/2026; apagar a cadastral faz o banco refazer a soma) */
+  const sp = ehSP(f), voltou = useRef('');
+  useEffect(() => {
+    if (!edita || !sp || t.area_cadastral_origem !== 'digitada' || voltou.current === f.id) return;
+    voltou.current = f.id;
+    salvarT({ area_cadastral_m2: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [edita, sp, t.area_cadastral_origem, f.id]);
   const escolher = async (fo: string) => {
     if (grav || fo === t.fonte_area_adotada) return;
     const d = dadosArea(f, { ...valoresArea(t), fonte_area_adotada: fo });
@@ -209,13 +218,13 @@ function SecAreas({ f }: { f: Ficha }) {
           return (
             <div key={fo} className={`area${sel ? ' sel' : ''}${pode ? ' pode' : ''}`} id={`area-${fo}`}
               role={pode ? 'radio' : undefined} aria-checked={pode ? sel : undefined} tabIndex={pode ? 0 : undefined}
-              title={pode && !sel ? 'Usar como área adotada' : fo === 'poligonal' ? 'Calculada pelo desenho; muda quando a poligonal é ajustada' : undefined}
+              title={pode && !sel ? 'Usar como área adotada' : fo === 'poligonal' ? 'Calculada pelo desenho; muda quando a poligonal é ajustada' : sp && fo === 'cadastral' ? 'Soma das áreas cadastrais dos SQLs (GeoSampa)' : undefined}
               onClick={(ev) => { if (pode && !(ev.target as HTMLElement).closest('input')) escolher(fo); }}
               onKeyDown={(ev) => { if (pode && (ev.key === 'Enter' || ev.key === ' ') && !(ev.target as HTMLElement).closest('input')) { ev.preventDefault(); escolher(fo); } }}>
               <div className="al">{l} <span className="faint">· {fo === 'cadastral' && v != null ? (t.area_cadastral_origem === 'digitada' ? 'digitada' : 'soma dos SQLs') : s}</span></div>
-              {edita && fo !== 'poligonal'
+              {edita && fo !== 'poligonal' && !(sp && fo === 'cadastral')
                 ? <AreaVivo f={f} k={k} l={l} />
-                : <div className="av">{v == null ? <span className="faint" style={{ fontSize: 14, fontStyle: 'italic' }}>{fo === 'poligonal' ? 'Sem poligonal' : 'Não informada'}</span> : m2(v)}</div>}
+                : <div className="av">{v == null ? <span className="faint" style={{ fontSize: 14, fontStyle: 'italic' }}>{fo === 'poligonal' ? 'Sem poligonal' : sp && fo === 'cadastral' ? 'Sem área nos SQLs' : 'Não informada'}</span> : m2(v)}</div>}
               <div className="as">{sel ? <><Ic n="check" s={14} />Área adotada</> : '\u00a0'}</div>
             </div>
           );
