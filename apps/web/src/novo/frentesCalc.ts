@@ -9,10 +9,6 @@
 // Testada de cada rua = os metros de divisa que dão para ela. Esquina = duas ruas cujas frentes se encontram ao longo da
 // divisa (até 15 m entre uma e outra, por causa do chanfro e da curva da esquina). Quadra inteira = 85% ou mais do
 // perímetro dando para rua, com três ruas ou mais.
-// Fora de São Paulo (pedido do Moises, 9/nov/2026) não há lotes da prefeitura: as ruas vêm do OpenStreetMap e o metro é
-// frente quando um eixo de rua corre paralelo ao lado, do lado de fora, a até 15 m (metade da rua mais a calçada; avenida
-// de pista dupla tem um eixo por pista, e o mais perto basta). Sem os lotes, não dá para ver o vizinho: um lado a menos
-// de 15 m de uma rua conta como frente mesmo com um lote estreito no meio.
 import { geoAneis, geoNoAnel, nomeVia } from './geosampa';
 
 export type Posicao = 'nao_informado' | 'meio_quadra' | 'esquina' | 'duas_frentes' | 'quadra_inteira';
@@ -31,7 +27,6 @@ const PARALELA_MAX = 12;         // m do eixo paralelo ao lado, que é a rua da 
 const RAIO = 45;                 // m: até onde o raio para fora procura o eixo da rua
 const ESQUINA_MAX = 15;          // m de divisa entre a frente de uma rua e a da outra
 const RUA_MIN = 3;               // m: menos que isso numa rua é ruído do desenho
-const SEM_LOTE_MAX = 15;         // m do lado até o eixo paralelo, quando não há lotes (OpenStreetMap)
 
 const caixa = (an: Anel): number[] => {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -46,15 +41,14 @@ function distSeg(p: Pt, a: Pt, b: Pt) {
 }
 
 /** Mede as frentes. `ter`: a poligonal em UTM (sem repetir o primeiro ponto no fim); `lotes`: os lotes da prefeitura em
- * volta (anéis UTM); `vias`: os eixos dos logradouros em volta (features do GeoSampa, ou com `properties.nome`, em UTM).
- * `semLotes`: não há lotes (fora de São Paulo); vale só o eixo paralelo a até SEM_LOTE_MAX. Função pura, para teste. */
-export function medirFrentes(ter: Anel, lotes: Anel[], viasFs: any[], pontos?: { p: Pt; r: string | null }[], semLotes = false): Medicao {
+ * volta (anéis UTM); `vias`: os eixos dos logradouros em volta (features do GeoSampa, em UTM). Função pura, para teste. */
+export function medirFrentes(ter: Anel, lotes: Anel[], viasFs: any[], pontos?: { p: Pt; r: string | null }[]): Medicao {
   const Q = ter.length > 2 && ter[0][0] === ter.at(-1)![0] && ter[0][1] === ter.at(-1)![1] ? ter.slice(0, -1) : ter;
   const anelT = [...Q, Q[0]];
   const cx: Caixa[] = lotes.map((an) => ({ an, bb: caixa(an) }));
   const vias: Via[] = [];
   for (const f of viasFs) {
-    const nome = f.properties?.nome ?? nomeVia(f.properties);
+    const nome = nomeVia(f.properties);
     for (const L of geoAneis(f.geometry)) for (let i = 0; i < L.length - 1; i++) vias.push({ nome, a: L[i], b: L[i + 1] });
   }
   /* sentido do desenho, para saber qual lado é "fora" */
@@ -63,20 +57,6 @@ export function medirFrentes(ter: Anel, lotes: Anel[], viasFs: any[], pontos?: {
   const emLote = (p: Pt) => cx.some((c) => dentroCaixa(p, c.bb) && geoNoAnel(p, c.an));
   /* a rua para onde o lado olha: o primeiro eixo que o raio para fora cruza (até RAIO m); sem cruzar nenhum, o eixo
      mais perto (até VIA_MAX m), como na ponta de rua sem saída */
-  /* sem lotes: o eixo paralelo ao lado, do lado de fora (ou bem em cima, quando o desenho avançou na rua), a até SEM_LOTE_MAX */
-  const ruaParalela = (s: Pt, nx: number, ny: number) => {
-    let best: Via | null = null, dp = SEM_LOTE_MAX;
-    for (const v of vias) {
-      const ex = v.b[0] - v.a[0], ey = v.b[1] - v.a[1], L = Math.hypot(ex, ey);
-      if (!L || Math.abs(nx * ex + ny * ey) / L > 0.5) continue;
-      const t = Math.max(0, Math.min(1, ((s[0] - v.a[0]) * ex + (s[1] - v.a[1]) * ey) / (L * L)));
-      const cx0 = v.a[0] + t * ex - s[0], cy0 = v.a[1] + t * ey - s[1];
-      if (cx0 * nx + cy0 * ny < -3) continue;     // o eixo fica para dentro do terreno: é outra rua, do outro lado
-      const x = Math.hypot(cx0, cy0);
-      if (x < dp) { dp = x; best = v; }
-    }
-    return best;
-  };
   const ruaDoRaio = (s: Pt, nx: number, ny: number) => {
     let best: Via | null = null, tb = Infinity;
     /* eixo paralelo ao lado e bem perto: é a rua da frente (vale também para o desenho que caiu no meio da rua) */
@@ -115,7 +95,7 @@ export function medirFrentes(ter: Anel, lotes: Anel[], viasFs: any[], pontos?: {
         const p = [s[0] + nx * d, s[1] + ny * d];
         if (geoNoAnel(p, anelT)) break;       // reentrância: o "fora" cai dentro do próprio terreno
         if (emLote(p)) continue;              // lote vizinho (ou o próprio lote, quando o desenho ficou aquém da rua)
-        const v = semLotes ? ruaParalela(s, nx, ny) : ruaDoRaio(s, nx, ny);
+        const v = ruaDoRaio(s, nx, ny);
         if (v) { r = v.nome || 'Rua sem nome'; break; }
       }
       rot.push(r); pontos?.push({ p: s, r });

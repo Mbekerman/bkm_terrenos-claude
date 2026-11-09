@@ -6,7 +6,7 @@ import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { LapisMapa } from '../novo/TrocarEndereco';
-import { atualizarFrentes, FONTE_FRENTES, FONTES_MEDIDAS } from '../novo/frentes';
+import { atualizarFrentes, FONTE_FRENTES } from '../novo/frentes';
 import { GEO_BASE } from '../novo/geosampa';
 import { reais as brl, m2 } from '../lib/format';
 import { Adorno, metros } from '../lib/mascara';
@@ -123,6 +123,18 @@ function AreaVivo({ f, k, l }: { f: Ficha; k: string; l: string }) {
   });
   return <Adorno t="m2"><input className="av inl" id={`f-${k}`} inputMode="decimal" placeholder="—" aria-label={`Área ${l.toLowerCase()}`} {...props} /></Adorno>;
 }
+/** fora de São Paulo a testada se digita (não há os lotes da prefeitura para medir; pedido do Moises, 9/nov/2026) */
+function TestadaVivo({ f }: { f: Ficha }) {
+  const salvarT = useSalvar(f), toast = useToast();
+  const { props } = useVivo(metros(f.t.testada_principal_m), (v) => {
+    const n = lerNum(v);
+    if (n != null && !(n > 0)) { toast('A testada precisa ser maior que zero.'); return false; }
+    return salvarT({ testada_principal_m: n });
+  });
+  return <div className="inl-c"><label className="k" htmlFor="f-testada_principal_m">Testada principal</label>
+    <Adorno t="m"><input id="f-testada_principal_m" inputMode="decimal" data-fmt="m" placeholder="Não informada" {...props} /></Adorno></div>;
+}
+
 /* ---------- Frentes (pedido do Moises, 8/nov/2026) ----------
    O terreno inteiro sai da poligonal: as ruas que ela encosta, a testada em cada uma e se é esquina (novo/frentes.ts).
    Medidas sozinhas em São Paulo ao abrir a ficha sem medição e a cada poligonal nova. */
@@ -149,11 +161,11 @@ function useFrentes(f: Ficha) {
   /* sem medição ainda, ou com a poligonal trocada aqui na ficha (SQLs, desenho), mede de novo */
   const pol = JSON.stringify(f.poly ?? null), antes = useRef<string | null>(null);
   useEffect(() => {
-    if (!edita || (ehSP(f) && !GEO_BASE) || !f.poly || !q.data) return;
+    if (!edita || !ehSP(f) || !GEO_BASE || !f.poly || !q.data) return;
     const mudou = antes.current != null && antes.current !== pol;
     antes.current = pol;
     const k = f.id + '|' + pol;
-    if ((mudou || !q.data.some((c) => FONTES_MEDIDAS.includes(c.fonte))) && !TENTADO.has(k)) { TENTADO.add(k); medir(); }
+    if ((mudou || !q.data.some((c) => c.fonte === FONTE_FRENTES)) && !TENTADO.has(k)) { TENTADO.add(k); medir(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pol, q.data, edita]);
   return { lista: (q.data ?? []).filter((c) => c.confrontante), medindo };
@@ -162,7 +174,7 @@ function useFrentes(f: Ficha) {
 function Frentes({ f }: { f: Ficha }) {
   const { lista, medindo } = useFrentes(f);
   const t = f.t, pos = OPT.posicao[t.posicao_quadra] ?? null;
-  const medidas = lista.find((c) => FONTES_MEDIDAS.includes(c.fonte))?.fonte;
+  const medidas = lista.some((c) => c.fonte === FONTE_FRENTES);
   return (
     <div className="frentes" id="frentes">
       <div className="kvg" style={{ marginTop: 14 }}>
@@ -174,7 +186,7 @@ function Frentes({ f }: { f: Ficha }) {
             : <span className="v ni">{medindo ? 'Medindo pela poligonal...' : 'Não informadas'}</span>}
         </div>
       </div>
-      {medidas && <div className="hint" style={{ marginTop: 8 }}>{medidas === FONTE_FRENTES ? 'Medidas pela poligonal sobre os lotes e as ruas da prefeitura (GeoSampa).' : 'Medidas pela poligonal desenhada e pelas ruas do OpenStreetMap: confira se a poligonal segue as divisas.'} Na esquina, o canto conta para as duas ruas.</div>}
+      {medidas && <div className="hint" style={{ marginTop: 8 }}>Medidas pela poligonal sobre os lotes e as ruas da prefeitura (GeoSampa). Na esquina, o canto conta para as duas ruas.</div>}
     </div>
   );
 }
@@ -232,8 +244,9 @@ function SecAreas({ f }: { f: Ficha }) {
         {div}
         <div className={`kvg${edita ? ' kvg-ed vivo' : ''}`} style={{ marginTop: 14 }}>
           <div><div className="k">Área adotada</div>{fonte ? <div className="v">{OPT.fonteArea[fonte]?.split(' (')[0]}</div> : <span className="v ni">{edita ? 'Clique na área que vale' : 'Não informada'}</span>}</div>
-          {/* a testada não se digita: é a frente do acesso principal medida pela poligonal (pedido do Moises, 9/nov/2026) */}
-          <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{metros(t.testada_principal_m)} m</div>}</div>
+          {/* em São Paulo a testada não se digita: é a frente do acesso principal medida pela poligonal (pedido do Moises, 9/nov/2026) */}
+          {edita && !sp ? <TestadaVivo f={f} />
+            : <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{metros(t.testada_principal_m)} m</div>}</div>}
           <div><div className="k">Valor pedido por m²</div>{ad && f.valorPedido ? <div className="v">{brl(f.valorPedido / ad)}</div> : ni}</div>
         </div>
         <Frentes f={f} />

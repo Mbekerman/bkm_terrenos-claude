@@ -9,11 +9,8 @@ export type { Medicao, Posicao, FrenteMedida } from './frentesCalc';
 
 /* ---------- consulta no GeoSampa e gravação no terreno ---------- */
 export const FONTE_FRENTES = 'Medida pela poligonal (GeoSampa)';
-/** fora de São Paulo, as ruas vêm do OpenStreetMap (pedido do Moises, 9/nov/2026) */
-export const FONTE_FRENTES_OSM = 'Medida pela poligonal (OpenStreetMap)';
-export const FONTES_MEDIDAS = [FONTE_FRENTES, FONTE_FRENTES_OSM];
 /** confrontações de frente gravadas sozinhas (a de antes era a do Google, no cadastro) e trocadas a cada medição */
-const FONTES_AUTO = [...FONTES_MEDIDAS, 'Localização da poligonal'];
+const FONTES_AUTO = [FONTE_FRENTES, 'Localização da poligonal'];
 const SP_IBGE = '3550308';
 
 /** Mede pela poligonal [lat, lng] no GeoSampa (só em São Paulo e na versão publicada). */
@@ -28,34 +25,6 @@ export async function medirFrentesSP(poly: P[]): Promise<Medicao> {
   return medirFrentes(ter, ls.flatMap((f) => geoAneis(f.geometry).slice(0, 1)), vs);
 }
 
-/* ---------- fora de São Paulo: ruas do OpenStreetMap (Overpass), sem chave, direto do navegador ---------- */
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
-const VIAS_OSM = '^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|road)(_link)?$';
-async function viasOsm(poly: P[], l0: number): Promise<any[]> {
-  const la = poly.map((p) => p[0]), ln = poly.map((p) => p[1]), d = 0.0006;   // ~60 m de folga
-  const bb = [Math.min(...la) - d, Math.min(...ln) - d, Math.max(...la) + d, Math.max(...ln) + d].map((x) => x.toFixed(6)).join(',');
-  const q = `[out:json][timeout:20];way(${bb})[highway~"${VIAS_OSM}"];out tags geom;`;
-  let erro: unknown = null;
-  for (const u of OVERPASS) {
-    try {
-      const r = await fetch(u, { method: 'POST', body: new URLSearchParams({ data: q }) });
-      if (!r.ok) throw new Error('OpenStreetMap HTTP ' + r.status);
-      const j = await r.json();
-      return (j.elements ?? []).filter((e: any) => e.type === 'way' && e.geometry?.length > 1).map((e: any) => ({
-        properties: { nome: e.tags?.name || '' },
-        geometry: { type: 'LineString', coordinates: e.geometry.map((g: any) => latLngUtm(g.lat, g.lon, l0)) },
-      }));
-    } catch (e) { erro = e; }
-  }
-  throw erro;
-}
-/** Mede pela poligonal [lat, lng] com as ruas do OpenStreetMap (fora de São Paulo). */
-export async function medirFrentesOsm(poly: P[]): Promise<Medicao> {
-  const l0 = poly.reduce((s, p) => s + p[1], 0) / poly.length;   // meridiano no próprio terreno: metros sem distorção
-  const vias = await viasOsm(poly, l0);
-  return medirFrentes(poly.map(([la, ln]) => latLngUtm(la, ln, l0)), [], vias, undefined, true);
-}
-
 const titulo = (s: string) => s.toLowerCase().replace(/(^|\s)(\S)/g, (_m, a, b) => a + b.toUpperCase()).replace(/\b(De|Da|Do|Das|Dos|E)\b/g, (x) => x.toLowerCase());
 /** "R DR LUIS BARRETO" → "R Dr Luis Barreto": o nome como a prefeitura escreve, sem a caixa-alta */
 export const nomeRuaPrefeitura = (s: string) => titulo(s);
@@ -66,10 +35,10 @@ const chaveRua = (s: string) => normRua(nomeRef(s)).replace(/^(r|av|al|tv|estr|e
   .replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
 
 /** Mede e grava: posição na quadra, testada principal (a frente do acesso principal) e uma confrontação
- * de frente por rua com a testada dela. Em São Paulo pelo GeoSampa (só na versão publicada); nas outras cidades pelo
- * OpenStreetMap. Sem rua achada, não mexe em nada. */
+ * de frente por rua com a testada dela. Fora de São Paulo, ou sem rua achada, não mexe em nada. */
 const MEDIDA = new Map<string, string>();     // terreno → poligonal já medida nesta sessão (ou em curso)
 export async function atualizarFrentes(id: string): Promise<Medicao | null> {
+  if (!GEO_BASE) return null;
   const med = await medirEGravar(id);
   if (med?.frentes.length) window.dispatchEvent(new CustomEvent('frentes-medidas', { detail: id }));
   return med;
@@ -78,8 +47,7 @@ async function medirEGravar(id: string): Promise<Medicao | null> {
   const { data: t, error } = await supabase.from('terrenos')
     .select('id,empresa_id,versao,logradouro,poligono_geojson,testada_principal_m,posicao_quadra,municipios(codigo_ibge)').eq('id', id).single();
   if (error || !t) return null;
-  const sp = (t as any).municipios?.codigo_ibge === SP_IBGE;
-  if (sp && !GEO_BASE) return null;
+  if ((t as any).municipios?.codigo_ibge !== SP_IBGE) return null;
   const g = (t as any).poligono_geojson, poly: P[] | null = g?.coordinates?.[0] ? (g.coordinates[0] as number[][]).slice(0, -1).map(([lo, la]) => [la, lo] as P) : null;
   if (!poly || poly.length < 3) return null;
   /* a mesma poligonal não se mede duas vezes (a ficha e o mapa chamam juntos) */
@@ -87,7 +55,7 @@ async function medirEGravar(id: string): Promise<Medicao | null> {
   if (MEDIDA.get(id) === chave) return null;
   MEDIDA.set(id, chave);
   let med: Medicao;
-  try { med = sp ? await medirFrentesSP(poly) : await medirFrentesOsm(poly); } catch (e) { MEDIDA.delete(id); throw e; }
+  try { med = await medirFrentesSP(poly); } catch (e) { MEDIDA.delete(id); throw e; }
   if (!med.frentes.length) return med;
   /* a rua do endereço é o acesso principal; sem ela entre as frentes, a de maior testada */
   const k0 = chaveRua(t.logradouro || '');
@@ -101,7 +69,7 @@ async function medirEGravar(id: string): Promise<Medicao | null> {
   const ord0 = Math.max(0, ...(cs ?? []).filter((c: any) => !FONTES_AUTO.includes(c.fonte)).map((c: any) => c.ordem));
   const lin = [pri, ...med.frentes.filter((x) => x !== pri)].map((x, i) => ({
     empresa_id: t.empresa_id, terreno_id: id, ordem: ord0 + i + 1, tipo: 'frente', comprimento_m: x.testada_m,
-    confrontante: sp ? nomeRuaPrefeitura(x.logradouro) : x.logradouro, fonte: sp ? FONTE_FRENTES : FONTE_FRENTES_OSM, observacoes: x === pri ? 'Acesso principal' : null,
+    confrontante: nomeRuaPrefeitura(x.logradouro), fonte: FONTE_FRENTES, observacoes: x === pri ? 'Acesso principal' : null,
   }));
   const r = await supabase.from('confrontacoes').insert(lin);
   if (r.error) throw r.error;
