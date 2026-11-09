@@ -359,12 +359,13 @@ function SecCorretores({ f, c }: { f: Ficha; c: Com }) {
 }
 
 /* ---------- Propostas ---------- */
-// Partes da proposta (pedido do Moises, 9/nov/2026): de uma a todas as partes ativas; com uma parte só ela já vem marcada,
-// com mais de uma nasce em branco e não registra sem escolher. Duas propostas se cruzam quando têm uma parte em comum ou
-// quando uma é antiga, sem parte (como app._propostas_cruzam): a nova responde à última que ela cruza e só a última de cada
-// cruzamento muda de status.
+// Partes da proposta (pedidos do Moises, 9/nov/2026): de uma a todas as partes ativas; com uma parte só ela já vem marcada,
+// com mais de uma nasce em branco e não registra sem escolher. Nenhuma proposta mexe em outra: com duas ou mais em aberto e
+// parte em comum (a antiga, sem parte, conta como de todas), o quadro avisa e quem edita decide (status de qualquer uma,
+// excluir uma ou deixar as duas). Nos resumos do terreno vale a última feita.
 const ptsDe = (p: R): string[] => (p.proposta_partes ?? []).map((x: R) => x.parte_id);
 const cruzam = (a: string[], b: string[]) => !a.length || !b.length || a.some((x) => b.includes(x));
+const ABERTA = ['rascunho', 'apresentada', 'em_analise'];
 
 function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const { edita } = useSessao();
@@ -416,11 +417,25 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
     const { error } = await supabase.rpc('atualizar_status_proposta', { p_proposta: p.id, p_status: s });
     if (error) toast(error.message, true); else recarregar();
   }
+  async function excluir(p: R) {
+    if (!confirm(`Excluir a proposta v${p.versao} (${brl(p.valor_total)})? Ela some da lista; o registro fica nos Logs.`)) return;
+    const { error } = await supabase.rpc('excluir_proposta', { p_proposta: p.id });
+    if (error) { toast(error.message, true); return; }
+    recarregar();
+    toast(`Proposta v${p.versao} excluída.`);
+  }
   const chain = c.props.slice().reverse();
-  // a última que cruza com as partes escolhidas (a que a nova responde) e, para cada proposta, se outra mais nova a cruza
-  const anterior = sel.length ? chain.find((p) => cruzam(ptsDe(p), sel)) : null;
-  const respondida = (p: R) => c.props.some((y) => y.versao > p.versao && cruzam(ptsDe(p), ptsDe(y)));
-  const versaoDe = (id: string | null) => c.props.find((y) => y.id === id)?.versao;
+  const abertas = chain.filter((p) => ABERTA.includes(p.status));
+  const nomesDe = (ids: string[]) => (ids.length ? ids.map(nomeParte).join(', ') : 'parte não informada');
+  // grupos de propostas em aberto com parte em comum (cada par que se cruza)
+  const sobre: { vs: number[]; partes: string }[] = [];
+  abertas.forEach((a, i) => abertas.slice(i + 1).forEach((b) => {
+    if (!cruzam(ptsDe(a), ptsDe(b))) return;
+    const comuns = ptsDe(a).length && ptsDe(b).length ? ptsDe(a).filter((x) => ptsDe(b).includes(x)) : (ptsDe(a).length ? ptsDe(a) : ptsDe(b));
+    sobre.push({ vs: [b.versao, a.versao], partes: nomesDe(comuns) });
+  }));
+  // no formulário: abertas que já cobrem alguma das partes escolhidas
+  const jaAbertas = sel.length ? abertas.filter((p) => cruzam(ptsDe(p), sel)) : [];
   return (
     <Quadro aba="comercial" id="propostas" titulo="Propostas"
       acoes={<span className="sec-acoes">{ativa && edita && !form && <button className="btn primary sm" onClick={abrir}><Ic n="add" s={16} />Nova proposta</button>}</span>}>
@@ -448,20 +463,24 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
               </div>
               <div className="field full"><label htmlFor="pp-c">Condições de pagamento</label><textarea id="pp-c" value={v.cond} onChange={m('cond')} placeholder="Entrada, parcelas, permuta, torna, condição suspensiva" /></div>
             </div>
-            <div className="hint">{!sel.length ? (n ? 'Escolha a parte para ver a que proposta esta responde.' : 'Primeira proposta da negociação.')
-              : anterior ? `Responde à v${anterior.versao}. Se vier do outro lado, as propostas em aberto destas partes viram Recusadas; se vier do mesmo lado, viram Substituídas.`
-                : sel.length > 1 ? 'Primeira proposta a estas partes.' : 'Primeira proposta a esta parte.'}</div>
+            {jaAbertas.length > 0 && <div className="diverg"><Ic n="warn" s={16} />{jaAbertas.length > 1 ? 'Já há propostas em aberto' : 'Já há proposta em aberto'} para {nomesDe(sel.filter((x) => jaAbertas.some((p) => !ptsDe(p).length || ptsDe(p).includes(x))))}: {jaAbertas.map((p) => `v${p.versao}`).join(', ')}. Nenhuma muda sozinha: depois de registrar, mude o status ou exclua a que não vale.</div>}
             <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kPr} mostrar={sujoPr} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar</button></div>
           </form>
         )}
         {aviso}
+        {sobre.length > 0 && <div className="banner warn pp-sobre" role="status"><Ic n="warn" s={20} /><div>
+          <div className="bt">Propostas em aberto para a mesma parte</div>
+          {sobre.map((x) => <div key={x.vs.join('-')}>v{x.vs[0]} e v{x.vs[1]}: {x.partes}</div>)}
+          <div className="muted">Nos resumos do terreno vale a mais recente. Mude o status, exclua uma ou deixe as duas.</div>
+        </div></div>}
         {chain.length ? (
           <div className="chain" style={{ marginTop: form ? 16 : 0 }}>{chain.map((p) => (
             <div key={p.id} className={`pnode ${p.origem}`}><span className="pd">v{p.versao}</span><div className="pc">
-              <div className="ph"><span><span className="pv">{brl(p.valor_total)}</span> <span className="muted" style={{ fontSize: 13 }}><span className="p-sep">· </span>{p.origem === 'bkm' ? 'BKM' : 'Vendedor'}{versaoDe(p.proposta_anterior_id) ? ` responde à v${versaoDe(p.proposta_anterior_id)}` : ''}</span></span>
-                <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{!respondida(p) && ativa && edita
-                  ? <select aria-label="Status da proposta" className="chip chip-sel" value={p.status} onChange={(e) => status(p, e.target.value)}>
-                    {Object.entries(ST_PROP).filter(([k]) => k !== 'substituida' || p.status === k).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+              <div className="ph"><span><span className="pv">{brl(p.valor_total)}</span> <span className="muted" style={{ fontSize: 13 }}><span className="p-sep">· </span>{p.origem === 'bkm' ? 'BKM' : 'Vendedor'}</span></span>
+                <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{ativa && edita
+                  ? <><select aria-label={`Status da proposta v${p.versao}`} className="chip chip-sel" value={p.status} onChange={(e) => status(p, e.target.value)}>
+                    {Object.entries(ST_PROP).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+                    <button type="button" className="iconbtn sm" title="Excluir proposta" aria-label={`Excluir a proposta v${p.versao}`} onClick={() => excluir(p)}><Ic n="lixo" s={18} /></button></>
                   : <span className={`chip ${ST_PROP_COR[p.status] ?? ''}`}>{ST_PROP[p.status]}</span>}</span></div>
               <div className="pp-pts">{ptsDe(p).length
                 ? ptsDe(p).map((id) => { const x = c.partes.find((y) => y.id === id); return <span key={id} className="chip" title={x && !x.ativa ? 'Parte tirada do terreno' : undefined}>{nomeParte(id)}{x && !x.ativa ? ' (saiu)' : ''}</span>; })

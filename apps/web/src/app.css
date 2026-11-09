@@ -309,3 +309,4 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .pp-partes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
 .pp-pts { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px }
 .pp-pts .chip.ni { color: var(--texto-suave) }
+.pp-sobre { margin-bottom: 16px } .pp-sobre .bt { font-weight: 500 }

@@ -1745,26 +1745,17 @@ left join lateral (
 grant select on app.v_partes to authenticated;
 
 -- ---------------------------------------------------------------------
--- Propostas: cada nova responde à anterior que ela cruza.
--- Lado oposto respondendo → anterior "recusada". Mesmo lado → "substituída".
--- Partes (pedido do Moises, 9/nov/2026): toda proposta é feita a uma ou mais
--- partes ativas do terreno (app.proposta_partes). Com uma parte só, ela entra
--- sozinha; com mais de uma, escolher é obrigatório; na negociação de uma parte
--- (processo com parte_id), é a parte dela. Duas propostas se cruzam quando têm
--- uma parte em comum ou quando uma delas é antiga, sem parte informada: só as
--- que se cruzam se respondem (a nova encerra as abertas que ela cruza) e só a
--- última de cada cruzamento muda de status.
+-- Propostas (pedidos do Moises, 9/nov/2026). Toda proposta é feita a uma ou
+-- mais partes ativas do terreno (app.proposta_partes): com uma parte só, ela
+-- entra sozinha; com mais de uma, escolher é obrigatório; na negociação de uma
+-- parte (processo com parte_id), é a parte dela. Nenhuma proposta mexe em
+-- outra: a nova não recusa nem substitui as abertas, mesmo das mesmas partes.
+-- A tela avisa quando há propostas em aberto com parte em comum, e quem edita
+-- decide (muda o status de qualquer uma, exclui uma ou deixa as duas). Nos
+-- resumos do terreno vale a última feita (maior versão). proposta_anterior_id
+-- guarda, só para leitura, a mais recente com parte em comum (ou sem parte
+-- informada, a antiga).
 -- ---------------------------------------------------------------------
-create or replace function app._propostas_cruzam(a uuid, b uuid)
-returns boolean
-language sql stable security definer set search_path = ''
-as $$
-  select not exists (select 1 from app.proposta_partes where proposta_id = a)
-      or not exists (select 1 from app.proposta_partes where proposta_id = b)
-      or exists (select 1 from app.proposta_partes x join app.proposta_partes y on y.parte_id = x.parte_id
-                 where x.proposta_id = a and y.proposta_id = b)
-$$;
-
 drop function if exists app.registrar_proposta(uuid, text, numeric, text, text, date, date, text);
 create or replace function app.registrar_proposta(
   p_processo uuid, p_origem text, p_valor numeric, p_forma text,
@@ -1773,7 +1764,7 @@ create or replace function app.registrar_proposta(
 returns uuid
 language plpgsql security definer set search_path = ''
 as $$
-declare p app.processos; lp app.propostas; v_id uuid; v_partes uuid[]; v_ativas uuid[];
+declare p app.processos; v_ant uuid; v_id uuid; v_partes uuid[]; v_ativas uuid[];
 begin
   select * into p from app.processos where id = p_processo for update;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
@@ -1799,25 +1790,22 @@ begin
     raise exception 'A proposta só pode ser feita a partes ativas deste terreno' using errcode = '22023';
   end if;
 
-  -- a anterior: a mais recente que cruza com estas partes (ou sem parte informada)
-  select * into lp from app.propostas x where x.processo_id = p.id
+  -- só para leitura: a mais recente com parte em comum (ou sem parte informada)
+  select x.id into v_ant from app.propostas x where x.processo_id = p.id
      and (not exists (select 1 from app.proposta_partes pp where pp.proposta_id = x.id)
           or exists (select 1 from app.proposta_partes pp where pp.proposta_id = x.id and pp.parte_id = any(v_partes)))
    order by x.versao desc limit 1;
-  update app.propostas x set status = case when x.origem = p_origem then 'substituida' else 'recusada' end
-   where x.processo_id = p.id and x.status in ('rascunho','apresentada','em_analise')
-     and (not exists (select 1 from app.proposta_partes pp where pp.proposta_id = x.id)
-          or exists (select 1 from app.proposta_partes pp where pp.proposta_id = x.id and pp.parte_id = any(v_partes)));
 
   insert into app.propostas (empresa_id, processo_id, versao, origem, proposta_anterior_id, data_apresentacao, validade,
                              valor_total, forma_pagamento, condicoes_pagamento, status, viabilidade_id)
-  values (p.empresa_id, p.id, coalesce((select max(versao) from app.propostas where processo_id = p.id), 0) + 1, p_origem, lp.id,
+  values (p.empresa_id, p.id, coalesce((select max(versao) from app.propostas where processo_id = p.id), 0) + 1, p_origem, v_ant,
           p_data_apresentacao, p_validade, p_valor, p_forma, p_condicoes, p_status, p.viabilidade_id)
   returning id into v_id;
   insert into app.proposta_partes (proposta_id, parte_id, empresa_id) select v_id, x, p.empresa_id from unnest(v_partes) x;
   return v_id;
 end $$;
 
+-- Qualquer proposta muda de status, a qualquer momento: nenhuma muda sozinha.
 create or replace function app.atualizar_status_proposta(p_proposta uuid, p_status text)
 returns void
 language plpgsql security definer set search_path = ''
@@ -1827,11 +1815,27 @@ begin
   select * into x from app.propostas where id = p_proposta;
   if not found then raise exception 'Proposta não encontrada' using errcode = 'P0002'; end if;
   perform app.exigir_editor(x.empresa_id);
-  if exists (select 1 from app.propostas y where y.processo_id = x.processo_id and y.versao > x.versao and app._propostas_cruzam(x.id, y.id)) then
-    raise exception 'Só a última proposta destas partes pode mudar de status' using errcode = '22023';
-  end if;
-  if p_status = 'substituida' then raise exception 'Substituída é definida automaticamente' using errcode = '22023'; end if;
   update app.propostas set status = p_status where id = x.id;
+end $$;
+
+-- Exclui a proposta (decisão do Moises, 9/nov/2026: com duas em aberto para a mesma
+-- parte, quem edita pode apagar uma). A versão das outras não muda; quem apontava
+-- para ela passa a apontar para a anterior dela. O registro fica no log (auditoria).
+-- Proposta com documento não se exclui.
+create or replace function app.excluir_proposta(p_proposta uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare x app.propostas;
+begin
+  select * into x from app.propostas where id = p_proposta for update;
+  if not found then raise exception 'Proposta não encontrada' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(x.empresa_id);
+  if exists (select 1 from app.documentos where proposta_id = x.id) then
+    raise exception 'A proposta v% tem documento: mude o status em vez de excluir', x.versao using errcode = '22023';
+  end if;
+  update app.propostas set proposta_anterior_id = x.proposta_anterior_id where proposta_anterior_id = x.id;
+  delete from app.propostas where id = x.id;
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -3040,7 +3044,7 @@ grant execute on function
   app.adicionar_prerequisito(uuid, text, text, text, text), app.remover_prerequisito(uuid),
   app.salvar_motivo(uuid, text, text, jsonb), app.apagar_motivo(uuid, text, text),
   app.salvar_checklist(uuid, text, text, text, boolean, int, text, jsonb), app.remover_checklist(uuid, text, text, text),
-  app.registrar_proposta(uuid, text, numeric, text, text, date, date, text, uuid[]), app.atualizar_status_proposta(uuid, text),
+  app.registrar_proposta(uuid, text, numeric, text, text, date, date, text, uuid[]), app.atualizar_status_proposta(uuid, text), app.excluir_proposta(uuid),
   app.vincular_viabilidade(uuid, text, numeric, numeric, uuid),
   app.registrar_documento(uuid, text, text, text, uuid, uuid, uuid, text, bigint, date, uuid), app.revisar_documento(uuid, boolean),
   app.arquivar_terreno(uuid, text), app.reativar_terreno(uuid)

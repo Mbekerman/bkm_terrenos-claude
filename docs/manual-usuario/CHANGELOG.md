@@ -8,7 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
-- **Propostas por parte** (Comercial › Propostas): toda proposta diz para qual parte foi feita (uma, várias ou todas). Com uma parte, ela já vem marcada; com mais de uma, é obrigatório escolher. A lista mostra as partes de cada proposta, e uma proposta só responde (e recusa ou substitui) as das mesmas partes. (#255)
+- **Propostas por parte** (Comercial › Propostas): toda proposta diz para qual parte foi feita (uma, várias ou todas). Com uma parte, ela já vem marcada; com mais de uma, é obrigatório escolher. A lista mostra as partes de cada proposta, Nenhuma proposta recusa ou substitui outra sozinha: com duas em aberto para a mesma parte, o quadro avisa e você muda o status de qualquer uma, exclui uma (lixeira) ou deixa as duas; nos resumos vale a mais recente. (#255)
 
 - **Busca da barra de cima** procura de fato por matrícula, SQL e endereço (rua, número, CEP), com ou sem pontuação e sem ligar para acento; digitada fora do Mapa, leva ao Mapa com o texto. (#247)
 - **Completude da ficha** chega a 100%: a "Visita técnica" saiu da conta enquanto a aba Infraestrutura não existe no sistema real. (#247)

@@ -333,7 +333,7 @@ Regra 8 do CLAUDE.md: o que muda com o tempo ganha linha nova, não sobrescrita.
 | Documentos | o documento é estável; cada envio é uma versão nova em `documento_versoes` (número, caminho, arquivo, tamanho, quem, quando, `texto_extraido` para a IA futura); o Storage não tem `update` nem `delete` | `app.registrar_documento`, regra 4 |
 | Valor venal e IPTU | um exercício vigente por inscrição; correção do mesmo exercício vira revisão nova; exercício mais antigo que o vigente é recusado (4/nov/2026); sem `update` | `app.inscricao_valores`, índice `inscricao_valor_vigente` |
 | Análise urbanística | uma vigente por terreno; a consulta nova cria outra e a anterior fica `substituida` e imutável | `analises_urbanisticas`, `analise_vigente_unica`, `_substituir_zonas`, `tg_analise_substituida` |
-| Propostas | cada proposta é feita a uma ou mais partes ativas (`proposta_partes`, obrigatório com duas ou mais partes); a nova responde à mais recente que tem parte em comum (ou sem parte informada) e as abertas dessas partes viram `recusada` ou `substituida` | `app.registrar_proposta` |
+| Propostas | cada proposta é feita a uma ou mais partes ativas (`proposta_partes`, obrigatório com duas ou mais partes); nenhuma muda o status de outra; status livre e exclusão pelo editor; nos resumos vale a de maior versão | `app.registrar_proposta`, `app.atualizar_status_proposta`, `app.excluir_proposta` |
 | Funil | cada passagem é uma linha | `processo_transicoes` |
 | Preço da concorrência | cada data de apuração é uma linha | `concorrencia_precos` |
 | Consulta do lote na prefeitura | nunca alterada; a próxima é outra linha | `consultas_lote`, `consultas_area` |

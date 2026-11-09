@@ -163,6 +163,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       return { txt: del ? `Valor da parte removido: ${n}` : `Valor da parte (${n}): ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'partes-com' };
     }
     case 'propostas': {
+      if (del) return { txt: `Proposta v${o.versao} excluída (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${milhoes(o.valor_total)}`, aba: 'comercial', q: 'propostas' };
       if (ins) return { txt: `Proposta v${o.versao} registrada (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${milhoes(o.valor_total)}`, det: [o.condicoes_pagamento].filter(Boolean), aba: 'comercial', q: 'propostas' };
       if (x?.status !== d?.status) return { txt: `Proposta v${o.versao}: ${PROP_ST[d?.status] ?? d?.status}`, aba: 'comercial', q: 'propostas' };
       const ks = mudou(x, d);
