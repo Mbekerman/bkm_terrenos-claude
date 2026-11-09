@@ -111,9 +111,11 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 :is(#sec-rd, #sec-pf) .rd-raios button[disabled] { opacity: .45 }
 .qd-fechado .rd-raios { display: none }
 
-/* barra de abas da ficha: com abas escondidas, a mãozinha avisa que ela se arrasta (pedido do Moisés, 6/nov/2026) */
-.fi-abas.desliza, .fi-abas.desliza button { cursor: grab }
-.fi-abas.arrastando, .fi-abas.arrastando button { cursor: grabbing; user-select: none }
+/* barra de abas da ficha: o mouse em cima mostra o dedinho, como em qualquer botão; a mão fechada só aparece com o botão
+   do mouse apertado, quando a barra pode ser arrastada (pedido do Moisés, 9/nov/2026, trocando a mãozinha aberta de 6/nov) */
+.fi-abas.desliza, .fi-abas.desliza button { cursor: pointer }
+.fi-abas.segurando, .fi-abas.segurando button, .fi-abas.arrastando, .fi-abas.arrastando button { cursor: grabbing }
+.fi-abas.arrastando, .fi-abas.arrastando button { user-select: none }
 .fi-abas.arrastando button:hover { background: none }
 
 /* unidade dentro do campo também em metros e m² (pedido do Moisés, 6/nov/2026); nos campos editados no lugar, sem recuo */
@@ -304,3 +306,33 @@ html[data-tema="escuro"] .etq-mq.sem { border-color: #444746 } html[data-tema="e
 .pp-acoes { display: inline-flex; gap: 2px; white-space: nowrap }
 html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema="escuro"] .pp-tbl tr.sel td { background: #282a2c }
 @media (max-width: 600px) { .pp-form .pp-nome { grid-column: auto } .pp-bt { grid-column: auto } }
+/* Traçar rota até aqui (mapa/Rota.tsx; pedido do Moises, 9/nov/2026) */
+.mp-rt { position: absolute; top: 64px; left: 12px; z-index: 520; width: 360px; max-width: calc(100% - 24px); display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px; background: #fff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 4px 12px rgba(0,0,0,.12); font-size: 14px; color: #1f1f1f }
+.mp-rt-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-right: -8px }
+.mp-rt-t { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 500; min-width: 0 }
+.mp-rt-t b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.mp-rt-t .ic { flex: none; color: #0b57d0 }
+.mp-rt-modos { display: flex; justify-content: space-between; gap: 2px }
+.mp-rt-modos button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: transparent; padding: 0; font: inherit; color: #444746; cursor: pointer }
+.mp-rt-i { display: grid; place-items: center; width: 56px; height: 32px; border-radius: 16px }
+.mp-rt-modos button:hover .mp-rt-i { background: rgba(68,71,70,.08) }
+.mp-rt-modos button[aria-checked="true"] { color: #1f1f1f }
+.mp-rt-modos button[aria-checked="true"] .mp-rt-i { background: #c2e7ff; color: #001d35 }
+.mp-rt-modos button:focus-visible { outline: 0 } .mp-rt-modos button:focus-visible .mp-rt-i { outline: 2px solid #0b57d0; outline-offset: 1px }
+.mp-rt-l { font-size: 12px; font-weight: 500; line-height: 16px; white-space: nowrap }
+.mp-rt-busca { position: relative; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border: 1px solid #c4c7c5; border-radius: 22px; background: #fff }
+.mp-rt-busca:focus-within { border-color: #0b57d0; box-shadow: inset 0 0 0 1px #0b57d0 }
+.mp-rt-busca input { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 14px; color: inherit }
+.mp-rt-busca .mp-res { top: 48px }
+.mp-rt-o, .rt-o { flex: none; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid #1f1f1f; box-sizing: border-box }
+.rt-o { width: 16px; height: 16px; border-width: 4px; transform: translateY(50%); box-shadow: 0 1px 3px rgba(0,0,0,.35) }
+.rt-d { width: 22px; height: 30px; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 30'%3E%3Cpath d='M11 1C5.5 1 1 5.4 1 10.9 1 18.3 11 29 11 29s10-10.7 10-18.1C21 5.4 16.5 1 11 1z' fill='%23ea4335' stroke='%23a50e0e' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='3.6' fill='%23a50e0e'/%3E%3C/svg%3E"); filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)) }
+.mp-rt-r { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-top: 2px }
+.mp-rt-tempo { font-size: 20px; font-weight: 400; color: #146c2e }
+.mp-rt-erro { color: #b3261e }
+.mp-rt-linhas { display: flex; flex-wrap: wrap; gap: 6px }
+.mp-rt-g { margin-left: -12px }
+.mapa-area.sv-on .mp-rt { display: none }
+.mp-rt-s { display: flex; flex-direction: column; min-width: 0 } .mp-rt-s .muted { font-size: 12px }
+/* com a rota aberta, os quadrados da concorrência ficam apagados para a linha aparecer (ficam por cima dela no Google) */
+.mapa-area.rota-on .mk.g:not(.mk-dest) { opacity: .12 }

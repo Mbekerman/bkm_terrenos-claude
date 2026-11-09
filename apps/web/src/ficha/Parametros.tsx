@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useRascunho, mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
+import { mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -104,7 +104,7 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
     const L = d.lz.filter((r) => r.tipo === k), na = L.filter((r) => r.parametro_id && r.permitido === false).map((r) => r.sigla), sem = L.filter((r) => r.permitido !== false && r.ca_maximo == null).map((r) => r.sigla);
     const v = R?.[`potencial_${k}_m2`], caMax = Math.max(...L.filter((r) => r.permitido !== false).map((r) => Number(r.ca_maximo ?? -1)));
     return <div className="kv" key={k}><dt>Potencial {TIPO_N[k]}</dt><dd>{v != null ? <b>{m2(v)}</b> : <span className="ni">{na.length ? 'Não admitido em ' + [...new Set(na)].join(', ') : sem.length ? 'Falta o CA de ' + [...new Set(sem)].join(', ') : 'Não calculado'}</span>}
-      {caMax > 0 ? <span className="muted"> · maior CA {num(caMax, 3)}</span> : null}</dd></div>;
+      {caMax > 0 ? <span className="muted"> · CA máx. {num(caMax, 3)}</span> : null}</dd></div>;
   };
   const somaLotes = d.ins.reduce((s, i) => s + Number(i.area_cadastral_m2 || 0), 0), sobra = f.area && somaLotes && f.area - somaLotes > 1 ? f.area - somaLotes : null;
   const fontes = [...new Map(d.lz.filter((r) => r.parametro_id).map((r) => [r.parametro_id, d.cat.get(r.parametro_id)] as [unknown, R | undefined]).filter((x) => x[1])).values()] as R[];
@@ -122,13 +122,16 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
             <div className="kv"><dt>Sem outorga (CA básico)</dt><dd>{R.potencial_basico_m2 != null ? m2(R.potencial_basico_m2) : ni}</dd></div>
           </dl>
           {R.tem_parametro_a_validar ? <div className="hint">Há parâmetros a validar no catálogo.</div> : null}
-          {lotes.map((ins) => (
-            <div className="lz-lote" key={ins ?? 'sem'}>
-              <div className="lz-h"><CabLote d={d} ins={ins} /></div>
-              {merc.filter((r) => (r.inscricao_id ?? null) === ins).map((z) => <Zona key={z.id} f={f} d={d} z={z} sjc={sjc} />)}
-              {ins ? <CamadasLote d={d} ins={ins} /> : null}
-            </div>
-          ))}
+          <Panorama d={d} merc={merc} sjc={sjc} lotes={lotes} />
+          <details className="details lz-lotes" open={reg || undefined}><summary>Ver lote por lote ({lotes.length})</summary>
+            {lotes.map((ins) => (
+              <div className="lz-lote" key={ins ?? 'sem'}>
+                <div className="lz-h"><CabLote d={d} ins={ins} /></div>
+                {merc.filter((r) => (r.inscricao_id ?? null) === ins).map((z) => <Zona key={z.id} f={f} d={d} z={z} sjc={sjc} />)}
+                {ins ? <CamadasLote d={d} ins={ins} /> : null}
+              </div>
+            ))}
+          </details>
           {d.vig?.observacoes ? <div className="hint">{d.vig.observacoes}</div> : null}
           {sobra && !lotes.includes(null) ? <div className="hint">A área adotada passa a soma das inscrições em {m2(sobra)}. Se essa parte não tem inscrição, registre a zona dela como "Parte sem inscrição".</div> : null}
           <details className="details lz-fontes"><summary>Regras e fontes</summary>
@@ -293,7 +296,6 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
   const fref = useRef<HTMLFormElement | null>(null);
   const sujoZ = !!fonte.trim() || zs.some((z) => mudou(z, { sigla: '', area: '', macro: '' }));
   useGuardarRasc(kZ, { lote, fonte, zs }, sujoZ);
-  const { aviso } = useRascunho(fref, sujoZ, 'as zonas', fechar);
   const mz = (i: number, k: string, v: string) => setZs((o) => o.map((z, j) => (j === i ? { ...z, [k]: v } : z)));
   const salvar = async (ev: FormEvent) => {
     ev.preventDefault();
@@ -327,19 +329,71 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
         </div>
       ))}
       <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kZ} mostrar={sujoZ} limpar={() => { setFonte(''); setZs(ZS0()); }} /><button type="button" className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar zonas</button></div>
-      {aviso}
     </form>
   );
 }
 
-/** Lista "O que toca o lote" */
-function Toca({ linhas, titulo }: { linhas: LinhaToca[]; titulo: ReactNode }) {
-  const toca = linhas.filter((l) => l.vals.length), nada = linhas.filter((l) => !l.vals.length && !l.erro), falhou = linhas.filter((l) => l.erro);
+/** os parâmetros de uma zona no lote em texto, para o panorama (os mesmos que Zona mostra) */
+function parZona(d: D, z: R, sjc: boolean): [string, string][] {
+  const Ls = Object.fromEntries(TIPOS.map(([k]) => [k, d.lz.find((r) => r.id === z.id && r.tipo === k) ?? null])) as Record<string, R | null>;
+  const k0 = TIPOS.map((t) => t[0]).find((k) => Ls[k]?.parametro_id && Ls[k]?.permitido) ?? 'mercado', l = Ls[k0];
+  if (!l?.parametro_id || !TIPOS.some(([k]) => Ls[k]?.permitido)) return [];
+  const T = (v: any, suf = '', dd = 2) => (v == null ? '—' : (suf === ' m' ? metros(v) : num(v, dd)) + suf);
+  const ate = sjc ? 'até o 2º pav.' : 'até 10 m';
+  const recLat = l.recuo_lateral_m == null && l.recuo_lateral_alto_m == null ? '—' : l.recuo_lateral_alto_m == null ? metros(l.recuo_lateral_m) + ' m'
+    : `${l.recuo_lateral_m == null || Number(l.recuo_lateral_m) === 0 ? 'Dispensado' : metros(l.recuo_lateral_m) + ' m'} ${ate}; ${metros(l.recuo_lateral_alto_m)} m acima`;
+  const og = (v: any) => (v === true ? 'Gratuita' : v === false ? 'Paga acima do básico' : '—');
+  const ogs = TIPOS.map((t) => t[0]).filter((k) => Ls[k]?.permitido !== false && Ls[k]?.parametro_id);
+  return [
+    ...TIPOS.map(([k, n]) => ['CA máximo ' + n, !Ls[k]?.parametro_id ? '—' : Ls[k]!.permitido === false ? 'Não admitido' : T(Ls[k]!.ca_maximo, '', 3)] as [string, string]),
+    ['CA básico', T(l.ca_basico, '', 3)], ['CA mínimo', T(l.ca_minimo, '', 3)], ['Taxa de ocupação', T(l.to_maximo, '', 2)],
+    ['Gabarito', l.gabarito_sem_limite ? 'Sem limite' : l.gabarito_m != null ? metros(l.gabarito_m) + ' m' : '—'],
+    ['Recuo de frente', T(l.recuo_frente_m, ' m')], ['Recuos laterais e fundo', recLat],
+    ['Cota-parte máxima', l.cota_parte_m2 != null ? num(l.cota_parte_m2) + ' m²' : '—'],
+    ['Permeabilidade mínima', l.permeabilidade == null ? '—' : num(l.permeabilidade * 100, 0) + '%'],
+    ['Lote mínimo', T(l.lote_minimo_m2, ' m²', 0)], ['Frente mínima', T(l.frente_minima_m, ' m')],
+    ['Outorga onerosa', new Set(ogs.map((k) => Ls[k]?.outorga_gratuita)).size <= 1 ? og(Ls[ogs[0] || 'mercado']?.outorga_gratuita)
+      : ogs.map((k) => `${TIPO_N[k]}: ${Ls[k]?.outorga_gratuita === true ? 'gratuita' : Ls[k]?.outorga_gratuita === false ? 'paga' : '—'}`).join(' · ')],
+  ];
+}
+
+/** Panorama do terreno inteiro (pedido do Moisés, 9/nov/2026): cada parâmetro com todos os valores dos lotes e zonas,
+ * separados por " / " (o título da célula diz de qual zona é cada um), e as demais camadas da prefeitura somadas;
+ * o que nenhum lote toca aparece uma vez só, aqui. Lote por lote fica no "Ver lote por lote", logo abaixo. */
+function Panorama({ d, merc, sjc, lotes }: { d: D; merc: R[]; sjc: boolean; lotes: (string | null)[] }) {
+  const ordem: string[] = [], vals = new Map<string, Map<string, string[]>>();
+  for (const z of merc) for (const [k, v] of parZona(d, z, sjc)) {
+    if (!vals.has(k)) { ordem.push(k); vals.set(k, new Map()); }
+    const m = vals.get(k)!; (m.get(v) ?? m.set(v, []).get(v)!).push(z.sigla);
+  }
+  const n = lotes.filter(Boolean).length;
+  /* as camadas da prefeitura de todos os lotes consultados: o que toca algum lote, junto, sem repetir */
+  const gs = lotes.map((i) => (i ? d.ultLote.get(i) : undefined)).filter((g): g is R => g?.base === 'geosampa');
+  const jc = juntarCamadas(gs), junto = geoLinhas(jc.camadas, jc.erros);
+  const quem = gs.length === 1 && n === 1 ? 'O lote não toca' : gs.length === n ? `Nenhum dos ${n} lotes toca` : `Nenhum dos ${gs.length} lotes consultados toca`;
+  if (!ordem.length && !gs.length) return null;
+  return (
+    <div className="lz-pan">
+      <div className="geo-st">Panorama do terreno{lotes.length > 1 ? <span className="faint"> · {lotes.length} lotes</span> : null}</div>
+      {ordem.length ? <dl className="lz-par">{ordem.map((k) => {
+        const m = vals.get(k)!, vs = [...m.keys()], varios = vs.length > 1;
+        return <div className="lz-c" key={k} title={varios ? vs.map((v) => `${[...new Set(m.get(v))].join(', ')}: ${v}`).join(' · ') : undefined}>
+          <dt>{k}</dt><dd>{k.startsWith('CA máximo') ? <b>{vs.join(' / ')}</b> : vs.join(' / ')}</dd>{varios ? <div className="lz-d">varia por zona ou lote</div> : null}</div>;
+      })}</dl> : null}
+      {gs.length ? <Toca linhas={junto} nada={quem}
+        titulo={<>Demais parâmetros e restrições <span className="faint">· {gs.length === 1 ? 'consulta' : `${gs.length} consultas`} {d.base?.nome ?? ''}</span></>} /> : null}
+    </div>
+  );
+}
+
+/** Lista "O que toca o lote" (o que não toca vai uma vez só, no Panorama do terreno) */
+function Toca({ linhas, titulo, nada }: { linhas: LinhaToca[]; titulo: ReactNode; nada?: string }) {
+  const toca = linhas.filter((l) => l.vals.length), falhou = linhas.filter((l) => l.erro);
   return (
     <div className="geo-toca"><div className="geo-st">{titulo}</div>
       {toca.length ? toca.map((l) => <div className="geo-l" key={l.tema}><span className="k">{l.tema}</span><span className="v">{l.vals.map((v) => <span key={v} className={`chip ${l.grav}`}>{v}</span>).reduce((a: ReactNode[], x, i) => (i ? [...a, ' ', x] : [x]), [])}</span></div>)
         : <div className="muted">Nenhuma restrição nem perímetro especial.</div>}
-      {nada.length ? <div className="hint" style={{ marginTop: 6 }}>Não toca: {nada.map((l) => l.tema).join(', ')}.</div> : null}
+      {nada ? <div className="hint lz-naotoca">{nada}: {linhas.filter((l) => !l.vals.length && !l.erro).map((l) => l.tema).join(', ')}.</div> : null}
       {falhou.length ? <div className="hint" style={{ color: 'var(--crit-tx,#b3261e)' }}>Não responderam nesta consulta: {falhou.map((l) => l.tema).join(', ')}.</div> : null}
     </div>
   );
@@ -387,12 +441,8 @@ const REST_GRUPOS: [string, Item[]][] = [
     ['Restrição geotécnica', { k: ['restricao_geotecnica'] }],
     ['Influência do Metrô ou da CPTM', { k: ['area_influencia_metro', 'area_influencia_trem'] }]]]];
 
-interface Rest { fonte: 'poligonal' | 'lotes'; n?: number; em: string; user: string | null; camadas: Record<string, any[]>; erros: string[] }
-/** a consulta pela poligonal ou, sem ela, a soma das consultas dos lotes (árvores e redes sem repetir) */
-function restDados(d: D): Rest | null {
-  if (d.area) return { fonte: 'poligonal', em: d.area.consultado_em, user: d.nomes.get(d.area.consultado_por) ?? null, camadas: d.area.camadas || {}, erros: d.area.camadas_com_erro || [] };
-  const gs = [...d.ultLote.values()].filter((g) => g.base === 'geosampa');
-  if (!gs.length) return null;
+/** as camadas de várias consultas de lote somadas, sem repetir a mesma feição (árvores e redes contam uma vez; vale a menor distância) */
+function juntarCamadas(gs: R[]): { camadas: Record<string, any[]>; erros: string[] } {
   const camadas: Record<string, any[]> = {}, erros = new Set<string>();
   for (const g of gs) {
     for (const [k, fs] of Object.entries((g.camadas || {}) as Record<string, any[]>)) {
@@ -406,8 +456,18 @@ function restDados(d: D): Rest | null {
     for (const e of g.camadas_com_erro || []) erros.add(e);
   }
   for (const fs of Object.values(camadas)) fs.sort((a, b) => (a._dist_m ?? 0) - (b._dist_m ?? 0));
+  return { camadas, erros: [...erros] };
+}
+
+interface Rest { fonte: 'poligonal' | 'lotes'; n?: number; em: string; user: string | null; camadas: Record<string, any[]>; erros: string[] }
+/** a consulta pela poligonal ou, sem ela, a soma das consultas dos lotes (árvores e redes sem repetir) */
+function restDados(d: D): Rest | null {
+  if (d.area) return { fonte: 'poligonal', em: d.area.consultado_em, user: d.nomes.get(d.area.consultado_por) ?? null, camadas: d.area.camadas || {}, erros: d.area.camadas_com_erro || [] };
+  const gs = [...d.ultLote.values()].filter((g) => g.base === 'geosampa');
+  if (!gs.length) return null;
+  const { camadas, erros } = juntarCamadas(gs);
   const ult = gs.slice().sort((a, b) => String(b.consultado_em).localeCompare(String(a.consultado_em)))[0];
-  return { fonte: 'lotes', n: gs.length, em: ult.consultado_em, user: d.nomes.get(ult.consultado_por) ?? null, camadas, erros: [...erros] };
+  return { fonte: 'lotes', n: gs.length, em: ult.consultado_em, user: d.nomes.get(ult.consultado_por) ?? null, camadas, erros };
 }
 
 function SecRestricoes({ f, d }: { f: Ficha; d: D }) {

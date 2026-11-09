@@ -92,7 +92,7 @@ As variáveis do serviço Cloud Run e o caminho do deploy estão em [deploy-e-am
 2. Se ela falhar ou não devolver nenhuma rota, o `DistanceMatrixService` do Maps JS (a API antiga, de reserva).
 3. Se as duas falharem, a **linha reta** (haversine, `distM`), avisada como tal (`rota_a_pe = false` em `salvar_entorno`).
 
-O protótipo usa ainda `directions/v2:computeRoutes` (rota desenhada no mapa) com o `DirectionsService` de reserva (`proto_gmap.js:139-146`); no React não há rota desenhada.
+**Rota desenhada no mapa** (React desde 9/nov/2026, "Traçar rota até aqui"): `mapa/rota.ts`, `POST https://routes.googleapis.com/directions/v2:computeRoutes`, um pedido por origem × modo, com `routingPreference: TRAFFIC_UNAWARE` em carro e moto (com trânsito o pedido vira o SKU Pro). Modos: `DRIVE`, `TWO_WHEELER` (Brasil está na lista de cobertura de duas rodas do Google, conferida em 9/nov/2026; a documentação diz que é cobrado mais caro), `WALK`, `BICYCLE` e `TRANSIT` (testado em São Paulo em 9/nov: ônibus e metrô). Reserva: `DirectionsService` do Maps JS (só se a Directions API estiver ativada; não tem moto). A origem vem do `AutocompleteSuggestion` (Places novo, token de sessão; um `fetchFields(['location'])` ao escolher), com `Place.searchByText` de reserva. O protótipo tem a mesma rota em `proto_gmap.js:139-146`.
 
 **Custo.** Cobrança por elemento (origem × destino); **a conferir**. Um terreno com 40 lugares no entorno gera 40 elementos por busca.
 
@@ -229,12 +229,12 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 
 **Onde.**
 - Arquivos: `docs/dados/setores-<município>-2022.json` (geometria simplificada a ~1 m e valores) e `docs/dados/demografia-<município>-2022.json`, servidos em `/prototipo/dados/` (o `Dockerfile` copia `docs/dados` para `/srv/prototipo/dados`).
-- Metodologia (fonte única para protótipo, React e teste do banco): `tools/setores/metodologia_renda.json` (16 faixas, cores, fator familiar 1,6, PNAD 2.148 → 2.956), `metodologia_densidade.json` (10 faixas), `demografia.json` (grupos de idade e domicílio).
+- Metodologia (fonte única para protótipo, React e teste do banco): `tools/setores/metodologia_renda.json` (16 faixas, cores, fator familiar 1,6, PNAD 2.148 → 2.956), `metodologia_densidade.json` (10 faixas), `demografia.json` (grupos de idade e domicílio e, em `idadeMedia`, os pontos médios da idade média estimada, só no front).
 - React: `mapa/setores.ts` (`SET_MUN`, `:17`; carrega e junta os municípios), `mapa/CamadasSetor.tsx`, `ficha/Entorno.tsx`.
 - Protótipo: `proto_setores.js` (`SET_MUN` lá também).
 - Banco: `app.setores_censitarios`, `app.setor_valores`, `app.perfil_area`, `app.perfil_terreno` (carga gerada pela mesma ferramenta).
 
-**Regras que não se mudam sem o Moisés.** Faixas fixas, nunca quantis; renda sempre "estimada", com o V06004 original à vista; setor em sigilo fica sem cor, "não divulgado", nunca zero; idade só nos cortes exatos do IBGE.
+**Regras que não se mudam sem o Moisés.** Faixas fixas, nunca quantis; renda sempre "estimada", com o V06004 original à vista; setor em sigilo fica sem cor, "não divulgado", nunca zero; idade só nos cortes exatos do IBGE (a idade média é a única estimativa, pedida pelo Moisés em 9/nov/2026, e sempre dita "estimada").
 
 **Custo.** Nenhum. **Limites:** a primeira geração de São Paulo baixa cerca de 600 MB. Os arquivos de São Paulo têm 5,2 MB (setores) e 4,4 MB (demografia), e o navegador baixa tudo na primeira vez que liga a camada.
 

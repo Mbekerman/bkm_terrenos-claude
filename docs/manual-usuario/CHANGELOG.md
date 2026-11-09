@@ -9,6 +9,16 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 ## 9/nov/2026
 
 - **Restrições e entorno** (Parâmetros, São Paulo): a classificação viária da CET lista só as ruas que são frente do terreno, uma linha por rua (antes vinham todas as ruas a até 30 m e a mesma rua repetida por trecho); "Vila a até 20 m" virou **Vila ou rua sem saída**; melhoramento viário e faixa não edificável mostram quanto do terreno atingem; córrego, vila, alta tensão e ferrovia mostram a distância. Vale para consultas novas: clique em "Consultar de novo". (#260)
+- **Perfil da população do entorno** (aba Entorno) ganhou a **densidade demográfica** (habitantes por km²) e a **idade média** estimada. (#PRN)
+- **Gaveta da ficha no Mapa lembra onde você parou**, por terreno: a aba, a rolagem e os quadros abertos e fechados voltam como estavam ao reabrir, também depois de fechar o navegador (últimos 50 terrenos, neste navegador). (#257)
+- **Traçar rota até aqui** (Mapa): o clique direito traz a opção de traçar a rota de um endereço, um lugar ou da sua localização até o ponto clicado, de carro, moto, a pé, de bicicleta ou de transporte público, com tempo, distância e "Abrir no Google Maps". Sobre um terreno já cadastrado, o clique direito não mostra mais "Novo terreno aqui". Leitura também usa a rota. (#254)
+
+- **Panorama do terreno** (Parâmetros › Parâmetros urbanísticos): os parâmetros de todos os lotes juntos, com os valores diferentes separados por barra, e as restrições do terreno inteiro; o "Não toca" aparece uma vez só, para todos os lotes, e o lote por lote fica atrás de "Ver lote por lote". (#252)
+- **Potencial construtivo** (Parâmetros › Parâmetros urbanísticos): o rótulo "maior CA" virou "CA máx.". (#251)
+- **Rascunho dos formulários**: sair de um formulário de inclusão sem registrar (matrícula, SQL, IPTU, pessoa da parte, oferta, proposta, reunião, zonas) não mostra mais o aviso "Você não registrou …"; o que foi digitado continua guardado no navegador e volta ao reabrir. (#250)
+- **Barra de abas da ficha**: com o mouse em cima, o cursor é o dedinho (antes, a mão aberta); a mão fechada só aparece enquanto o botão do mouse está apertado, para arrastar a barra. (#249)
+- **Testada principal em São Paulo** deixou de ser campo digitável (Terreno › Áreas e dimensões): é sempre a frente do acesso principal medida pela poligonal. Saiu o aviso de testada diferente da medida. Nas outras cidades continua digitada. (#248)
+- **Área cadastral em São Paulo** não se digita mais: é sempre a soma das áreas dos SQLs. (#248)
 - **Busca da barra de cima** procura de fato por matrícula, SQL e endereço (rua, número, CEP), com ou sem pontuação e sem ligar para acento; digitada fora do Mapa, leva ao Mapa com o texto. (#247)
 - **Completude da ficha** chega a 100%: a "Visita técnica" saiu da conta enquanto a aba Infraestrutura não existe no sistema real. (#247)
 

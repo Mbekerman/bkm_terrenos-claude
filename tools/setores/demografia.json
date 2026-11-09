@@ -13,6 +13,10 @@
     {"rotulo": "50 a 59 anos", "total": ["V01039"], "homens": ["V01017"], "mulheres": ["V01028"]},
     {"rotulo": "60 anos ou mais", "total": ["V01040", "V01041"], "homens": ["V01018", "V01019"], "mulheres": ["V01029", "V01030"]}
   ],
+  "idadeMedia": {
+    "_leia": "Idade média estimada (pedido do Moisés, 9/nov/2026): soma de (ponto médio da faixa × pessoas) ÷ pessoas, nos 11 cortes do IBGE por setor; só entram os setores com os 11 divulgados. 70 ou mais vale 78 anos, a média real de quem tem 70+ em São Paulo no Censo 2022 (SIDRA 9514, idade ano a ano: 78,15; São José dos Campos 77,42). Conferido com a idade ano a ano da cidade inteira: estimada 38,13 × real 38,07 em São Paulo e 37,41 × 37,29 em São José dos Campos.",
+    "faixas": [["V01031", 2.5], ["V01032", 7.5], ["V01033", 12.5], ["V01034", 17.5], ["V01035", 22.5], ["V01036", 27.5], ["V01037", 35], ["V01038", 45], ["V01039", 55], ["V01040", 65], ["V01041", 78]]
+  },
   "sexo": {"homens": "V01007", "mulheres": "V01008"},
   "moradores": {"dppo": "V00001", "dpio": "V00002", "moradoresDppo": "V00005", "moradoresDpio": "V00006"},
   "tamanho": [
