@@ -149,7 +149,7 @@ Cinco cartões de área, cada um com sua fonte:
 | Cartão | De onde vem |
 |---|---|
 | **Documental** | Digitada (da matrícula). |
-| **Cadastral** | Soma das áreas dos SQLs do terreno (só quando todos têm área), refeita a cada SQL incluído, excluído ou consultado. Se alguém digitar outro valor, vale o digitado e os SQLs não sobrescrevem; apagar volta para a soma. O cartão diz "soma dos SQLs" ou "digitada". |
+| **Cadastral** | Em São Paulo, não se digita: é a soma das áreas dos SQLs do terreno (só quando todos têm área), refeita a cada SQL incluído, excluído ou consultado; uma área digitada antes volta para a soma ao abrir a ficha. Nas outras cidades, digitada. |
 | **Levantamento** | Digitada (levantamento topográfico). **Ao digitar, vira a área adotada** (pode trocar depois). |
 | **Estimativa** | Digitada. |
 | **Poligonal** | Calculada pelo desenho, em m² inteiros. Nunca se digita. Muda quando a poligonal é ajustada. |
@@ -158,7 +158,7 @@ Cinco cartões de área, cada um com sua fonte:
 
 Abaixo:
 
-- **Testada principal** (em metros, duas casas). Precisa ser maior que zero.
+- **Testada principal** (em metros): em São Paulo não se digita, é a frente do acesso principal medida pela poligonal (abaixo); nas outras cidades, digitada (duas casas, maior que zero).
 - **Valor pedido por m²**: calculado (valor pedido ÷ área adotada).
 
 Se as áreas diferem mais de 1% entre si, aparece um aviso.
@@ -170,12 +170,14 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 - **Posição na quadra**: Meio de quadra (uma rua), Esquina (duas ruas que se encontram num canto do terreno), Duas frentes (ruas que não se encontram, como frente e fundos) ou Quadra inteira (três ruas ou mais e quase todo o contorno dando para rua).
 - **Frentes**: uma linha por rua, com os metros de frente. A rua do endereço aparece como "acesso principal". Na esquina, o canto conta para as duas ruas.
 - **Quando mede**: ao cadastrar o terreno, a cada mudança da poligonal (desenho, SQLs incluídos ou tirados) e, nos terrenos antigos, na primeira vez que a aba Terreno é aberta por quem edita.
-- **Testada principal**: vazia, recebe a frente do acesso principal; depois acompanha a poligonal. Se alguém digitou outro valor, o digitado fica e aparece um aviso quando difere mais de 5% da medida.
-- Fora de São Paulo e no computador de desenvolvimento, não mede: a posição e a testada continuam como estavam.
+- **Testada principal**: é sempre a frente do acesso principal e acompanha cada medição.
+- **Fora de São Paulo** não mede: a testada principal se digita.
+- No computador de desenvolvimento (fora da versão publicada), não mede.
 
 ## O que não é possível na aba Terreno
 
 - Digitar CEP, logradouro, bairro e município (só pelo mapa).
+- Em São Paulo, digitar a testada (vem da medição pela poligonal) e a área cadastral (soma dos SQLs).
 - Características físicas (formato, ocupação, demolição) e confrontações de divisa: **saíram da ficha** por decisão. As frentes voltaram, medidas pela poligonal (acima).
 - A seção antiga "Proprietários e contatos": foi para dentro das partes.
 - Buscar o GeoSampa num computador de desenvolvimento (só na versão publicada).

@@ -109,7 +109,7 @@ apps/web/
 | `Terreno.tsx` | Aba Terreno: identificação, localização, áreas (cinco fontes e a adotada). |
 | `Partes.tsx` | Partes, Matrículas e SQLs (1.192 linhas): etiquetas arrastáveis, percentual por etiqueta, consulta do GeoSampa por SQL, "Escolher no mapa", proprietários por parte, refazer a poligonal pela soma dos lotes. |
 | `Comercial.tsx` | Aba Comercial: negociação, condições pedidas, partes da oferta, ofertas, corretores, propostas e reuniões (sem Google Agenda). |
-| `Parametros.tsx` | Aba Parâmetros: zonas por lote, potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
+| `Parametros.tsx` | Aba Parâmetros: panorama do terreno (parâmetros de todos os lotes unidos por " / ", camadas somadas e o "não toca" uma vez só), zonas por lote (em "Ver lote por lote"), potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
 | `Entorno.tsx` + `entorno.ts` | Aba Entorno: pontos de interesse (busca no Google, rota a pé, excluir/restaurar), renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
 | `Painel.tsx` | Painel lateral: quadro de avanço no topo e as abas Ações, Tarefas e Logs (sem olhinho nem lixeira). |
 | `Avanco.tsx` | Quadro de avanço: subetapa, prazo, pendências, Avançar / Pedir aprovação / Concluir, Stand By / Perdido / Descartado, aprovar e recusar. Só por RPC. |
@@ -138,7 +138,7 @@ apps/web/
 | `consulta.ts` | Consulta completa do GeoSampa em cada SQL e pela poligonal; grava por `app.registrar_consulta_lote` e `app.registrar_consulta_area`; andamento "N de M". |
 | `geo.ts` | Geometria (área, centro, ponto dentro, união de lotes), leitura de KMZ/KML (JSZip carregado sob demanda), localização reversa pelo Geocoder, frentes e nome de referência. |
 | `TrocarEndereco.tsx` | Depois de editar a poligonal, se a rua não encosta mais, pergunta se troca o endereço. |
-| `frentesCalc.ts` / `frentes.ts` | Frentes do terreno pela poligonal (São Paulo): a conta pura (`medirFrentes`: metro a metro da divisa, rua = fora de lote do GeoSampa, nome pelo eixo do logradouro paralelo ou cruzado pelo raio para fora; esquina = duas ruas a até 15 m uma da outra ao longo da divisa) e a consulta + gravação (`atualizarFrentes`: `posicao_quadra`, `testada_principal_m` quando vazia ou medida antes, confrontações de frente com fonte "Medida pela poligonal (GeoSampa)"; não mede duas vezes a mesma poligonal na sessão; avisa a ficha pelo evento `frentes-medidas`). |
+| `frentesCalc.ts` / `frentes.ts` | Frentes do terreno pela poligonal (São Paulo): a conta pura (`medirFrentes`: metro a metro da divisa, rua = fora de lote do GeoSampa, nome pelo eixo do logradouro paralelo ou cruzado pelo raio para fora; esquina = duas ruas a até 15 m uma da outra ao longo da divisa) e a consulta + gravação (`atualizarFrentes`: `posicao_quadra`, `testada_principal_m` sempre (a testada não se digita, 9/nov), confrontações de frente com fonte "Medida pela poligonal (GeoSampa)"; não mede duas vezes a mesma poligonal na sessão; avisa a ficha pelo evento `frentes-medidas`). |
 | `trocarSqls.ts` | "Selecionar lotes" na edição: troca os SQLs do terreno pelos marcados, com fotografia do antes para o Ctrl+Z. |
 
 ### `src/filtros/`
@@ -321,13 +321,12 @@ Peças, em `ficha/edicao.tsx`:
 - No desenho e na edição da poligonal, o próprio desenho trata o Ctrl+Z antes (desfaz o ponto) e marca o evento (`defaultPrevented`); o ouvinte global vem depois.
 - Isto é diferente da **lixeira dos logs** do protótipo (`app.desfazer_alteracao`, que registra "Desfeito por"), que ainda não foi portada.
 
-### Rascunho e aviso de formulário não registrado
+### Rascunho de formulário não registrado
 
 `components/Rascunho.tsx`. Formulários de inclusão (proposta, oferta, reunião, pessoa...) não gravam no lugar: têm um botão Registrar. Para não perder o que foi digitado:
 
-- `useRascunho(ref, sujo, nome, descartar)`: com algo digitado e não registrado, se a pessoa clica fora (botão, aba, link, outro campo), aparece "Você não registrou …" com **Continuar preenchendo** e **Sair sem registrar**. Sair da página usa o aviso do próprio navegador (`beforeunload`).
 - `useGuardarRasc(chave, valor, temAlgo)`, `comRasc`, `lerRasc`, `apagarRasc`: o que foi digitado fica no `localStorage` em `bkm-terrenos-rasc:<terreno>:<formulário>` e volta preenchido ao reabrir. Só registrar ou **Limpar dados** apagam; não expira.
-- Janelas que o formulário abre por cima (o mapa de lotes do "Escolher no mapa") ficam fora da conta pelo atributo `data-rasc-livre`.
+- Sair do formulário sem registrar não pergunta nada. O hook `useRascunho` (aviso "Você não registrou …" e `beforeunload`, de 6/nov) saiu em 9/nov/2026 a pedido do Moises: com o rascunho guardado, o aviso só interrompia. O atributo `data-rasc-livre` saiu junto.
 
 ### Quadros que abrem e fecham, e "ir ao campo"
 
@@ -351,7 +350,8 @@ Peças, em `ficha/edicao.tsx`:
 - **Tipo de mapa**: Satélite (`hybrid`, com rótulos) por padrão, ou Mapa (`roadmap`), no menu dos três pontinhos (`BotaoMais`).
 - **Sem Leaflet no React.** No protótipo, sem chave ou com a chave recusada, o mapa cai no Leaflet (Esri/OSM). No React, aparece só a mensagem "O Google recusou a chave do mapa (domínio ou API não liberados)" ou "Não foi possível carregar o mapa do Google" (`Mapa.tsx:435-439`). Leaflet não está nem nas dependências.
 - **Clique**: no desktop, clique no pino ou na poligonal abre a ficha na gaveta (`/mapa/A123/ficha`); no celular, seleciona e mostra o cartão. Com camada por setor ligada, o clique abre o quadro do setor.
-- **Criar**: clique direito (ou dois cliques no vazio, no desktop) abre "Novo terreno aqui", que começa o desenho com o primeiro ponto. Leitura não tem o menu.
+- **Menu do clique direito** (`Mapa.tsx`, `.mp-ctx`): "Novo terreno aqui" (só quem edita; dois cliques no vazio fazem o mesmo, no desktop) e "Traçar rota até aqui" (todos). O `contextmenu` do motor (`motor.ts`) diz se o mouse estava sobre um terreno: pino pelo `data-terreno` do conteúdo do marcador, poligonal por ponto-dentro-do-polígono (`dentro`) sobre os pinos desenhados; aí o menu mostra código e nome, sem "Novo terreno aqui", e a rota vai até o pino do terreno.
+- **Rota** (`mapa/Rota.tsx` + `mapa/rota.ts`; 9/nov/2026): quadro no canto de cima à esquerda. Origem pelo Autocompletar do Places novo (`AutocompleteSuggestion`, com token de sessão; reserva `Place.searchByText`) ou pela geolocalização. `calcularRota` chama `directions/v2:computeRoutes` (DRIVE, TWO_WHEELER, WALK, BICYCLE, TRANSIT; `TRAFFIC_UNAWARE` para não cair no SKU Pro; no transporte, o field mask traz as linhas) e cai no `DirectionsService` se a Routes falhar (sem moto). `motor.rota()` desenha a linha (a pé pontilhada), a origem e o destino e enquadra; `rotaLimpar()` ao fechar. Com a rota aberta, `.mapa-area.rota-on` apaga os quadrados da concorrência (o Google desenha marcadores por cima das linhas). Último modo em `bkm-terrenos-rota-modo`. Esc fecha.
 - **Desenho e edição da poligonal**: barra pequena no canto (pontos, área, Cancelar, Concluir), menu do ponto (`MenuPonto.tsx`), Enter ou dois cliques salvam, Esc ou dois cliques fora do mapa cancelam, Ctrl+Z/Ctrl+Y por ponto. Ao salvar a edição, o pino vai para o centro da poligonal e, se a rua mudou, abre `TrocarEndereco`. Em São Paulo, "Selecionar lotes" troca os SQLs (`trocarSqls.ts`).
 - **Régua**: botão no canto; distância e área; Esc e Del apagam.
 - **Lugares do Google**: tocar num comércio ou escola do mapa abre nome, nota e até 3 avaliações (`lugarAbrir`, `motor.ts:214`, `Place.fetchFields` com `reviews`); o resultado fica em memória (`LUGARES`) para não pagar de novo.
@@ -539,7 +539,7 @@ npm run preview             # serve o dist
 3. Escreva o componente com **a mesma marcação e as mesmas classes** do protótipo; no topo, o comentário "porte de `proto_x.js › função`".
 4. Ler: `useQuery` com chave `['<nome>', ...]`. Gravar: RPC quando houver regra; `insert`/`update` direto só nas tabelas sem regra.
 5. Depois de gravar, invalide as chaves que mudam (ficha, mapa, funil...). Se a gravação se desfaz sem efeito colateral, `empilhar` para o Ctrl+Z.
-6. Formulário de inclusão: `useRascunho` + `useGuardarRasc`. Edição de campo da ficha: `CampoVivo`/`useSalvar`.
+6. Formulário de inclusão: `comRasc` + `useGuardarRasc` + `LimparRasc`. Edição de campo da ficha: `CampoVivo`/`useSalvar`.
 7. Estilo só do React em `app.css`.
 8. Ligue a rota em `App.tsx` (e o item do menu em `Moldura.tsx`, `NAV`).
 9. Atualize `versao.json`, o CLAUDE.md (o que mudou na tela) e este manual (ver [como-manter.md](como-manter.md)). A partir daí, o protótipo daquela tela congela (ADR 0001).
