@@ -10,6 +10,7 @@ import { empilhar } from '../components/Desfazer';
 import LotesGeo from './LotesGeo';
 import { trocarSqls } from './trocarSqls';
 import { GEO_BASE, type LoteSql } from './geosampa';
+import { atualizarFrentes } from './frentes';
 import { frentes, localDoPonto, nomeBase, nomeRef, nomeUnico, normRua, type Frente, type Local, type P } from './geo';
 
 // Endereço só pelo mapa (pedido do Moises, 6/nov/2026): o endereço não se digita nem se busca na ficha; muda quando a
@@ -31,6 +32,8 @@ const CAMPOS = 'id,codigo,nome,versao,empresa_id,logradouro,numero,bairro,cep,mu
 
 /** depois de salvar a poligonal ou o pino: a rua do terreno ainda encosta na poligonal? Se não, abre a pergunta */
 export async function verificarEndereco(id: string) {
+  /* frentes, esquina e testada acompanham a poligonal (São Paulo) */
+  atualizarFrentes(id).catch((e) => console.warn('frentes', e));
   try {
     const { data: t } = await supabase.from('terrenos').select(CAMPOS).eq('id', id).single();
     const poly = anel(t?.poligono_geojson);

@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { LapisMapa } from '../novo/TrocarEndereco';
+import { atualizarFrentes, FONTE_FRENTES } from '../novo/frentes';
+import { GEO_BASE } from '../novo/geosampa';
 import { reais as brl, m2 } from '../lib/format';
 import { Adorno, metros } from '../lib/mascara';
 import type { Ficha, R } from './dados';
@@ -131,6 +134,65 @@ function TestadaVivo({ f }: { f: Ficha }) {
     <Adorno t="m"><input id="f-testada_principal_m" inputMode="decimal" data-fmt="m" placeholder="Não informada" {...props} /></Adorno></div>;
 }
 
+/* ---------- Frentes (pedido do Moises, 8/nov/2026) ----------
+   O terreno inteiro sai da poligonal: as ruas que ela encosta, a testada em cada uma e se é esquina (novo/frentes.ts).
+   Medidas sozinhas em São Paulo ao abrir a ficha sem medição e a cada poligonal nova. */
+const TENTADO = new Set<string>();   // terreno|poligonal já tentados nesta sessão (fora de SP não há o que medir)
+function useFrentes(f: Ficha) {
+  const { edita } = useSessao();
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ['ficha-frentes', f.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('confrontacoes').select('id,ordem,comprimento_m,confrontante,fonte,observacoes').eq('terreno_id', f.id).eq('tipo', 'frente').order('ordem');
+      if (error) throw error;
+      return (data ?? []) as R[];
+    },
+  });
+  const [medindo, setMedindo] = useState(false);
+  const medir = () => { setMedindo(true); atualizarFrentes(f.id).catch((e) => console.warn('frentes', e)).finally(() => setMedindo(false)); };
+  /* depois de medir (aqui, no mapa ou no cadastro), a lista e a ficha se refazem */
+  useEffect(() => {
+    const h = (e: Event) => { if ((e as CustomEvent).detail === f.id) { qc.invalidateQueries({ queryKey: ['ficha-frentes', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); } };
+    window.addEventListener('frentes-medidas', h);
+    return () => window.removeEventListener('frentes-medidas', h);
+  }, [f.id, qc]);
+  /* sem medição ainda, ou com a poligonal trocada aqui na ficha (SQLs, desenho), mede de novo */
+  const pol = JSON.stringify(f.poly ?? null), antes = useRef<string | null>(null);
+  useEffect(() => {
+    if (!edita || !GEO_BASE || !f.poly || !q.data) return;
+    const mudou = antes.current != null && antes.current !== pol;
+    antes.current = pol;
+    const k = f.id + '|' + pol;
+    if ((mudou || !q.data.some((c) => c.fonte === FONTE_FRENTES)) && !TENTADO.has(k)) { TENTADO.add(k); medir(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pol, q.data, edita]);
+  return { lista: (q.data ?? []).filter((c) => c.confrontante), medindo };
+}
+
+function Frentes({ f }: { f: Ficha }) {
+  const { lista, medindo } = useFrentes(f);
+  const t = f.t, pos = OPT.posicao[t.posicao_quadra] ?? null;
+  const pri = lista.find((c) => c.fonte === FONTE_FRENTES && c.observacoes === 'Acesso principal');
+  const medidas = lista.some((c) => c.fonte === FONTE_FRENTES);
+  const dif = pri?.comprimento_m != null && t.testada_principal_m != null && Math.abs(+t.testada_principal_m - +pri.comprimento_m) / +pri.comprimento_m > 0.05;
+  return (
+    <div className="frentes" id="frentes">
+      <div className="kvg" style={{ marginTop: 14 }}>
+        <div><div className="k">Posição na quadra</div>{pos && t.posicao_quadra !== 'nao_informado' ? <div className="v">{pos}</div> : <span className="v ni">{medindo ? 'Medindo...' : 'Não informada'}</span>}</div>
+        <div className="full"><div className="k">Frentes{lista.length > 1 ? ` (${lista.length})` : ''}</div>
+          {lista.length ? <ul className="fr-l">{lista.map((c) => (
+            <li key={c.id}><span>{c.confrontante}{c.observacoes === 'Acesso principal' ? <span className="faint"> · acesso principal</span> : null}</span>
+              <span className="num">{c.comprimento_m != null ? `${metros(c.comprimento_m)} m` : '—'}</span></li>))}</ul>
+            : <span className="v ni">{medindo ? 'Medindo pela poligonal...' : 'Não informadas'}</span>}
+        </div>
+      </div>
+      {medidas && <div className="hint" style={{ marginTop: 8 }}>Medidas pela poligonal sobre os lotes e as ruas da prefeitura (GeoSampa). Na esquina, o canto conta para as duas ruas.</div>}
+      {dif && <div className="diverg"><Ic n="warn" s={16} />A testada principal ({metros(t.testada_principal_m)} m) difere da medida pela poligonal em {pri!.confrontante} ({metros(pri!.comprimento_m)} m).</div>}
+    </div>
+  );
+}
+
 function SecAreas({ f }: { f: Ficha }) {
   const { edita } = useSessao();
   const t = f.t, ad = t.area_adotada_m2 as number | null, apol = t.area_poligonal_m2 as number | null;
@@ -179,6 +241,7 @@ function SecAreas({ f }: { f: Ficha }) {
             : <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{metros(t.testada_principal_m)} m</div>}</div>}
           <div><div className="k">Valor pedido por m²</div>{ad && f.valorPedido ? <div className="v">{brl(f.valorPedido / ad)}</div> : ni}</div>
         </div>
+        <Frentes f={f} />
       </div>
     </Quadro>
   );

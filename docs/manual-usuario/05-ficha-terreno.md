@@ -163,10 +163,20 @@ Abaixo:
 
 Se as áreas diferem mais de 1% entre si, aparece um aviso.
 
+### Posição na quadra e frentes (São Paulo)
+
+Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terreno dá frente** e **quantos metros de divisa dão para cada uma**, usando os lotes e as ruas da prefeitura (GeoSampa). Isso vale para o terreno inteiro, não lote a lote: dois lotes de meio de quadra lado a lado dão uma frente só, e um lote de esquina mais um de meio de quadra dão um terreno de esquina.
+
+- **Posição na quadra**: Meio de quadra (uma rua), Esquina (duas ruas que se encontram num canto do terreno), Duas frentes (ruas que não se encontram, como frente e fundos) ou Quadra inteira (três ruas ou mais e quase todo o contorno dando para rua).
+- **Frentes**: uma linha por rua, com os metros de frente. A rua do endereço aparece como "acesso principal". Na esquina, o canto conta para as duas ruas.
+- **Quando mede**: ao cadastrar o terreno, a cada mudança da poligonal (desenho, SQLs incluídos ou tirados) e, nos terrenos antigos, na primeira vez que a aba Terreno é aberta por quem edita.
+- **Testada principal**: vazia, recebe a frente do acesso principal; depois acompanha a poligonal. Se alguém digitou outro valor, o digitado fica e aparece um aviso quando difere mais de 5% da medida.
+- Fora de São Paulo e no computador de desenvolvimento, não mede: a posição e a testada continuam como estavam.
+
 ## O que não é possível na aba Terreno
 
 - Digitar CEP, logradouro, bairro e município (só pelo mapa).
-- Características físicas (formato, ocupação, demolição) e confrontações: **saíram da ficha** por decisão.
+- Características físicas (formato, ocupação, demolição) e confrontações de divisa: **saíram da ficha** por decisão. As frentes voltaram, medidas pela poligonal (acima).
 - A seção antiga "Proprietários e contatos": foi para dentro das partes.
 - Buscar o GeoSampa num computador de desenvolvimento (só na versão publicada).
 - Arrastar etiquetas no celular sem segurar antes (o celular ainda não foi revisado).
