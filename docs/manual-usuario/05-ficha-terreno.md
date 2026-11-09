@@ -146,17 +146,16 @@ Mostra a **área da parte** e a **divergência Matrícula × Prefeitura** (a ár
 
 ## Áreas e dimensões
 
-Cinco cartões de área, cada um com sua fonte:
+Quatro cartões de área, nesta ordem: lado a lado quando cabem, senão em dois pares (Documental e Cadastral em cima, Topográfica e Poligonal embaixo).
 
 | Cartão | De onde vem |
 |---|---|
 | **Documental** | Digitada (da matrícula). |
 | **Cadastral** | Em São Paulo, não se digita: é a soma das áreas dos SQLs do terreno (só quando todos têm área), refeita a cada SQL incluído, excluído ou consultado; uma área digitada antes volta para a soma ao abrir a ficha. Nas outras cidades, digitada. |
-| **Levantamento** | Digitada (levantamento topográfico). **Ao digitar, vira a área adotada** (pode trocar depois). |
-| **Estimativa** | Digitada. |
+| **Topográfica** | Digitada (levantamento topográfico). **Ao digitar ou trocar o valor, vira a área adotada**, mesmo que outra tivesse sido escolhida (pode trocar depois). |
 | **Poligonal** | Calculada pelo desenho, em m² inteiros. Nunca se digita. Muda quando a poligonal é ajustada. |
 
-**Área adotada:** clique num cartão preenchido para escolhê-lo ("Clique na área que vale"). A adotada fica em azul com "Área adotada". Se a adotada é a Poligonal, ela acompanha cada ajuste do desenho.
+**Área adotada:** todo terreno nasce com a **Cadastral** como adotada (enquanto os SQLs não trazem a área, aparece "Cadastral · sem área ainda"). A única que toma o lugar sozinha é a **Topográfica**, quando é digitada. Para escolher outra, clique num cartão preenchido; a adotada fica em azul com "Área adotada". Se a área escolhida é apagada, a adotada volta para a Cadastral. Se a adotada é a Poligonal, ela acompanha cada ajuste do desenho. Não há mais área estimada.
 
 Abaixo:
 

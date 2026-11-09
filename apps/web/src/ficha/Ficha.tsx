@@ -335,9 +335,9 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
             : lin('Município e região', mun)}
           {lin('Zoneamento', f.zonas, ir('terreno', 'Ver os parâmetros urbanísticos', 'indices'))}
           {edita ? lin('Área adotada', <span className="kv-vivo">{f.area != null ? m2(f.area) + ' · ' : ''}
-            <Vivo ini={f.t.fonte_area_adotada ?? ''} imediato gravar={(v) => { const d = dadosArea(f, { ...valoresArea(f.t), fonte_area_adotada: v }); if (typeof d === 'string') { toast(d); return false; } return salvarT(d); }}>{(p) =>
+            <Vivo ini={f.t.fonte_area_adotada ?? 'cadastral'} imediato gravar={(v) => { const d = dadosArea(f, { ...valoresArea(f.t), fonte_area_adotada: v }); if (typeof d === 'string') { toast(d); return false; } return salvarT(d); }}>{(p) =>
               fonteSel('g-fonteArea', { ...p, className: 'inl-x', 'aria-label': 'Fonte da área adotada' } as any,
-                Object.entries(FONTE_AREA).filter(([k]) => k === f.t.fonte_area_adotada || (k === 'poligonal' ? f.t.area_poligonal_m2 != null : k !== 'estimativa' && f.t[`area_${k}_m2`] != null)), 'Sem área adotada')}</Vivo>
+                Object.entries(FONTE_AREA).filter(([k]) => k === 'cadastral' || k === f.t.fonte_area_adotada || (k === 'poligonal' ? f.t.area_poligonal_m2 != null : f.t[`area_${k}_m2`] != null)), null)}</Vivo>
             </span>, ir('terreno', 'Ver as áreas'))
             : lin('Área adotada', f.area != null ? dois(m2(f.area), f.fonteArea ? FONTE_AREA[f.fonteArea] : null) : '', ir('terreno', 'Ver as áreas'))}
           {lin('Unidades do estudo válido', f.unidades != null ? `${num(f.unidades)} unidades` : '', ir('viabilidade', 'Ver os estudos de viabilidade'))}
