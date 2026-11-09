@@ -9,6 +9,9 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 ## 9/nov/2026
 
 - **Rascunho dos formulários**: sair de um formulário de inclusão sem registrar (matrícula, SQL, IPTU, pessoa da parte, oferta, proposta, reunião, zonas) não mostra mais o aviso "Você não registrou …"; o que foi digitado continua guardado no navegador e volta ao reabrir. (#250)
+- **Barra de abas da ficha**: com o mouse em cima, o cursor é o dedinho (antes, a mão aberta); a mão fechada só aparece enquanto o botão do mouse está apertado, para arrastar a barra. (#249)
+- **Testada principal em São Paulo** deixou de ser campo digitável (Terreno › Áreas e dimensões): é sempre a frente do acesso principal medida pela poligonal. Saiu o aviso de testada diferente da medida. Nas outras cidades continua digitada. (#248)
+- **Área cadastral em São Paulo** não se digita mais: é sempre a soma das áreas dos SQLs. (#248)
 - **Busca da barra de cima** procura de fato por matrícula, SQL e endereço (rua, número, CEP), com ou sem pontuação e sem ligar para acento; digitada fora do Mapa, leva ao Mapa com o texto. (#247)
 - **Completude da ficha** chega a 100%: a "Visita técnica" saiu da conta enquanto a aba Infraestrutura não existe no sistema real. (#247)
 
