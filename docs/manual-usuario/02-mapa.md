@@ -25,7 +25,7 @@ Cada linha mostra:
 - a **área** e a **etapa** do funil;
 - uma **lupa**, que abre a ficha do terreno numa gaveta sobre o mapa.
 
-No alto da lista ficam o total (**"N terrenos · m²"**, com **"N sem localização"** quando há terrenos sem ponto no mapa) e a barra de **Filtros** (ver [11](11-filtros-e-visoes.md)). A ordem é a da legenda (fase, etapa, subetapa) e depois o nome.
+No alto da lista ficam o total (**"N terrenos · m²"**, com **"N sem localização"** quando há terrenos sem ponto no mapa) e a barra de **Filtros** (ver [11](11-filtros-e-visoes.md)). A ordem padrão é a da legenda (fase, etapa, subetapa) e depois o nome; para ordenar por outros campos, use a aba **Ordenação** da gaveta de Filtros (ver [11](11-filtros-e-visoes.md#ordenação-só-no-mapa)).
 
 **Como mudar a largura da lista:** arraste a borda entre a lista e o mapa (o cursor vira ⇔). No mínimo, a lista mostra só as bolinhas. **Dois cliques** na borda voltam à largura padrão. O sistema lembra a largura no seu navegador.
 
