@@ -64,7 +64,7 @@ Em São Paulo, o sistema consulta cada SQL no **GeoSampa** (o mapa oficial da pr
 
 ## Áreas
 
-O terreno pode ter até cinco áreas, de fontes diferentes: **Documental** (da matrícula), **Cadastral** (da prefeitura, soma dos SQLs), **Levantamento** (topográfico), **Estimativa** e **Poligonal** (calculada pelo desenho). A pessoa escolhe uma delas como **área adotada**, que é a usada nas contas (valor por m², por exemplo).
+O terreno pode ter até quatro áreas, de fontes diferentes: **Documental** (da matrícula), **Cadastral** (da prefeitura, soma dos SQLs), **Topográfica** (levantamento) e **Poligonal** (calculada pelo desenho). Uma delas é a **área adotada**, a usada nas contas (valor por m², por exemplo): o terreno nasce com a Cadastral, a Topográfica toma o lugar sozinha quando é digitada, e a pessoa pode escolher outra.
 
 ## Papéis das pessoas
 

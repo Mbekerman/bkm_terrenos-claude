@@ -82,33 +82,31 @@ function SecGenerica({ f, id, primeiro }: { f: Ficha; id: 'ident' | 'loc' | 'fis
   );
 }
 
+/* a estimativa saiu; a ordem é Documental, Cadastral, Topográfica e Poligonal (pedido do Moises, 9/nov/2026) */
 const AREAS: [string, string, string, string][] = [['area_documental_m2', 'Documental', 'documental', 'matrícula'], ['area_cadastral_m2', 'Cadastral', 'cadastral', 'IPTU'],
-  ['area_levantamento_m2', 'Levantamento', 'levantamento', 'topografia'], ['estimativa', 'Estimativa', 'estimativa', 'sem documento']];
-/** a estimativa não tem coluna própria: é a área adotada quando a fonte é a estimativa */
-const estimativa = (t: R) => (t.fonte_area_adotada === 'estimativa' ? t.area_adotada_m2 : null);
-export const valoresArea = (t: R): Record<string, string> => ({ ...valoresDe(t, ['area_documental_m2', 'area_cadastral_m2', 'area_levantamento_m2', 'testada_principal_m', 'fonte_area_adotada']),
-  estimativa: estimativa(t) == null ? '' : String(estimativa(t)).replace('.', ',') });
-/** áreas do formulário → dados; a área adotada é a da fonte escolhida (a da poligonal o banco calcula) */
+  ['area_levantamento_m2', 'Topográfica', 'levantamento', 'levantamento']];
+export const valoresArea = (t: R): Record<string, string> => valoresDe(t, ['area_documental_m2', 'area_cadastral_m2', 'area_levantamento_m2', 'testada_principal_m', 'fonte_area_adotada']);
+/** áreas do formulário → dados; a área adotada é a da fonte escolhida (o banco a confere: nasce e volta pela cadastral, e a
+    topográfica digitada toma o lugar sozinha) */
 export function dadosArea(f: Ficha, v: Record<string, string>): R | string {
   const d: R = {
     area_documental_m2: lerNum(v.area_documental_m2), area_cadastral_m2: lerNum(v.area_cadastral_m2), area_levantamento_m2: lerNum(v.area_levantamento_m2),
     testada_principal_m: lerNum(v.testada_principal_m),
   };
   for (const k of Object.keys(d)) if (d[k] != null && !(d[k] > 0)) return 'As áreas e a testada precisam ser maiores que zero.';
-  const fonte = v.fonte_area_adotada || null, est = lerNum(v.estimativa);
-  if (est != null && !(est > 0)) return 'As áreas e a testada precisam ser maiores que zero.';
+  const fonte = v.fonte_area_adotada || 'cadastral';
   d.fonte_area_adotada = fonte;
-  if (!fonte) d.area_adotada_m2 = null;
-  else if (fonte === 'poligonal') { if (!f.poly) return 'O terreno não tem poligonal.'; d.area_adotada_m2 = f.t.area_adotada_m2 ?? 1; }
+  if (fonte === 'poligonal') { if (!f.poly) return 'O terreno não tem poligonal.'; d.area_adotada_m2 = f.t.area_adotada_m2 ?? 1; }
+  else if (fonte === 'cadastral') d.area_adotada_m2 = f.t.area_cadastral_m2 ?? null;
   else {
-    const a = fonte === 'estimativa' ? est : d[`area_${fonte}_m2`];
+    const a = d[`area_${fonte}_m2`];
     if (a == null) return `Preencha a área ${OPT.fonteArea[fonte].split(' (')[0].toLowerCase()} ou escolha outra fonte.`;
     d.area_adotada_m2 = a;
   }
   return d;
 }
-export const fonteSel = (id: string, p: VivoProps, opts: [string, string][], vazio: string) => (
-  <select id={id} {...p}><option value="">{vazio}</option>{opts.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+export const fonteSel = (id: string, p: VivoProps, opts: [string, string][], vazio: string | null) => (
+  <select id={id} {...p}>{vazio != null && <option value="">{vazio}</option>}{opts.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
 );
 
 /** a área de uma fonte editada no lugar, dentro do cartão dela */
@@ -117,11 +115,10 @@ function AreaVivo({ f, k, l }: { f: Ficha; k: string; l: string }) {
   const ini = valoresArea(t)[k];
   const { props } = useVivo(ini, (v) => {
     const vals = { ...valoresArea(t), [k]: v };
-    /* a estimativa não tem coluna: digitar é adotá-la; apagar a adotada deixa o terreno sem área adotada */
-    if (k === 'estimativa') vals.fonte_area_adotada = v.trim() ? 'estimativa' : t.fonte_area_adotada === 'estimativa' ? '' : vals.fonte_area_adotada;
-    else if (!v.trim() && t.fonte_area_adotada === k.replace(/^area_|_m2$/g, '')) vals.fonte_area_adotada = '';
-    /* área do levantamento topográfico digitada vira a adotada; a pessoa pode trocar depois (pedido do Moisés, 6/nov/2026) */
-    else if (k === 'area_levantamento_m2' && v.trim()) vals.fonte_area_adotada = 'levantamento';
+    /* apagar a área adotada volta para a cadastral */
+    if (!v.trim() && t.fonte_area_adotada === k.replace(/^area_|_m2$/g, '')) vals.fonte_area_adotada = 'cadastral';
+    /* a topográfica digitada é a única que toma o lugar da adotada sozinha; a pessoa pode trocar depois (pedidos do Moises, 6 e 9/nov/2026) */
+    else if (k === 'area_levantamento_m2' && v.trim() && v !== ini) vals.fonte_area_adotada = 'levantamento';
     const d = dadosArea(f, vals);
     if (typeof d === 'string') { toast(d); return false; }
     return salvarT(d);
@@ -205,7 +202,7 @@ function Frentes({ f }: { f: Ficha }) {
 function SecAreas({ f }: { f: Ficha }) {
   const { edita } = useSessao();
   const t = f.t, ad = t.area_adotada_m2 as number | null, apol = t.area_poligonal_m2 as number | null;
-  const cards: [number | null, string, string, string][] = [...AREAS.map(([k, l, fo, s]) => [k === 'estimativa' ? estimativa(t) : t[k], l, fo, s] as [number | null, string, string, string]),
+  const cards: [number | null, string, string, string][] = [...AREAS.map(([k, l, fo, s]) => [t[k], l, fo, s] as [number | null, string, string, string]),
     [apol, 'Poligonal', 'poligonal', 'desenho']];
   const pre = cards.map((c) => c[0]).filter((v): v is number => v != null).map(Number);
   let div: ReactNode = null;
@@ -236,7 +233,7 @@ function SecAreas({ f }: { f: Ficha }) {
   return (
     <Quadro aba="terreno" id="areas" titulo={<>Áreas e dimensões<Busca terreno={f.id} fontes={['geosampa', 'frentes']} /></>}>
       <div className="sec-b">
-        <div className="areas">{cards.map(([v, l, fo, s], i) => {
+        <div className="areas4"><div className="areas">{cards.map(([v, l, fo, s], i) => {
           const k = i < AREAS.length ? AREAS[i][0] : '', pode = edita && v != null, sel = fonte === fo;
           return (
             <div key={fo} className={`area${sel ? ' sel' : ''}${pode ? ' pode' : ''}`} id={`area-${fo}`}
@@ -251,10 +248,10 @@ function SecAreas({ f }: { f: Ficha }) {
               <div className="as">{sel ? <><Ic n="check" s={14} />Área adotada</> : '\u00a0'}</div>
             </div>
           );
-        })}</div>
+        })}</div></div>
         {div}
         <div className={`kvg${edita ? ' kvg-ed vivo' : ''}`} style={{ marginTop: 14 }}>
-          <div><div className="k">Área adotada</div>{fonte ? <div className="v">{OPT.fonteArea[fonte]?.split(' (')[0]}</div> : <span className="v ni">{edita ? 'Clique na área que vale' : 'Não informada'}</span>}</div>
+          <div><div className="k">Área adotada</div><div className="v">{OPT.fonteArea[fonte || 'cadastral']?.split(' (')[0]}{ad == null ? <span className="faint"> · sem área ainda</span> : null}</div></div>
           {/* em São Paulo a testada não se digita: é a frente do acesso principal medida pela poligonal (pedido do Moises, 9/nov/2026) */}
           {edita && !sp ? <TestadaVivo f={f} />
             : <div><div className="k">Testada principal</div>{t.testada_principal_m == null ? ni : <div className="v">{metros(t.testada_principal_m)} m</div>}</div>}
@@ -278,7 +275,7 @@ export default function AbaTerreno({ f }: { f: Ficha }) {
       let alvo = p.campo === 'end-mapa' ? 'f-end-mapa' : /^(em-n|es-sql|p-n)$/.test(p.campo ?? '') ? p.campo! : `f-${p.campo}`;
       if (p.campo === 'area') {
         /* área adotada: a primeira área preenchida (um clique a escolhe); sem nenhuma, o campo da documental */
-        const fo = ['documental', 'cadastral', 'levantamento', 'poligonal'].find((x) => (x === 'poligonal' ? f.t.area_poligonal_m2 : f.t[`area_${x}_m2`]) != null);
+        const fo = ['cadastral', 'documental', 'levantamento', 'poligonal'].find((x) => (x === 'poligonal' ? f.t.area_poligonal_m2 : f.t[`area_${x}_m2`]) != null);
         alvo = fo ? `area-${fo}` : 'f-area_documental_m2';
       }
       /* proprietário: abre a janela das pessoas da primeira parte */
