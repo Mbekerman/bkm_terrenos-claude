@@ -193,8 +193,11 @@ begin
   if to_jsonb(new) ? 'atualizado_por' then
     new := jsonb_populate_record(new, jsonb_build_object('atualizado_por', auth.uid()));
   end if;
-  -- versão para controle de edição simultânea
-  if to_jsonb(new) ? 'versao' then
+  -- versão para controle de edição simultânea; a temperatura do terreno não conta (9/nov/2026: o clique nela
+  -- não pode derrubar com PT409 quem está editando a ficha). As colunas geradas vêm nulas aqui e ficam de fora.
+  if to_jsonb(new) ? 'versao' and not (tg_table_name = 'terrenos'
+     and to_jsonb(new) - array['temperatura','temperatura_em','atualizado_em','atualizado_por','poligono','area_poligonal_m2']
+       = to_jsonb(old) - array['temperatura','temperatura_em','atualizado_em','atualizado_por','poligono','area_poligonal_m2']) then
     new := jsonb_populate_record(new, jsonb_build_object('versao', (to_jsonb(old)->>'versao')::int + 1));
   end if;
   return new;

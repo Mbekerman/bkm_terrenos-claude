@@ -24,9 +24,9 @@ Com mais de uma fase aberta, o topo mostra a mais adiante.
 
 ## Temperatura
 
-A temperatura diz o quanto a negociação está promissora. São 5 barras: **Muito fria, Fria, Morna, Quente, Muito quente**. Clique na barra para escolher; clicar de novo na mesma barra apaga (volta a "Temperatura não avaliada").
+A temperatura diz o quanto o terreno está promissor para a BKM. São 5 barras: **Muito fria, Fria, Morna, Quente, Muito quente**. Clique na barra para escolher; clicar de novo na mesma barra apaga (volta a "Temperatura não avaliada").
 
-**Regra:** a temperatura é da negociação. Terreno em Backlog (sem oferta) não tem negociação, e por isso não tem temperatura.
+**Regra:** a temperatura é do **terreno**, uma só, e aparece sempre, também no Backlog (terreno ainda sem oferta). Ela continua quando a negociação abre, muda de etapa ou termina. Quem tem só consulta vê, mas não muda. A mudança vai para os Logs, e cliques seguidos viram um log só; a lixeira não desfaz a temperatura (é só clicar de novo).
 
 ## "Ficha N% completa"
 

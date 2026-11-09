@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **Temperatura do terreno** (topo da ficha, cabeçalho da gaveta do Mapa e aba Comercial): a temperatura passou a ser do terreno e aparece sempre, também no Backlog (terreno sem oferta), onde antes sumia. A que já existia continua. A mudança aparece nos Logs como "Temperatura: antes → depois". (#281)
 - **Completude: Proprietário** só conta como preenchido quando cada parte do terreno tem proprietários somando 100% de participação. (#279)
 - **Arrastar a saída da rota** (Mapa › Traçar rota até aqui): a bolinha da saída se arrasta com o mouse (mãozinha); ao soltar, a rota é recalculada do lugar novo. (#275)
 - **Janelas que se movem** (em todo o sistema): toda janela que abre por cima da tela e os quadros sobre o mapa (setor, concorrência, rota) se arrastam pelo título para ver o que está atrás; o fundo escurecido clareia depois de mover, e dois cliques no título devolvem a janela ao lugar. Ver [Entrar e se localizar](01-entrar-e-navegar.md#mover-as-janelas-pop-ups-pela-tela). (#269)

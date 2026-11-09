@@ -57,7 +57,7 @@ O código usa os nomes do negócio, em português. Os principais:
 | **Fase** | Grande etapa da vida do terreno: Novos Negócios, Aprovação de Projetos, Registro de Incorporação, Funding, Contratação Caixa, Lançamento, Obras, Entregue. Configurável. | `app.fases_modelo` |
 | **Processo** | A passagem do terreno por uma fase. No máximo um aberto por fase; fases diferentes podem correr juntas. | `app.processos` |
 | **Etapa / subetapa** | Os passos dentro de uma fase (funil). Configuráveis pelo administrador. | `app.etapas_modelo`, `app.subetapas_modelo` |
-| **Negociação** | O processo da fase de entrada (Novos Negócios). É o único com temperatura e propostas. | processo da fase `entrada` |
+| **Negociação** | O processo da fase de entrada (Novos Negócios). É o único com propostas (a temperatura é do terreno desde 9/nov/2026). | processo da fase `entrada` |
 | **Parte** | Quando vários donos vendem pedaços do mesmo terreno e negociam separado, cada um é uma parte, com negociação própria. Todo terreno nasce com a parte "Vendedor 1". | `app.terreno_partes` |
 | **Matrícula** | O registro do imóvel no cartório. | `app.matriculas` |
 | **SQL** | Em São Paulo, o número do cadastro do lote na prefeitura (Setor-Quadra-Lote), usado no IPTU. Em São José dos Campos, "inscrição imobiliária". **Não tem relação com a linguagem SQL.** | `app.inscricoes_municipais` |

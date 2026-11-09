@@ -332,27 +332,40 @@ select pg_temp.falha(format($$update app.ofertas set terreno_id = %L where terre
 select pg_temp.falha(format($$update app.confrontacoes set terreno_id = %L where terreno_id = %L$$, :'tx', :'t1'), 'confrontação não muda de terreno');
 
 \echo '# temperatura'
-select app.definir_temperatura(:'neg', 4);
-select pg_temp.ok((select temperatura from app.v_terrenos where id = :'t1') = 4, 'temperatura 4 registrada');
-select pg_temp.falha(format('select app.definir_temperatura(%L, 6)', :'neg'), 'temperatura só de 1 a 5');
-select pg_temp.ok((select count(*) from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura') = 1, 'mudança de temperatura vai para o histórico');
-select app.definir_temperatura(:'neg', 2);
-select app.definir_temperatura(:'neg', 3);
-select pg_temp.ok((select count(*) = 1 and min(comentario) = '— → 3' from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura'),
-  'cliques seguidos na temperatura viram um registro só, do valor de antes ao final');
-select app.definir_temperatura(:'neg', null);
-select pg_temp.ok((select count(*) from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura') = 0,
-  'se a sequência volta ao valor de antes, não fica registro');
-select app.definir_temperatura(:'neg', 4);
+-- a temperatura é do terreno (decisão do Moises, 9/nov/2026): vale sem negociação e o log é o da auditoria do terreno
 reset role;
-update app.processo_transicoes set em = em - interval '8 seconds' where processo_id = :'neg' and evento = 'temperatura';
+update app.auditoria set em = em - interval '1 minute' where tabela = 'terrenos' and registro_id = :'t1';
 select pg_temp.como(:'diretor');
-select app.definir_temperatura(:'neg', 5);
-select pg_temp.ok((select string_agg(comentario, ' | ' order by em) from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura') = '— → 4 | 4 → 5',
-  'passados 7 segundos, a mudança seguinte é outro registro');
+select app.definir_temperatura(:'tx', 3);
+select pg_temp.ok((select temperatura from app.v_terrenos where id = :'tx') = 3 and (select negociacao_id is null from app.v_terrenos where id = :'tx'),
+  'terreno sem negociação também tem temperatura');
+select versao as v_t1 from app.terrenos where id = :'t1' \gset
+select app.definir_temperatura(:'t1', 4);
+select pg_temp.ok((select temperatura from app.v_terrenos where id = :'t1') = 4, 'temperatura 4 registrada');
+select pg_temp.ok((select versao from app.terrenos where id = :'t1') = :v_t1, 'a temperatura não mexe na versão da ficha');
+select pg_temp.falha(format('select app.definir_temperatura(%L, 6)', :'t1'), 'temperatura só de 1 a 5');
+select pg_temp.falha(format('select app.salvar_terreno(%L, %s, %L)', :'t1', :v_t1, '{"temperatura":2}'), 'temperatura não passa pela salvar_terreno');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos' and registro_id = :'t1' and acao = 'update' and antes->'temperatura' is distinct from depois->'temperatura') = 1, 'mudança de temperatura vai para os logs do terreno');
+select app.definir_temperatura(:'t1', 2);
+select app.definir_temperatura(:'t1', 3);
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos' and registro_id = :'t1' and acao = 'update' and antes->'temperatura' is distinct from depois->'temperatura') = 1 and (select bool_and(antes->'temperatura' = 'null' and depois->>'temperatura' = '3') from app.auditoria
+  where tabela = 'terrenos' and registro_id = :'t1' and acao = 'update' and antes->'temperatura' is distinct from depois->'temperatura'),
+  'cliques seguidos na temperatura viram um registro só, do valor de antes ao final');
+select pg_temp.falha(format('select app.desfazer_alteracao(%s)', (select max(id) from app.auditoria where tabela = 'terrenos' and registro_id = :'t1')),
+  'temperatura não se desfaz pela lixeira');
+select app.definir_temperatura(:'t1', null);
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos' and registro_id = :'t1' and acao = 'update' and antes->'temperatura' is distinct from depois->'temperatura') = 0, 'se a sequência volta ao valor de antes, não fica registro');
+select app.definir_temperatura(:'t1', 4);
+reset role;
+update app.auditoria set em = em - interval '8 seconds' where tabela = 'terrenos' and registro_id = :'t1';
+select pg_temp.como(:'diretor');
+select app.definir_temperatura(:'t1', 5);
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos' and registro_id = :'t1' and acao = 'update' and antes->'temperatura' is distinct from depois->'temperatura') = 2, 'passados 7 segundos, a mudança seguinte é outro registro');
 select pg_temp.como(:'analista');
-select app.definir_temperatura(:'neg', 4);
-select pg_temp.ok((select count(*) from app.processo_transicoes where processo_id = :'neg' and evento = 'temperatura') = 3, 'outro usuário não junta com a mudança de quem veio antes');
+select app.definir_temperatura(:'t1', 4);
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos' and registro_id = :'t1' and acao = 'update' and antes->'temperatura' is distinct from depois->'temperatura') = 3, 'outro usuário não junta com a mudança de quem veio antes');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.definir_temperatura(%L, 2)', :'t1'), 'leitura não muda a temperatura');
 select pg_temp.como(:'diretor');
 
 -- ---------------------------------------------------------------------
@@ -996,7 +1009,6 @@ select pg_temp.ok((select count(*) from app.fases_do_terreno(:'t2') where status
   'fases do terreno: Comprado, a fase aberta e o que falta para a próxima');
 select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L, %L)', :'ap', 'perdido', 'sem_retorno', 'x'), 'Perdido não existe na Aprovação de Projetos');
 select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L)', :'ap', 'bkm', 'a_vista'), 'proposta só na negociação');
-select pg_temp.falha(format('select app.definir_temperatura(%L, 3)', :'ap'), 'temperatura só na negociação');
 select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L)', :'ap', 'concluido', 'Aprovado'), 'fase se conclui só na última etapa');
 select app.mover_para_etapa(:'ap', 'alvaras') \gset
 select pg_temp.falha(format('select app.encerrar_processo(%L, %L)', :'ap', 'concluido'), 'concluir a fase exige relato');
@@ -1258,9 +1270,8 @@ select pg_temp.ok((select valor_pedido = 3500000 from app.v_partes where id = :'
 select pg_temp.ok(not exists (select 1 from app.fases_do_terreno(:'tv') where processo_id in (:'na', :'nb', :'nc')), 'as partes não aparecem como fases');
 select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'nv', 'preparando_proposta'), 'negociação do terreno dividida não se move à mão');
 select pg_temp.falha(format('select app.mover_para_etapa(%L, %L, false, %L)', :'na', 'estudos', 'voltar'), 'parte não volta para antes da Negociação');
-select pg_temp.falha(format('select app.definir_temperatura(%L, 5)', :'na'), 'a temperatura é uma só: a parte não tem a sua');
-select app.definir_temperatura(:'nv', 4);
-select pg_temp.ok((select temperatura from app.v_terrenos where id = :'tv') = 4, 'temperatura da negociação do terreno dividido');
+select app.definir_temperatura(:'tv', 4);
+select pg_temp.ok((select temperatura from app.v_terrenos where id = :'tv') = 4, 'temperatura do terreno dividido');
 select app.registrar_proposta(:'na', 'bkm', 3200000, 'dinheiro') \gset
 select pg_temp.ok((select ultima_proposta_valor from app.v_partes where id = :'pa') = 3200000 and (select ultima_proposta_valor is null from app.v_partes where id = :'pb'), 'propostas por parte');
 select app.registrar_proposta(:'nb', 'bkm', 2000000, 'dinheiro', p_status => 'rascunho') \gset

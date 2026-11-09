@@ -92,7 +92,7 @@ Quando o terreno tem partes negociando separado, o quadro mostra **"Anda pelas p
 
 Lista o que vale fazer agora no terreno ("Próximas ações"), por exemplo:
 
-- **"Avaliar a temperatura da negociação"** (sem temperatura);
+- **"Avaliar a temperatura do terreno"** (sem temperatura);
 - **"Completar"** a ficha (itens que faltam);
 - cobrar a resposta de uma proposta apresentada (**"Ver propostas"**);
 - decidir um pedido de aprovação.

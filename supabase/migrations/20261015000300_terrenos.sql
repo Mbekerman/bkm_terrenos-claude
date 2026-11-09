@@ -85,6 +85,9 @@ create table app.terrenos (
   -- histórico de uso do terreno e dos vizinhos, pesquisado (fotos aéreas, matrícula, Cetesb); o automático
   -- são as áreas contaminadas da consulta à prefeitura (lote 2 da ficha em abas, 4/nov/2026)
   historico_uso         text,
+  -- temperatura do terreno (decisão do Moises, 9/nov/2026): uma só, mesmo sem negociação; muda só por app.definir_temperatura
+  temperatura           smallint check (temperatura between 1 and 5),  -- null = não avaliada
+  temperatura_em        timestamptz,
   latitude              double precision check (latitude between -90 and 90),
   longitude             double precision check (longitude between -180 and 180),
   poligono_geojson      jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
