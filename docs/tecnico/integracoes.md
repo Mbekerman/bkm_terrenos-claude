@@ -185,6 +185,16 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 
 ---
 
+## 10b. IPTU de São Paulo (notificação de lançamento)
+
+- **O quê:** valor venal (terreno e construção) e IPTU do exercício de cada SQL, mais o conteúdo do cálculo (NL, áreas, testada, área construída, uso, padrão, ano, valor do m², fatores, alíquota, descontos, impostos predial e territorial, total, vencimento da 1ª prestação). Não traz o **valor venal de referência** (ITBI), que é outro serviço da Prefeitura, nem o valor de cada parcela.
+- **Como:** o portal `notcertiptu.prefeitura.sp.gov.br` não tem API. O serviço `services/iptu` (Cloud Run `terrenos-iptu`) abre um Chromium sem tela, entra com a **Senha Web** (CPF e senha em `IPTU_CPF`/`IPTU_SENHA`, do Secret Manager), escolhe o perfil Titular se pedir, consulta SQL e exercício, gera a única notificação "Ativa" com proprietário e compromissário em branco (a via sai com o contribuinte em sigilo fiscal) e baixa o PDF. A sessão do navegador é reaproveitada até 10 min parada; expirada, refaz o login uma vez.
+- **Leitura do PDF** (`src/notificacao.js`): pdf.js extrai texto com posição; dados cadastrais = valor à direita do rótulo; tabelas do demonstrativo = valor logo abaixo, na coluna do rótulo mais próximo à esquerda. Rótulo que falta → `PDF_NAO_RECONHECIDO` (o layout mudou). Valor venal = bases de cálculo (terreno incorporado + não incorporado; construção); IPTU anual = total a pagar.
+- **Gravação:** em `app.inscricao_valores` com o token de quem pediu (RLS e auditoria normais), `fonte` "Prefeitura de São Paulo: notificação de lançamento NL xx", `data_verificacao` = hoje, `notificacao` = o JSON lido.
+- **Limites e riscos:** uma emissão por vez (30 a 60 s); captcha não é resolvido (409); mudança no site quebra a leitura; datacenter do Google pode receber captcha mais vezes; não se sabe ainda se a Senha Web emite para SQL de terceiros (primeiro teste a fazer). Fora de São Paulo, nada (IPTU digitado).
+- **Front:** `ficha/Iptu.tsx` chama `/iptu/consultar` e `/iptu/notificacao` com o `access_token` do Supabase no `Authorization`.
+- **Testes:** `cd services/iptu && npm test`.
+
 ## 11. Laser 2020 / MDT do GeoSampa
 
 **Para quê.** Cotas de alta precisão (MDT 1:1000 de 2020, folhas `.laz`) para a classificação topográfica em 7 perfis e o topográfico preliminar em São Paulo. É **sempre** a fonte em São Paulo: se falhar, erro com "Tentar de novo", nunca o Google (decisão de 27/out/2026).

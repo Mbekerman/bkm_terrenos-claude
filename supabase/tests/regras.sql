@@ -135,6 +135,10 @@ select pg_temp.ok((select iptu_mensal_origem from app.v_inscricoes where id = :'
 select pg_temp.ok((select count(*) from app.inscricao_valores where inscricao_id = :'ins' and vigente) = 1, 'só o exercício mais recente fica vigente');
 select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, situacao_iptu, fonte) values (%L, %L, 2024, 'tributado', 'Carnê antigo')$$, :'ins', :'emp'), 'exercício anterior ao atual é recusado');
 select pg_temp.falha(format($$update app.inscricao_valores set iptu_valor_anual = 1 where inscricao_id = %L$$, :'ins'), 'valor lançado não é editado');
+insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_venal_terreno, situacao_iptu, iptu_valor_anual, fonte, notificacao) values
+  (:'ins', :'emp', 2026, 3600000, 'tributado', 46000, 'Prefeitura de São Paulo: notificação de lançamento NL 01', '{"versao": 1, "notificacao": "01", "pagar": {"total": 46000}}');
+select pg_temp.ok((select notificacao->'pagar'->>'total' from app.inscricao_valores where inscricao_id = :'ins' and vigente) = '46000', 'a notificação da Prefeitura fica guardada com o valor');
+select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, situacao_iptu, fonte, notificacao) values (%L, %L, 2026, 'tributado', 'x', '[1]')$$, :'ins', :'emp'), 'notificação precisa ser um objeto');
 select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, situacao_iptu, iptu_valor_anual) values (%L, %L, 2027, 'isento', 1000)$$, :'ins', :'emp'), 'isento não tem IPTU a pagar');
 select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_venal_terreno, valor_venal_construcao, valor_venal_imovel) values (%L, %L, 2027, 1, 1, 5)$$, :'ins', :'emp'), 'venal do imóvel bate com a soma');
 
