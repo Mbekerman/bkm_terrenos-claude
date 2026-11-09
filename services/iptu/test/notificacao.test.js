@@ -108,3 +108,14 @@ test('lê o PDF de verdade pelo pdf.js', async () => {
   assert.equal(n.pagar.total, 33937.5);
   assert.equal(n.bases.terreno_incorporado.base_calculo, 2362500);
 });
+
+test('outros números perto do cabeçalho e à direita das tabelas não confundem a leitura', () => {
+  const L = itens();
+  // data de emissão e número da página à direita do NL; código de barras longe à direita do total
+  L.push({ y: 58, x: 500, text: '09/11/2026' }, { y: 71, x: 520, text: '1' }, { y: 80, x: 470, text: '3' }, { y: 725, x: 600, text: '123,45' });
+  const n = lerItens(L);
+  assert.equal(n.exercicio, 2026);
+  assert.equal(n.notificacao, '02');
+  assert.equal(n.pagar.total, 33937.5);
+  assert.equal(n.pagar.vencimento_1a_prestacao, '2026-02-09');
+});

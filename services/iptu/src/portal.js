@@ -1,6 +1,6 @@
 // Emissão da 2ª via da Notificação de Lançamento do IPTU no portal da Prefeitura de
-// São Paulo, com a Senha Web de quem cedeu a credencial (variáveis IPTU_CPF e
-// IPTU_SENHA, vindas do Secret Manager; nunca do banco, do repositório ou da tela).
+// São Paulo, com a Senha Web de quem cedeu a credencial (variáveis IPTU_CPF, com
+// CPF ou CNPJ, e IPTU_SENHA, vindas do Secret Manager; nunca do banco, do repositório ou da tela).
 //
 // O portal não tem API: um Chromium sem tela faz o caminho de uma pessoa (entrar com
 // a Senha Web, digitar o SQL e o exercício, gerar a notificação e baixar o PDF). Os
@@ -14,6 +14,12 @@ export const PORTAL = 'https://notcertiptu.prefeitura.sp.gov.br/PaginasRestritas
 
 export class ErroPortal extends Error {
   constructor(status, code, msg) { super(msg); this.status = status; this.code = code; }
+}
+
+/** CPF (11 dígitos) ou CNPJ (14), sem pontuação; o portal usa o mesmo campo para os dois. */
+export function documento(valor) {
+  const d = String(valor ?? '').replace(/\D/g, '');
+  return d.length === 11 || d.length === 14 ? d : null;
 }
 
 const formatarSql = (d) => `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 10)}-${d.slice(10, 11)}`;
@@ -43,8 +49,9 @@ async function irAoFormulario() {
   if (await pagina.locator('#txt_SQL').isVisible().catch(() => false)) return;
   // Sem sessão: entra com a Senha Web.
   if (Date.now() < bloqueadoAte) throw new ErroPortal(503, 'LOGIN_BLOQUEADO', 'O portal recusou a Senha Web há pouco. Nova tentativa só daqui a alguns minutos, para não bloquear a senha.');
-  const cpf = process.env.IPTU_CPF?.replace(/\D/g, ''), senha = process.env.IPTU_SENHA;
-  if (!cpf || !senha) throw new ErroPortal(503, 'SEM_CREDENCIAL', 'A Senha Web da Prefeitura não está configurada no servidor.');
+  const cpf = documento(process.env.IPTU_CPF), senha = process.env.IPTU_SENHA;
+  if (!process.env.IPTU_CPF || !senha) throw new ErroPortal(503, 'SEM_CREDENCIAL', 'A Senha Web da Prefeitura não está configurada no servidor.');
+  if (!cpf) throw new ErroPortal(503, 'CREDENCIAL_INVALIDA', 'O CPF/CNPJ da Senha Web configurado no servidor não tem 11 nem 14 dígitos.');
   const outras = pagina.getByRole('button', { name: /Outras formas de acesso/i });
   if (await outras.isVisible().catch(() => false)) await outras.click();
   await pagina.locator('#cpfCnpj').fill(cpf);

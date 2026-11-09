@@ -79,7 +79,7 @@ Todas essas chaves são **públicas por natureza** (a chave publicável do Supab
 | Segredo do cliente OAuth do Google | painel do Supabase (Auth › Google) | **não** | login |
 | Chave `service_role` do Supabase | painel do Supabase; Secret Manager do projeto `bkm-monitor` (coletor) | **não** | coletor do monitor de mercado; nunca no front |
 | Credenciais do Órulo | Secret Manager do projeto do monitor | **não** | coletor |
-| `IPTU_CPF`, `IPTU_SENHA` (Senha Web da Prefeitura de SP, do Moises) | Secret Manager do `bkm-terrenos` (segredos `iptu-cpf` e `iptu-senha`), expostos só ao serviço `terrenos-iptu` | **não** | emitir a notificação de lançamento do IPTU |
+| `IPTU_CPF`, `IPTU_SENHA` (Senha Web da Prefeitura de SP, do Moises) | Secret Manager do `bkm-terrenos` (segredos `iptu-cpf`, com o CPF ou o CNPJ só em números, e `iptu-senha`; criados pela tela do Secret Manager, não pelo terminal), expostos só ao serviço `terrenos-iptu` | **não** | emitir a notificação de lançamento do IPTU |
 | `IPTU_URL` | variável dos serviços `terrenos-web` e `terrenos-web-dev` | sim | o Caddy repassar `/iptu` ao serviço do IPTU |
 | `SUPABASE_URL`, `SUPABASE_KEY` do `terrenos-iptu` | variáveis do serviço do IPTU | sim (chave publicável) | conferir o login e gravar com o token de quem pediu |
 

@@ -176,7 +176,7 @@ export default function SecIptu({ f }: { f: Ficha }) {
                         {n && <> · <button className="btn sm text" style={{ padding: 0, height: 'auto' }} onClick={() => setAberto(ab ? null : x.id)}>{ab ? 'Fechar detalhe' : 'Detalhe'}</button></>}</> : 'Sem IPTU'}</td>
                       {podeBuscar && <td className="r" style={{ whiteSpace: 'nowrap' }}>
                         <button className="btn sm text" disabled={!!busc} title="Buscar este SQL na Prefeitura" onClick={() => buscar([x])}>{busc === x.id ? 'Consultando...' : 'Buscar'}</button>
-                        {n && <button className="btn sm text" disabled={pdf === x.id} title="Emitir o PDF da notificação de lançamento" onClick={() => baixar(x, v!.exercicio)}>{pdf === x.id ? 'Emitindo...' : 'PDF'}</button>}
+                        {<button className="btn sm text" disabled={pdf === x.id} title="Emitir o PDF da notificação de lançamento" onClick={() => baixar(x, v?.exercicio ?? new Date().getFullYear())}>{pdf === x.id ? 'Emitindo...' : 'PDF'}</button>}
                       </td>}
                     </tr>
                     {ab && <tr><td colSpan={podeBuscar ? 9 : 8}><Detalhe n={n!} /></td></tr>}
