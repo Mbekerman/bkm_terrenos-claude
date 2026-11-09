@@ -362,6 +362,14 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .layout, .top-in, body.menu-min .layout { max-width: none }
 @media (min-width: 900px) { .top { padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)) } }
 
+/* Popups arrastáveis pelo título (lib/arrastar.ts; pedido do Moises, 9/nov/2026) */
+:is(.dialog .dh, .cc-box .cc-hd, .mp-rt .mp-rt-h, [data-arrastar]) { cursor: grab; touch-action: none; user-select: none }
+:is(.dialog .dh, .cc-box .cc-hd, .mp-rt .mp-rt-h, [data-arrastar]) :is(button, a, input, select, textarea) { cursor: pointer }
+:is(.dialog, .cc-box, .mp-rt).arrastando, .arrastando :is(.dh, .cc-hd, .mp-rt-h) { cursor: grabbing }
+.dialog.arrastado { box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 12px 32px rgba(0,0,0,.22) }
+/* movido o pop-up, o fundo clareia para enxergar o que está atrás (continua cobrindo a tela: clicar nele fecha o pop-up) */
+:root:not(#_) .scrim.movido, :root[data-tema]:not(#_) .scrim.movido { background: rgba(29, 46, 92, .08) !important; transition: background .15s }
+:root:not(#_) .scrim.arrastando, :root[data-tema]:not(#_) .scrim.arrastando { background: transparent !important }
 /* Seção IPTU (pedido do Moises, 9/nov/2026): venais em caixas como as de Áreas, lado a lado quando cabem; o resto em duplas;
  * IPTU anual e mensal por último, em destaque; enquanto a Prefeitura não respondeu, a seção toda carrega */
 .iptu-pan { margin-top: 4px }
