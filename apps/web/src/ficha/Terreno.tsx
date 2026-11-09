@@ -8,6 +8,7 @@ import { Ic } from '../components/Moldura';
 import { LapisMapa } from '../novo/TrocarEndereco';
 import { atualizarFrentes, FONTE_FRENTES } from '../novo/frentes';
 import { GEO_BASE } from '../novo/geosampa';
+import { Busca, FONTE_CAMPO, useBuscando, type Fonte } from '../lib/buscando';
 import { reais as brl, m2 } from '../lib/format';
 import { Adorno, metros } from '../lib/mascara';
 import { ehSP, type Ficha, type R } from './dados';
@@ -63,7 +64,9 @@ function SecGenerica({ f, id, primeiro }: { f: Ficha; id: 'ident' | 'loc' | 'fis
         const so = id === 'loc' && END_MAPA.includes(c[0]);
         if (edita && !so) return <CampoVivo key={c[0]} f={f} c={c} listas={listas} salvar={c[0] === 'numero' ? salvarNum : salvarT} />;
         const v = fmtCampo(f, c, listas);
-        return <div key={c[0]} className={`${c[4] || ''}${so && edita ? ' kv-so' : ''}`}><div className="k">{c[1]}</div>{v == null ? ni : <div className="v">{v}</div>}</div>;
+        const fo = FONTE_CAMPO[c[0]];
+        return <div key={c[0]} className={`${c[4] || ''}${so && edita ? ' kv-so' : ''}`}><div className="k">{c[1]}{fo && v != null && <Busca terreno={f.id} fontes={fo} />}</div>
+          {v == null ? (fo ? <BuscaOu terreno={f.id} fontes={fo} senao={ni} /> : ni) : <div className="v">{v}</div>}</div>;
       })}</div>
         {id === 'fis' && t.area_construida_existente_m2 != null && t.area_construida_demolir_m2 != null && +t.area_construida_demolir_m2 < +t.area_construida_existente_m2
           && <div className="hint" style={{ marginTop: 10 }}>Demolição parcial: {m2(t.area_construida_existente_m2 - t.area_construida_demolir_m2)} permanecem.</div>}</div>
@@ -133,7 +136,7 @@ function TestadaVivo({ f }: { f: Ficha }) {
     if (n != null && !(n > 0)) { toast('A testada precisa ser maior que zero.'); return false; }
     return salvarT({ testada_principal_m: n });
   });
-  return <div className="inl-c"><label className="k" htmlFor="f-testada_principal_m">Testada principal</label>
+  return <div className="inl-c"><label className="k" htmlFor="f-testada_principal_m">Testada principal<Busca terreno={f.id} fontes={['frentes']} texto={!props.value} /></label>
     <Adorno t="m"><input id="f-testada_principal_m" inputMode="decimal" data-fmt="m" placeholder="Não informada" {...props} /></Adorno></div>;
 }
 
@@ -173,19 +176,25 @@ function useFrentes(f: Ficha) {
   return { lista: (q.data ?? []).filter((c) => c.confrontante), medindo };
 }
 
+/** em busca, o carregando com o texto no lugar do "Não informado" */
+function BuscaOu({ terreno, fontes, senao }: { terreno: string; fontes: Fonte[]; senao: ReactNode }) {
+  return useBuscando(terreno, fontes) ? <div className="v"><Busca terreno={terreno} fontes={fontes} texto /></div> : <>{senao}</>;
+}
+
 function Frentes({ f }: { f: Ficha }) {
-  const { lista, medindo } = useFrentes(f);
+  const { lista, medindo: aqui } = useFrentes(f);
+  const medindo = useBuscando(f.id, ['frentes']) || aqui;
   const t = f.t, pos = OPT.posicao[t.posicao_quadra] ?? null;
   const medidas = lista.some((c) => c.fonte === FONTE_FRENTES);
   return (
     <div className="frentes" id="frentes">
       <div className="kvg" style={{ marginTop: 14 }}>
-        <div><div className="k">Posição na quadra</div>{pos && t.posicao_quadra !== 'nao_informado' ? <div className="v">{pos}</div> : <span className="v ni">{medindo ? 'Medindo...' : 'Não informada'}</span>}</div>
+        <div><div className="k">Posição na quadra</div>{pos && t.posicao_quadra !== 'nao_informado' ? <div className="v">{pos}</div> : medindo ? <Busca terreno={f.id} fontes={['frentes']} texto /> : <span className="v ni">Não informada</span>}</div>
         <div className="full"><div className="k">Frentes{lista.length > 1 ? ` (${lista.length})` : ''}</div>
           {lista.length ? <ul className="fr-l">{lista.map((c) => (
             <li key={c.id}><span>{c.confrontante}{c.observacoes === 'Acesso principal' ? <span className="faint"> · acesso principal</span> : null}</span>
               <span className="num">{c.comprimento_m != null ? `${metros(c.comprimento_m)} m` : '—'}</span></li>))}</ul>
-            : <span className="v ni">{medindo ? 'Medindo pela poligonal...' : 'Não informadas'}</span>}
+            : (medindo ? <Busca terreno={f.id} fontes={['frentes']} texto /> : <span className="v ni">Não informadas</span>)}
         </div>
       </div>
       {medidas && <div className="hint" style={{ marginTop: 8 }}>Medidas pela poligonal sobre os lotes e as ruas da prefeitura (GeoSampa). Na esquina, o canto conta para as duas ruas.</div>}
@@ -225,7 +234,7 @@ function SecAreas({ f }: { f: Ficha }) {
     try { await salvarT({ fonte_area_adotada: d.fonte_area_adotada, area_adotada_m2: d.area_adotada_m2 }); } finally { setGrav(false); }
   };
   return (
-    <Quadro aba="terreno" id="areas" titulo="Áreas e dimensões">
+    <Quadro aba="terreno" id="areas" titulo={<>Áreas e dimensões<Busca terreno={f.id} fontes={['geosampa', 'frentes']} /></>}>
       <div className="sec-b">
         <div className="areas">{cards.map(([v, l, fo, s], i) => {
           const k = i < AREAS.length ? AREAS[i][0] : '', pode = edita && v != null, sel = fonte === fo;
