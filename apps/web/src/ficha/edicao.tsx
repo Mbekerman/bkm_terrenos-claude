@@ -82,7 +82,7 @@ export function fmtCampo(f: Ficha, [k, , tipo, opt]: Campo, listas?: { membros: 
   if (k === 'municipio_id') return [f.municipio, f.uf].filter(Boolean).join(' · ') || null;
   if (v == null || v === '' || (tipo === 'sel' && NI_OPT.has(v))) return null;
   switch (tipo) {
-    case 'sel': return OPT[opt!][v] ?? v;
+    case 'sel': return k === 'zona' && t.zona_origem === 'prefeitura' ? <>{OPT.zona[v] ?? v}<span className="faint" style={{ fontSize: 12 }}> · do GeoSampa</span></> : OPT[opt!][v] ?? v;
     case 'date': return fd(v);
     case 'm2': return m2(v);
     case 'm': return metros(v) + ' m';

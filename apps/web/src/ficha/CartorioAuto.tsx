@@ -2,13 +2,14 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSessao } from '../lib/sessao';
 import { GEO_BASE } from '../novo/geosampa';
-import { cartorioPelaArea } from '../novo/consulta';
+import { cartorioPelaArea, zonaPelaArea } from '../novo/consulta';
 import type { Ficha } from './dados';
 
 /* Cartório de registro de imóveis pelo GeoSampa ao abrir a ficha, em São Paulo (pedido do Moises, 9/nov/2026; o protótipo já
    fazia, geoCartorio): uma consulta por localização na sessão; nunca troca o digitado. Também refaz a ficha quando uma consulta
-   do GeoSampa em segundo plano (SQLs do cadastro, mapa de lotes) termina e gravou no terreno. */
-const TENT = new Set<string>();
+   do GeoSampa em segundo plano (SQLs do cadastro, mapa de lotes) termina e gravou no terreno. A zona da cidade (região oficial da
+   subprefeitura) vem do mesmo jeito (pedido do Moises, 9/nov/2026): só preenche a vazia ou a que veio do GeoSampa. */
+const TENT = new Set<string>(), TENT_Z = new Set<string>();
 export default function CartorioAuto({ f }: { f: Ficha }) {
   const { edita } = useSessao();
   const qc = useQueryClient();
@@ -30,5 +31,14 @@ export default function CartorioAuto({ f }: { f: Ficha }) {
     TENT.add(k);
     cartorioPelaArea(f.id, f.poly, f.lat, f.lng).catch((e) => console.warn('cartório pelo GeoSampa', e));
   }, [f.id, loc, sp, edita, f.t.cartorio_origem, f.lat, f.lng, f.poly]);
+  /* zona escolhida antes de existir a origem (zona_origem nula) conta como digitada */
+  const zonaLivre = !f.t.zona || f.t.zona_origem === 'prefeitura';
+  useEffect(() => {
+    if (!GEO_BASE || !edita || !sp || !zonaLivre || (f.lat == null && !f.poly)) return;
+    const k = f.id + '|' + loc;
+    if (TENT_Z.has(k)) return;
+    TENT_Z.add(k);
+    zonaPelaArea(f.id, f.poly, f.lat, f.lng).catch((e) => console.warn('zona pelo GeoSampa', e));
+  }, [f.id, loc, sp, edita, zonaLivre, f.lat, f.lng, f.poly]);
   return null;
 }
