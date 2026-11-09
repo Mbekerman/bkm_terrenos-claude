@@ -12,6 +12,7 @@ import Temperatura from './Temperatura';
 import AbaComercial from './Comercial';
 import Painel, { Avancos, usePN } from './Painel';
 import AbaEntorno, { EntornoAuto } from './Entorno';
+import CartorioAuto from './CartorioAuto';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
 import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
 import { useToast } from '../components/ui';
@@ -463,6 +464,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
       <Abas f={f} aba={aba} irAba={irAba} />
       <section key={aba} className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
       {aba !== 'entorno' && f.lat != null && <EntornoAuto f={f} />}
+      <CartorioAuto f={f} />
     </div><Painel f={f} irAba={irAba} /></div>
   );
 }

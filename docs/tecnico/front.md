@@ -317,6 +317,12 @@ Peças, em `ficha/edicao.tsx`:
 
 A consulta do GeoSampa depois do cadastro (`novo/consulta.ts`, `consultarTerreno`) dispara `terreno-gravado` a cada lote e no fim da consulta pela poligonal; `useFicha` (`Ficha.tsx`) ouve e recarrega a ficha, para ela mostrar o que chegou e ficar na versão atual.
 
+### Campos que vêm de outra fonte: o carregando
+
+`lib/buscando.tsx` guarda, por terreno, as buscas em segundo plano em curso: `geosampa` (`consultarTerreno` e o "Buscar no GeoSampa" de um SQL), `cartorio` (`cartorioPelaArea`), `frentes` (`atualizarFrentes`) e `entorno` (`buscarEntorno`). Quem busca embrulha a promessa em `buscando(terreno, fonte, p)`; quem mostra usa `<Busca terreno fontes texto? />` (círculo girando, com "Buscando no GeoSampa..." no lugar do "Não informado" quando o campo está vazio) ou `useBuscando`. A ficha abre na hora com o que já tem; o carregando aparece no rótulo dos campos de `FONTE_CAMPO` (cartório, posição na quadra, testada) e no título dos quadros Áreas e dimensões, Índices urbanísticos, Restrições e entorno e Pontos de interesse. Ao terminar, `consultarTerreno` e `cartorioPelaArea` disparam `terreno-gravado` e `ficha/CartorioAuto.tsx` recarrega a ficha e as consultas do terreno.
+
+`ficha/CartorioAuto.tsx` também preenche o cartório de registro de imóveis em São Paulo ao abrir a ficha (o protótipo já fazia, `geoCartorio`): WFS `cartorio_registro_imovel` pela poligonal (a circunscrição com a maior área dentro dela, por amostragem) ou, sem poligonal, pelo pino; grava por `app.cartorio_da_prefeitura`, que nunca troca o digitado. Uma consulta por localização na sessão, só para quem edita.
+
 ### Desfazer e refazer (Ctrl+Z, Ctrl+Y)
 
 `components/Desfazer.tsx`. Fora de um campo, Ctrl+Z (⌘Z) desfaz a última alteração **da pessoa nesta sessão**, uma por vez, com o aviso "Desfeito: …"; Ctrl+Y ou Ctrl+Shift+Z refaz. Dentro de um campo vale o desfazer do navegador.

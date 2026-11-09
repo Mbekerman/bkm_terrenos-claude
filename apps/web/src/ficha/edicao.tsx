@@ -9,6 +9,7 @@ import { data as fd, m2 } from '../lib/format';
 import { Adorno, metros } from '../lib/mascara';
 import { empilhar } from '../components/Desfazer';
 import type { Ficha, R } from './dados';
+import { Busca, FONTE_CAMPO } from '../lib/buscando';
 
 // Edição da ficha (porte de proto.js › SECOES, fmtCampo, campoInp, camposEndereco e proto_gmap.js › gBuscasEndereco).
 // Toda gravação da ficha passa por app.salvar_terreno(id, versão, dados), que recusa versão antiga.
@@ -249,7 +250,8 @@ export function CampoInp({ f, c, vals, mudar, listas, inl, p }: { f: Ficha; c: C
   else if (tipo === 'dec') h = <input id={id} inputMode="decimal" data-fmt="none" value={v} onChange={on} placeholder={ph} {...x} />;
   else h = <input id={id} type={tipo === 'url' ? 'url' : undefined} value={v} onChange={on} required={k === 'nome'} placeholder={ph} {...x} />;
   /* inl: no mesmo lugar e na mesma altura da leitura, só com a linha embaixo (pedido do Moisés, 5/nov/2026) */
-  if (inl) return <div className={`inl-c ${full || ''}`}><label className="k" htmlFor={id}>{l}</label>{h}</div>;
+  const fo = FONTE_CAMPO[k], busca = fo && <Busca terreno={f.id} fontes={fo} texto={!v || NI_OPT.has(v)} />;
+  if (inl) return <div className={`inl-c ${full || ''}`}><label className="k" htmlFor={id}>{l}{busca}</label>{h}</div>;
   return <div className={`field ${full || ''}`}><label htmlFor={id}>{l}</label>{h}</div>;
 }
 const SELECAO = (f: Ficha, tipo: string) => ['sel', 'user', 'eixo'].includes(tipo) || (tipo === 'cri' && emSP(f));
