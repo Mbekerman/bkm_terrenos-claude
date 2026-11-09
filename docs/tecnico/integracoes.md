@@ -167,6 +167,7 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 - `novo/consulta.ts`: a lista `GEO_CAMADAS` (camada, geometria, raio em metros, atributos guardados), `consultarLote` → RPC `app.registrar_consulta_lote` (também completa área, CIB, zona fiscal, cartório e a análise urbanística), `consultarArea` → `app.registrar_consulta_area`, `consultarTerreno` (todos os SQLs, uma nova tentativa, depois a poligonal; andamento "N de M").
 - `novo/LotesGeo.tsx`: mapa de lotes das quadras (desenho em SVG; vêm marcados os lotes com 20% ou mais dentro; a quadra só entra com 10 m² ou mais de lote dentro; conferência no banco de quem já está em outro terreno com prazo de 20 s).
 - `novo/frentes.ts`: frentes do terreno pela poligonal (`lote_cidadao` num raio de 20 m e `v_logradouro_segmento` num raio de 60 m em volta da poligonal).
+- `novo/viasCalc.ts` (usado por `consulta.ts` › `viasDaArea`, no lote e na poligonal): a classificação viária da CET só das ruas de frente, ligadas pelo `codlog`, uma por rua com a mais alta; e a rua sem saída, deduzida da rede de `v_logradouro_segmento` num raio de 400 m (o GeoSampa não tem esse dado pronto). Custa dois pedidos a mais por consulta (lotes a 20 m e eixos a 400 m).
 - `lib/camadas.ts`: como cada camada aparece (tema, texto, gravidade).
 - Protótipo: `proto_geosampa.js`, `proto_lotesgeo.js`, `proto_restricoes.js` (e a planta em PDF e o DXF do lote, que o React ainda não gera).
 

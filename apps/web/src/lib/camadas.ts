@@ -6,6 +6,9 @@ const nf = (v: unknown, d = 0) => (v == null || v === '' ? '' : Number(v).toLoca
 export const geoTit = (s: unknown) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim()
   .replace(/(^|\s)(\S)/g, (_m, a, b) => a + b.toUpperCase()).replace(/\b(De|Da|Do|Das|Dos|E)\b/g, (x) => x.toLowerCase());
 const j = (...xs: unknown[]) => xs.filter(Boolean).join(' · ');
+/** a distância medida até o terreno (ou lote) e a área que a faixa atinge, quando a consulta guardou */
+const dist = (p: any) => (p._dist_m == null ? '' : p._dist_m === 0 ? 'encosta no terreno' : 'a ' + nf(p._dist_m, 1) + ' m');
+const atinge = (p: any) => (p._area_m2 == null ? '' : p._area_m2 > 0 ? 'atinge ' + nf(p._area_m2) + ' m²' : 'só encosta na divisa');
 
 /** [camada, tema, texto da feição, gravidade (chip): '', 'warn' ou 'crit'] */
 export const CAMADAS_TEMA: [string, string, Fmt, string][] = [
@@ -31,9 +34,9 @@ export const CAMADAS_TEMA: [string, string, Fmt, string][] = [
   ['patrimonio_cultural_area_arqueologica', 'Interesse arqueológico', (p) => p.nm_area || p.nm_area_arqueologica || 'Área de interesse arqueológico', 'warn'],
   ['area_contaminada_reabilitada_svma', 'Área contaminada ou reabilitada', (p) => j(p.dc_classificacao_area_contaminada, p.tx_contaminante), 'crit'],
   ['GEOSAMPA_area_contaminada_sigac', 'Suspeita de contaminação', (p) => j(p.dc_tipo_situacao, p.dc_atividade), 'crit'],
-  ['geoconvias_lei_melhoramento_vigente', 'Melhoramento viário', (p) => `Lei ${p.cd_numero_lei_vigente}/${p.an_lei_melhoramento_vigente} · ${p.tx_descricao_tipo_melhoramento || ''}`, 'warn'],
-  ['geoconvias_faixa_nao_edificavel', 'Faixa não edificável', (p) => `${nf(p.qt_metro_largura_faixa, 2)} m · Lei ${p.cd_numero_lei_vigente}`, 'warn'],
-  ['drenagem', 'Córrego a até 30 m', (p) => j(p.nm_acidente || p.nm_descritivo, p.nm_tipo_trecho) || 'Córrego', 'warn'],
+  ['geoconvias_lei_melhoramento_vigente', 'Melhoramento viário', (p) => j(`Lei ${p.cd_numero_lei_vigente}/${p.an_lei_melhoramento_vigente}`, p.tx_descricao_tipo_melhoramento, atinge(p)), 'warn'],
+  ['geoconvias_faixa_nao_edificavel', 'Faixa não edificável', (p) => j(+p.qt_metro_largura_faixa > 0 && `faixa de ${nf(p.qt_metro_largura_faixa, 2)} m`, `Lei ${p.cd_numero_lei_vigente}${p.an_lei_melhoramento_vigente ? '/' + p.an_lei_melhoramento_vigente : ''}`, atinge(p)), 'warn'],
+  ['drenagem', 'Córrego a até 30 m', (p) => j(p.nm_acidente || p.nm_descritivo || 'Córrego', p.nm_tipo_curso_hidrografia || p.nm_tipo_trecho, dist(p)), 'warn'],
   ['area_risco_geologico_v2', 'Risco geológico', (p) => j(p.tx_grau_de_risco_geologico, p.tx_tipo_processo_geologico), 'crit'],
   ['restricao_geotecnica', 'Restrição geotécnica', (p) => p.nm_perimetro, 'warn'],
   ['mancha_inundacao_5', 'Mancha de inundação (5 anos)', (p) => p.nm_bacia_hidrografica, 'crit'],
@@ -47,11 +50,13 @@ export const CAMADAS_TEMA: [string, string, Fmt, string][] = [
   ['GEOSAMPA_cadparcs_parque_unidade_conservacao', 'Parque ou unidade de conservação', (p) => j(p.nm_area, p.tx_tipo_categoria), 'warn'],
   ['pde_outra_unidade_conservacao', 'Unidade de conservação (PDE)', (p) => j(p.nm_unidade_conservacao, p.tx_tipo_categoria_parque_unidade_conservacao), 'warn'],
   ['arvore_v2', 'Árvores na calçada a até 30 m', () => 'Árvore', ''],
-  ['classificacao_viaria_cet', 'Classificação viária (CET)', (p) => `${geoTit(p.nm_logradouro_completo)}: ${p.dc_tipo_classificacao_viaria}`, ''],
-  ['enquadramento_vila', 'Vila a até 20 m', (p) => p.tx_indicador_enquadramento_vila || 'Vila', 'warn'],
-  ['linha_alta_tensao_v2', 'Linha aérea de alta tensão a até 30 m', () => 'Linha aérea', 'warn'],
-  ['linha_subterranea_alta_tensao', 'Linha subterrânea de alta tensão a até 30 m', (p) => p.nm_linha_subterranea_alta_tensao || 'Linha subterrânea', 'warn'],
-  ['ferrovia_mdc_v2', 'Ferrovia a até 30 m', () => 'Ferrovia', 'warn'],
+  ['classificacao_viaria_cet', 'Classificação viária (CET)', (p) => `${geoTit(p.nm_logradouro_completo)}: ${p.dc_tipo_classificacao_viaria || 'sem classificação'}`
+    + (p.outras_classificacoes?.length ? ` (trecho ${p.outras_classificacoes.join(', ')})` : ''), ''],
+  ['enquadramento_vila', 'Vila a até 20 m', (p) => j(p.tx_indicador_enquadramento_vila || 'Vila', dist(p)), 'warn'],
+  ['rua_sem_saida', 'Rua sem saída', (p) => `${geoTit(p.logradouro)}: ${p.pedestre ? 'só passagem de pedestres' : 'sem saída'}`, 'warn'],
+  ['linha_alta_tensao_v2', 'Linha aérea de alta tensão a até 30 m', (p) => j('Linha aérea', dist(p)), 'warn'],
+  ['linha_subterranea_alta_tensao', 'Linha subterrânea de alta tensão a até 30 m', (p) => j(p.nm_linha_subterranea_alta_tensao || 'Linha subterrânea', dist(p)), 'warn'],
+  ['ferrovia_mdc_v2', 'Ferrovia a até 30 m', (p) => j('Ferrovia', dist(p)), 'warn'],
   ['rede_comgas', 'Rede da Comgás a até 100 m', (p) => 'a ' + nf(p._dist_m) + ' m', ''],
   ['zona_fiscal', 'Zona fiscal', (p) => p.sg_zona_fiscal, ''],
   ['cartorio_registro_imovel', 'Cartório de registro de imóveis', (p) => j(p.cd_numero_cartorio && p.cd_numero_cartorio + ' CRI', p.nm_subdistrito), ''],
@@ -66,7 +71,11 @@ export function geoVals(k: string, fs: any[] | undefined, fmt?: Fmt): string[] {
   if (/@/.test(k)) { fs = fs.filter((x) => x._dist_m > 0); if (!fs.length) return []; }
   const f = fmt ?? CAMADA[k]?.[2];
   if (!f) return [];
-  return [...new Set(fs.map((x) => { try { return f(x); } catch { return null; } }).filter(Boolean) as string[])];
+  /* a mesma coisa em vários trechos (a linha de alta tensão, o córrego) aparece uma vez, com a distância do mais perto */
+  const txt = (x: any) => { try { return f(x) || null; } catch { return null; } };
+  const vistos = new Map<string, string>();
+  for (const x of fs) { const t = txt(x), base = txt({ ...x, _dist_m: null }) ?? t; if (t && base && !vistos.has(base)) vistos.set(base, t); }
+  return [...vistos.values()];
 }
 
 export interface LinhaToca { tema: string; grav: string; erro: boolean; vals: string[] }
