@@ -144,9 +144,8 @@ create unique index processos_um_por_parte on app.processos (principal_id, parte
 create table app.negociacoes (
   processo_id          uuid primary key references app.processos(id) on delete cascade,
   empresa_id           uuid not null references app.empresas(id),
-  oferta_referencia_id uuid references app.ofertas(id),
-  temperatura          smallint check (temperatura between 1 and 5),  -- null = não avaliada
-  temperatura_em       timestamptz
+  oferta_referencia_id uuid references app.ofertas(id)
+  -- a temperatura é do terreno (app.terrenos.temperatura), não da negociação (9/nov/2026)
 );
 
 -- Toda passagem com data, hora e usuário: base dos KPIs de SLA.

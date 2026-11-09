@@ -55,7 +55,7 @@ Object.assign(CAMPO, {
   area_documental_m2: ['Área documental', 'm2', null, 'areas'], area_cadastral_m2: ['Área cadastral', 'm2', null, 'areas'], area_levantamento_m2: ['Área de levantamento', 'm2', null, 'areas'],
   fonte_area_adotada: ['Fonte da área adotada', 'sel', 'fonteArea', 'areas'], testada_principal_m: ['Testada', 'm', null, 'areas'],
 });
-const SEM_LOG = new Set(['latitude', 'longitude', 'precisao_localizacao', 'municipio_id']);
+const SEM_LOG = new Set(['latitude', 'longitude', 'precisao_localizacao', 'municipio_id', 'temperatura_em']);
 
 function valTxt(k: string, v: unknown, c: Ctx): string {
   if (v == null || v === '') return 'não informado';
@@ -100,6 +100,12 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
         linhas.push(!d?.poligono_geojson ? 'Poligonal removida' : !x?.poligono_geojson ? 'Poligonal desenhada'
           : `Ajuste na poligonal${x?.area_poligonal_m2 && d?.area_poligonal_m2 ? `: ${m2(x.area_poligonal_m2)} → ${m2(d.area_poligonal_m2)}` : ''}`);
         secs.add('areas'); q0 = 'areas';
+      }
+      const ks = mudou(x, d).filter((k) => !SEM_LOG.has(k));
+      /* a temperatura é do terreno desde 9/nov/2026 e anda sozinha (app.definir_temperatura): log próprio, que acende o topo */
+      if (ks.length === 1 && ks[0] === 'temperatura' && !polyMudou) {
+        const tv = (v: unknown) => (v ? `${v} · ${TEMP[Number(v)] ?? v}` : 'não avaliada');
+        return { txt: `Temperatura: ${tv(x?.temperatura)} → ${tv(d?.temperatura)}`, topo: '.fi-temp' };
       }
       for (const k of mudou(x, d)) {
         if (SEM_LOG.has(k)) continue;
@@ -483,7 +489,7 @@ function useAcoes(f: F, irAba: (k: string) => void): Acao[] {
     if (r.ok && !ped) L.push({ sev: 'good', i: 'fwd', txt: `Pronto para ${r.proxima_tipo === 'status' ? 'concluir como Comprado' : 'avançar para ' + (r.proxima_nome ?? '')}${(r.aprovacoes ?? []).length ? ' (pede aprovação)' : ''}` });
     const lp = com?.props.slice().sort((a, b) => b.versao - a.versao)[0];
     if (lp && ['apresentada', 'em_analise'].includes(lp.status)) L.push({ sev: 'warn', i: 'money', txt: lp.origem === 'bkm' ? `Cobrar resposta da proposta v${lp.versao} (enviada em ${fd(lp.data_apresentacao)})` : `Responder à proposta v${lp.versao} do vendedor (${milhoes(lp.valor_total)})`, fix: ['Ver propostas', () => { abrirQuadro('comercial', 'propostas'); irAba('comercial'); }] });
-    if (!f.temp) L.push({ sev: 'warn', i: 'warn', txt: 'Avaliar a temperatura da negociação' });
+    if (!f.temp) L.push({ sev: 'warn', i: 'warn', txt: 'Avaliar a temperatura do terreno' });
     const agora = new Date().toISOString();
     const pr = com?.reus.filter((x) => x.status !== 'realizada' && x.status !== 'cancelada' && x.inicio && x.inicio >= agora).sort((a, b) => (a.inicio < b.inicio ? -1 : 1))[0];
     if (pr) L.push({ sev: '', i: 'clock', txt: `Reunião ${fd(dLoc(pr.inicio))} às ${hLoc(pr.inicio)}${pr.pauta ? ' · ' + pr.pauta : ''}`, fix: ['Ver', () => { abrirQuadro('comercial', 'reunioes'); irAba('comercial'); }] });

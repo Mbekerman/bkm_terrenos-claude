@@ -17,7 +17,7 @@ Acima das etapas fica a **fase**: o grande momento do terreno. Cada fase é um p
 | Obras | OBR | Obra entregue | Início, Execução, Entrega |
 | Entregue | ENT | Garantia encerrada | Pós-entrega (Assistência Técnica, Em Garantia) |
 
-- **Fase de entrada** (`fases_modelo.entrada`, uma por empresa): a que a oferta abre (`abrir_negociacao`) e a única com negociação (temperatura, propostas, viabilidade). Concluir nela é a compra: pede relato e pontos de sucesso e nenhuma diligência impeditiva.
+- **Fase de entrada** (`fases_modelo.entrada`, uma por empresa): a que a oferta abre (`abrir_negociacao`) e a única com negociação (propostas, viabilidade). Concluir nela é a compra: pede relato e pontos de sucesso e nenhuma diligência impeditiva.
 - **Dependências** (`fase_dependencias`): a fase abre quando, no mesmo terreno, a fase requisito foi concluída ou passou pela etapa ou subetapa indicada; todas precisam valer. O padrão encadeia cada fase na conclusão da anterior, menos Funding, que não depende de nenhuma nem trava outra: abre à mão (decisão do Moisés, 4/nov/2026). Depois de cada passagem, `_abrir_fases_liberadas` abre sozinha a fase que o terreno nunca teve e cujas dependências se cumpriram (fase encerrada não reabre sozinha). Fase sem dependência, reabertura ou abertura antes da hora: `abrir_fase(terreno, fase)`, com dependência pendente só gestor ou diretor, com justificativa (`forcado`).
 - **Status por fase** (`status_modelo`): Concluído e Stand By em toda fase, com o nome da fase para o Concluído; Perdido (o vendedor disse não) só em Novos Negócios; Descartado em todas menos Entregue. Status sem linha não existe na fase.
 - **Fase atual do terreno** (`v_terrenos.fase`): a aberta mais adiante pela ordem; sem nenhuma aberta, a última encerrada. `fases_abertas` lista as que correm juntas; `fases_do_terreno(terreno)` dá cada fase com o processo, o status e o que falta para abrir.
@@ -71,7 +71,7 @@ Um dono com várias matrículas é **uma** negociação. Vários donos que negoc
 - **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
 - **Proposta** é feita a uma ou mais partes ativas do terreno (`proposta_partes`; pedido do Moises, 9/nov/2026): com uma parte só ela entra sozinha, com duas ou mais escolher é obrigatório, na negociação de uma parte é a dela. Nenhuma proposta muda o status de outra: com duas em aberto e parte em comum a ficha avisa, e quem edita muda o status de qualquer uma, exclui uma (`app.excluir_proposta`) ou deixa as duas; nos resumos vale a de maior versão. 
 - **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço e a condição de pagamento de cada uma quando informados); a negociação da parte usa como referência a oferta mais recente que a cobre. Na aba Comercial, o quadro Partes lista cada parte com a área adotada (soma dos lotes), o zoneamento, o valor pedido e o valor por m² (digitar um calcula o outro) e a condição de pagamento; só a oferta, sem proposta.
-- `v_partes`: cada parte com donos, corretores, matrículas, negociação (etapa, subetapa, prazo, status), preço pedido e última proposta. A temperatura é uma só, a da negociação do terreno: `definir_temperatura` recusa a negociação de uma parte.
+- `v_partes`: cada parte com donos, corretores, matrículas, negociação (etapa, subetapa, prazo, status), preço pedido e última proposta. A temperatura é uma só, a do terreno (`terrenos.temperatura`, decisão do Moises, 9/nov/2026: vale também sem negociação, no Backlog).
 
 ## Papéis, hierarquia e configuração
 
@@ -276,6 +276,7 @@ erDiagram
     uuid id PK
     text codigo "A123, de A001 a Z999, sem I e O"
     text nome
+    smallint temperatura "1 a 5, nulo = não avaliada; só por definir_temperatura"
     text situacao_cadastral "ativo | arquivado"
     text prioridade "baixa | media | alta | estrategica"
     uuid responsavel_id FK
@@ -595,7 +596,6 @@ erDiagram
   negociacoes {
     uuid processo_id PK
     uuid oferta_referencia_id FK
-    smallint temperatura "1 a 5"
   }
   propostas {
     uuid id PK

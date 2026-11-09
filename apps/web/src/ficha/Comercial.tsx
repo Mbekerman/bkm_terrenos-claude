@@ -138,8 +138,7 @@ function SecNegociacao({ f, c, cor }: { f: Ficha; c: Com; cor: string }) {
         {lin('Situação', <><span className="sitchip"><span className="sw" style={{ background: cor }} />{sit}</span>
           {p.status === 'ativo' && sub && <> <span className="chip sub">{sub}{dias != null ? ` · ${dias} d` : ''}</span></>}</>)}
         {['perdido', 'descartado'].includes(p.status) && lin('Motivo', [c.motivo, p.detalhe_encerramento].filter(Boolean).join(' · '))}
-        {p.status === 'ativo' ? <div className="kv"><dt>Temperatura</dt><dd><Temperatura f={f} pode={edita} /></dd></div>
-          : lin('Temperatura', f.temp ? `${f.temp} · ${['', 'Muito fria', 'Fria', 'Morna', 'Quente', 'Muito quente'][f.temp]}` : '')}
+        <div className="kv"><dt>Temperatura</dt><dd><Temperatura f={f} pode={edita} /></dd></div>
         {lin('Última proposta', lp ? `${milhoes(lp.valor_total)} · ${lp.origem === 'bkm' ? 'BKM' : 'Vendedor'} · ${ST_PROP[lp.status]}` : '')}
         {lin('Próxima reunião', pr ? `${fd(pr.inicio)} · ${new Date(pr.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '')}
       </dl></div>

@@ -4,7 +4,7 @@ import { useSessao } from '../lib/sessao';
 import { data as fd, milhoes, m2 } from '../lib/format';
 import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
-import { carregarFicha, completude, type Falta, FONTE_AREA, TEMP, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
+import { carregarFicha, completude, type Falta, FONTE_AREA, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
 import MiniMapa from './MiniMapa';
 import { fixa, geojson } from '../novo/geo';
 import { LapisMapa, verificarEndereco } from '../novo/TrocarEndereco';
@@ -90,12 +90,10 @@ function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
   );
 }
 
-/** a temperatura do topo (na gaveta, vai para o cabeçalho dela) */
+/** a temperatura do topo (na gaveta, vai para o cabeçalho dela); é do terreno, com ou sem negociação (9/nov/2026) */
 export function TempTopo({ f }: { f: F }) {
   const { edita } = useSessao();
-  if (!f.negId) return null;
-  return f.negStatus === 'ativo' ? <Temperatura f={f} pode={edita} />
-    : f.temp ? <>{TEMP[f.temp]}</> : <span className="faint">Temperatura não avaliada</span>;
+  return <Temperatura f={f} pode={edita} />;
 }
 
 /** fase, etapa e subetapa do topo; fora de andamento, a situação no lugar da etapa */
@@ -448,7 +446,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
               const sepCel = !cl && meta.slice(0, i).every((m) => m[1]);
               return <span key={i} className={cl} style={{ display: 'contents' }}>{i > 0 && <span className={`fi-sep${sepCel ? ' fi-so-cel' : ''}`}>·</span>}<span>{x}</span></span>;
             })}
-            {f.negId && !naGaveta && <><span className="fi-sep">·</span><span className="fi-temp"><TempTopo f={f} /></span></>}
+            {!naGaveta && <><span className="fi-sep">·</span><span className="fi-temp"><TempTopo f={f} /></span></>}
           </div>
         </div>
         <Resp r={f.resp} />
