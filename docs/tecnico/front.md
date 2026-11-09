@@ -149,7 +149,7 @@ apps/web/
 | --- | --- |
 | `dados.ts` | Definição dos filtros (`FX`, `GRUPOS`), quem passa (`passa`), contagens, leitura de "12 mi"; `carregarFx` lê os dados que os filtros precisam. |
 | `Filtros.tsx` | `useFiltros(ctx)`, a barra (`BarraFx`: botão, chips, Limpar, Visão) e a gaveta (`GavetaFx`, com as abas Filtros e Ordenação). |
-| `ordem.ts` | Ordenação da lista (`ORD`, `alternar`, `comparar`, `soOrdValida`): campos das colunas de `COLS_TER` do protótipo. |
+| `ordem.ts` | Ordenação da lista (`ORD`, `alternar`, `comparar`, `soOrdValida`): campos das colunas de `COLS_TER` do protótipo, mais código, etapa e subetapa (`posFunil`: ordem do funil no processo aberto da fase mais adiante). |
 
 ---
 

@@ -54,7 +54,7 @@ No **Mapa**, a legenda continua ligando e desligando camadas e conta só os terr
 
 **Para que serve:** mudar a ordem da lista de terrenos do Mapa, por um ou mais campos.
 
-**Onde:** na gaveta do botão **Filtros**, troque de **Filtros** para **Ordenação** no alto. Os campos são os das colunas da tabela de Terrenos: **Terreno** (nome), **Cidade**, **Região**, **Imóvel** (área adotada), **Projeto** (VGV do estudo válido), **Negociação** (preço pedido), **Corretor** (o primeiro), **Temperatura** e **Responsável** (nome).
+**Onde:** na gaveta do botão **Filtros**, troque de **Filtros** para **Ordenação** no alto. Os campos são **Terreno** (nome), **Código**, **Etapa** e **Subetapa** (na ordem do funil, pela fase mais adiante que está aberta; terreno sem fase aberta fica no fim), **Cidade**, **Região**, **Imóvel** (área adotada), **Projeto** (VGV do estudo válido), **Negociação** (preço pedido), **Corretor** (o primeiro), **Temperatura** e **Responsável** (nome).
 
 **Como funciona:**
 
