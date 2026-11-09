@@ -10,6 +10,7 @@ import { m2 } from '../lib/format';
 import { Adorno, metros } from '../lib/mascara';
 import { CAMADA, geoLinhas, geoVals, type LinhaToca } from '../lib/camadas';
 import { consultarArea } from '../novo/consulta';
+import { Busca } from '../lib/buscando';
 import type { Ficha, R } from './dados';
 import { CONT_KS, DetalhesContaminacao, registrosCont } from './Contaminacao';
 import { abrirQuadroJa, focar, lerNum, num, numStr, proximoCampo, Quadro, usePedido, useSalvar } from './edicao';
@@ -118,7 +119,7 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
   const fontes = [...new Map(d.lz.filter((r) => r.parametro_id).map((r) => [r.parametro_id, d.cat.get(r.parametro_id)] as [unknown, R | undefined]).filter((x) => x[1])).values()] as R[];
   const sig = new Map(d.lz.map((r) => [r.zoneamento_id, r.sigla]));
   return (
-    <Quadro aba="terreno" id="indices" primeiro titulo="Índices urbanísticos" aberto={reg || undefined}
+    <Quadro aba="terreno" id="indices" primeiro titulo={<>Índices urbanísticos<Busca terreno={f.id} fontes={['geosampa']} /></>} aberto={reg || undefined}
       acoes={edita && !reg ? <button className="btn sm zn-reg" aria-label="Registrar zonas" title="Registrar zonas" onClick={() => setReg(true)}><Ic n="add" s={16} /><span className="oc-m">Registrar zonas</span></button> : null}>
       <div className="sec-b">
         {reg ? <FormZonas f={f} d={d} sjc={sjc} fechar={() => setReg(false)} /> : null}
@@ -493,7 +494,7 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
     return cel(<>{vals.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className={`chip ${o.info ? '' : grav}`}>{v}</span></span>)}{ct ? <> {verCt}</> : null}</>);
   };
   return (
-    <Quadro aba="terreno" id="rest" titulo="Restrições e entorno" acoes={acoes}>
+    <Quadro aba="terreno" id="rest" titulo={<>Restrições e entorno<Busca terreno={f.id} fontes={['geosampa']} /></>} acoes={acoes}>
       <div className="sec-b">
         <div className="hint rs-fonte">{r ? orig : f.poly ? 'Sem consulta ao GeoSampa: consulte pela poligonal ou inclua os SQLs em Terreno › Matrículas e SQLs.' : 'Desenhe a poligonal do terreno para consultar.'}</div>
         {REST_GRUPOS.map(([g, itens]) => <div className="rs-g" key={g}><div className="rs-gt">{g}</div>{itens.map(linha)}</div>)}
