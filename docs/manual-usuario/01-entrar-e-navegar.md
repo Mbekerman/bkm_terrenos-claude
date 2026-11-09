@@ -121,6 +121,15 @@ Por isso, sair do formulário sem registrar (clicar noutro botão, trocar de aba
 
 **Regra:** o rascunho fica no navegador daquele computador. Num computador diferente ele não aparece.
 
+### Mover as janelas (pop-ups) pela tela
+
+Toda janela que abre por cima da tela (perguntas como "Trocar o endereço?", formulários, a tabela completa de um concorrente, o mapa de lotes da prefeitura) e os quadros que abrem sobre o mapa (setor censitário, card da concorrência, rota) podem ser **arrastados pelo título** para ver o que está atrás. O cursor vira uma mãozinha sobre o título; segure e arraste (no celular, segure o título com o dedo e arraste).
+
+- Enquanto você arrasta, o fundo escurecido some; solta a janela, ele fica bem mais claro, para enxergar o mapa ou a ficha atrás. Ele continua cobrindo a tela: clicar fora da janela ainda a fecha.
+- O X de fechar nunca sai da tela.
+- **Dois cliques no título** devolvem a janela ao lugar de origem.
+- Cada janela abre sempre no lugar padrão; a posição não fica guardada.
+
 ## Celular
 
 **Ainda não revisado.** A primeira versão é para computador. No celular a maior parte abre, mas há telas que não foram ajustadas (por exemplo, o toque longo para editar a poligonal ainda não existe no sistema real). Use o computador para o trabalho do dia a dia.
