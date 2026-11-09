@@ -3401,7 +3401,7 @@ insert into app.corretores (empresa_id, pessoa_id) values (:'emp_x', :'pfx') ret
 select pg_temp.como(:'diretor');
 select pg_temp.falha(format($$insert into app.terreno_corretores (terreno_id, corretor_id, empresa_id) values (%L, %L, %L)$$, :'tce', :'cfx', :'emp'),
   'corretor de outra empresa não entra no terreno');
-select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel) values (%L, %L, %L, 'proprietario')$$, :'emp', :'tce', :'pfx'),
+select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao) values (%L, %L, %L, 'proprietario', 10)$$, :'emp', :'tce', :'pfx'),
   'nem pessoa de outra empresa');
 
 -- ---------------------------------------------------------------------
@@ -3506,6 +3506,10 @@ insert into app.pessoas (empresa_id, nome_razao_social) values (:'emp', 'Ana Bre
 insert into app.pessoas (empresa_id, nome_razao_social) values (:'emp', 'João Bresser') returning id as pjoao \gset
 insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao, parte_id) values (:'emp', :'tl', :'pana', 'proprietario', 100, :'lp3');
 insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, parte_id) values (:'emp', :'tl', :'pjoao', 'conjuge', :'lp3');
+select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, parte_id) values (%L, %L, %L, 'proprietario', %L)$$, :'emp', :'tl', :'pjoao', :'lp3'),
+  'proprietário sem a participação não entra');
+insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Só o Nome') returning id as psn \gset
+select pg_temp.ok((select telefone is null and email is null and cpf_cnpj is null from app.pessoas where id = :'psn'), 'pessoa entra só com o nome (telefone, e-mail e CPF opcionais)');
 select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao, parte_id) values (%L, %L, %L, 'parente', 10, %L)$$, :'emp', :'tl', :'pjoao', :'lp3'),
   'participação só de proprietário');
 select pg_temp.falha(format($$insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, origem) values (%L, %L, '059.112.0041-1', 'chute')$$, :'emp', :'tl'), 'origem da inscrição só digitada ou do mapa');
