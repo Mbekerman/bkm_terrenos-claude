@@ -30,7 +30,7 @@ A temperatura diz o quanto a negociação está promissora. São 5 barras: **Mui
 
 ## "Ficha N% completa"
 
-Mostra quanto dos 12 itens que importam para decidir a compra está preenchido. A bolinha vermelha diz quantos faltam. Clique para ver a lista; escolha um item e o sistema **abre a aba, abre o campo em edição e rola até ele**, que acende em verde-limão por um instante.
+Mostra quanto dos 11 itens que importam para decidir a compra está preenchido. A bolinha vermelha diz quantos faltam. Clique para ver a lista; escolha um item e o sistema **abre a aba, abre o campo em edição e rola até ele**, que acende em verde-limão por um instante.
 
 Os 11 itens:
 
