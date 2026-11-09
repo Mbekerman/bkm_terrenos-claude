@@ -37,7 +37,7 @@ export interface Ficha {
 }
 
 export const FONTE_AREA: Record<string, string> = {
-  documental: 'Documental (matrícula)', cadastral: 'Cadastral (IPTU)', levantamento: 'Levantamento topográfico', estimativa: 'Estimativa', poligonal: 'Poligonal (desenho no mapa)',
+  documental: 'Documental (matrícula)', cadastral: 'Cadastral (IPTU)', levantamento: 'Topográfica (levantamento)', poligonal: 'Poligonal (desenho no mapa)',
 };
 export const ZONA: Record<string, string> = {
   leste: 'Leste', oeste: 'Oeste', norte: 'Norte', sul: 'Sul', centro: 'Centro', sudeste: 'Sudeste', sudoeste: 'Sudoeste', nordeste: 'Nordeste', noroeste: 'Noroeste',

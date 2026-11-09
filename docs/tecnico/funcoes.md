@@ -533,7 +533,7 @@ Rodam sozinhas em `insert`/`update`/`delete`. Não são chamadas pelo front (as 
 | `app.tg_mencoes` | Gatilho genérico: os argumentos são as colunas de texto da tabela. | atividades, fluxo.comentarios, fluxo.tarefas, reunioes | `20261015001100_usuarios.sql:264` |
 | `app.tg_mesma_empresa` | O filho é da mesma empresa do pai (terreno, processo, análise) e não muda de terreno depois de criado. | 28 tabelas (lista completa: consulta a pg_trigger) | `20261015000300_terrenos.sql:778` |
 | `app.tg_normalizar_pessoa` | Normaliza CPF/CNPJ e contatos da pessoa (só dígitos). | pessoas | `20261015000200_cadastros.sql:522` |
-| `app.tg_normalizar_terreno` | CEP só com dígitos, nome sem espaços, área adotada que segue a poligonal ou a cadastral, e poligonal nova apaga a medição topográfica. | terrenos | `20261015000300_terrenos.sql:852` |
+| `app.tg_normalizar_terreno` | CEP só com dígitos, nome sem espaços, área adotada pela fonte (nasce e volta pela cadastral; topográfica digitada toma o lugar), e poligonal nova apaga a medição topográfica. | terrenos | `20261015000300_terrenos.sql:852` |
 | `app.tg_oferta_corretor` | Corretor de uma oferta passa a constar no terreno; o primeiro vira principal. | ofertas | `20261015000400_negociacao.sql:33` |
 | `app.tg_oferta_parte` | A parte coberta pela oferta é do terreno da oferta. | oferta_partes | `20261015000400_negociacao.sql:59` |
 | `app.tg_parte_corretor` | Corretor da parte: mesma empresa e parte ativa. | parte_corretores | `20261015000300_terrenos.sql:521` |

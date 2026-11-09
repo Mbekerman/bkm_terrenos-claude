@@ -176,7 +176,9 @@ export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }:
       rasc.current.push(mk);
     });
     el.current?.classList.add('modo');
-    return () => { el.current?.classList.remove('modo'); };
+    /* editando, o dedo indicador em vez da mãozinha de arrastar (pedido do Moises, 9/nov/2026) */
+    M?.setOptions?.({ draggableCursor: 'pointer' });
+    return () => { el.current?.classList.remove('modo'); M?.setOptions?.({ draggableCursor: null }); };
   }, [des, vSel, gp]);
   /* teclado e clique fora, só editando */
   useEffect(() => {

@@ -197,6 +197,10 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 .etq-form .field { flex: 1 1 150px; min-width: min(100%, 150px) }
 .etq-form .field.grow { flex: 2 1 190px; min-width: min(100%, 190px) }
 .fi-aba .areas { grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)) }
+/* áreas e dimensões: as 4 fontes lado a lado quando cabem, senão em dois pares (pedido do Moises, 9/nov/2026) */
+.areas4 { container-type: inline-size }
+.fi-aba .areas4 .areas { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+@container (min-width: 640px) { .fi-aba .areas4 .areas { grid-template-columns: repeat(4, minmax(0, 1fr)) } }
 .fi-aba .cond { grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)) }
 .fi-aba .fields, .dialog .fields { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) }
 .dialog.mini .fields { grid-template-columns: 1fr }
@@ -342,13 +346,14 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .mp-rt-s { display: flex; flex-direction: column; min-width: 0 } .mp-rt-s .muted { font-size: 12px }
 /* com a rota aberta, os quadrados da concorrência ficam apagados para a linha aparecer (ficam por cima dela no Google) */
 .mapa-area.rota-on .mk.g:not(.mk-dest) { opacity: .12 }
-/* escolher a saída da rota no mapa (9/nov/2026): mira ao lado da busca e cursor de mira no mapa */
+/* escolher a saída da rota no mapa (9/nov/2026): mira ao lado da busca e dedo indicador no mapa (antes a mira; Moises, 9/nov/2026) */
 .mp-rt-busca { padding-right: 4px }
 .mp-rt-mira { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 18px; background: transparent; color: #444746; cursor: pointer }
 .mp-rt-mira:hover { background: rgba(68,71,70,.08) }
 .mp-rt-mira.on { background: #c2e7ff; color: #001d35 }
 .mp-rt-dica { margin-top: -4px; font-size: 12px; color: #444746 }
-.mapa-area.rota-pega .mapa, .mapa-area.rota-pega .mapa div, .mapa-area.rota-pega .mapa .pin, .mapa-area.rota-pega .mapa .mk { cursor: crosshair !important }
+.mapa-area.rota-pega .mapa, .mapa-area.rota-pega .mapa div, .mapa-area.rota-pega .mapa .pin, .mapa-area.rota-pega .mapa .mk { cursor: pointer !important }
+.mapa-area.rota-pega .mapa.leaflet-dragging, .mapa-area.rota-pega .mapa.leaflet-dragging div { cursor: grabbing !important }
 .mapa-area.rota-on.rota-pega .mk.g:not(.mk-dest) { opacity: .6 }
 /* cabeçalho e moldura na largura toda (pedido do Moises, 9/nov/2026): em tela grande o logo e o perfil iam para o meio, porque .top-in e .layout tinham largura máxima centrada.
    O desenho do logo começa na mesma linha do menu lateral (12 px, a borda dos botões do menu) e o perfil termina a 12 px da direita, a mesma margem.
@@ -356,6 +361,14 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .layout, .top-in, body.menu-min .layout { max-width: none }
 @media (min-width: 900px) { .top { padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)) } }
 
+/* Popups arrastáveis pelo título (lib/arrastar.ts; pedido do Moises, 9/nov/2026) */
+:is(.dialog .dh, .cc-box .cc-hd, .mp-rt .mp-rt-h, [data-arrastar]) { cursor: grab; touch-action: none; user-select: none }
+:is(.dialog .dh, .cc-box .cc-hd, .mp-rt .mp-rt-h, [data-arrastar]) :is(button, a, input, select, textarea) { cursor: pointer }
+:is(.dialog, .cc-box, .mp-rt).arrastando, .arrastando :is(.dh, .cc-hd, .mp-rt-h) { cursor: grabbing }
+.dialog.arrastado { box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 12px 32px rgba(0,0,0,.22) }
+/* movido o pop-up, o fundo clareia para enxergar o que está atrás (continua cobrindo a tela: clicar nele fecha o pop-up) */
+:root:not(#_) .scrim.movido, :root[data-tema]:not(#_) .scrim.movido { background: rgba(29, 46, 92, .08) !important; transition: background .15s }
+:root:not(#_) .scrim.arrastando, :root[data-tema]:not(#_) .scrim.arrastando { background: transparent !important }
 /* Seção IPTU (pedido do Moises, 9/nov/2026): venais em caixas como as de Áreas, lado a lado quando cabem; o resto em duplas;
  * IPTU anual e mensal por último, em destaque; enquanto a Prefeitura não respondeu, a seção toda carrega */
 .iptu-pan { margin-top: 4px }
@@ -385,3 +398,12 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .iptu-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: iptu-gira .8s linear infinite }
 @keyframes iptu-gira { to { transform: rotate(360deg) } }
 @media (prefers-reduced-motion: reduce) { .iptu-corpo.carregando::after, .iptu-spin { animation: none } }
+
+/* marcando pontos no mapa (desenho e edição da poligonal no Mapa e no mini-mapa, régua): o dedo indicador em vez da
+   mãozinha aberta de arrastar, e na régua a seta; arrastando o mapa, a mão fechada (pedido do Moises, 9/nov/2026; antes,
+   mira no desenho). No Google vale o draggableCursor (Motor.cursorMarcar, MiniMapa). Aqui, e não no styles.css, que o build.py
+   do protótipo sobrescreve. */
+:is(.mapa, .mini-mapa).modo, :is(.mapa, .mini-mapa).modo .leaflet-grab, :is(.mapa, .mini-mapa).modo .leaflet-interactive { cursor: pointer }
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
+:is(.mapa, .mini-mapa).modo.leaflet-dragging, :is(.mapa, .mini-mapa).modo.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive),
+.mapa.regua.leaflet-dragging, .mapa.regua.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive) { cursor: grabbing }

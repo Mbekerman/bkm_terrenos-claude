@@ -23,7 +23,7 @@ export const OPT: Record<string, Record<string, string>> = {
   formato: { nao_informado: 'Não informado', regular: 'Regular', irregular: 'Irregular' },
   ocupacao: { nao_informado: 'Não informado', vazio: 'Vazio', ocupado: 'Ocupado', parcialmente_ocupado: 'Parcialmente ocupado' },
   demolicao: { nao_avaliada: 'Não avaliada', provavel: 'Provável', confirmada: 'Confirmada', dispensada: 'Dispensada' },
-  fonteArea: { documental: 'Documental (matrícula)', cadastral: 'Cadastral (IPTU)', levantamento: 'Levantamento topográfico', estimativa: 'Estimativa', poligonal: 'Poligonal (desenho no mapa)' },
+  fonteArea: { documental: 'Documental (matrícula)', cadastral: 'Cadastral (IPTU)', levantamento: 'Topográfica (levantamento)', poligonal: 'Poligonal (desenho no mapa)' },
   papel: { proprietario: 'Proprietário', conjuge: 'Cônjuge', representante: 'Representante', procurador: 'Procurador', parente: 'Parente', contato: 'Contato', outro: 'Outros' },
 };
 const NI_OPT = new Set(['nao_informado', 'nao_informada', 'nao_avaliada']);

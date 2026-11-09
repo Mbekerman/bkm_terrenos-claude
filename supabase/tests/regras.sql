@@ -101,7 +101,8 @@ select pg_temp.ok((select situacao_ocupacao from app.terrenos where id = :'t1') 
 select versao as v from app.terrenos where id = :'t1' \gset
 select pg_temp.falha(format($$update app.terrenos set zona = 'leste' where id = %L$$, :'t1'), 'terreno não é alterado direto na tabela');
 select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"zona":"centro-oeste"}')$$, :'t1', :v), 'zona aceita só as 9 opções');
-select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"area_adotada_m2":2000}')$$, :'t1', :v), 'área adotada exige a fonte');
+select app.salvar_terreno(:'t1', :v, '{"area_adotada_m2":2000}') as v \gset
+select pg_temp.ok((select fonte_area_adotada = 'cadastral' and area_adotada_m2 is not distinct from area_cadastral_m2 from app.terrenos where id = :'t1'), 'a área adotada não se digita: segue a fonte (cadastral)');
 select app.salvar_terreno(:'t1', :v, '{"area_documental_m2":2000,"area_levantamento_m2":1920,"area_adotada_m2":1920,"fonte_area_adotada":"levantamento","area_construida_existente_m2":300,"area_construida_demolir_m2":180,"cep":"04366-000","zona":"centro"}') as v2 \gset
 select pg_temp.ok(:v2 = :v + 1, 'salvar sobe a versão');
 select pg_temp.ok((select cep from app.terrenos where id = :'t1') = '04366000', 'CEP guardado só com dígitos');
@@ -3762,8 +3763,27 @@ select pg_temp.ok((select area_cadastral_m2 = 420 from app.terrenos where id = :
 select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"area_cadastral_m2":null}') \gset
 select pg_temp.ok((select area_cadastral_m2 = 410 and area_cadastral_origem = 'sqls' from app.terrenos where id = :'tsq'), 'apagar a cadastral volta para a soma dos SQLs');
 delete from app.inscricoes_municipais where id = :'sq1';
-select pg_temp.ok((select area_cadastral_m2 is null and area_adotada_m2 is null and fonte_area_adotada is null from app.terrenos where id = :'tsq'),
-  'sem SQL, sem cadastral; a adotada que era a cadastral fica em branco');
+select pg_temp.ok((select area_cadastral_m2 is null and area_adotada_m2 is null and fonte_area_adotada = 'cadastral' from app.terrenos where id = :'tsq'),
+  'sem SQL, sem cadastral; a adotada continua pela cadastral, em branco');
+\echo '# área adotada nasce pela cadastral; só a topográfica toma o lugar sozinha (9/nov/2026)'
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Adotada nasce cadastral', :'analista', :'sp', pg_temp.quadra(-47.34, -23.34)) returning id as tad \gset
+select pg_temp.ok((select fonte_area_adotada = 'cadastral' and area_adotada_m2 is null from app.terrenos where id = :'tad'), 'terreno novo nasce com a adotada pela cadastral');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tad', '502.001.0001-1', 900);
+select pg_temp.ok((select area_adotada_m2 = 900 from app.terrenos where id = :'tad'), 'a soma dos SQLs que chega vira a adotada');
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"area_documental_m2":950}') \gset
+select pg_temp.ok((select fonte_area_adotada = 'cadastral' and area_adotada_m2 = 900 from app.terrenos where id = :'tad'), 'a documental digitada não toma o lugar sozinha');
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"fonte_area_adotada":"poligonal"}') \gset
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"area_levantamento_m2":880}') \gset
+select pg_temp.ok((select fonte_area_adotada = 'levantamento' and area_adotada_m2 = 880 from app.terrenos where id = :'tad'), 'a topográfica digitada toma o lugar mesmo de uma escolha à mão');
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"fonte_area_adotada":"documental"}') \gset
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"nome":"Adotada escolhida"}') \gset
+select pg_temp.ok((select fonte_area_adotada = 'documental' and area_adotada_m2 = 950 from app.terrenos where id = :'tad'), 'escolha à mão continua valendo quando a topográfica não muda');
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"area_documental_m2":null}') \gset
+select pg_temp.ok((select fonte_area_adotada = 'cadastral' and area_adotada_m2 = 900 from app.terrenos where id = :'tad'), 'a fonte escolhida apagada volta para a cadastral');
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"fonte_area_adotada":null,"area_adotada_m2":null}') \gset
+select pg_temp.ok((select fonte_area_adotada = 'cadastral' from app.terrenos where id = :'tad'), 'sem escolha, a adotada é a cadastral');
+select pg_temp.falha(format($$select app.salvar_terreno(%L, (select versao from app.terrenos where id = %L), '{"fonte_area_adotada":"estimativa"}')$$, :'tad', :'tad'), 'a estimativa saiu das fontes');
 
 -- ---------------------------------------------------------------------
 \echo '# ficha numa chamada só (6/nov/2026)'
