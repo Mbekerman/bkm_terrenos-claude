@@ -4446,6 +4446,7 @@ body.fab-min .fab .fab-t { max-width: 0; opacity: 0 }
 /* ===== Ficha em abas (decisão do Moisés, 3/nov/2026): botões das seções sempre visíveis no topo, como a janela do cartão de tarefa ===== */
 .fi-head h1 { margin: 2px 0 0 }
 .fi-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 8px; color: var(--m-on-surface-var, #444746); font-size: 14px; line-height: 20px }
+.fi-meta:first-child { margin-top: 0 }
 .fi-meta .fi-sep { color: var(--texto-suave) } .fi-meta .chip { margin: 0 }
 .fi-meta .fi-temp { display: inline-flex; align-items: center; gap: 6px }
 .fi-meta .fi-temp .temp { margin: 0 }

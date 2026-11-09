@@ -389,10 +389,11 @@ function Faltam({ c, irAba, alerta }: { c: ReturnType<typeof completude>; irAba:
   );
 }
 
-/** a ficha (página ou gaveta): o voltar só na página */
-export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
+/** a ficha (página ou gaveta): o voltar só na página; na gaveta (`naGaveta`) o código e o nome saem do topo, porque o
+ *  cabeçalho da gaveta já os mostra (pedido do Moisés, 9/nov/2026) */
+export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   f: F; aba: string; irAba: (k: string) => void; voltar?: { rotulo: string; ir: () => void };
-  abrirMapa: (lat: number, lng: number, z: number) => void;
+  abrirMapa: (lat: number, lng: number, z: number) => void; naGaveta?: boolean;
 }) {
   const { edita } = useSessao();
   const [pn] = usePN();
@@ -410,8 +411,8 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa }: {
       {voltar && <button className="back" onClick={voltar.ir}><Ic n="back" s={20} />{voltar.rotulo}</button>}
       <div className="dhead fi-head">
         <div style={{ minWidth: 0 }}>
-          <div className="eyebrow"><span className="num">{f.codigo}</span></div>
-          <h1>{f.nome}</h1>
+          {!naGaveta && <><div className="eyebrow"><span className="num">{f.codigo}</span></div>
+          <h1>{f.nome}</h1></>}
           <div className="fi-meta">
             {meta.map((x, i) => <span key={i} style={{ display: 'contents' }}>{i > 0 && <span className="fi-sep">·</span>}<span>{x}</span></span>)}
             {f.negId && <><span className="fi-sep">·</span><span className="fi-temp">

@@ -80,7 +80,7 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
       </div>
       <div className="tgav-b" ref={corpo}>
         {q.isLoading ? <Carregando /> : q.error ? <Erro erro={q.error} /> : !f ? <div className="empty">Terreno {codigo} não encontrado.</div>
-          : <Ficha f={f} aba={aba} irAba={(k) => { setAba(k); corpo.current?.querySelector('.fi-abas')?.scrollIntoView({ block: 'nearest' }); }} abrirMapa={abrirMapa} />}
+          : <Ficha f={f} aba={aba} irAba={(k) => { setAba(k); corpo.current?.querySelector('.fi-abas')?.scrollIntoView({ block: 'nearest' }); }} abrirMapa={abrirMapa} naGaveta />}
       </div>
     </aside>
   );

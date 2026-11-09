@@ -128,6 +128,8 @@ Linhas sem dado mostram "Não informado" ou "Falta preencher".
 
 Igual à página, com:
 
+- o código e o nome só no cabeçalho da gaveta, ao lado de "Abrir página" (o topo da ficha começa pela fase · etapa · subetapa, para não repetir);
+
 - **X** ou **Esc** para fechar;
 - **"Abrir página"** para ir à ficha em tela própria;
 - a borda esquerda arrastável (mínimo 640 px; dois cliques voltam ao padrão);
