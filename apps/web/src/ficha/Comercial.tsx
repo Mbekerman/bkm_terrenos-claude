@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useRascunho, mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -12,6 +12,7 @@ import type { Ficha, R } from './dados';
 import Temperatura from './Temperatura';
 import { lerNum, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido, Vivo } from './edicao';
 import { daParte, ptArea, useLotes } from './Partes';
+import { ComMencoes, MarcarPessoas, TextoMencao, useGente, type Gente, type Marcado } from '../components/Marcar';
 
 // Aba Comercial da ficha (proto.js › abaComercialFicha = abaGeral(t,'neg') + abaComercial + abaNegociacao; proto_lotes.js ›
 // secPartesCom; proto_mod.js › secReunioes). Negociação, Condições pedidas, Partes (o pedido de cada parte, oferta_partes),
@@ -31,7 +32,7 @@ const brl = (v: number | null | undefined) => (v == null ? '—' : Number(v).toL
 const numTxt = (v: number | null | undefined) => (v == null ? '' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
 const ni = (x = 'Não informado') => <span className="ni">{x}</span>;
 
-export interface Com { ofertas: R[]; ref: R | null; proc: R | null; tcor: R[]; corretores: R[]; props: R[]; reus: R[]; motivo: string | null }
+export interface Com { ofertas: R[]; ref: R | null; proc: R | null; tcor: R[]; corretores: R[]; props: R[]; reus: R[]; motivo: string | null; partes: R[] }
 
 export function useComercial(f: Ficha) {
   const { empresa } = useSessao();
@@ -39,17 +40,19 @@ export function useComercial(f: Ficha) {
     queryKey: ['ficha-com', f.id, f.negId], enabled: !!empresa,
     queryFn: async (): Promise<Com> => {
       const neg = f.negId, nada = Promise.resolve({ data: null, error: null });
-      const [of, ng, pr, tc, co, pp, ru] = await Promise.all([
+      const [of, ng, pr, tc, co, pp, ru, pt] = await Promise.all([
         supabase.from('ofertas').select('id,data_oferta,valor_pedido,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,validade,status,corretor_id,criado_em,oferta_partes(parte_id,valor_pedido,forma_pagamento)')
           .eq('terreno_id', f.id).order('data_oferta').order('criado_em'),
         neg ? supabase.from('negociacoes').select('oferta_referencia_id').eq('processo_id', neg).maybeSingle() : nada,
         neg ? supabase.from('processos').select('id,status,etapa_atual,subetapa_atual,subetapa_desde,motivo_encerramento,detalhe_encerramento').eq('id', neg).maybeSingle() : nada,
         supabase.from('terreno_corretores').select('corretor_id,principal').eq('terreno_id', f.id),
         supabase.from('corretores').select('id,creci,imobiliaria,ativo,pessoas(nome_razao_social)').eq('empresa_id', empresa!.id),
-        neg ? supabase.from('propostas').select('*').eq('processo_id', neg).order('versao') : nada,
-        supabase.from('reunioes').select('*,reuniao_participantes(id,lado,nome,user_id,pessoa_id,pessoas(nome_razao_social))').eq('terreno_id', f.id).order('inicio', { ascending: false }),
+        neg ? supabase.from('propostas').select('*,proposta_partes(parte_id)').eq('processo_id', neg).order('versao') : nada,
+        supabase.from('reunioes').select('*,reuniao_participantes(id,lado,nome,email,user_id,pessoa_id,pessoas(nome_razao_social))').eq('terreno_id', f.id).order('inicio', { ascending: false }),
+        // todas as partes, também as tiradas do terreno: a proposta antiga pode ter sido feita a uma delas
+        supabase.from('terreno_partes').select('id,nome,ativa,criado_em').eq('terreno_id', f.id).order('criado_em'),
       ]);
-      for (const r of [of, ng, pr, tc, co, pp, ru]) if (r.error) throw r.error;
+      for (const r of [of, ng, pr, tc, co, pp, ru, pt]) if (r.error) throw r.error;
       const ofertas = (of.data ?? []) as R[], proc = (pr.data as R) ?? null;
       const refId = (ng.data as R | null)?.oferta_referencia_id;
       const ref = ofertas.find((o) => o.id === refId)
@@ -61,7 +64,7 @@ export function useComercial(f: Ficha) {
         motivo = (m.data as R[] | null)?.[0]?.nome ?? proc.motivo_encerramento;
       }
       const corretores = ((co.data ?? []) as R[]).map((c) => ({ ...c, nome: c.pessoas?.nome_razao_social ?? '—' })).sort((a, b) => a.nome.localeCompare(b.nome));
-      return { ofertas, ref, proc, tcor: (tc.data ?? []) as R[], corretores, props: (pp.data ?? []) as R[], reus: (ru.data ?? []) as R[], motivo };
+      return { ofertas, ref, proc, tcor: (tc.data ?? []) as R[], corretores, props: (pp.data ?? []) as R[], reus: (ru.data ?? []) as R[], motivo, partes: (pt.data ?? []) as R[] };
     },
   });
 }
@@ -84,7 +87,6 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
   const fref = useRef<HTMLFormElement>(null);
   const temOf = Object.values(v).some((x) => x.trim() !== '');
   useGuardarRasc(kOf, v, temOf);
-  const { aviso, pedir } = useRascunho(fref, temOf, 'a oferta', fechar);
   const m = (k: string) => (ev: { target: { value: string } }) => setV((o) => ({ ...o, [k]: ev.target.value }));
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -103,7 +105,7 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
     fechar();
   }
   return (
-    <Dialogo titulo="Registrar oferta" onFechar={() => pedir(fechar)} rodape={<><LimparRasc chave={kOf} mostrar={temOf} limpar={() => setV(OF0)} /><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
+    <Dialogo titulo="Registrar oferta" onFechar={fechar} rodape={<><LimparRasc chave={kOf} mostrar={temOf} limpar={() => setV(OF0)} /><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
       <form id="f-of" ref={fref} onSubmit={enviar}><div className="fields">
         <div className="field"><label htmlFor="o-c">Corretor</label><select id="o-c" value={v.cid} onChange={m('cid')}><option value="">Sem corretor / direto</option>
           {corretores.filter((c) => c.ativo !== false).map((c) => <option key={c.id} value={c.id}>{c.nome}{c.imobiliaria ? ' · ' + c.imobiliaria : ''}</option>)}</select></div>
@@ -114,7 +116,6 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
         <div className="field full"><label htmlFor="o-o">Observação sobre a forma de pagamento</label><input id="o-o" value={v.obs} onChange={m('obs')} /></div>
         <div className="field full"><label htmlFor="o-a">Aceita permuta</label><input id="o-a" value={v.aceita} onChange={m('aceita')} /></div>
       </div></form>
-      {aviso}
     </Dialogo>
   );
 }
@@ -357,6 +358,14 @@ function SecCorretores({ f, c }: { f: Ficha; c: Com }) {
 }
 
 /* ---------- Propostas ---------- */
+// Partes da proposta (pedidos do Moises, 9/nov/2026): de uma a todas as partes ativas; com uma parte só ela já vem marcada,
+// com mais de uma nasce em branco e não registra sem escolher. Nenhuma proposta mexe em outra: com duas ou mais em aberto e
+// parte em comum (a antiga, sem parte, conta como de todas), o quadro avisa e quem edita decide (status de qualquer uma,
+// excluir uma ou deixar as duas). Nos resumos do terreno vale a última feita.
+const ptsDe = (p: R): string[] => (p.proposta_partes ?? []).map((x: R) => x.parte_id);
+const cruzam = (a: string[], b: string[]) => !a.length || !b.length || a.some((x) => b.includes(x));
+const ABERTA = ['rascunho', 'apresentada', 'em_analise'];
+
 function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const { edita } = useSessao();
   const toast = useToast(), recarregar = useRecarregar();
@@ -367,21 +376,33 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const [grav, setGrav] = useState(false);
   const [ini, setIni] = useState<Record<string, string>>({});
   const kPr = `${f.id}:proposta`;
-  const abrir = () => { const o = { origem: 'bkm', valor: '', forma: 'dinheiro', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '' }; setV(comRasc(kPr, o)); setIni(o); abrirQuadro('comercial', 'propostas'); setForm(true); };
+  const ativas = c.partes.filter((x) => x.ativa), nomeParte = (id: string) => c.partes.find((x) => x.id === id)?.nome ?? 'Parte';
+  const [errPt, setErrPt] = useState(false);
+  const abrir = () => {
+    const o = { origem: 'bkm', valor: '', forma: 'dinheiro', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '', partes: ativas.length === 1 ? ativas[0].id : '' };
+    const r = comRasc(kPr, o);
+    r.partes = (r.partes ?? '').split(',').filter((id: string) => ativas.some((x) => x.id === id)).join(',') || o.partes; // rascunho com parte que saiu
+    setV(r); setIni(o); setErrPt(false); abrirQuadro('comercial', 'propostas'); setForm(true);
+  };
+  const sel = (v.partes ?? '').split(',').filter(Boolean);
+  const marcar = (id: string) => { setErrPt(false); setV((x) => { const a = (x.partes ?? '').split(',').filter(Boolean); return { ...x, partes: (a.includes(id) ? a.filter((y) => y !== id) : [...a, id]).join(',') }; }); };
   const fref = useRef<HTMLFormElement>(null);
   const sujoPr = form && mudou(v, ini);
   useGuardarRasc(kPr, v, sujoPr);
-  const { aviso } = useRascunho(fref, sujoPr, 'a proposta', () => setForm(false));
   const m = (k: string) => (ev: { target: { value: string } }) => setV((x) => ({ ...x, [k]: ev.target.value }));
   const n = c.props.length;
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
+    if (!sel.length) {
+      setErrPt(true); toast('Falta escolher para qual parte é a proposta.', true);
+      document.getElementById('pp-pt')?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return;
+    }
     const valor = lerNum(v.valor);
     if (!valor || valor <= 0) { toast('Informe o valor total.', true); return; }
     setGrav(true);
     const { error } = await supabase.rpc('registrar_proposta', {
       p_processo: f.negId, p_origem: v.origem, p_valor: valor, p_forma: v.forma, p_condicoes: v.cond.trim() || null,
-      p_data_apresentacao: v.data || null, p_validade: v.validade || null, p_status: v.status,
+      p_data_apresentacao: v.data || null, p_validade: v.validade || null, p_status: v.status, p_partes: sel,
     });
     setGrav(false);
     if (error) { toast(error.message, true); return; }
@@ -394,7 +415,25 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
     const { error } = await supabase.rpc('atualizar_status_proposta', { p_proposta: p.id, p_status: s });
     if (error) toast(error.message, true); else recarregar();
   }
+  async function excluir(p: R) {
+    if (!confirm(`Excluir a proposta v${p.versao} (${brl(p.valor_total)})? Ela some da lista; o registro fica nos Logs.`)) return;
+    const { error } = await supabase.rpc('excluir_proposta', { p_proposta: p.id });
+    if (error) { toast(error.message, true); return; }
+    recarregar();
+    toast(`Proposta v${p.versao} excluída.`);
+  }
   const chain = c.props.slice().reverse();
+  const abertas = chain.filter((p) => ABERTA.includes(p.status));
+  const nomesDe = (ids: string[]) => (ids.length ? ids.map(nomeParte).join(', ') : 'parte não informada');
+  // grupos de propostas em aberto com parte em comum (cada par que se cruza)
+  const sobre: { vs: number[]; partes: string }[] = [];
+  abertas.forEach((a, i) => abertas.slice(i + 1).forEach((b) => {
+    if (!cruzam(ptsDe(a), ptsDe(b))) return;
+    const comuns = ptsDe(a).length && ptsDe(b).length ? ptsDe(a).filter((x) => ptsDe(b).includes(x)) : (ptsDe(a).length ? ptsDe(a) : ptsDe(b));
+    sobre.push({ vs: [b.versao, a.versao], partes: nomesDe(comuns) });
+  }));
+  // no formulário: abertas que já cobrem alguma das partes escolhidas
+  const jaAbertas = sel.length ? abertas.filter((p) => cruzam(ptsDe(p), sel)) : [];
   return (
     <Quadro aba="comercial" id="propostas" titulo="Propostas"
       acoes={<span className="sec-acoes">{ativa && edita && !form && <button className="btn primary sm" onClick={abrir}><Ic n="add" s={16} />Nova proposta</button>}</span>}>
@@ -409,21 +448,40 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
               <div className="field"><label htmlFor="pp-s">Status</label><select id="pp-s" value={v.status} onChange={m('status')}><option value="apresentada">Apresentada</option><option value="em_analise">Em análise</option><option value="rascunho">Rascunho</option></select></div>
               <div className="field"><label htmlFor="pp-d">Apresentada em</label><input id="pp-d" type="date" value={v.data} onChange={m('data')} /></div>
               <div className="field"><label htmlFor="pp-val">Validade</label><input id="pp-val" type="date" value={v.validade} onChange={m('validade')} /></div>
+              <div className={`field full${errPt ? ' campo-erro' : ''}`} id="pp-pt" role="group" aria-labelledby="pp-pt-l">
+                <label id="pp-pt-l">{ativas.length > 1 ? 'Partes da proposta' : 'Parte da proposta'}</label>
+                {ativas.length ? (
+                  <div className="pp-partes">{ativas.map((x) => {
+                    const on = sel.includes(x.id);
+                    return <button key={x.id} type="button" className="fx-op" aria-pressed={on} onClick={() => marcar(x.id)}>{on && <Ic n="check" s={16} />}{x.nome}</button>;
+                  })}
+                  {ativas.length > 2 && sel.length < ativas.length && <button type="button" className="btn text sm" onClick={() => { setErrPt(false); setV((x) => ({ ...x, partes: ativas.map((y) => y.id).join(',') })); }}>Marcar todas</button>}</div>
+                ) : <div className="muted">O terreno não tem parte: cadastre uma na aba Terreno.</div>}
+                {errPt && <div className="campo-msg">Escolha pelo menos uma parte.</div>}
+              </div>
               <div className="field full"><label htmlFor="pp-c">Condições de pagamento</label><textarea id="pp-c" value={v.cond} onChange={m('cond')} placeholder="Entrada, parcelas, permuta, torna, condição suspensiva" /></div>
             </div>
-            <div className="hint">{n ? `Responde à v${n}. Se vier do outro lado, a v${n} vira Recusada; se vier do mesmo lado, vira Substituída.` : 'Primeira proposta da negociação.'}</div>
+            {jaAbertas.length > 0 && <div className="diverg"><Ic n="warn" s={16} />{jaAbertas.length > 1 ? 'Já há propostas em aberto' : 'Já há proposta em aberto'} para {nomesDe(sel.filter((x) => jaAbertas.some((p) => !ptsDe(p).length || ptsDe(p).includes(x))))}: {jaAbertas.map((p) => `v${p.versao}`).join(', ')}. Nenhuma muda sozinha: depois de registrar, mude o status ou exclua a que não vale.</div>}
             <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kPr} mostrar={sujoPr} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar</button></div>
           </form>
         )}
-        {aviso}
+        {sobre.length > 0 && <div className="banner warn pp-sobre" role="status"><Ic n="warn" s={20} /><div>
+          <div className="bt">Propostas em aberto para a mesma parte</div>
+          {sobre.map((x) => <div key={x.vs.join('-')}>v{x.vs[0]} e v{x.vs[1]}: {x.partes}</div>)}
+          <div className="muted">Nos resumos do terreno vale a mais recente. Mude o status, exclua uma ou deixe as duas.</div>
+        </div></div>}
         {chain.length ? (
-          <div className="chain" style={{ marginTop: form ? 16 : 0 }}>{chain.map((p, i) => (
+          <div className="chain" style={{ marginTop: form ? 16 : 0 }}>{chain.map((p) => (
             <div key={p.id} className={`pnode ${p.origem}`}><span className="pd">v{p.versao}</span><div className="pc">
-              <div className="ph"><span><span className="pv">{brl(p.valor_total)}</span> <span className="muted" style={{ fontSize: 13 }}><span className="p-sep">· </span>{p.origem === 'bkm' ? 'BKM' : 'Vendedor'}{p.versao > 1 ? ` responde à v${p.versao - 1}` : ''}</span></span>
-                <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{i === 0 && ativa && edita
-                  ? <select aria-label="Status da proposta" className="chip chip-sel" value={p.status} onChange={(e) => status(p, e.target.value)}>
-                    {Object.entries(ST_PROP).filter(([k]) => k !== 'substituida' || p.status === k).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+              <div className="ph"><span><span className="pv">{brl(p.valor_total)}</span> <span className="muted" style={{ fontSize: 13 }}><span className="p-sep">· </span>{p.origem === 'bkm' ? 'BKM' : 'Vendedor'}</span></span>
+                <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{ativa && edita
+                  ? <><select aria-label={`Status da proposta v${p.versao}`} className="chip chip-sel" value={p.status} onChange={(e) => status(p, e.target.value)}>
+                    {Object.entries(ST_PROP).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+                    <button type="button" className="iconbtn sm" title="Excluir proposta" aria-label={`Excluir a proposta v${p.versao}`} onClick={() => excluir(p)}><Ic n="lixo" s={18} /></button></>
                   : <span className={`chip ${ST_PROP_COR[p.status] ?? ''}`}>{ST_PROP[p.status]}</span>}</span></div>
+              <div className="pp-pts">{ptsDe(p).length
+                ? ptsDe(p).map((id) => { const x = c.partes.find((y) => y.id === id); return <span key={id} className="chip" title={x && !x.ativa ? 'Parte tirada do terreno' : undefined}>{nomeParte(id)}{x && !x.ativa ? ' (saiu)' : ''}</span>; })
+                : <span className="chip ni">Parte não informada</span>}</div>
               <div className="pm">{FORMA[p.forma_pagamento]}{p.data_apresentacao ? ` · apresentada ${fd(p.data_apresentacao)}` : ''}{p.validade ? ` · válida até ${fd(p.validade)}` : ''}</div>
               {p.condicoes_pagamento && <div className="pt">{p.condicoes_pagamento}</div>}
             </div></div>
@@ -437,101 +495,152 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
 /* ---------- Reuniões ---------- */
 const MOD: Record<string, string> = { presencial: 'Presencial', online: 'Online' };
 const LOC: Record<string, string> = { bkm: 'Na BKM', externo: 'Externa' };
+const ST_REU: Record<string, string> = { realizada: 'Realizada', agendada: 'Agendada', cancelada: 'Cancelada' };
 const hora = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const dataLocal = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+/** link digitado: sem http, ganha https:// */
+const linkOk = (s: string) => { const t = s.trim(); return !t ? '' : /^https?:\/\//i.test(t) ? t : 'https://' + t; };
 
+/** participante gravado → pessoa marcada no campo (o nome do colega vem da equipe) */
+function marcadoDe(p: R, bkm: Gente[]): Marcado {
+  if (p.user_id) return { id: p.id, k: 'u:' + p.user_id, nome: bkm.find((g) => g.user_id === p.user_id)?.nome ?? 'Colega', user_id: p.user_id, lado: 'bkm' };
+  if (p.pessoa_id) return { id: p.id, k: 'p:' + p.pessoa_id, nome: p.pessoas?.nome_razao_social ?? '—', pessoa_id: p.pessoa_id, lado: p.lado };
+  if (p.email) return { id: p.id, k: 'e:' + p.email, nome: p.nome ?? p.email, email: p.email, lado: p.lado };
+  return { id: p.id, k: 'n:' + String(p.nome ?? '').toLowerCase(), nome: p.nome ?? '—', lado: p.lado };
+}
+const linhaDe = (m: Marcado) => (m.user_id ? { lado: 'bkm', user_id: m.user_id } : m.pessoa_id ? { lado: m.lado, pessoa_id: m.pessoa_id }
+  : { lado: m.lado, nome: m.nome, email: m.email ?? null });
+const lerMarc = (s: string): Marcado[] => { try { const v = JSON.parse(s || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };
+
+// Reunião: registrar e editar no mesmo formulário (editar: clicar na reunião; pedido do Moises, 9/nov/2026). Participantes
+// marcados com @: colegas da BKM (avisados no sino pelo banco, app.tg_participante_mencao) e pessoas de fora cadastradas
+// no terreno com e-mail ou nome digitado (ficam registradas como participantes; o convite por e-mail espera o Google Agenda).
+// Online tem o link da reunião, digitado por ora.
 function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
   const { edita, empresa, membro } = useSessao();
   const toast = useToast(), recarregar = useRecarregar();
+  const gente = useGente(f.id).data, bkm = gente?.bkm ?? [], fora = gente?.fora ?? [];
   const ativa = c.proc?.status === 'ativo';
   const [form, setForm] = useState(false);
+  const [ed, setEd] = useState<R | null>(null);
   const [v, setV] = useState<Record<string, string>>({});
   const [grav, setGrav] = useState(false);
   const [ini, setIni] = useState<Record<string, string>>({});
   const fref = useRef<HTMLFormElement>(null);
-  const kRe = `${f.id}:reuniao`, sujoRe = form && mudou(v, ini);
+  const kRe = `${f.id}:reuniao${ed ? ':' + ed.id : ''}`, sujoRe = form && mudou(v, ini);
   useGuardarRasc(kRe, v, sujoRe);
-  const { aviso } = useRascunho(fref, sujoRe, 'a reunião', () => setForm(false));
+  const eu: Marcado[] = membro ? [{ k: 'u:' + membro.user_id, nome: bkm.find((g) => g.user_id === membro.user_id)?.nome ?? membro.nome ?? 'Eu', user_id: membro.user_id, lado: 'bkm' }] : [];
   const abrir = () => {
-    const o = { status: 'realizada', data: hojeISO(), hora: '10:00', modalidade: 'presencial', local: 'bkm', endereco: '', pbkm: membro?.nome ?? '', pext: '', pauta: '', resumo: '', enc: '' };
-    setV(comRasc(kRe, o)); setIni(o);
+    const o = { status: 'realizada', data: hojeISO(), hora: '10:00', modalidade: 'presencial', local: 'bkm', endereco: '', link: '', pbkm: JSON.stringify(eu), pext: '[]', pauta: '', resumo: '', enc: '' };
+    setEd(null); setV(comRasc(`${f.id}:reuniao`, o)); setIni(o);
     abrirQuadro('comercial', 'reunioes');
     setForm(true);
   };
+  const editar = (r: R) => {
+    const ps = ((r.reuniao_participantes ?? []) as R[]).map((p) => marcadoDe(p, bkm));
+    const o = {
+      status: r.status, data: dataLocal(r.inicio), hora: hora(r.inicio), modalidade: r.modalidade, local: r.local ?? 'bkm', endereco: r.endereco ?? '', link: r.link ?? '',
+      pbkm: JSON.stringify(ps.filter((p) => p.lado === 'bkm')), pext: JSON.stringify(ps.filter((p) => p.lado !== 'bkm')),
+      pauta: r.pauta ?? '', resumo: r.resumo ?? '', enc: r.encaminhamentos ?? '',
+    };
+    setEd(r); setV(comRasc(`${f.id}:reuniao:${r.id}`, o)); setIni(o);
+    setForm(true);
+    /* o formulário fica no lugar da reunião: só leva o cursor para ele, sem acender o campo */
+    setTimeout(() => { const el = document.getElementById('ru-s'); el?.focus({ preventScroll: true }); el?.closest('form')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 60);
+  };
+  const fechar = () => { setForm(false); setEd(null); };
   const m = (k: string) => (ev: { target: { value: string } }) => setV((x) => ({ ...x, [k]: ev.target.value }));
+  const mt = (k: string) => (txt: string) => setV((x) => ({ ...x, [k]: txt }));
+  const mm = (k: string) => (l: Marcado[]) => setV((x) => ({ ...x, [k]: JSON.stringify(l) }));
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
     if (grav) return;
     const inicio = new Date(`${v.data}T${v.hora || '00:00'}`);
     if (isNaN(+inicio)) { toast('Informe a data.', true); return; }
     if (v.status === 'realizada' && inicio > new Date()) { toast('Reunião realizada não pode ter data futura.', true); return; }
+    const pres = v.modalidade === 'presencial', rea = v.status === 'realizada', link = pres ? '' : linkOk(v.link);
+    if (link && !/^https?:\/\/\S+$/i.test(link)) { toast('O link da reunião não pode ter espaços.', true); focar('ru-l'); return; }
     setGrav(true);
-    const pres = v.modalidade === 'presencial', rea = v.status === 'realizada';
-    const { data, error } = await supabase.from('reunioes').insert({
-      empresa_id: empresa!.id, terreno_id: f.id, processo_id: f.negId, status: v.status, inicio: inicio.toISOString(), modalidade: v.modalidade,
+    const dados = {
+      status: v.status, inicio: inicio.toISOString(), modalidade: v.modalidade, link: link || null,
       local: pres ? v.local : null, endereco: pres && v.local === 'externo' ? v.endereco.trim() || null : null, pauta: v.pauta.trim() || null,
       resumo: rea ? v.resumo.trim() || null : null, encaminhamentos: rea ? v.enc.trim() || null : null,
-    }).select('id').single();
+    };
+    const { data, error } = ed
+      ? await supabase.from('reunioes').update(dados).eq('id', ed.id).select('id').single()
+      : await supabase.from('reunioes').insert({ ...dados, empresa_id: empresa!.id, terreno_id: f.id, processo_id: f.negId }).select('id').single();
     if (!error) {
-      const nomes = (s: string) => s.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
-      const ps = [...nomes(v.pbkm).map((nome) => ({ lado: 'bkm', nome })), ...nomes(v.pext).map((nome) => ({ lado: 'outro', nome }))]
-        .map((p) => ({ ...p, empresa_id: empresa!.id, reuniao_id: (data as R).id }));
-      if (ps.length) { const r = await supabase.from('reuniao_participantes').insert(ps); if (r.error) toast(r.error.message, true); }
+      const rid = (data as R).id as string, novos = [...lerMarc(v.pbkm), ...lerMarc(v.pext)];
+      const antes = ed ? ((ed.reuniao_participantes ?? []) as R[]).map((p) => p.id as string) : [];
+      const sai = antes.filter((id) => !novos.some((n) => n.id === id));
+      const entra = novos.filter((n) => !n.id).map((n) => ({ ...linhaDe(n), empresa_id: empresa!.id, reuniao_id: rid }));
+      if (sai.length) { const r = await supabase.from('reuniao_participantes').delete().in('id', sai); if (r.error) toast(r.error.message, true); }
+      if (entra.length) { const r = await supabase.from('reuniao_participantes').insert(entra); if (r.error) toast(r.error.message, true); }
     }
     setGrav(false);
     if (error) { toast(error.message, true); return; }
     apagarRasc(kRe);
-    setForm(false);
+    fechar();
     recarregar();
-    toast('Reunião registrada.');
+    toast(ed ? 'Reunião alterada.' : 'Reunião registrada.');
   }
   async function feita(r: R) {
     const { error } = await supabase.from('reunioes').update({ status: 'realizada' }).eq('id', r.id);
     if (error) toast(error.message, true); else recarregar();
   }
-  const part = (r: R, bkm: boolean) => ((r.reuniao_participantes ?? []) as R[]).filter((p) => (p.lado === 'bkm') === bkm)
-    .map((p) => p.nome || p.pessoas?.nome_razao_social || (p.user_id === membro?.user_id ? membro?.nome : '') || '—').join(', ');
+  const part = (r: R, ladoBkm: boolean) => ((r.reuniao_participantes ?? []) as R[]).filter((p) => (p.lado === 'bkm') === ladoBkm)
+    .map((p) => marcadoDe(p, bkm)).map((x) => (x.user_id || x.pessoa_id || x.email ? '@' : '') + x.nome).join(', ');
   const ms = c.reus, agora = new Date();
   const radio = (k: string, opts: Record<string, string>, rot: string) => (
     <div className="field"><span className="lbl" id={`ru-${k}-l`}>{rot}</span><span className="seg3" role="radiogroup" aria-labelledby={`ru-${k}-l`}>
       {Object.entries(opts).map(([a, b]) => <label key={a} className="opt-radio"><input type="radio" name={k} value={a} checked={v[k] === a} onChange={m(k)} />{b}</label>)}</span></div>
   );
+  const formulario = (
+    <form ref={fref} className="reu-form" onSubmit={enviar} aria-label={ed ? 'Editar reunião' : 'Registrar reunião'}><div className="editgrid">
+      <div className="field"><label htmlFor="ru-s">Situação</label><select id="ru-s" value={v.status} onChange={m('status')}>
+        {Object.entries(ST_REU).filter(([k]) => ed || k !== 'cancelada').map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
+      <div className="field"><label htmlFor="ru-d">Data</label><input id="ru-d" type="date" required value={v.data} onChange={m('data')} /></div>
+      <div className="field"><label htmlFor="ru-h">Hora</label><input id="ru-h" type="time" value={v.hora} onChange={m('hora')} /></div>
+      {radio('modalidade', MOD, 'Modalidade')}
+      {v.modalidade === 'presencial' && radio('local', LOC, 'Onde')}
+      {v.modalidade === 'presencial' && v.local === 'externo' && <div className="field"><label htmlFor="ru-e">Endereço</label><input id="ru-e" value={v.endereco} onChange={m('endereco')} placeholder="Escritório do vendedor, no terreno..." /></div>}
+      {v.modalidade === 'online' && <div className="field ru-link"><label htmlFor="ru-l">Link da reunião</label><input id="ru-l" inputMode="url" value={v.link} onChange={m('link')} placeholder="https://meet.google.com/..." /></div>}
+      <div className="field full"><label htmlFor="ru-pb">Participantes da BKM</label>
+        <MarcarPessoas id="ru-pb" opcoes={bkm} valor={lerMarc(v.pbkm)} onChange={mm('pbkm')} placeholder="Digite @ e o nome" vazio="Ninguém da equipe com esse nome" /></div>
+      <div className="field full"><label htmlFor="ru-pe">Participantes externos</label>
+        <MarcarPessoas id="ru-pe" opcoes={fora} valor={lerMarc(v.pext)} onChange={mm('pext')} livre="outro"
+          placeholder={fora.length ? 'Digite @ e o nome (pessoas do terreno com e-mail) ou um nome' : 'Nome do vendedor, corretor, advogado'} /></div>
+      <div className="field full"><label htmlFor="ru-p">Pauta</label><TextoMencao id="ru-p" value={v.pauta} onChange={mt('pauta')} colegas={bkm} /></div>
+      {v.status === 'realizada' && <>
+        <div className="field full"><label htmlFor="ru-r">O que foi tratado</label><TextoMencao area id="ru-r" value={v.resumo} onChange={mt('resumo')} colegas={bkm} placeholder="Posições de cada lado, valores citados, objeções" /></div>
+        <div className="field full"><label htmlFor="ru-n">Encaminhamentos</label><TextoMencao area id="ru-n" value={v.enc} onChange={mt('enc')} colegas={bkm} placeholder="Quem faz o quê, até quando" /></div>
+      </>}
+    </div><div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kRe} mostrar={sujoRe} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={fechar}>Cancelar</button>
+      <button className="btn primary" disabled={grav}>{ed ? 'Salvar' : 'Registrar reunião'}</button></div></form>
+  );
   return (
     <Quadro aba="comercial" id="reunioes" titulo={<>Reuniões{ms.length ? <> <span className="h-n">{ms.length}</span></> : null}</>}
       acoes={<span className="sec-acoes">{ativa && edita && !form && <button className="btn primary sm" onClick={abrir}><Ic n="add" s={16} />Registrar reunião</button>}</span>}>
       <div className="sec-b">
-        {form && (
-          <form ref={fref} className="reu-form" onSubmit={enviar}><div className="editgrid">
-            <div className="field"><label htmlFor="ru-s">Situação</label><select id="ru-s" value={v.status} onChange={m('status')}><option value="realizada">Realizada</option><option value="agendada">Agendada</option></select></div>
-            <div className="field"><label htmlFor="ru-d">Data</label><input id="ru-d" type="date" required value={v.data} onChange={m('data')} /></div>
-            <div className="field"><label htmlFor="ru-h">Hora</label><input id="ru-h" type="time" value={v.hora} onChange={m('hora')} /></div>
-            {radio('modalidade', MOD, 'Modalidade')}
-            {v.modalidade === 'presencial' && radio('local', LOC, 'Onde')}
-            {v.modalidade === 'presencial' && v.local === 'externo' && <div className="field"><label htmlFor="ru-e">Endereço</label><input id="ru-e" value={v.endereco} onChange={m('endereco')} placeholder="Escritório do vendedor, no terreno..." /></div>}
-            <div className="field"><label htmlFor="ru-pb">Participantes da BKM</label><input id="ru-pb" value={v.pbkm} onChange={m('pbkm')} /></div>
-            <div className="field"><label htmlFor="ru-pe">Participantes externos</label><input id="ru-pe" value={v.pext} onChange={m('pext')} placeholder="Vendedor, corretor, advogado" /></div>
-            <div className="field full"><label htmlFor="ru-p">Pauta</label><input id="ru-p" value={v.pauta} onChange={m('pauta')} /></div>
-            {v.status === 'realizada' && <>
-              <div className="field full"><label htmlFor="ru-r">O que foi tratado</label><textarea id="ru-r" value={v.resumo} onChange={m('resumo')} placeholder="Posições de cada lado, valores citados, objeções" /></div>
-              <div className="field full"><label htmlFor="ru-n">Encaminhamentos</label><textarea id="ru-n" value={v.enc} onChange={m('enc')} placeholder="Quem faz o quê, até quando" /></div>
-            </>}
-          </div><div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kRe} mostrar={sujoRe} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar reunião</button></div></form>
-        )}
-        {aviso}
+        {form && !ed && formulario}
         {ms.length ? (
           <div className="reus">{ms.map((r) => {
-            const bk = part(r, true), ex = part(r, false);
+            if (form && ed?.id === r.id) return <div key={r.id}>{formulario}</div>;
+            const bk = part(r, true), ex = part(r, false), pode = edita && !form;
             return (
-              <article key={r.id} className={`reu ${r.status}`}>
+              <article key={r.id} className={`reu ${r.status}${pode ? ' reu-ed' : ''}`} data-mid={r.id}
+                {...(pode ? { role: 'button', tabIndex: 0, 'aria-label': `Editar a reunião de ${fd(dataLocal(r.inicio))}`, onClick: (e: MouseEvent) => { if (!(e.target as HTMLElement).closest('a,button')) editar(r); },
+                  onKeyDown: (e: KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); editar(r); } } } : {})}>
                 <div className="reu-h"><div><div className="reu-t">{fd(dataLocal(r.inicio))} · {hora(r.inicio)}</div>
                   <div className="reu-m">{MOD[r.modalidade]}{r.modalidade === 'presencial' ? ' · ' + LOC[r.local] + (r.endereco ? ' · ' + r.endereco : '') : ''}</div></div>
-                  <span className="reu-acts">{r.status === 'agendada' ? <><span className="chip blue">Agendada</span>
-                    {ativa && edita && new Date(r.inicio) <= agora && <button className="btn sm" onClick={() => feita(r)}><Ic n="check" s={16} />Marcar realizada</button>}</>
-                    : r.status === 'cancelada' ? <span className="chip">Cancelada</span> : <span className="chip good">Realizada</span>}</span></div>
+                  <span className="reu-acts">{r.link && r.status !== 'cancelada' && <a className="btn sm" href={r.link} target="_blank" rel="noopener noreferrer"><Ic n="link" s={16} />{r.status === 'agendada' ? 'Entrar na reunião' : 'Link da reunião'}</a>}
+                    <span className="reu-st">{r.status === 'agendada' ? <span className="chip blue">Agendada</span> : r.status === 'cancelada' ? <span className="chip">Cancelada</span> : <span className="chip good">Realizada</span>}
+                      {pode && <button className="iconbtn sm" aria-label="Editar reunião" title="Editar reunião" onClick={() => editar(r)}><Ic n="edit" s={18} /></button>}</span>
+                    {r.status === 'agendada' && ativa && edita && new Date(r.inicio) <= agora && <button className="btn sm" onClick={() => feita(r)}><Ic n="check" s={16} />Marcar realizada</button>}</span></div>
                 {(bk || ex) && <div className="reu-p"><span><b>BKM</b> {bk || '—'}</span><span><b>Externos</b> {ex || '—'}</span></div>}
-                {r.pauta && <div className="reu-x"><span className="k">Pauta</span>{r.pauta}</div>}
-                {r.resumo && <div className="reu-x"><span className="k">Tratado</span>{r.resumo}</div>}
-                {r.encaminhamentos && <div className="reu-x"><span className="k">Encaminhamentos</span>{r.encaminhamentos}</div>}
+                {r.pauta && <div className="reu-x"><span className="k">Pauta</span><ComMencoes texto={r.pauta} colegas={bkm} /></div>}
+                {r.resumo && <div className="reu-x"><span className="k">Tratado</span><ComMencoes texto={r.resumo} colegas={bkm} /></div>}
+                {r.encaminhamentos && <div className="reu-x"><span className="k">Encaminhamentos</span><ComMencoes texto={r.encaminhamentos} colegas={bkm} /></div>}
               </article>
             );
           })}</div>

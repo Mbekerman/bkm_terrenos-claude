@@ -35,6 +35,8 @@ Da esquerda para a direita:
 - **Sino** de avisos.
 - **Avatar** (sua foto).
 
+A barra ocupa a largura toda da tela, em qualquer tamanho de monitor: o logo fica alinhado com o menu lateral e o avatar fica no canto direito, com a mesma margem do logo.
+
 ### Busca de cima
 
 O campo filtra a **lista de terrenos da página Mapa** (e os pinos) pelo código, nome, endereço (rua, número e CEP), bairro, zona, município, corretor, **número da matrícula** e **SQL / inscrição**. Digitado em outra página, ele leva ao Mapa já com o texto.
@@ -69,7 +71,7 @@ Toda tela tem seu próprio endereço, e o link copiado do navegador abre a mesma
 | `/mapa/A123/ficha` | Mapa com a ficha do A123 aberta na gaveta |
 | `/terrenos/novo` | Cadastro de terreno |
 | `/terrenos/A123` | Ficha do A123 (Visão geral) |
-| `/terrenos/A123/terreno`, `/comercial`, `/parametros`, `/entorno` | Ficha na aba indicada |
+| `/terrenos/A123/terreno`, `/comercial`, `/entorno` | Ficha na aba indicada (`/parametros`, endereço antigo, abre a aba Terreno) |
 | `/funil` | Funil, nível das fases |
 | `/funil/<fase>` e `/funil/<fase>/<etapa>` | Funil descendo para etapas e subetapas |
 
@@ -115,12 +117,7 @@ O que **não** entra: movimentos no funil (avançar etapa, Stand By, Perdido...)
 
 Os formulários de inclusão (registrar oferta, proposta, reunião, zonas, matrícula, SQL, IPTU, pessoa da parte) guardam no seu navegador o que você está digitando, por terreno e por formulário. Se você fechar o formulário, a aba ou o navegador, o texto volta quando reabrir. O rascunho nunca expira; só sai quando você registra ou clica em **"Limpar dados"** do formulário.
 
-Se você digitou algo e não registrou, e tenta fazer outra coisa (clicar noutro botão, trocar de aba, fechar a janela, sair da página), aparece o aviso **"Você não registrou …"** com:
-
-- **"Continuar preenchendo"**: volta ao formulário.
-- **"Sair sem registrar"**: faz o que você ia fazer e mantém o rascunho guardado.
-
-O botão **"Cancelar"** do próprio formulário fecha sem perguntar (e também mantém o rascunho).
+Por isso, sair do formulário sem registrar (clicar noutro botão, trocar de aba, fechar a janela, sair da página ou clicar em **"Cancelar"**) não pergunta nada: o que você digitou continua guardado e volta quando reabrir o formulário.
 
 **Regra:** o rascunho fica no navegador daquele computador. Num computador diferente ele não aparece.
 

@@ -6,7 +6,7 @@
 
 Guardar o que o terreno **é**: nome, endereço, quem são os donos (partes), as matrículas e os SQLs de cada um e as áreas. Os dados comerciais (valor, oferta, proposta) ficam na aba Comercial.
 
-A aba tem, nesta ordem, os quadros: **Identificação**, **Endereço e localização**, **Partes**, **Matrículas e SQLs** (com o quadro de cada parte) e **Áreas e dimensões**. Cada quadro abre e fecha pela seta do título. Todos os campos se editam no lugar (ver [04](04-ficha-visao-geral.md#editar-no-lugar)).
+A aba tem, nesta ordem, os quadros: **Identificação**, **Endereço e localização**, **Parâmetros urbanísticos** (com os quadros Índices urbanísticos, Restrições e entorno e Histórico de uso; ver [07](07-ficha-parametros.md)), **Partes**, **Matrículas e SQLs** (com o quadro de cada parte), **Áreas e dimensões** e **IPTU**. Cada quadro abre e fecha pela seta do título. Todos os campos se editam no lugar (ver [04](04-ficha-visao-geral.md#editar-no-lugar)).
 
 ## Identificação
 
@@ -149,7 +149,7 @@ Cinco cartões de área, cada um com sua fonte:
 | Cartão | De onde vem |
 |---|---|
 | **Documental** | Digitada (da matrícula). |
-| **Cadastral** | Soma das áreas dos SQLs do terreno (só quando todos têm área), refeita a cada SQL incluído, excluído ou consultado. Se alguém digitar outro valor, vale o digitado e os SQLs não sobrescrevem; apagar volta para a soma. O cartão diz "soma dos SQLs" ou "digitada". |
+| **Cadastral** | Em São Paulo, não se digita: é a soma das áreas dos SQLs do terreno (só quando todos têm área), refeita a cada SQL incluído, excluído ou consultado; uma área digitada antes volta para a soma ao abrir a ficha. Nas outras cidades, digitada. |
 | **Levantamento** | Digitada (levantamento topográfico). **Ao digitar, vira a área adotada** (pode trocar depois). |
 | **Estimativa** | Digitada. |
 | **Poligonal** | Calculada pelo desenho, em m² inteiros. Nunca se digita. Muda quando a poligonal é ajustada. |
@@ -158,7 +158,7 @@ Cinco cartões de área, cada um com sua fonte:
 
 Abaixo:
 
-- **Testada principal** (em metros, duas casas). Precisa ser maior que zero.
+- **Testada principal** (em metros): em São Paulo não se digita, é a frente do acesso principal medida pela poligonal (abaixo); nas outras cidades, digitada (duas casas, maior que zero).
 - **Valor pedido por m²**: calculado (valor pedido ÷ área adotada).
 
 Se as áreas diferem mais de 1% entre si, aparece um aviso.
@@ -170,12 +170,25 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 - **Posição na quadra**: Meio de quadra (uma rua), Esquina (duas ruas que se encontram num canto do terreno), Duas frentes (ruas que não se encontram, como frente e fundos) ou Quadra inteira (três ruas ou mais e quase todo o contorno dando para rua).
 - **Frentes**: uma linha por rua, com os metros de frente. A rua do endereço aparece como "acesso principal". Na esquina, o canto conta para as duas ruas.
 - **Quando mede**: ao cadastrar o terreno, a cada mudança da poligonal (desenho, SQLs incluídos ou tirados) e, nos terrenos antigos, na primeira vez que a aba Terreno é aberta por quem edita.
-- **Testada principal**: vazia, recebe a frente do acesso principal; depois acompanha a poligonal. Se alguém digitou outro valor, o digitado fica e aparece um aviso quando difere mais de 5% da medida.
-- Fora de São Paulo e no computador de desenvolvimento, não mede: a posição e a testada continuam como estavam.
+- **Testada principal**: é sempre a frente do acesso principal e acompanha cada medição.
+- **Fora de São Paulo** não mede: a testada principal se digita.
+- No computador de desenvolvimento (fora da versão publicada), não mede.
+
+## IPTU
+
+Logo abaixo de Áreas e dimensões, já aberto, como Parâmetros urbanísticos. Em cima, o **Panorama do terreno**, a soma de todos os SQLs: valor venal do terreno, da construção e total, **IPTU anual**, **IPTU mensal** (anual ÷ 12, a média do mês, não a parcela), impostos predial e territorial, área do terreno e área construída da Prefeitura, e, juntos, separados por " / ", o valor do m² do terreno, o uso, o padrão e o vencimento da 1ª prestação; diz também quantos SQLs ainda não têm IPTU. Em **Ver SQL por SQL**, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.
+
+- **Buscar na Prefeitura** (só São Paulo, só quem edita): no título do quadro ("Buscar todos na Prefeitura" com mais de um SQL) ou em cada linha ("Buscar"). O sistema emite a notificação de lançamento do IPTU (a "2ª via") no site da Prefeitura e grava o venal e o IPTU do exercício. Cada SQL leva até um minuto; os SQLs vão um de cada vez. Se a Prefeitura não tiver a notificação do ano ainda, vem a do ano anterior.
+- **Detalhe** (na linha trazida da Prefeitura): número da notificação, área do terreno, testada, área construída, uso, padrão, ano da construção, valor do m² do terreno e da construção, fatores, alíquota, descontos, impostos predial e territorial, total do ano e vencimento da 1ª prestação.
+- **PDF** (na mesma linha): emite de novo a notificação e baixa o PDF.
+- Buscar de novo no mesmo ano com os mesmos valores não muda nada; com valores diferentes, vira uma correção (a anterior fica no histórico).
+- **Fora de São Paulo**, o IPTU continua sendo lançado à mão na janela de cada SQL (Matrículas e SQLs).
+- O que pode dar errado: a Prefeitura pedir captcha ("Tente mais tarde"), recusar a senha do sistema, não ter notificação para o SQL, ou o site estar fora. A mensagem aparece embaixo da tela.
 
 ## O que não é possível na aba Terreno
 
 - Digitar CEP, logradouro, bairro e município (só pelo mapa).
+- Em São Paulo, digitar a testada (vem da medição pela poligonal) e a área cadastral (soma dos SQLs).
 - Características físicas (formato, ocupação, demolição) e confrontações de divisa: **saíram da ficha** por decisão. As frentes voltaram, medidas pela poligonal (acima).
 - A seção antiga "Proprietários e contatos": foi para dentro das partes.
 - Buscar o GeoSampa num computador de desenvolvimento (só na versão publicada).

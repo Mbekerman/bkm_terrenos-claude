@@ -12,12 +12,13 @@
 import { geoAneis, geoNoAnel, nomeVia } from './geosampa';
 
 export type Posicao = 'nao_informado' | 'meio_quadra' | 'esquina' | 'duas_frentes' | 'quadra_inteira';
-export interface FrenteMedida { logradouro: string; testada_m: number }
+/** codlog: os códigos do logradouro na prefeitura; segmentos: os trechos de eixo (cd_identificador) para onde a divisa dá */
+export interface FrenteMedida { logradouro: string; testada_m: number; codlog?: string[]; segmentos?: number[] }
 export interface Medicao { frentes: FrenteMedida[]; posicao: Posicao; perimetro_m: number; frente_total_m: number }
 
 type Pt = number[];
 type Anel = Pt[];
-interface Via { nome: string; a: Pt; b: Pt }
+interface Via { nome: string; cod: string; id: number; a: Pt; b: Pt }
 interface Caixa { bb: number[]; an: Anel }
 
 const PASSO = 1;                 // m entre um ponto e outro ao longo da divisa
@@ -48,8 +49,8 @@ export function medirFrentes(ter: Anel, lotes: Anel[], viasFs: any[], pontos?: {
   const cx: Caixa[] = lotes.map((an) => ({ an, bb: caixa(an) }));
   const vias: Via[] = [];
   for (const f of viasFs) {
-    const nome = nomeVia(f.properties);
-    for (const L of geoAneis(f.geometry)) for (let i = 0; i < L.length - 1; i++) vias.push({ nome, a: L[i], b: L[i + 1] });
+    const nome = nomeVia(f.properties), cod = String(f.properties?.codlog ?? ''), id = f.properties?.cd_identificador;
+    for (const L of geoAneis(f.geometry)) for (let i = 0; i < L.length - 1; i++) vias.push({ nome, cod, id, a: L[i], b: L[i + 1] });
   }
   /* sentido do desenho, para saber qual lado é "fora" */
   const area2 = Q.reduce((s, p, i) => { const q = Q[(i + 1) % Q.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0);
@@ -81,7 +82,7 @@ export function medirFrentes(ter: Anel, lotes: Anel[], viasFs: any[], pontos?: {
   };
 
   /* um rótulo por metro de divisa: o nome da rua, ou null quando dá para lote vizinho */
-  const rot: (string | null)[] = [];
+  const rot: (string | null)[] = [], usadas: Record<string, Via[]> = {};
   let perim = 0;
   for (let i = 0; i < Q.length; i++) {
     const a = Q[i], b = Q[(i + 1) % Q.length], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
@@ -96,7 +97,7 @@ export function medirFrentes(ter: Anel, lotes: Anel[], viasFs: any[], pontos?: {
         if (geoNoAnel(p, anelT)) break;       // reentrância: o "fora" cai dentro do próprio terreno
         if (emLote(p)) continue;              // lote vizinho (ou o próprio lote, quando o desenho ficou aquém da rua)
         const v = ruaDoRaio(s, nx, ny);
-        if (v) { r = v.nome || 'Rua sem nome'; break; }
+        if (v) { r = v.nome || 'Rua sem nome'; (usadas[r] ||= []).push(v); break; }
       }
       rot.push(r); pontos?.push({ p: s, r });
     }
@@ -108,7 +109,11 @@ export function medirFrentes(ter: Anel, lotes: Anel[], viasFs: any[], pontos?: {
   rot.forEach((r) => { if (r) tot[r] = (tot[r] || 0) + m; });
   for (const k of Object.keys(tot)) if (tot[k] < RUA_MIN) delete tot[k];
   const lim = rot.map((r) => (r && tot[r] ? r : null));
-  const frentes = Object.entries(tot).map(([logradouro, x]) => ({ logradouro, testada_m: Math.round(x * 100) / 100 }))
+  const frentes = Object.entries(tot).map(([logradouro, x]) => ({
+    logradouro, testada_m: Math.round(x * 100) / 100,
+    codlog: [...new Set(usadas[logradouro].map((v) => v.cod).filter(Boolean))],
+    segmentos: [...new Set(usadas[logradouro].map((v) => v.id).filter((i) => i != null))],
+  }))
     .sort((x, y) => y.testada_m - x.testada_m);
   const frenteTotal = frentes.reduce((s, f) => s + f.testada_m, 0);
 

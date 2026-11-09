@@ -44,7 +44,7 @@ Os 11 itens:
 | Matrícula | Terreno › Matrículas e SQLs |
 | Inscrição e IPTU | Terreno › Matrículas e SQLs |
 | Proprietário | Terreno › Partes (lápis da parte) |
-| Zoneamento | Parâmetros › Registrar zonas (ou automático pelo GeoSampa) |
+| Zoneamento | Terreno › Parâmetros urbanísticos › Registrar zonas (ou automático pelo GeoSampa) |
 | Valor pedido | Comercial › Condições pedidas (ou registrar oferta) |
 | Temperatura | Topo da ficha |
 
@@ -54,21 +54,21 @@ Quando você rola e o topo sai da vista, a barra das abas mostra um **botão de 
 
 ## Barra das abas
 
-As abas, nesta ordem: **Visão geral, Terreno, Comercial, Parâmetros, Estudos de massa, Viabilidades, Infraestrutura, Entorno, Jornada, Documentos**.
+As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viabilidades, Infraestrutura, Entorno, Jornada, Documentos**.
 
 | Aba | Situação | Seção do manual |
 |---|---|---|
 | Visão geral | Disponível | esta |
 | Terreno | Disponível | [05](05-ficha-terreno.md) |
 | Comercial | Disponível | [06](06-ficha-comercial.md) |
-| Parâmetros | Disponível | [07](07-ficha-parametros.md) |
+| Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
 | Entorno | Disponível | [08](08-ficha-entorno.md) |
 | Estudos de massa, Viabilidades, Infraestrutura, Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
 **Como andar pelas abas:**
 
 - Clique na aba.
-- A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (cursor de mãozinha). Solta com força, ela continua rodando e freia aos poucos.
+- A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (com o mouse em cima, o cursor é o dedinho, como em qualquer botão; vira mão fechada enquanto você segura o botão do mouse). Solta com força, ela continua rodando e freia aos poucos.
 - As **setas** no fim da barra vão para a aba anterior e a próxima.
 - O **⋮ "Mais ações"** lista todas as abas, com a atual marcada.
 
@@ -114,7 +114,7 @@ Cada linha tem uma **seta** que leva à aba onde o dado mora.
 |---|---|---|
 | **Endereço** | Logradouro, número, bairro | Lápis **"Editar no mapa"**: abre a página Mapa com a poligonal em edição (ver [05](05-ficha-terreno.md#endereço-e-localização)). |
 | **Município e região** | Município · UF · Zona | O seletor de **Zona** (Norte, Sul, Leste, Oeste, Centro...) se edita ali mesmo. |
-| **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Aba Parâmetros. |
+| **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Terreno › Parâmetros urbanísticos (a seta abre a seção em Índices urbanísticos). |
 | **Área adotada** | Área e a fonte | O seletor de **fonte** troca a área adotada ali mesmo. |
 | **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido | **Ainda não disponível**: ficam vazias até a viabilidade chegar ao sistema real. |
 | **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Entorno). |
@@ -128,8 +128,10 @@ Linhas sem dado mostram "Não informado" ou "Falta preencher".
 
 Igual à página, com:
 
+- o **cabeçalho** com o código, o nome, a **temperatura** e o ícone **Abrir página** (o nome aparece ao parar o mouse), que leva à ficha em tela própria;
+- o topo da ficha sem repetir o cabeçalho: no lugar da linha "fase · etapa · subetapa", o nome da fase fica em cima da linha do tempo, que já marca a etapa e a subetapa; ficam "Cadastrado em" (e a situação, quando é Stand By, Perdido ou Descartado), o responsável e "Ficha N% completa". No celular, onde a linha do tempo some, a fase · etapa · subetapa continua no topo;
+
 - **X** ou **Esc** para fechar;
-- **"Abrir página"** para ir à ficha em tela própria;
 - a borda esquerda arrastável (mínimo 640 px; dois cliques voltam ao padrão);
 - clicar noutro terreno no mapa troca o terreno da gaveta.
 

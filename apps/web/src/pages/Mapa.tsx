@@ -11,6 +11,7 @@ import { carregarGoogle, googleRecusado } from '../mapa/google';
 import GavetaFicha from '../ficha/Gaveta';
 import { usePreCarregarFicha } from '../ficha/Ficha';
 import { MenuPonto } from '../mapa/MenuPonto';
+import { QuadroRota, type DestinoRota, type PontoMapa } from '../mapa/Rota';
 import { Motor, vista, reguaA, reguaArea, reguaM, reguaTotal, type Base, type GestosPonto, type Pino } from '../mapa/motor';
 import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
 import { useConsultaGeo } from '../novo/consulta';
@@ -119,7 +120,18 @@ export default function Mapa() {
   useEffect(() => { lgAgendar(); return () => clearTimeout(lgT.current); }, [lgAgendar]);
   const [selId, setSelId] = useState<string | null>(null);
   const [largura, setLargura] = useState(larguraGuardada);
-  const [menu, setMenu] = useState<{ x: number; y: number; lat: number; lng: number } | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; lat: number; lng: number; terreno?: string } | null>(null);
+  /* Traçar rota até aqui (pedido do Moises, 9/nov/2026) */
+  const [rota, setRota] = useState<DestinoRota | null>(null);
+  /* com a escolha da saída ligada no quadro da rota, o clique no mapa (ponto, lugar, terreno, concorrente) vai para ela */
+  const rotaPega = useRef<((p: PontoMapa) => void) | null>(null);
+  const [pegando, setPegando] = useState(false);
+  const pegar = useCallback((fn: ((p: PontoMapa) => void) | null) => { rotaPega.current = fn; setPegando(!!fn); }, []);
+  const pegarTerreno = (id: string) => {
+    const t = todos.find((x) => x.id === id);
+    if (!t || t.lat == null || t.lng == null || !rotaPega.current) return false;
+    rotaPega.current({ lat: t.lat, lng: t.lng, nome: `${t.codigo} · ${t.nome}` }); return true;
+  };
   const [cheia, setCheia] = useState(false);
   const [sv, setSv] = useState(false);
   const [semMapa, setSemMapa] = useState<string | null>(null);
@@ -407,8 +419,9 @@ export default function Mapa() {
   /* o card da concorrência fecha quando o mapa se move, menos fixado no olhinho (pedido do Moisés, 5/nov/2026) */
   ganchos.current.mover = () => { if (mkBox && !mkFixa() && Date.now() - mkAbertoEm.current > 350) setMkBox(null); };
   /* no desktop, o clique no pino ou na poligonal abre a ficha na gaveta; no celular, seleciona (o cartão) */
-  ganchos.current.pino = (id) => { setMenu(null); setMkBox(null); if (innerWidth >= 900 && !des && !rg) abrirGav(id); else selecionar(id); };
+  ganchos.current.pino = (id) => { if (rotaPega.current && !des && !rg && pegarTerreno(id)) return; setMenu(null); setMkBox(null); if (innerWidth >= 900 && !des && !rg) abrirGav(id); else selecionar(id); };
   ganchos.current.vazio = (lat, lng) => {
+    if (rotaPega.current && !des && !rg) { setMenu(null); rotaPega.current({ lat, lng }); return; }
     setMenu(null);
     if (selId) selecionar(null);
     if (mkBox && !mkFixa() && Date.now() - mkAbertoEm.current > 350) setMkBox(null);
@@ -424,7 +437,7 @@ export default function Mapa() {
   ganchos.current.passar = (id) => { if (innerWidth >= 900) passar(id); };
   ganchos.current.editar = (id) => { if (!TOQUE() && !rgR.current && !desR.current) edComecar(id); };
   ganchos.current.duplo = (lat, lng, alvo) => {
-    if (!edita || des || rg || TOQUE()) return;
+    if (rotaPega.current || !edita || des || rg || TOQUE()) return;
     const el = alvo as HTMLElement | null;
     if (el?.closest?.('.mp-barra,.mp-ctrl,.mp-legenda,.mp-cartao,.mp-ctx,button,a,input')) return;
     setMenu(null);
@@ -442,9 +455,11 @@ export default function Mapa() {
         pino: (id) => ganchos.current.pino(id),
         vazio: (a, b) => ganchos.current.vazio(a, b),
         duplo: (a, b, c) => ganchos.current.duplo(a, b, c),
-        menu: (x, y, lat, lng) => { if (edita && !desR.current && !rgR.current) setMenu({ x, y, lat, lng }); },
+        /* o menu vale para todos (a rota também para Leitura); "Novo terreno aqui" só para quem edita e fora de um terreno */
+        menu: (x, y, lat, lng, terreno) => { if (!desR.current && !rgR.current) setMenu({ x, y, lat, lng, terreno }); },
         clique: (a, b) => ganchos.current.clique(a, b),
         editar: (id) => ganchos.current.editar(id),
+        lugar: (pid, lat, lng) => { if (!rotaPega.current || desR.current || rgR.current) return false; rotaPega.current({ lat, lng, placeId: pid }); return true; },
         passar: (id) => ganchos.current.passar(id),
         movendo: (on) => { setMovendo(on); if (on) ganchos.current.mover?.(); },
         fecharMenu: () => setMenu(null),
@@ -576,8 +591,8 @@ export default function Mapa() {
   /* clique fora fecha o que está aberto no mapa (pedido do Moisés, 5/nov/2026; proto_mercado.js › FORA0): a legenda (menos fixada), a escala
      da renda/densidade, a busca, o quadro do lugar do Google e o card da concorrência (menos fixado); o menu dos três pontinhos já fecha
      sozinho. É o clique, não o arraste. Dentro do mapa, o quadro do lugar e o card já fecham pelo clique no mapa. */
-  const foraR = useRef({ leg, lgFixa, rdLeg, busAberta, mkBox, abrirBusca });
-  foraR.current = { leg, lgFixa, rdLeg, busAberta, mkBox, abrirBusca };
+  const foraR = useRef({ leg, lgFixa, rdLeg, busAberta, mkBox, mkDest, abrirBusca });
+  foraR.current = { leg, lgFixa, rdLeg, busAberta, mkBox, mkDest, abrirBusca };
   useEffect(() => {
     let p0: { x: number; y: number; t: Element } | null = null;
     const baixo = (ev: PointerEvent) => { p0 = { x: ev.clientX, y: ev.clientY, t: ev.target as Element }; };
@@ -588,6 +603,9 @@ export default function Mapa() {
       if (r.leg && !r.lgFixa && !a.closest('.mp-legenda')) setLeg(false);
       if (r.rdLeg && !a.closest('.rd-leg')) setRdLeg(false);
       if (r.busAberta && !a.closest('.mp-busca')) r.abrirBusca(false);
+      /* o empreendimento aberto (preto com anel azul) volta à cor dele em qualquer clique fora do quadrado e do card, no mapa ou
+         fora dele (pedido do Moisés, 9/nov/2026); com o card fixado no olhinho ainda aberto, o destaque fica com ele */
+      if (r.mkDest && !a.closest('.mk-dest,#mk-box') && !(r.mkBox && mkFixa())) setMkDest(null);
       if (a.closest('#mapa')) return;
       if (!a.closest('.gm-style-iw,.gm-style-iw-c')) motor.current?.lugarFechar();
       if (r.mkBox && !mkFixa() && !a.closest('#mk-box')) setMkBox(null);
@@ -637,7 +655,8 @@ export default function Mapa() {
     if (mkBox && (!merc || !b || !mfPassa(mf, b) || !mkVisivel(b, mkOff))) setMkBox(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mf, merc, mkOff]);
-  ganchos.current.mk = (id) => { mkAbertoEm.current = Date.now(); setMenu(null); setSetor(null); setMkBox(id); setMkDest(id); if (selId) selecionar(null); };
+  ganchos.current.mk = (id) => {
+    if (rotaPega.current) { const e = mkLista?.find((x) => x.id === id); if (e) { rotaPega.current({ lat: e.lat, lng: e.lng, nome: e.nome }); return; } } mkAbertoEm.current = Date.now(); setMenu(null); setSetor(null); setMkBox(id); setMkDest(id); if (selId) selecionar(null); };
 
   function ligarCamada(k: Camada | null) {
     if (k === camada) return;
@@ -749,6 +768,7 @@ export default function Mapa() {
     const k = (ev: KeyboardEvent) => {
       if (ev.key !== 'Escape' || ev.defaultPrevented) return;
       if (menu) { setMenu(null); ev.preventDefault(); return; }
+      if (rota) { setRota(null); ev.preventDefault(); return; }
       if (setor != null) { setSetor(null); ev.preventDefault(); return; }
       if (mkBox) { setMkBox(null); ev.preventDefault(); return; }
       if (motor.current?.svFechar()) { ev.preventDefault(); return; }
@@ -759,7 +779,7 @@ export default function Mapa() {
     document.addEventListener('keydown', k);
     document.addEventListener('pointerdown', fora, true);
     return () => { document.removeEventListener('keydown', k); document.removeEventListener('pointerdown', fora, true); };
-  }, [menu, telaCheia, setor, mkBox]);
+  }, [menu, rota, telaCheia, setor, mkBox]);
 
   /* minha localização */
   function eu() {
@@ -866,7 +886,7 @@ export default function Mapa() {
       </aside>
       <div className="mp-redim" role="separator" aria-orientation="vertical" aria-label="Largura da lista de terrenos" aria-valuemin={MP_LMIN} aria-valuemax={mpLmax()} aria-valuenow={largura}
         tabIndex={0} title="Arraste para mudar a largura da lista (dois cliques voltam ao padrão)" onPointerDown={arrastar} onDoubleClick={() => guardarL(mpLpad())} onKeyDown={teclaL} />
-      <section className={`mapa-area${sv ? ' sv-on' : ''}`} aria-label="Mapa dos terrenos" ref={areaEl}>
+      <section className={`mapa-area${sv ? ' sv-on' : ''}${rota ? ' rota-on' : ''}${rota && pegando ? ' rota-pega' : ''}`} aria-label="Mapa dos terrenos" ref={areaEl}>
         <div id="mapa" className="mapa" ref={mapaEl}>{semMapa && <div className="mapa-erro">{semMapa}</div>}</div>
         <div className="mp-barra">
           <form className={`mp-busca${busAberta ? '' : ' fechada'}`} role="search" onSubmit={(ev) => { ev.preventDefault(); clearTimeout(buscaT.current); rodarBusca(busEnd, true); }}
@@ -926,7 +946,7 @@ export default function Mapa() {
           <MenuPonto area={areaEl.current} px={motor.current.pontoNaTela(des[vSel][0], des[vSel][1])} i={vSel} n={des.length} area2={areaPoly(des) || 0} desfazer={hist.current.length > 0} acao={vAcao} editando={!!ed} />
         )}
         {lgEd && ed && des && empresa && createPortal(
-          <div className="scrim" data-rasc-livre onMouseDown={(e) => e.target === e.currentTarget && setLgEd(false)}>
+          <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setLgEd(false)}>
             <div className="dialog" role="dialog" aria-modal="true">
               <LotesGeo empresa={empresa.id} L={{ modo: 'ficha', ficha: { codigo: todos.find((x) => x.id === ed.id)?.codigo ?? '', nome: todos.find((x) => x.id === ed.id)?.nome ?? '', poly: des, sqls: lgSqls,
                 fechar: () => { marcas.current.inicio = Date.now(); setLgEd(false); }, incluir: lotesEscolhidos } }} />
@@ -975,11 +995,22 @@ export default function Mapa() {
             </div>
           );
         })()}
-        {menu && (
-          <div className="mp-ctx" role="menu" style={{ left: Math.max(8, Math.min((areaEl.current?.clientWidth ?? 0) - 228, menu.x)), top: Math.max(8, Math.min((areaEl.current?.clientHeight ?? 0) - 64, menu.y)) }}>
-            <button role="menuitem" autoFocus onClick={() => { const m = menu; setMenu(null); desComecar([m.lat, m.lng]); }}><Ic n="add" s={18} />Novo terreno aqui</button>
-          </div>
-        )}
+        {menu && (() => {
+          /* sobre o pino ou a poligonal de um terreno: sem "Novo terreno aqui", e a rota vai até o ponto do terreno */
+          const t = menu.terreno ? todos.find((x) => x.id === menu.terreno) : null;
+          const novo = edita && !menu.terreno, alt = (t ? 32 : 0) + (novo ? 96 : 52);
+          return (
+            <div className="mp-ctx" role="menu" style={{ left: Math.max(8, Math.min((areaEl.current?.clientWidth ?? 0) - 228, menu.x)), top: Math.max(8, Math.min((areaEl.current?.clientHeight ?? 0) - alt - 12, menu.y)) }}>
+              {t && <div className="v-t">{t.codigo} · {t.nome}</div>}
+              {novo && <button role="menuitem" autoFocus onClick={() => { const m = menu; setMenu(null); setRota(null); desComecar([m.lat, m.lng]); }}><Ic n="add" s={18} />Novo terreno aqui</button>}
+              <button role="menuitem" autoFocus={!novo} onClick={() => {
+                const m = menu; setMenu(null); setMkBox(null); setSetor(null); motor.current?.lugarFechar();
+                setRota(t && t.lat != null && t.lng != null ? { lat: t.lat, lng: t.lng, nome: `${t.codigo} · ${t.nome}` } : { lat: m.lat, lng: m.lng });
+              }}><Ic n="rota" s={18} />Traçar rota até aqui</button>
+            </div>
+          );
+        })()}
+        {rota && !des && !rg && <QuadroRota motor={motor.current} destino={rota} fechar={() => setRota(null)} pegar={pegar} />}
       </section>
       {met && <Metodologia camada={met} fechar={() => setMet(null)} />}
       {mfAberto && mkOk && <FiltroConc f={mf} mudar={setMf} fechar={() => setMfAberto(false)} aviso={(m) => toast(m)} />}

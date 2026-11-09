@@ -1,6 +1,6 @@
 # 03. Novo terreno
 
-**Disponível.** Botão **"Novo terreno"** no menu lateral (endereço `/terrenos/novo`), ou clique direito no mapa › **"Novo terreno aqui"**, ou dois cliques no vazio do mapa. Leitura e Básico não cadastram.
+**Disponível.** Botão **"Novo terreno"** no menu lateral (endereço `/terrenos/novo`), ou clique direito no mapa › **"Novo terreno aqui"** (não aparece sobre um terreno já cadastrado), ou dois cliques no vazio do mapa. Leitura e Básico não cadastram.
 
 ## Para que serve
 
@@ -100,7 +100,7 @@ O município, o logradouro, o número e o bairro achados pela localização entr
 
 1. Aba **Terreno**: partes, matrículas e SQLs, áreas. Ver [05](05-ficha-terreno.md).
 2. Aba **Comercial**: registrar a oferta (abre a negociação). Ver [06](06-ficha-comercial.md).
-3. Conferir **Parâmetros** e **Entorno**. Ver [07](07-ficha-parametros.md) e [08](08-ficha-entorno.md).
+3. Conferir **Parâmetros urbanísticos** (na aba Terreno) e **Entorno**. Ver [07](07-ficha-parametros.md) e [08](08-ficha-entorno.md).
 
 ## O que não é possível
 
