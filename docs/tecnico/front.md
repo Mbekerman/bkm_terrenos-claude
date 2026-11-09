@@ -107,7 +107,7 @@ apps/web/
 | `edicao.tsx` | Edição no lugar: `SECOES` (campos de cada quadro), `useSalvar` (fila de gravações por `app.salvar_terreno`), `useVivo`/`Vivo`/`CampoVivo`, `Quadro` (abre e fecha pela seta), `CamposEndereco`, `pedirCampo`/`focar`/`acender` (levar a um campo e acendê-lo). |
 | `Terreno.tsx` | Aba Terreno: identificação, localização, áreas (cinco fontes e a adotada). |
 | `Partes.tsx` | Partes, Matrículas e SQLs (1.192 linhas): etiquetas arrastáveis, percentual por etiqueta, consulta do GeoSampa por SQL, "Escolher no mapa", proprietários por parte, refazer a poligonal pela soma dos lotes. |
-| `Comercial.tsx` | Aba Comercial: negociação, condições pedidas, partes da oferta, ofertas, corretores, propostas e reuniões (sem Google Agenda). |
+| `Comercial.tsx` | Aba Comercial: negociação, condições pedidas, partes da oferta, ofertas, corretores, propostas e reuniões (registrar e editar, participantes por @, link digitado; sem Google Agenda). |
 | `Parametros.tsx` | Aba Parâmetros: zonas por lote, potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
 | `Entorno.tsx` + `entorno.ts` | Aba Entorno: pontos de interesse (busca no Google, rota a pé, excluir/restaurar), renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
 | `Painel.tsx` | Painel lateral: quadro de avanço no topo e as abas Ações, Tarefas e Logs (sem olhinho nem lixeira). |
@@ -494,7 +494,7 @@ A primeira versão em uso é, por decisão do Moisés: login, mapa, novo terreno
 | Logs com olhinho e lixeira (`app.desfazer_alteracao`) | não | Logs entram sem eles (decisão da sabatina). |
 | Seção Histórico sem painel, quadro de avanço na página no celular | parcial | O celular vem depois do computador. |
 | Reuniões com Google Agenda e Meet | não | Reunião fica só no sistema. |
-| Menção com @, notificações por e-mail, "Configurar notificações" | não | O sino entra; e-mail depois. |
+| Menção com @, notificações por e-mail, "Configurar notificações" | parcial | @ nas reuniões (participantes e textos; `components/Marcar.tsx`); nas tarefas, não. O sino entra; e-mail depois. |
 | Tema escuro e Automático | não | |
 | Menu do avatar com "Entrar como" | não | Só no protótipo (é para testar papéis). |
 | GeoSanja (São José dos Campos) | não | Só GeoSampa está no React. |

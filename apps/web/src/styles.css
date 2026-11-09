@@ -5042,3 +5042,27 @@ html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; 
 .fr-l li { display: flex; justify-content: space-between; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--m-outline-var, #e3e3e3); font-size: 15px; line-height: 22px }
 .fr-l li:last-child { border-bottom: 0 }
 .fr-l .num { font-variant-numeric: tabular-nums; white-space: nowrap }
+
+/* ---------- marcar pessoas com @ (participantes da reunião; components/Marcar.tsx, 9/nov/2026) ---------- */
+.mk { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 44px; padding: 5px 10px; border: 1px solid var(--m-outline, var(--borda-controle)); border-radius: var(--raio-sm); background: var(--superficie); cursor: text }
+.mk.foco { outline: 2px solid var(--m-primary, var(--foco)); outline-offset: -1px; border-color: transparent }
+.field .mk input, .field .mk input:focus { flex: 1 1 120px; min-width: 120px; min-height: 30px !important; height: 30px; border: 0 !important; outline: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; font-size: 16px }
+.mk-chip { display: inline-flex; align-items: center; gap: 2px; height: 28px; padding: 0 2px 0 10px; border-radius: 8px; font-size: 14px; background: var(--m-surface-cont, #f0f4f9); border: 1px solid var(--m-outline-var, #c4c7c5); color: var(--m-on-surface, #1f1f1f); white-space: nowrap; max-width: 100% }
+.mk-chip.bkm { background: var(--m-sec-cont, #c2e7ff); border-color: transparent; color: #001d35 }
+.mk-chip button { width: 24px; height: 24px; border: 0; border-radius: 50%; background: none; color: inherit; font-size: 16px; line-height: 1; cursor: pointer }
+.mk-chip button:hover { background: rgba(31,31,31,.08) }
+.mk-txt { position: relative }
+.mk-pop { position: absolute; left: 0; right: 0; top: calc(100% + 4px); min-width: 240px; max-width: 520px }
+.mk-av { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; background: #0b57d0; color: #fff }
+.mk-av.fora { background: #e9eef6; color: #444746 }
+.reu-ed { cursor: pointer }
+.reu-ed:hover { background: var(--m-surface-cont, #f0f4f9) }
+.reu-ed:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
+.reu-acts .btn[href] { text-decoration: none }
+html[data-tema="escuro"] .mk { background: #282a2c; border-color: #8e918f }
+html[data-tema="escuro"] .mk-chip { background: #1e1f20; border-color: #444746; color: #e3e3e3 }
+html[data-tema="escuro"] .mk-chip.bkm { background: #004a77; color: #c2e7ff }
+html[data-tema="escuro"] .mk-av.fora { background: #333537; color: #c4c7c5 }
+html[data-tema="escuro"] .reu-ed:hover { background: #282a2c }
+.reu-st { display: inline-flex; align-items: center; gap: 4px }
+.reu-st .iconbtn { margin: -6px -8px -6px 0 }

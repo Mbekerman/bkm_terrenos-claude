@@ -1778,6 +1778,22 @@ select pg_temp.ok((select email_status from app.notificacoes where tipo = 'menca
 select pg_temp.ok((select count(*) from app.preferencias_notificacao) = 1, 'cada um vê só as próprias preferências');
 select app.salvar_preferencia_notificacao(:'emp', 'mencao', null);
 select pg_temp.ok(not exists (select 1 from app.preferencias_notificacao), 'preferência vazia volta ao padrão do tipo');
+-- participantes da reunião marcados com @ (pedido do Moises, 9/nov/2026)
+select pg_temp.como(:'analista');
+insert into app.reunioes (empresa_id, terreno_id, status, inicio, modalidade, link, pauta) values
+  (:'emp', :'tm', 'agendada', now() + interval '2 days', 'online', 'https://meet.google.com/abc-defg-hij', 'Contraproposta com @gestor') returning id as rm \gset
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, user_id) values (:'emp', :'rm', 'bkm', :'gestor'), (:'emp', :'rm', 'bkm', :'diretor'), (:'emp', :'rm', 'bkm', :'analista');
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, nome, email) values (:'emp', :'rm', 'vendedor', 'Sr. Carlos', 'carlos@exemplo.com');
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, inicio, modalidade, local, link) values (%L, %L, now() - interval '1 hour', 'presencial', 'bkm', 'https://meet.google.com/x')$$, :'emp', :'tm'), 'link só em reunião online');
+select pg_temp.falha(format($$update app.reunioes set link = 'meet.google.com/x' where id = %L$$, :'rm'), 'link da reunião começa com http');
+select pg_temp.ok((select count(*) from app.mencoes where origem_tabela = 'reunioes' and origem_id = :'rm') = 2,
+  'colega marcado como participante vira menção da reunião, uma vez por pessoa; quem marcou e quem é de fora, não');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select texto from app.notificacoes where tipo = 'mencao' and origem_id = :'rm') like '% marcou você na reunião de %',
+  'participante da BKM marcado é avisado no sino');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'mencao' and origem_id = :'rm') = 1,
+  'mencionado no texto e marcado como participante recebe um aviso só');
 select pg_temp.ok((select bool_and(email_status is null) from app.notificacoes where tipo = 'tarefa_prazo'), 'lembrete de prazo não vai por e-mail no padrão');
 select pg_temp.falha(format($$select app.salvar_preferencia_notificacao(%L, 'nao_existe', true)$$, :'emp'), 'tipo de notificação desconhecido é recusado');
 select pg_temp.falha(format($$insert into app.preferencias_notificacao values (%L, %L, 'mencao', true)$$, :'emp', :'gestor'), 'preferência só se grava pela função');
