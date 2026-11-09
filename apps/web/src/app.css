@@ -1,0 +1,357 @@
+/* ==== Front React: estilos que o protótipo não tem ====
+   A moldura (barra de cima, menu lateral, sino, perfil) usa as classes do protótipo, em styles.css.
+   Aqui só a tela de entrada, que o protótipo não tem. Este arquivo não é gerado; o styles.css é
+   (tools/prototipo/build.py). */
+.m-logo{display:inline-flex;align-items:center;gap:12px;position:relative}
+.m-logo img{width:120px;height:auto;display:block}
+.m-logo .amb-selo{position:static}
+/* foto do Google dentro do botão do perfil (no protótipo, a inicial) */
+.perfil-btn{overflow:hidden;padding:0}
+.perfil-foto{width:100%;height:100%;object-fit:cover;display:block}
+.m-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 24px;border-radius:20px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;border:0}
+.m-btn-cont{background:none;border:1px solid var(--m-outline);color:var(--m-primary)}
+.m-btn-cont:hover{background:rgba(11,87,208,.08)}
+.m-btn:disabled{opacity:.6;cursor:default}
+.m-btn-txt{border:0;background:none;color:var(--m-primary);font:inherit;font-size:14px;font-weight:500;padding:0 8px;height:40px;border-radius:20px;cursor:pointer}
+.m-btn-txt:hover{background:rgba(11,87,208,.08)}
+.m-auth{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--m-sc-low);font-family:var(--font-aptos);color:var(--m-on-surface);padding:16px;box-sizing:border-box}
+.m-auth-card{width:100%;max-width:448px;background:var(--m-card);border-radius:28px;padding:40px;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.m-auth-card h1{font-size:32px;line-height:40px;font-weight:400;margin:24px 0 0}
+.m-auth-txt{font-size:14px;line-height:20px;color:var(--m-on-var);margin:0 0 24px}
+.m-auth-erro{width:100%;box-sizing:border-box;padding:12px 16px;border-radius:12px;background:var(--critico-fundo);color:var(--critico-marca);font-size:14px;line-height:20px;margin-bottom:16px}
+.m-auth-acoes{display:flex;gap:8px;align-self:flex-end}
+.m-google{align-self:flex-end;color:var(--m-on-surface)}
+
+/* ===== Ficha: edição no lugar, áreas, o que falta (pedidos do Moisés, 5/nov/2026) ===== */
+/* abas fixas da gaveta encostam no topo (o recuo de cima da gaveta deixava ver o texto passando por trás) */
+.tgav .fi-abas-w { top: -16px }
+@media (max-width: 899px) { .tgav .fi-abas-w { top: -8px } }
+/* editando, a mesma grade da leitura: o valor vira campo só com a linha embaixo, na mesma altura */
+.kvg-ed .inl-c { min-width: 0 }
+.kvg-ed .inl-c .k { display: block; cursor: default }
+.kvg-ed .inl-c :is(input, select, textarea), .area input.inl {
+  display: block; width: 100%; height: 24px; min-height: 0; margin: 0; padding: 0; border: 0; border-bottom: 1px solid var(--m-outline, #747775);
+  border-radius: 0; background: transparent; box-shadow: none; font: inherit; font-size: 16px; line-height: 23px; color: var(--m-on-surface, #1f1f1f); outline: 0 }
+.kvg-ed .inl-c select { appearance: none; padding-right: 20px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23444746' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 4px center; cursor: pointer }
+.kvg-ed .inl-c textarea { height: auto; min-height: 24px; resize: none; field-sizing: content; overflow: hidden }
+.kvg-ed .inl-c :is(input, select, textarea):hover, .area input.inl:hover { border-bottom-color: #1f1f1f }
+.kvg-ed .inl-c :is(input, select, textarea):focus, .area input.inl:focus { border-bottom: 2px solid var(--m-primary, #0b57d0); padding-bottom: 0 }
+.kvg-ed .inl-c input[readonly] { border-bottom-style: dotted; color: var(--m-on-var, #444746) }
+.kvg-ed .inl-c :is(input, textarea)::placeholder, .area input.inl::placeholder { color: #8e918f; font-style: italic; font-size: 14px }
+/* Cancelar e Salvar (e a busca de endereço) no título do quadro, no lugar do Editar */
+.qd-acoes { display: flex; align-items: center; gap: 4px; margin-left: auto; min-width: 0 }
+.sec-h .qd-acoes .btn.primary { background: var(--m-primary, #0b57d0) !important; color: #fff !important; padding: 0 16px !important; height: 32px; min-height: 32px; border-radius: 16px }
+.sec-h .qd-acoes .btn.text { height: 32px; min-height: 32px }
+.gbusca-h { width: min(320px, 40vw); margin-right: 8px }
+.gbusca-h gmp-place-autocomplete { width: 100%; color-scheme: light }
+.sec.qd-ed { box-shadow: 0 0 0 2px var(--m-primary, #0b57d0) }
+/* áreas: clicar numa preenchida a escolhe; a adotada fica em destaque */
+.area { border: 1px solid transparent; transition: background .15s, box-shadow .15s }
+.area.pode { cursor: pointer }
+.area.pode:hover { background: rgba(11,87,208,.06) }
+.area.pode:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
+.area.sel { background: #d3e3fd !important; box-shadow: inset 0 0 0 2px var(--m-primary, #0b57d0) !important }
+.area.sel .av { font-weight: 400 }
+.area .as { display: flex !important; align-items: center; gap: 4px; min-height: 18px; color: var(--m-primary, #0b57d0) }
+.area input.inl { font-size: 20px; height: 26px; font-weight: 300; cursor: text }
+:root[data-tema="escuro"] .area.sel { background: #004a77 !important; box-shadow: inset 0 0 0 2px #a8c7fa !important }
+:root[data-tema="escuro"] .area .as { color: #a8c7fa }
+/* "Ficha N% completa" com a bolinha do que falta e o menu */
+.fi-comp { position: relative; display: inline-flex }
+.fi-comp-b { position: relative; display: inline-flex; align-items: center; min-height: 32px; padding: 0 8px; margin: -4px 0 -4px -8px; border: 0; border-radius: 8px; background: none; font: inherit; color: inherit; cursor: pointer }
+.fi-comp-b:hover:not(:disabled) { background: rgba(68,71,70,.08) }
+.fi-comp-b:disabled { cursor: default }
+.fi-comp-n { position: absolute; top: -8px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #b3261e; color: #fff; font-size: 11px; font-weight: 500; line-height: 18px; text-align: center }
+.fi-comp-m { display: block; left: 0; right: auto; top: calc(100% + 6px) }
+.fi-comp-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--m-on-var, #444746) }
+/* campo que o menu do que falta abriu acende um instante */
+/* verde-limão de marca-texto, fora da paleta para destacar: espera 0,3 s, pisca uma vez, fica 0,7 s e apaga em 1,2 s
+   (pedido do Moisés, 6/nov/2026) */
+.acende { animation: acende 2.7s linear }
+.acende:not(.area) { border-radius: 8px }
+@keyframes acende {
+  0%, 11.1% { background-color: rgba(228,247,122,0); box-shadow: 0 0 0 6px rgba(228,247,122,0), 0 0 0 8px rgba(138,164,0,0) }
+  14.8%, 20.4% { background-color: #e4f77a; box-shadow: 0 0 0 6px #e4f77a, 0 0 0 8px #8aa400 }
+  25.9% { background-color: rgba(228,247,122,0); box-shadow: 0 0 0 6px rgba(228,247,122,0), 0 0 0 8px rgba(138,164,0,0) }
+  29.6%, 55.6% { background-color: #e4f77a; box-shadow: 0 0 0 6px #e4f77a, 0 0 0 8px #8aa400 }
+  100% { background-color: rgba(228,247,122,0); box-shadow: 0 0 0 6px rgba(228,247,122,0), 0 0 0 8px rgba(138,164,0,0) }
+}
+
+
+.sec-h .qd-acoes .btn.primary:hover { background: #0842a0 !important }
+.sec-h .qd-acoes .btn.primary:disabled { opacity: .6 }
+/* título do quadro aberto fica preso logo abaixo das abas enquanto o quadro passa pela tela e solta quando ele
+   acaba (pedido do Moisés, 5/nov/2026): página 72 (barra) + 49 (abas); gaveta 49 − 16 do recuo */
+.fi-aba .sec:not(.qd-fechado) > .sec-h, .fi-aba .sec:not(.qd-fechado) > form > .sec-h {
+  position: sticky; top: calc(121px + env(safe-area-inset-top, 0px)); z-index: 12; background: var(--m-surface-c, #fff); border-radius: 12px 12px 0 0 }
+@media (max-width: 899px) { .fi-aba .sec:not(.qd-fechado) > .sec-h, .fi-aba .sec:not(.qd-fechado) > form > .sec-h { top: calc(113px + env(safe-area-inset-top, 0px)) } }
+.tgav .fi-aba .sec:not(.qd-fechado) > .sec-h, .tgav .fi-aba .sec:not(.qd-fechado) > form > .sec-h { top: 33px }
+@media (max-width: 899px) { .tgav .fi-aba .sec:not(.qd-fechado) > .sec-h, .tgav .fi-aba .sec:not(.qd-fechado) > form > .sec-h { top: 41px } }
+:root[data-tema="escuro"] .fi-aba .sec > .sec-h, :root[data-tema="escuro"] .fi-aba .sec > form > .sec-h { background: #1e1f20 }
+/* ===== Ficha, aba Comercial: condições pedidas editadas no lugar (mesmo quadro, valor vira campo só com a linha) ===== */
+.kvl-ed dd .inl-x, .cond2 .inl-x {
+  display: block; width: 100%; height: 24px; min-height: 0; margin: 0; padding: 0; border: 0; border-bottom: 1px solid var(--m-outline, #747775);
+  border-radius: 0; background: transparent; box-shadow: none; font: inherit; font-size: 14px; line-height: 23px; color: var(--m-on-surface, #1f1f1f); outline: 0 }
+.kvl-ed dd .inl-x { height: 20px; line-height: 19px }
+.cond2 .inl-x { font-size: 24px; height: 32px; line-height: 31px }
+.kvl-ed dd select.inl-x { appearance: none; padding-right: 20px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23444746' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 4px center; cursor: pointer }
+:is(.kvl-ed dd, .cond2) .inl-x:hover { border-bottom-color: #1f1f1f }
+:is(.kvl-ed dd, .cond2) .inl-x:focus { border-bottom: 2px solid var(--m-primary, #0b57d0); padding-bottom: 0 }
+:is(.kvl-ed dd, .cond2) .inl-x::placeholder { color: #8e918f; font-style: italic; font-size: 14px }
+.kvl-ed dd { flex: 1; min-width: 0 }
+.prop-form { padding-bottom: 16px; border-bottom: 1px solid var(--m-outline-var, var(--linha)) }
+
+/* painel lateral da ficha (Logs e quadro de avanço): a container query do protótipo vale para a rota "terreno";
+   no React a página da ficha é /terrenos/A123 (data-rota="terrenos") */
+body[data-rota="terrenos"] .main { container: pagina / inline-size }
+
+/* aba Entorno: seletor de raio da renda e do perfil (no protótipo, #rd-card .rd-raios) */
+:is(#sec-rd, #sec-pf) .rd-raios { margin: 0 var(--q-px, 24px) 4px; align-self: flex-start; width: fit-content; max-width: calc(100% - 2 * var(--q-px, 24px)); overflow-x: auto }
+:is(#sec-rd, #sec-pf) .rd-raios button { white-space: nowrap; padding: 6px 12px; font-size: 13px }
+:is(#sec-rd, #sec-pf) .rd-raios button[disabled] { opacity: .45 }
+.qd-fechado .rd-raios { display: none }
+
+/* barra de abas da ficha: o mouse em cima mostra o dedinho, como em qualquer botão; a mão fechada só aparece com o botão
+   do mouse apertado, quando a barra pode ser arrastada (pedido do Moisés, 9/nov/2026, trocando a mãozinha aberta de 6/nov) */
+.fi-abas.desliza, .fi-abas.desliza button { cursor: pointer }
+.fi-abas.segurando, .fi-abas.segurando button, .fi-abas.arrastando, .fi-abas.arrastando button { cursor: grabbing }
+.fi-abas.arrastando, .fi-abas.arrastando button { user-select: none }
+.fi-abas.arrastando button:hover { background: none }
+
+/* unidade dentro do campo também em metros e m² (pedido do Moisés, 6/nov/2026); nos campos editados no lugar, sem recuo */
+.adorno.m > input { padding-right: 30px !important }
+.adorno.m2 > input { padding-right: 38px !important }
+.adorno.m > .adorno-t, .adorno.m2 > .adorno-t { right: 12px }
+:is(.inl-c, .area, .kvl-ed dd, .cond2) .adorno.moeda > input { padding-left: 28px !important }
+:is(.inl-c, .area, .kvl-ed dd, .cond2) .adorno.moeda > .adorno-t { left: 0 }
+:is(.inl-c, .area, .kvl-ed dd, .cond2) .adorno:is(.m, .m2, .pct) > .adorno-t { right: 0 }
+:is(.inl-c, .area, .kvl-ed dd, .cond2) .adorno.m > input { padding-right: 18px !important }
+:is(.inl-c, .area, .kvl-ed dd, .cond2) .adorno.m2 > input { padding-right: 26px !important }
+.cond2 .adorno-t { font-size: 18px }
+.area .adorno-t { font-size: 16px }
+
+/* edição no lugar, sem Editar nem Salvar (pedido do Moisés, 6/nov/2026): o campo parece texto; a linha aparece ao
+   passar o mouse e no foco; a lista mantém a seta */
+.vivo .inl-c :is(input, select, textarea):not(:hover):not(:focus), .area input.inl:not(:hover):not(:focus),
+.vivo .inl-x:not(:hover):not(:focus) { border-bottom-color: transparent }
+.vivo .inl-c :is(input, textarea), .vivo input.inl-x { cursor: text }
+.vivo .inl-c :is(input, textarea):hover, .vivo input.inl-x:hover { border-bottom-color: #747775 }
+.kvg-ed.vivo .inl-c input[readonly] { border-bottom-color: transparent; cursor: default }
+/* Resumo da Visão geral: zona e fonte da área como lista no próprio texto; endereço que vira a busca do Google */
+.kv-vivo { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; min-width: 0 }
+.kv-vivo .inl-x { width: auto; max-width: 100%; height: 22px; margin: 0; padding: 0 18px 0 0; border: 0; border-bottom: 1px solid transparent; border-radius: 0;
+  background: transparent; box-shadow: none; font: inherit; color: inherit; outline: 0; appearance: none; cursor: pointer }
+.kv-vivo .inl-x:hover { border-bottom-color: #747775; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23444746' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 2px center }
+.kv-vivo .inl-x:focus { border-bottom: 2px solid var(--m-primary, #0b57d0) }
+.kv-vivo-b { display: inline; margin: 0; padding: 0; border: 0; border-bottom: 1px solid transparent; background: none; font: inherit; color: inherit; text-align: left; cursor: text }
+.kv-vivo-b:hover { border-bottom-color: #747775 }
+.kv-vivo-busca { display: block; width: 100% }
+.kv-vivo-busca .gbusca-h { width: 100%; margin: 0 }
+/* número e unidade juntos, como texto ("15,00 m", "1.890 m²"): o campo tem a largura do que tem dentro */
+:is(.area, .inl-c) .adorno:is(.m, .m2) { display: inline-flex; align-items: baseline; width: auto; max-width: 100% }
+:is(.area, .inl-c) .adorno.adorno:is(.m, .m2) > input.inl, :is(.area, .inl-c) .adorno.adorno:is(.m, .m2) > input { width: auto; field-sizing: content; min-width: 3ch; max-width: 100%; padding-right: 0 !important }
+:is(.area, .inl-c) .adorno:is(.m, .m2) > .adorno-t { position: static; transform: none; margin-left: 4px; color: inherit }
+.kv-vivo select.inl-x { field-sizing: content; padding-right: 22px !important; background-position: right 2px center !important; background-size: 16px 16px !important }
+/* barra das abas contínua, como roleta (pedido do Moisés, 6/nov/2026): rola de lado com as abas das pontas cortadas */
+.fi-abas.roleta { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y }
+.fi-abas.roleta::-webkit-scrollbar { display: none }
+/* seletor de raio da renda e do perfil some com o quadro fechado (pedido do Moisés, 6/nov/2026; no celular, o display:flex !important do seletor passava por cima) */
+:root:not(#_) .sec.qd-fechado > .rd-raios { display: none !important }
+/* Concorrência no entorno: raio e situações numa linha só; sem caber, as situações ficam só com o ícone (pedido do Moisés, 6/nov/2026) */
+.mk-fil { display: flex; flex-wrap: nowrap; gap: 12px; align-items: center; margin: 0 0 8px; min-width: 0 }
+.mk-fil > .seg { flex: none; width: auto !important; max-width: none !important }
+.mk-fil .mk-sits button { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap }
+.mk-fil.curto .mk-sits button { padding-left: 12px !important; padding-right: 12px !important }
+/* botão de alerta do que falta, na barra das abas, quando o topo da ficha saiu da vista (pedido do Moisés, 6/nov/2026) */
+.fi-alerta { align-items: center }
+.fi-alerta-b { position: relative; color: #b3261e !important }
+.fi-alerta .fi-comp-n { top: 2px; right: 0 }
+.fi-alerta .fi-comp-m { left: auto; right: 0 }
+
+/* borda esquerda da gaveta da ficha no Mapa: arrasta a largura, com a mesma pega da borda da lista (pedido do Moisés, 5/nov/2026) */
+.tgav-redim { position: absolute; left: -7px; top: 0; bottom: 0; width: 14px; z-index: 40; cursor: col-resize; touch-action: none; outline: none }
+.tgav-redim::after { content: ""; position: absolute; left: 5px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: #c4c7c5; transition: background .15s, height .15s, margin .15s }
+.tgav-redim:hover::after, .tgav-redim:focus-visible::after, body.mp-arrastando .tgav-redim::after { background: #0b57d0; height: 72px; margin-top: -36px }
+@media (max-width: 899px) { .tgav-redim { display: none } }
+:root[data-tema="escuro"] .tgav-redim::after { background: #444746 }
+:root[data-tema="escuro"] .tgav-redim:hover::after, :root[data-tema="escuro"] body.mp-arrastando .tgav-redim::after { background: #a8c7fa }
+/* a gaveta encosta na barra de cima: o fio no alto separa o título dela da barra, que tem o mesmo fundo (pedido do Moisés, 6/nov/2026) */
+@media (min-width: 900px) { .tgav-mapa { border-top: 1px solid var(--m-outline-var, #c4c7c5) } }
+:root[data-tema="escuro"] .tgav-mapa { border-top-color: #2d2f31 }
+/* título do quadro nunca espreme letra por letra: sem espaço, as ações (a busca de endereço) descem para a linha de baixo
+   (pedido do Moisés, 6/nov/2026) */
+.fi-aba .sec-h > h2 { flex: 0 1 auto; min-width: min(100%, max-content) }
+.fi-aba .sec-h > h2 > .qd-tg { min-width: min(100%, max-content) }
+.sec-h .qd-acoes:has(.gbusca-h) { flex: 1 1 240px; justify-content: flex-end }
+
+/* máscara à vista enquanto se digita (lib/mascara.ts, pedido do Moisés de 6/nov/2026) */
+.masc-sombra { position: fixed; z-index: 3000; pointer-events: none; color: #8e918f; white-space: pre; overflow: hidden }
+.masc-sombra[hidden] { display: none }
+:root[data-tema="escuro"] .masc-sombra { color: #747775 }
+
+/* Larguras mínimas (pedido do Moisés, 6/nov/2026): na gaveta estreita os campos não encolhem até cortar o valor;
+   quando não cabem lado a lado, descem para a linha de baixo. As grades da ficha passam a depender da largura do
+   próprio quadro, não da tela. */
+.pt2-g { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)) }
+.etq-top { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) }
+.etq-form .field { flex: 1 1 150px; min-width: min(100%, 150px) }
+.etq-form .field.grow { flex: 2 1 190px; min-width: min(100%, 190px) }
+.fi-aba .areas { grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)) }
+.fi-aba .cond { grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)) }
+.fi-aba .fields, .dialog .fields { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) }
+.dialog.mini .fields { grid-template-columns: 1fr }
+.inline-form .field { min-width: min(100%, 140px) }
+.inline-form .field.grow { min-width: min(100%, 200px) }
+.vtec-c { grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)) }
+
+/* Etiqueta em mais de uma parte (pedido do Moisés, 6/nov/2026): mini pizza com a fração da parte no lote; tracejada
+   quando estimada (sem percentual informado); o número fica na dica */
+.etq-n { display: inline-flex; align-items: center; gap: 6px }
+.etq-pz { --p: 50; --cor: currentColor; flex: none; width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--cor);
+  background: conic-gradient(var(--cor) calc(var(--p) * 1%), transparent 0) }
+.etq-pz.est { opacity: .55; box-shadow: none; outline: 1.5px dashed var(--cor); outline-offset: -1.5px }
+.etq-pz.lg { width: 20px; height: 20px }
+.etq-menu { position: fixed; z-index: 2500; min-width: 220px; max-width: 280px; max-height: 70vh; overflow: auto; background: #fff; border-radius: 8px; padding: 6px 0;
+  box-shadow: 0 2px 6px 2px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.3) }
+.etq-menu-t { padding: 6px 16px 8px; font-size: 13px; font-weight: 500; color: #1f1f1f; border-bottom: 1px solid #e3e3e3; margin-bottom: 4px }
+.etq-menu-h { padding: 8px 16px 4px; font-size: 12px; font-weight: 500; color: #444746 }
+.etq-menu-v { padding: 8px 16px; font-size: 13px; color: #444746 }
+.etq-menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 36px; padding: 0 16px; border: 0; background: none; font: inherit; font-size: 14px; color: #1f1f1f; text-align: left; cursor: pointer }
+.etq-menu button:hover, .etq-menu button:focus-visible { background: #f0f4f9; outline: none }
+.etq-menu hr { border: 0; border-top: 1px solid #e3e3e3; margin: 4px 0 }
+.etq-pcts { display: flex; flex-direction: column; gap: 6px; margin-top: 16px }
+.etq-pcts .etq-h3 { margin-top: 0 }
+.etq-pct { display: grid; grid-template-columns: 20px minmax(0, 1fr) minmax(110px, 140px); align-items: center; gap: 12px; padding: 4px 8px; border-radius: 8px; color: #0b57d0 }
+.etq-pct.atual { background: #f0f4f9 }
+.etq-pct-n { color: #1f1f1f; font-size: 14px; overflow-wrap: anywhere }
+.etq-pct input { text-align: right }
+.etq-dup { margin-top: 6px; max-width: 320px }
+.etq-pcts .hint { margin-top: 2px }
+:root[data-tema="escuro"] .etq-menu { background: #282a2c } :root[data-tema="escuro"] .etq-menu button, :root[data-tema="escuro"] .etq-menu-t { color: #e3e3e3 }
+:root[data-tema="escuro"] .etq-menu button:hover { background: #333537 } :root[data-tema="escuro"] .etq-pct.atual { background: #282a2c } :root[data-tema="escuro"] .etq-pct-n { color: #e3e3e3 }
+/* Pizza sempre na etiqueta da parte, que abre a barra do percentual; lápis ao lado do x (pedido do Moises, 6/nov/2026) */
+.etq-pzb { position: relative; border: 0; background: none; color: inherit; padding: 0 0 0 9px; height: 100%; display: inline-flex; align-items: center; cursor: pointer; flex: none }
+.etq-pzb:hover .etq-pz { transform: scale(1.15) }
+.etq-pzb + .etq-n { padding-left: 6px }
+.etq-pzb.zero .etq-pz { --cor: #b3261e; box-shadow: inset 0 0 0 1.5px #b3261e; background: #ffdad6 }
+.etq-pzb::after { content: attr(data-dica); position: absolute; left: 0; bottom: calc(100% + 6px); background: #1f1f1f; color: #fff; font-size: 12px; font-weight: 400; line-height: 16px;
+  padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .08s; z-index: 30 }
+.etq-pzb:hover::after { opacity: 1; transition-delay: .15s }
+.etq { overflow: visible }
+.etq-alerta { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: #b3261e; color: #fff; font-size: 10px; font-weight: 700; flex: none }
+.etq-ed { border: 0; background: none; color: inherit; opacity: .65; width: 24px; height: 100%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0 }
+.etq-ed:hover { opacity: 1; background: rgba(0,0,0,.06) }
+.pct-pop { position: fixed; z-index: 2600; width: 104px; background: #fff; border-radius: 12px; padding: 10px 10px 8px; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 6px 20px rgba(0,0,0,.12);
+  display: flex; flex-direction: column; align-items: center; gap: 8px }
+.pct-pop-t { font-size: 12px; color: #444746; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.pct-pop-b { height: 140px; display: flex; justify-content: center }
+.pct-pop input[type=range] { writing-mode: vertical-lr; direction: rtl; width: 10px; height: 140px; margin: 0 9px; cursor: pointer; appearance: none; -webkit-appearance: none; border-radius: 5px;
+  background: linear-gradient(to top, #0b57d0 calc(var(--p) * 1%), #dde3ea calc(var(--p) * 1%), #dde3ea calc(var(--max) * 1%), #f1d5d2 calc(var(--max) * 1%)) }
+.pct-pop input[type=range]::-webkit-slider-runnable-track { background: transparent }
+.pct-pop input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #0b57d0; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35) }
+.pct-pop input[type=range]::-moz-range-track { background: transparent }
+.pct-pop input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #0b57d0; border: 3px solid #fff }
+.pct-pop input[type=range]:focus-visible { outline: 2px solid #0b57d0; outline-offset: 4px }
+.pct-pop .adorno, .pct-pop-i { width: 84px }
+.pct-pop-i { height: 32px; text-align: right; font-size: 14px }
+.pct-pop-h { font-size: 11px; color: #5f6368 }
+
+/* Matrículas e SQLs um sobre o outro: cada quadro recolhe pela seta do título (pedido do Moises, 6/nov/2026) */
+.etq-ct-b { width: calc(100% + 16px); margin: -4px -8px; padding: 4px 8px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer }
+.etq-ct-b:hover { background: rgba(68, 71, 70, .08) }
+.etq-ct-b .ic { transform: rotate(90deg); transition: transform .15s; flex: none; color: #444746 }
+.etq-col.fechado { padding-bottom: 12px }
+.etq-col.fechado > :not(.etq-ct) { display: none }
+.etq-col.fechado .etq-ct-b .ic { transform: none }
+html[data-tema="escuro"] .etq-ct-b .ic { color: #c4c7c5 }
+
+/* selo do ambiente com o PR e a hora do build embaixo (pedido do Moises, 6/nov/2026) */
+.amb-pilha { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; align-self: center; flex: none }
+.amb-pilha .amb-selo { align-self: flex-start }
+.amb-pr { font-size: 11px; line-height: 14px; color: #5f6368; white-space: nowrap; padding-left: 2px }
+:root[data-tema="escuro"] .amb-pr { color: #c4c7c5 }
+@media (max-width: 599px) { .amb-pr { display: none } }
+/* matrícula como subquadro dentro da parte, com os SQLs dela dentro (pedido do Moises, 6/nov/2026) */
+.etq-mq { border: 1px solid #e3c25a; border-radius: 10px; background: #fffaf0; display: flex; flex-direction: column; min-width: 0; transition: background-color .12s }
+.etq-mq-h { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #fff8dc; border-bottom: 1px solid #e3c25a; border-radius: 10px 10px 0 0; min-height: 44px }
+.etq-mq-h .faint { font-size: 12px }
+.etq-mq-b { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; padding: 8px; min-height: 48px }
+.etq-mq.sem { border-style: dashed; border-color: #c4c7c5; background: none } .etq-mq.sem .etq-mq-h { background: #f0f4f9; border-color: #c4c7c5 }
+html[data-tema="escuro"] .etq-mq { border-color: #8a7020; background: #2a2412 }
+html[data-tema="escuro"] .etq-mq-h { background: #4a3c08; border-color: #8a7020 }
+html[data-tema="escuro"] .etq-mq.sem { border-color: #444746 } html[data-tema="escuro"] .etq-mq.sem .etq-mq-h { background: #282a2c; border-color: #444746 }
+/* proprietários da parte: lista curta no cartão e a janela com as pessoas (pedido do Moises, 6/nov/2026) */
+.pt2-pp { display: flex; flex-direction: column; gap: 4px }
+.pt2-pp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px }
+.pt2-pp-h { min-height: 0 }
+/* título, contagem e os ícones numa linha só, sem quebrar (pedido do Moises, 6/nov/2026) */
+.pt2 .pt2-h { flex-wrap: nowrap }
+.pt2 .pt2-h .pt2-tit { flex: 1 1 0; min-width: 0; max-width: none }
+.pt2 .pt2-h .chip { white-space: nowrap; flex: none }
+.pt2-acoes { display: inline-flex; flex: none; margin-right: -8px }
+.pt2-acoes .iconbtn { width: 36px; height: 36px }
+.pt2-donos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column }
+.pt2-donos li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #e3e3e3; font-size: 14px }
+.pt2-donos li:first-child { border-top: 0 }
+.pt2-donos li span:first-child { overflow-wrap: anywhere }
+.pt2-donos .faint { white-space: nowrap; font-variant-numeric: tabular-nums }
+.pt2-outros { font-size: 12px }
+.dialog:has(.pp-dlg) { width: min(920px, 100%) }
+.pp-dlg { display: flex; flex-direction: column; gap: 16px }
+.pp-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px 12px; align-items: end; margin: 0 }
+.pp-form .field { margin: 0; min-width: 0 }
+.pp-form .pp-nome { grid-column: span 2 }
+.pp-bt { display: flex; gap: 8px; justify-content: flex-end; grid-column: -2 / -1 }
+.pp-tbl td { vertical-align: middle } .pp-tbl tr.sel td { background: #f0f4f9 }
+.pp-acoes { display: inline-flex; gap: 2px; white-space: nowrap }
+html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema="escuro"] .pp-tbl tr.sel td { background: #282a2c }
+@media (max-width: 600px) { .pp-form .pp-nome { grid-column: auto } .pp-bt { grid-column: auto } }
+
+/* Partes da proposta (pedido do Moises, 9/nov/2026): escolha no formulário e etiquetas na lista */
+.pp-partes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.pp-pts { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px }
+.pp-pts .chip.ni { color: var(--texto-suave) }
+.pp-sobre { margin-bottom: 16px } .pp-sobre .bt { font-weight: 500 }
+/* Traçar rota até aqui (mapa/Rota.tsx; pedido do Moises, 9/nov/2026) */
+.mp-rt { position: absolute; top: 64px; left: 12px; z-index: 520; width: 360px; max-width: calc(100% - 24px); display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px; background: #fff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 4px 12px rgba(0,0,0,.12); font-size: 14px; color: #1f1f1f }
+.mp-rt-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-right: -8px }
+.mp-rt-t { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 500; min-width: 0 }
+.mp-rt-t b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.mp-rt-t .ic { flex: none; color: #0b57d0 }
+.mp-rt-modos { display: flex; justify-content: space-between; gap: 2px }
+.mp-rt-modos button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: transparent; padding: 0; font: inherit; color: #444746; cursor: pointer }
+.mp-rt-i { display: grid; place-items: center; width: 56px; height: 32px; border-radius: 16px }
+.mp-rt-modos button:hover .mp-rt-i { background: rgba(68,71,70,.08) }
+.mp-rt-modos button[aria-checked="true"] { color: #1f1f1f }
+.mp-rt-modos button[aria-checked="true"] .mp-rt-i { background: #c2e7ff; color: #001d35 }
+.mp-rt-modos button:focus-visible { outline: 0 } .mp-rt-modos button:focus-visible .mp-rt-i { outline: 2px solid #0b57d0; outline-offset: 1px }
+.mp-rt-l { font-size: 12px; font-weight: 500; line-height: 16px; white-space: nowrap }
+.mp-rt-busca { position: relative; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border: 1px solid #c4c7c5; border-radius: 22px; background: #fff }
+.mp-rt-busca:focus-within { border-color: #0b57d0; box-shadow: inset 0 0 0 1px #0b57d0 }
+.mp-rt-busca input { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 14px; color: inherit }
+.mp-rt-busca .mp-res { top: 48px }
+.mp-rt-o, .rt-o { flex: none; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid #1f1f1f; box-sizing: border-box }
+.rt-o { width: 16px; height: 16px; border-width: 4px; transform: translateY(50%); box-shadow: 0 1px 3px rgba(0,0,0,.35) }
+.rt-d { width: 22px; height: 30px; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 30'%3E%3Cpath d='M11 1C5.5 1 1 5.4 1 10.9 1 18.3 11 29 11 29s10-10.7 10-18.1C21 5.4 16.5 1 11 1z' fill='%23ea4335' stroke='%23a50e0e' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='3.6' fill='%23a50e0e'/%3E%3C/svg%3E"); filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)) }
+.mp-rt-r { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-top: 2px }
+.mp-rt-tempo { font-size: 20px; font-weight: 400; color: #146c2e }
+.mp-rt-erro { color: #b3261e }
+.mp-rt-linhas { display: flex; flex-wrap: wrap; gap: 6px }
+.mp-rt-g { margin-left: -12px }
+.mapa-area.sv-on .mp-rt { display: none }
+.mp-rt-s { display: flex; flex-direction: column; min-width: 0 } .mp-rt-s .muted { font-size: 12px }
+/* com a rota aberta, os quadrados da concorrência ficam apagados para a linha aparecer (ficam por cima dela no Google) */
+.mapa-area.rota-on .mk.g:not(.mk-dest) { opacity: .12 }
+/* escolher a saída da rota no mapa (9/nov/2026): mira ao lado da busca e cursor de mira no mapa */
+.mp-rt-busca { padding-right: 4px }
+.mp-rt-mira { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 18px; background: transparent; color: #444746; cursor: pointer }
+.mp-rt-mira:hover { background: rgba(68,71,70,.08) }
+.mp-rt-mira.on { background: #c2e7ff; color: #001d35 }
+.mp-rt-dica { margin-top: -4px; font-size: 12px; color: #444746 }
+.mapa-area.rota-pega .mapa, .mapa-area.rota-pega .mapa div, .mapa-area.rota-pega .mapa .pin, .mapa-area.rota-pega .mapa .mk { cursor: crosshair !important }
+.mapa-area.rota-on.rota-pega .mk.g:not(.mk-dest) { opacity: .6 }
+/* cabeçalho e moldura na largura toda (pedido do Moises, 9/nov/2026): em tela grande o logo e o perfil iam para o meio, porque .top-in e .layout tinham largura máxima centrada.
+   O desenho do logo começa na mesma linha do menu lateral (12 px, a borda dos botões do menu) e o perfil termina a 12 px da direita, a mesma margem.
+   O SVG do logo tem 4 px de folga à esquerda na largura de 120 px, por isso o recuo da esquerda é 8. */
+.layout, .top-in, body.menu-min .layout { max-width: none }
+@media (min-width: 900px) { .top { padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)) } }

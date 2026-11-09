@@ -69,6 +69,11 @@ function setDesenhaLadrilho(cv,x,y,z,camada){const T=256,dpr=Math.min(2,window.d
     if(cor){ctx.fillStyle=rdHex2rgba(cor,op);ctx.fill('evenodd');if(borda){ctx.lineWidth=.6;ctx.strokeStyle='rgba(255,255,255,.55)';ctx.stroke()}}
     else if(z>=13){ctx.setLineDash([3,3]);ctx.lineWidth=.8;ctx.strokeStyle=sem;ctx.stroke();ctx.setLineDash([])}}}
 let RD_L=null,RD_G=null,RD_SEL=null;
+/* renda ou densidade ligada fica guardada no navegador: quem sai do mapa e volta, mesmo noutra sessão, encontra como deixou
+   (bkm-terrenos-mapa-camada; pedido do Moisés, 5/nov/2026) */
+const RD_KEY='bkm-terrenos-mapa-camada';
+if(UI.mpSetor===undefined)try{const k=localStorage.getItem(RD_KEY);if(k)UI.mpSetor=k}catch(e){}
+function rdGuardar(){try{localStorage.setItem(RD_KEY,CAMADAS_SETOR[UI.mpSetor]?UI.mpSetor:'')}catch(e){}}
 function rdLigada(){return !!CAMADAS_SETOR[UI.mpSetor]}
 function rdCamada(){return rdLigada()?UI.mpSetor:null}
 function rdCamadaLigar(){if(!MAPA||!rdLigada())return;
@@ -141,20 +146,24 @@ function rdLegenda(){const area=$('.mapa-area');let el=$('#rd-leg');if(!area||!n
 /* barra do mapa: um botão Camadas que abre a lista das camadas por setor (uma ligada de cada vez);
    ligado, o botão mostra o nome curto da camada */
 const RD_IC={renda:'rd-ic',dens:'ds-ic'};
-function rdBarraBotao(){const k=rdCamada();
+/* rdCamBotao é só o botão Camadas; rdBarraBotao ganha os botões de outras camadas (o da concorrência, em proto_mercado.js) */
+/* o botão Camadas saiu da barra: renda e densidade ligam pela legenda (pedido do Moisés, 5/nov/2026) */
+function rdBarraBotao(){return ''}
+function rdCamBotao(){const k=rdCamada();
   return `<div class="mp-cam"><button type="button" class="mp-renda-b" data-a="mp-camadas" aria-haspopup="menu" aria-expanded="false" aria-pressed="${!!k}" title="Camadas por setor censitário (IBGE)">${k?`<span class="${RD_IC[k]}"></span>`:ic('layers',18)}${k?CAMADAS_SETOR[k].curto:'Camadas'}<span class="cam-seta">${ic('chev',16)}</span></button></div>`}
 function rdMenu(abrir){const w=$('.mapa-area .mp-cam');if(!w)return;w.querySelector('.mp-cam-m')?.remove();const b=w.querySelector('[data-a="mp-camadas"]');b.setAttribute('aria-expanded',!!abrir);if(!abrir)return;
   const k=rdCamada(),it=(v,ico,l)=>`<button type="button" role="menuitemradio" aria-checked="${k===v}" data-a="mp-camada" data-v="${v||''}"><span class="${ico}"></span>${l}</button>`;
   w.insertAdjacentHTML('beforeend',`<div class="mp-cam-m" role="menu" aria-label="Camadas">${it('renda','rd-ic','Renda familiar')}${it('dens','ds-ic','Densidade demográfica')}${it(null,'cam-off','Nenhuma')}</div>`)}
 document.addEventListener('pointerdown',e=>{if($('.mp-cam-m')&&!e.target.closest('.mp-cam'))rdMenu(false)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-cam-m')){rdMenu(false);e.preventDefault();e.stopImmediatePropagation()}},true);
-function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Renda familiar (setores)</button>`
-  +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Densidade demográfica (setores)</button>`}
-function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;
+function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Mapa de Renda</button>`
+  +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Mapa Demográfico</button>`}
+function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;rdGuardar();
   if(antes)rdCamadaDesligar();
-  if(k){if(!antes&&(UI.mpBase||'satelite')==='satelite'){UI.rdBaseAntes='satelite';setBase('mapa')}rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
-  else{RD.sel=null;rdBox();if(UI.rdBaseAntes&&UI.mpBase==='mapa')setBase(UI.rdBaseAntes);UI.rdBaseAntes=null}
-  rdLegenda();const b=$('.mapa-area .mp-cam');if(b)b.outerHTML=rdBarraBotao();
+  /* sem camada, o tipo de mapa escolhido nos três pontinhos; com renda ou densidade, Satélite (pedido do Moisés, 5/nov/2026) */
+  if(k){if(!antes){UI.mpBaseCam=null;setBase(mpBaseAtual())}rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
+  else{RD.sel=null;rdBox();UI.mpBaseCam=null;setBase(mpBaseAtual())}
+  rdLegenda();const b=$('.mapa-area .mp-cam');if(b)b.outerHTML=rdCamBotao();
   document.querySelectorAll('[data-a="mp-renda"]').forEach(b=>b.setAttribute('aria-pressed',k==='renda'));document.querySelectorAll('[data-a="mp-dens"]').forEach(b=>b.setAttribute('aria-pressed',k==='dens'))}
 /* chamado depois de criar o mapa (initMapa): a camada, a legenda e o quadro voltam como estavam */
 function rdPosMapa(){if(typeof achadoPin==='function')achadoPin();RD_L=null;RD_G=null;RD_SEL=null;if(!rdLigada()){rdLegenda();return}rdCamadaLigar();rdLegenda();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
@@ -299,7 +308,7 @@ function setoresClick(A,a,t){
     case 'rd-x':rdFechar();return true;
     case 'rd-met':UI.modal='rd-met';renderModal();return true;
     case 'rd-raio':{const v=a.dataset.v;UI.rdRaio=v==='poly'?'poly':Number(v);document.querySelectorAll('[data-a="rd-raio"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));if(t)rdCardAtualiza(t.id);return true}
-    case 'rd-ver':{const x=T(a.dataset.id);UI.mpSetor=rdCamada()||'renda';if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
+    case 'rd-ver':{const x=T(a.dataset.id);UI.mpSetor=rdCamada()||'renda';rdGuardar();if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
   }
   return false}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RD.sel!=null&&!UI.modal&&naMapa()){rdFechar();e.preventDefault()}});

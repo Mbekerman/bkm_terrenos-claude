@@ -270,3 +270,55 @@ grant execute on function app.agenda_confirmar(uuid, text, text, text, text), ap
   app.agenda_resposta(uuid, text, text), app.registrar_gravacao(uuid, text, text, text, text), app.registrar_resumo_ia(uuid, text, text, text)
   to service_role;
 grant execute on function app.decidir_resumo_ia(uuid, boolean, text, text) to authenticated;
+
+-- ---------------------------------------------------------------------
+-- Ficha numa chamada só (pedido do Moisés, 6/nov/2026: trocar de terreno na gaveta do Mapa tem de ser instantâneo).
+-- O front fazia 24 pedidos em três levas para montar a ficha; no servidor pequeno do Supabase, cada pedido espera a fila
+-- e a soma passava de 10 s. Esta função devolve tudo o que `carregarFicha` (apps/web/src/ficha/dados.ts) lia, com a RLS
+-- de quem chama (security invoker); nulo = código que não existe nas empresas da pessoa.
+-- ---------------------------------------------------------------------
+create or replace function app.ficha_dados(p_empresa uuid, p_codigo text)
+returns jsonb language plpgsql stable security invoker set search_path = '' as $$
+declare v app.v_terrenos; tr app.terrenos; neg uuid; vid uuid;
+begin
+  select * into v from app.v_terrenos where empresa_id = p_empresa and codigo = p_codigo;
+  if not found then return null; end if;
+  select * into tr from app.terrenos where id = v.id;
+  neg := v.negociacao_id;
+  if neg is not null then select viabilidade_id into vid from app.processos where id = neg; end if;
+  return jsonb_build_object(
+    'v', to_jsonb(v),
+    't', to_jsonb(tr),
+    'u', (select jsonb_build_object('nome', u.nome, 'email', u.email, 'foto_url', u.foto_url) from app.usuarios u where u.user_id = v.responsavel_id),
+    'of1', (select to_jsonb(o) from (select id, valor_pedido, data_oferta from app.ofertas where terreno_id = v.id order by data_oferta, criado_em limit 1) o),
+    'q_ofertas', (select count(*) from app.ofertas where terreno_id = v.id),
+    'cor', (select jsonb_build_object('corretor_id', tc.corretor_id, 'imobiliaria', c.imobiliaria, 'nome', p.nome_razao_social)
+              from app.terreno_corretores tc join app.corretores c on c.id = tc.corretor_id left join app.pessoas p on p.id = c.pessoa_id
+             where tc.terreno_id = v.id and tc.principal limit 1),
+    'est', (select to_jsonb(e) from (select nome, distancia_pe_m, duracao_pe_s from app.v_terreno_entorno
+             where terreno_id = v.id and categoria = 'metro_trem' order by distancia_pe_m nulls last limit 1) e),
+    'buscado', exists (select 1 from app.terreno_entorno_buscas where terreno_id = v.id),
+    'unidades', (select unidades from app.viabilidades where id = vid),
+    'fases', coalesce((select jsonb_agg(jsonb_build_object('codigo', codigo, 'nome', nome, 'ordem', ordem, 'entrada', entrada, 'ativo', ativo) order by ordem)
+               from app.fases_modelo where empresa_id = p_empresa), '[]'),
+    'etapas', coalesce((select jsonb_agg(jsonb_build_object('fase', fase, 'codigo', codigo, 'nome', nome, 'ordem', ordem) order by ordem)
+               from app.etapas_modelo where empresa_id = p_empresa), '[]'),
+    'subetapas', coalesce((select jsonb_agg(jsonb_build_object('fase', fase, 'etapa', etapa, 'codigo', codigo, 'nome', nome, 'ordem', ordem, 'ativo', ativo) order by ordem)
+               from app.subetapas_modelo where empresa_id = p_empresa), '[]'),
+    'procs', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'fase', fase, 'etapa_atual', etapa_atual, 'subetapa_atual', subetapa_atual, 'status', status,
+                 'etapa_desde', etapa_desde, 'data_inicio', data_inicio, 'data_encerramento', data_encerramento) order by data_inicio)
+               from app.processos where terreno_id = v.id and parte_id is null), '[]'),
+    'trans', coalesce((select jsonb_agg(jsonb_build_object('processo_id', t.processo_id, 'de_etapa', t.de_etapa, 'para_etapa', t.para_etapa, 'em', t.em) order by t.em)
+               from app.processo_transicoes t join app.processos p on p.id = t.processo_id where p.terreno_id = v.id and p.parte_id is null), '[]'),
+    'q_mat', (select count(*) from app.matriculas where terreno_id = v.id),
+    'q_insc', (select count(*) from app.inscricoes_municipais where terreno_id = v.id),
+    'q_prop', (select count(*) from app.terreno_pessoas where terreno_id = v.id and papel = 'proprietario'),
+    'infra_nv', (select count(*) from app.v_terreno_infraestrutura i join app.itens_infraestrutura it on it.codigo = i.item
+                  where i.terreno_id = v.id and not coalesce(it.viabilidade_tecnica, false) and i.disponibilidade = 'nao_verificado'),
+    'q_propostas', case when neg is null then 0 else (select count(*) from app.propostas where processo_id = neg) end,
+    'q_reunioes', (select count(*) from app.reunioes where terreno_id = v.id),
+    'q_viab', (select count(*) from app.viabilidades where terreno_id = v.id),
+    'q_massa', (select count(*) from app.estudos_massa where terreno_id = v.id),
+    'q_docs', (select count(*) from app.documentos where terreno_id = v.id));
+end $$;
+grant execute on function app.ficha_dados(uuid, text) to authenticated;

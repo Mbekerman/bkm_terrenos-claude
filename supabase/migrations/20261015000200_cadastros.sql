@@ -205,8 +205,17 @@ create table app.motivos_encerramento (
 create table app.entorno_categorias (
   codigo       text primary key,
   nome         text not null,
-  tipos_google text[] not null check (cardinality(tipos_google) > 0),
+  tipos_google text[] not null check (cardinality(tipos_google) > 0),  -- tipo principal do lugar no Places (includedPrimaryTypes)
   raio_pe_m    int  not null default 1500 check (raio_pe_m between 100 and 5000),
+  -- Filtro do ruído do Google (decisão do Moisés, 4/nov/2026): escola pública, creche, praça, shopping,
+  -- estação, posto de saúde e hipermercado entram com qualquer número de avaliações; os demais comércios
+  -- precisam de min_avaliacoes (nulo = sem mínimo). Os nomes são trechos separados por |, que valem no começo
+  -- de uma palavra do nome (minúsculas, sem acento): isento_nomes dispensa o mínimo, excluir_nomes tira sempre.
+  min_avaliacoes int check (min_avaliacoes >= 0),
+  isento_nomes   text,
+  excluir_nomes  text,
+  -- lugares a até N m um do outro viram um só, o de mais avaliações (lojas que o Google marca como shopping)
+  um_por_local_m int check (um_por_local_m between 1 and 1000),
   ordem        int  not null unique,
   ativo        boolean not null default true
 );
@@ -224,13 +233,21 @@ select m.id, s from app.municipios m,
                'ZER-1','ZER-2','ZERa','ZPR','ZEP','ZEPAM','ZPDS','ZPDSr','ZOE','AVP-1','AVP-2','AC-1','AC-2']) s
 where m.codigo_ibge = '3550308';
 
-insert into app.entorno_categorias (codigo, nome, tipos_google, raio_pe_m, ordem) values
-  ('metro_trem', 'Estação de metrô ou trem', array['subway_station','train_station','light_rail_station'], 1500, 1),
-  ('shopping',   'Shopping center',          array['shopping_mall'],                                       1500, 2),
-  ('hospital',   'Hospital',                 array['hospital'],                                            1500, 3),
-  ('escola',     'Escola ou creche',         array['school','preschool','primary_school','secondary_school'], 1500, 4),
-  ('supermercado','Supermercado',            array['supermarket'],                                         1500, 5),
-  ('parque',     'Parque',                   array['park'],                                                1500, 6);
+insert into app.entorno_categorias (codigo, nome, tipos_google, raio_pe_m, ordem, min_avaliacoes, isento_nomes, excluir_nomes, um_por_local_m) values
+  ('metro_trem', 'Estação de metrô ou trem', array['subway_station','train_station','light_rail_station'], 1500, 1, null, null, null, null),
+  ('onibus',     'Terminal de ônibus',       array['bus_station'],                                         1500, 7, 50,
+     'terminal|estacao|rodoviaria', null, null),  -- o ponto na rua também é bus_station, com o endereço por nome
+  ('faculdade',  'Faculdade',                array['university'],                                          1500, 8, null, null, null, null),
+  ('shopping',   'Shopping center',          array['shopping_mall'],                                       1500, 2, 50,
+     'shopping|plaza|mall|center|centro comercial', null, 200),
+  ('hospital',   'Hospital ou posto de saúde', array['hospital'],                                          1500, 3, 50,
+     'hospital|ubs|unidade basica|posto de saude|pronto|upa|ama|santa casa|maternidade', 'veterinari|animais', null),
+  ('escola',     'Escola ou creche',         array['school','preschool','primary_school','secondary_school'], 1500, 4, null, null,
+     'autoescola|auto escola|condutores|vigilant|secretaria|conservatorio|musica|idioma|ingles|preparacao|psicopedagog|oficina|danca|natacao', null),
+  ('supermercado','Supermercado',            array['supermarket'],                                         1500, 5, 50,
+     'hiper|atacad|carrefour|assai|makro|tenda|roldao|extra|pao de acucar', null, null),
+  ('parque',     'Parque ou praça',          array['park'],                                                1500, 6, 50,
+     'praca|parque|jardim|bosque|largo|horto', 'portaria|guarita|administracao|cabana|bebedouro|restaurante|delivery|corredor', null);
 
 insert into app.itens_infraestrutura (codigo, nome, ordem, ativo, viabilidade_tecnica) values
   ('energia',     'Energia',                   1, true,  true),

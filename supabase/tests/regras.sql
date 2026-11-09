@@ -47,7 +47,10 @@ set client_min_messages = notice;
 -- ---------------------------------------------------------------------
 \echo '# empresa e equipe'
 select pg_temp.como(:'diretor');
-select app.criar_empresa('BKM Teste', 'Moisés') as emp \gset
+select pg_temp.falha($$select app.criar_empresa('Minha', 'Eu', auth.uid())$$, 'o usuário logado não cria empresa');
+reset role;
+select app.criar_empresa('BKM Teste', 'Moisés', :'diretor') as emp \gset
+select pg_temp.como(:'diretor');
 select pg_temp.ok((select papel = 'diretor' and administrador from app.membros where user_id = :'diretor'), 'quem cria a empresa vira diretor e administrador');
 insert into app.membros (empresa_id, user_id, papel, nome, superior_id) values (:'emp', :'gestor', 'gestor', 'Paula', :'diretor');
 insert into app.membros (empresa_id, user_id, papel, nome, superior_id) values (:'emp', :'analista', 'analista', 'Rafael', :'gestor');
@@ -132,6 +135,10 @@ select pg_temp.ok((select iptu_mensal_origem from app.v_inscricoes where id = :'
 select pg_temp.ok((select count(*) from app.inscricao_valores where inscricao_id = :'ins' and vigente) = 1, 'só o exercício mais recente fica vigente');
 select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, situacao_iptu, fonte) values (%L, %L, 2024, 'tributado', 'Carnê antigo')$$, :'ins', :'emp'), 'exercício anterior ao atual é recusado');
 select pg_temp.falha(format($$update app.inscricao_valores set iptu_valor_anual = 1 where inscricao_id = %L$$, :'ins'), 'valor lançado não é editado');
+insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_venal_terreno, situacao_iptu, iptu_valor_anual, fonte, notificacao) values
+  (:'ins', :'emp', 2026, 3600000, 'tributado', 46000, 'Prefeitura de São Paulo: notificação de lançamento NL 01', '{"versao": 1, "notificacao": "01", "pagar": {"total": 46000}}');
+select pg_temp.ok((select notificacao->'pagar'->>'total' from app.inscricao_valores where inscricao_id = :'ins' and vigente) = '46000', 'a notificação da Prefeitura fica guardada com o valor');
+select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, situacao_iptu, fonte, notificacao) values (%L, %L, 2026, 'tributado', 'x', '[1]')$$, :'ins', :'emp'), 'notificação precisa ser um objeto');
 select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, situacao_iptu, iptu_valor_anual) values (%L, %L, 2027, 'isento', 1000)$$, :'ins', :'emp'), 'isento não tem IPTU a pagar');
 select pg_temp.falha(format($$insert into app.inscricao_valores (inscricao_id, empresa_id, exercicio, valor_venal_terreno, valor_venal_construcao, valor_venal_imovel) values (%L, %L, 2027, 1, 1, 5)$$, :'ins', :'emp'), 'venal do imóvel bate com a soma');
 
@@ -285,13 +292,13 @@ select pg_temp.ok((select algum_gabarito_sem_limite and ca_maximo = 4 and menor_
 select pg_temp.ok((select potencial_mercado_m2 = 1400*4 + 520*2 and potencial_his_m2 = 1400*6 + 520*3 and potencial_hmp_m2 = 1400*5 + 520*2.5 and potencial_basico_m2 = 1920
                      from app.v_urbanismo_vigente where terreno_id = :'t1'), 'potencial construtivo por tipo = soma de área × CA de cada zona');
 select pg_temp.ok((select to_maximo from app.v_lote_zonas where id = :'az1' and tipo = 'mercado') = 0.70, 'TO pelo tamanho do lote (1.920 m²: a de lote grande)');
-select pg_temp.falha(format($$update app.analise_zoneamentos set ca_maximo = 2.5 where id = %L$$, :'az2'), 'exceção do lote exige a fonte');
+-- alteração no lote sem a fonte vale (fonte opcional desde 6/nov/2026)
+update app.analise_zoneamentos set ca_maximo = 2.5 where id = :'az2';
 select pg_temp.falha(format($$update app.analise_zoneamentos set gabarito_m = 30, gabarito_sem_limite = true, excecao_fonte = 'X' where id = %L$$, :'az2'), 'sem limite não leva valor');
 select pg_temp.falha(format($$update app.analise_zoneamentos set ca_maximo = 0, excecao_fonte = 'X' where id = %L$$, :'az2'), 'CA nunca é zero');
 update app.analise_zoneamentos set ca_maximo = 2.5, excecao_fonte = 'Consulta prévia 2026/123' where id = :'az2';
 select pg_temp.ok((select ca_maximo = 2.5 and tem_excecao from app.v_lote_zonas where id = :'az2' and tipo = 'his')
               and (select potencial_mercado_m2 from app.v_urbanismo_vigente where terreno_id = :'t1') = 1400*4 + 520*2.5, 'exceção do lote vale por cima do catálogo');
-select pg_temp.falha(format($$update app.analise_zoneamentos set recuo_frente_m = 0, excecao_fonte = null where id = %L$$, :'az1'), 'recuo alterado no lote também exige a fonte');
 update app.analise_zoneamentos set recuo_frente_m = 0, cota_parte_m2 = 25, ca_basico = 1.5, outorga_gratuita = true, excecao_fonte = 'Projeto aprovado 2026/77' where id = :'az1';
 select pg_temp.ok((select recuo_frente_m = 0 and cota_parte_m2 = 25 and outorga_gratuita and tem_excecao and potencial_basico_m2 = 1400*1.5 and lote_minimo_m2 = 1000
                      from app.v_lote_zonas where id = :'az1' and tipo = 'mercado'), 'qualquer parâmetro preenchido sozinho pode ser alterado no lote (recuo, cota-parte, CA básico, outorga); o resto segue o catálogo');
@@ -361,13 +368,17 @@ select pg_temp.ok((select tarefas_atrasadas from app.v_terrenos where id = :'t1'
 \echo '# propostas encadeadas'
 select app.registrar_proposta(:'neg', 'bkm', 8000000, 'dinheiro', 'À vista na escritura') as p1 \gset
 select app.registrar_proposta(:'neg', 'vendedor', 9000000, 'permuta_com_torna', 'Torna de R$ 3 mi') as p2 \gset
-select pg_temp.ok((select status from app.propostas where id = :'p1') = 'recusada', 'contraproposta do vendedor recusa a da BKM');
+select pg_temp.ok((select status from app.propostas where id = :'p1') = 'apresentada', 'contraproposta do vendedor não mexe na da BKM (nenhuma sobrepõe outra)');
 select pg_temp.ok((select proposta_anterior_id from app.propostas where id = :'p2') = :'p1', 'contraproposta aponta para a anterior');
 select app.registrar_proposta(:'neg', 'bkm', 8500000, 'permuta_com_torna', 'R$ 6 mi + 8% em permuta') as p3 \gset
 select app.registrar_proposta(:'neg', 'bkm', 8600000, 'permuta_com_torna', 'Ajuste da v3', current_date, current_date + 15) as p4 \gset
-select pg_temp.ok((select status from app.propostas where id = :'p3') = 'substituida', 'nova da mesma origem substitui a anterior');
+select pg_temp.ok((select status from app.propostas where id = :'p3') = 'apresentada', 'nova da mesma origem também não mexe na anterior');
 select pg_temp.ok((select versao from app.propostas where id = :'p4') = 4, 'quarta versão');
-select pg_temp.falha(format('select app.atualizar_status_proposta(%L, %L)', :'p3', 'aceita'), 'só a última muda de status');
+select app.atualizar_status_proposta(:'p1', 'recusada');
+select app.atualizar_status_proposta(:'p2', 'recusada');
+select app.atualizar_status_proposta(:'p3', 'substituida');
+select pg_temp.ok((select count(*) from app.propostas where id in (:'p1', :'p2', :'p3') and status in ('recusada','substituida')) = 3,
+  'quem edita muda o status de qualquer proposta, também das antigas');
 
 -- ---------------------------------------------------------------------
 \echo '# funil: etapas e subetapas'
@@ -615,7 +626,11 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select situacao_mapa from app.v_mapa where id = :'tm') = 'sem_negociacao', 'pin sem negociação');
 
 \echo '# entorno do terreno (Google, distância a pé)'
-select pg_temp.ok((select count(*) from app.entorno_categorias where ativo) = 6, 'seis categorias de entorno ligadas: metrô/trem, shopping, hospital, escola/creche, supermercado e parque');
+select pg_temp.ok((select count(*) from app.entorno_categorias where ativo) = 8, 'oito categorias de entorno ligadas: metrô/trem, shopping, hospital, escola/creche, supermercado, parque, terminal de ônibus e faculdade');
+select pg_temp.ok((select count(*) from app.entorno_categorias where codigo in ('metro_trem','escola','faculdade') and min_avaliacoes is null) = 3, 'estação, escola e faculdade entram com qualquer número de avaliações');
+select pg_temp.ok((select isento_nomes like '%shopping%' and um_por_local_m = 200 from app.entorno_categorias where codigo = 'shopping'), 'shopping passa pelo nome e junta as lojas de dentro');
+select pg_temp.ok((select min_avaliacoes = 50 and isento_nomes like '%ubs%' from app.entorno_categorias where codigo = 'hospital'), 'hospital: clínica precisa de 50 avaliações, posto de saúde não');
+select pg_temp.ok((select excluir_nomes like '%autoescola%' from app.entorno_categorias where codigo = 'escola'), 'escola: autoescola sai pelo nome');
 select pg_temp.ok((select precisa_buscar and buscado_em is null from app.v_entorno_buscas where terreno_id = :'tm'), 'terreno localizado e nunca buscado precisa de busca');
 select pg_temp.como(:'analista');
 select app.salvar_entorno(:'tm', -23.6681, -46.6513, $j$[
@@ -720,6 +735,13 @@ select pg_temp.ok((select tem_area_sem_inscricao and qtd_lotes = 2 from app.v_ur
               and (select area_abrangida_m2 from app.v_lote_zonas where terreno_id = :'tm' and inscricao_id is null and tipo = 'mercado') = 45.5,
   'parte do terreno sem inscrição entra com a zona da poligonal');
 select pg_temp.falha(format($$select app.registrar_zonas_sem_inscricao(%L, '[{"sigla":"ZM","area_m2":0}]')$$, :'tm'), 'zona com área zerada é recusada');
+-- zonas de um lote registradas à mão (aba Parâmetros, "Registrar zonas")
+select app.registrar_zonas_lote(:'tm', :'gi2', '[{"sigla":"ZM","area_m2":320}]', 'Certidão de uso do solo') \gset
+select pg_temp.ok((select string_agg(sigla || ':' || area_abrangida_m2::int, ' ' order by sigla) from app.v_lote_zonas where inscricao_id = :'gi2' and tipo = 'mercado') = 'ZM:320'
+              and (select fonte from app.analises_urbanisticas where terreno_id = :'tm' and status = 'vigente') = 'Certidão de uso do solo'
+              and (select count(*) from app.v_lote_zonas where inscricao_id = :'gi' and tipo = 'mercado') = 1, 'zonas do lote à mão trocam só as daquele lote, com a fonte');
+select pg_temp.falha(format($$select app.registrar_zonas_lote(%L, %L, '[{"sigla":"ZM","area_m2":10}]', ' ')$$, :'tm', :'gi2'), 'zonas à mão sem fonte são recusadas');
+select pg_temp.falha(format($$select app.registrar_zonas_lote(%L, %L, '[{"sigla":"ZM","area_m2":10}]', 'x')$$, :'tm', :'ins'), 'lote de outro terreno é recusado nas zonas à mão');
 select pg_temp.falha(format($$insert into app.analise_zoneamentos (empresa_id, analise_id, inscricao_id, zoneamento_id) values (%L, %L, %L, %L)$$,
   :'emp', (select id from app.analises_urbanisticas where terreno_id = :'tm' and status = 'vigente'), :'ins', :'zm'), 'lote de outro terreno é recusado');
 select pg_temp.falha(format('select app.registrar_consulta_lote(%L, %L, null, null, %L, %L)', :'gi',
@@ -792,6 +814,7 @@ select pg_temp.ok((select lista_nome = 'Fazendo' and concluida_em is null from a
 select pg_temp.como(:'leitor');
 select pg_temp.ok((select count(*) from app.v_terrenos) = 4, 'leitura vê os terrenos');
 select pg_temp.ok((select count(*) from app.v_inscricoes) = 1, 'leitura vê valor venal e IPTU');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos') >= 3, 'leitura vê os logs da ficha');
 select pg_temp.falha(format($$select pg_temp.tarefa(%L, 'x', current_date)$$, :'t2'), 'leitura não cria tarefa');
 select q.id as q2, pg_temp.lista(:'t2', 'Fazer') as l2 from fluxo.quadros q where q.objeto_tipo = 'terreno' and q.objeto_id = :'t2' \gset
 select pg_temp.falha(format($$select app.salvar_terreno(%L, 1, '{"nome":"x"}')$$, :'t2'), 'leitura não edita terreno');
@@ -803,6 +826,7 @@ select pg_temp.como(:'intruso');
 select pg_temp.ok((select count(*) from app.terrenos) = 0, 'outra pessoa não vê terrenos');
 select pg_temp.ok((select count(*) from app.v_terrenos) = 0, 'outra pessoa não vê a listagem');
 select pg_temp.ok((select count(*) from app.v_inscricoes) = 0, 'outra pessoa não vê valor venal');
+select pg_temp.ok((select count(*) from app.auditoria) = 0, 'outra pessoa não vê os logs');
 select pg_temp.ok((select count(*) from app.v_reunioes) = 0, 'outra pessoa não vê reuniões');
 select pg_temp.ok((select count(*) from app.pontos_interesse) = 0 and (select count(*) from app.v_mapa) = 0, 'outra pessoa não vê mapa nem pontos de interesse');
 select pg_temp.falha(format('select app.checar_avanco(%L)', :'neg'), 'outra pessoa não acessa RPC');
@@ -1054,7 +1078,9 @@ select pg_temp.ok((select count(*) from app.auditoria where tabela in ('fases_mo
 select pg_temp.ok((select count(*) from app.auditoria where tabela in ('etapas_modelo','subetapas_modelo','motivos_encerramento','checklist_modelo','status_modelo','prerequisitos_modelo')) >= 10,
   'toda alteração de configuração vai para a auditoria');
 select pg_temp.como(:'intruso');
-select app.criar_empresa('Outra', 'Fulano') as emp2 \gset
+reset role;
+select app.criar_empresa('Outra', 'Fulano', :'intruso') as emp2 \gset
+select pg_temp.como(:'intruso');
 select pg_temp.ok((select nome from app.etapas_modelo where codigo = 'estudos') = 'Estudos Preliminares', 'cada empresa tem a sua configuração');
 select pg_temp.como(:'diretor');
 
@@ -1169,9 +1195,11 @@ select pg_temp.falha(format($$select app.salvar_parte(%L, null, '{"nome":"Oficin
 select app.salvar_parte(:'tv', null, '{"nome":"Oficina do Zé","area_m2":2700}') as pc \gset
 select pg_temp.falha(format($$select app.salvar_parte(%L, null, '{"nome":"Fora","poligono":%s}')$$, :'tv', pg_temp.quadra(-46.7000, -23.7000, 30)), 'pedaço da parte fica dentro do terreno');
 select pg_temp.falha(format($$insert into app.terreno_partes (empresa_id, terreno_id, nome) values (%L, %L, 'Direto')$$, :'emp', :'tv'), 'parte só entra pela RPC');
-insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, parte_id) values (:'emp', :'tv', '201.001', '9º RI', :'pa'), (:'emp', :'tv', '201.002', '9º RI', :'pa');
-insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, parte_id) values (:'emp', :'tv', '201.003', '9º RI', :'pb');
-select pg_temp.falha(format($$insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, parte_id) values (%L, %L, '1', '1º RI', %L)$$, :'emp', :'t1', :'pa'), 'matrícula só entra em parte do próprio terreno');
+insert into app.matriculas (empresa_id, terreno_id, numero, cartorio) values (:'emp', :'tv', '201.001', '9º RI'), (:'emp', :'tv', '201.002', '9º RI'), (:'emp', :'tv', '201.003', '9º RI');
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id)
+  select :'emp', :'tv', id, case when numero = '201.003' then :'pb'::uuid else :'pa'::uuid end from app.matriculas where terreno_id = :'tv';
+insert into app.matriculas (empresa_id, terreno_id, numero, cartorio) values (:'emp', :'t1', '1', '1º RI') returning id as m_t1 \gset
+select pg_temp.falha(format($$insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (%L, %L, %L, %L)$$, :'emp', :'t1', :'m_t1', :'pa'), 'matrícula só entra em parte do próprio terreno');
 insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Ana Souza') returning id as pas \gset
 insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Beto Souza') returning id as pbs \gset
 insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Carlos Pires') returning id as pcp \gset
@@ -1690,10 +1718,46 @@ select pg_temp.como('00000000-0000-0000-0000-0000000000f1');
 select pg_temp.ok(exists (select 1 from app.terrenos), 'o básico consulta os dados da empresa, como leitura');
 select pg_temp.falha(format($$update app.terrenos set nome = 'X' where id = %L$$, :'t1'), 'o básico não altera nada');
 select pg_temp.falha(format($$select app.mudar_arroba(%L, 'jj')$$, '00000000-0000-0000-0000-0000000000f1'), 'o básico não muda o próprio @');
+select app.salvar_minha_foto('https://lh3.googleusercontent.com/a/foto-da-api');
+select pg_temp.ok((select foto_url = 'https://lh3.googleusercontent.com/a/foto-da-api' from app.usuarios where user_id = '00000000-0000-0000-0000-0000000000f1'),
+  'quem entrou grava a própria foto buscada no Google');
+select pg_temp.falha($$select app.salvar_minha_foto('https://exemplo.com/foto.png')$$, 'foto que não é do Google é recusada');
+reset role;
+update auth.users set raw_user_meta_data = '{"full_name":"João S. Silva"}', last_sign_in_at = now() where id = '00000000-0000-0000-0000-0000000000f1';
+select pg_temp.ok((select foto_url = 'https://lh3.googleusercontent.com/a/foto-da-api' from app.usuarios where user_id = '00000000-0000-0000-0000-0000000000f1'),
+  'login sem foto não apaga a foto gravada');
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.usuarios where arroba like 'joao.silva%') = 2, 'a equipe vê nome, foto e @ de quem está na empresa');
 select pg_temp.falha(format($$select app.mudar_arroba(%L, 'joao.silva')$$, '00000000-0000-0000-0000-0000000000f2'), '@ já usado é recusado');
 select pg_temp.ok(app.mudar_arroba('00000000-0000-0000-0000-0000000000f2', '@Joao.Outro') = 'joao.outro', 'o administrador muda o @');
+
+\echo '# equipe prevista: papel combinado antes do primeiro login'
+insert into app.equipe_prevista (empresa_id, email, papel, administrador, superior_email, nome) values
+  (:'emp', 'ana.prevista@bkm.test', 'analista', false, 'gestora.prevista@bkm.test', 'Ana Prevista'),
+  (:'emp', 'gestora.prevista@bkm.test', 'gestor', false, 'diretor@bkm.test', null),
+  (:'emp', 'errado.prevista@bkm.test', 'analista', false, 'diretor@bkm.test', null),
+  (:'emp', 'dir.prevista@bkm.test', 'diretor', true, null, null);
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into app.equipe_prevista (empresa_id, email, papel) values (%L, 'eu@bkm.test', 'diretor')$$, :'emp'),
+  'só o administrador combina a equipe prevista');
+select pg_temp.ok((select count(*) from app.equipe_prevista) = 0, 'e só ele a vê');
+reset role;
+insert into auth.users values ('00000000-0000-0000-0000-0000000000e1', 'Ana.Prevista@bkm.test', '{"full_name":"Ana P."}', now());
+select pg_temp.ok((select papel = 'analista' and superior_id is null and nome = 'Ana Prevista' from app.membros where user_id = '00000000-0000-0000-0000-0000000000e1'),
+  'no primeiro login entra com o papel combinado; o superior que ainda não entrou fica para depois');
+insert into auth.users values ('00000000-0000-0000-0000-0000000000e2', 'gestora.prevista@bkm.test', '{"full_name":"Gestora"}', now());
+select pg_temp.ok((select papel = 'gestor' and superior_id = :'diretor' from app.membros where user_id = '00000000-0000-0000-0000-0000000000e2'),
+  'o superior que já está na empresa entra junto');
+select pg_temp.ok((select superior_id from app.membros where user_id = '00000000-0000-0000-0000-0000000000e1') = '00000000-0000-0000-0000-0000000000e2',
+  'quando o superior entra, quem responde a ele ganha o superior');
+insert into auth.users values ('00000000-0000-0000-0000-0000000000e3', 'errado.prevista@bkm.test', '{}', now());
+select pg_temp.ok((select papel from app.membros where user_id = '00000000-0000-0000-0000-0000000000e3') = 'basico',
+  'equipe prevista errada (analista abaixo de diretor) não impede o login: entra como básico');
+insert into auth.users values ('00000000-0000-0000-0000-0000000000e4', 'dir.prevista@bkm.test', '{}', now());
+select pg_temp.ok((select papel = 'diretor' and administrador from app.membros where user_id = '00000000-0000-0000-0000-0000000000e4'),
+  'a marca de administrador vem da equipe prevista');
+select pg_temp.ok((select count(*) from app.equipe_prevista where aplicada_em is not null) = 3, 'a equipe prevista guarda quando foi aplicada');
+select pg_temp.como(:'diretor');
 
 \echo '# menções com @ e e-mail das notificações'
 select pg_temp.ok(app.arrobas_no_texto('Fala @Gestor e @joao.silva. Copiar x@bkm.test e @@ ninguém') = array['gestor','joao.silva'],
@@ -1722,6 +1786,22 @@ select pg_temp.ok((select email_status from app.notificacoes where tipo = 'menca
 select pg_temp.ok((select count(*) from app.preferencias_notificacao) = 1, 'cada um vê só as próprias preferências');
 select app.salvar_preferencia_notificacao(:'emp', 'mencao', null);
 select pg_temp.ok(not exists (select 1 from app.preferencias_notificacao), 'preferência vazia volta ao padrão do tipo');
+-- participantes da reunião marcados com @ (pedido do Moises, 9/nov/2026)
+select pg_temp.como(:'analista');
+insert into app.reunioes (empresa_id, terreno_id, status, inicio, modalidade, link, pauta) values
+  (:'emp', :'tm', 'agendada', now() + interval '2 days', 'online', 'https://meet.google.com/abc-defg-hij', 'Contraproposta com @gestor') returning id as rm \gset
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, user_id) values (:'emp', :'rm', 'bkm', :'gestor'), (:'emp', :'rm', 'bkm', :'diretor'), (:'emp', :'rm', 'bkm', :'analista');
+insert into app.reuniao_participantes (empresa_id, reuniao_id, lado, nome, email) values (:'emp', :'rm', 'vendedor', 'Sr. Carlos', 'carlos@exemplo.com');
+select pg_temp.falha(format($$insert into app.reunioes (empresa_id, terreno_id, inicio, modalidade, local, link) values (%L, %L, now() - interval '1 hour', 'presencial', 'bkm', 'https://meet.google.com/x')$$, :'emp', :'tm'), 'link só em reunião online');
+select pg_temp.falha(format($$update app.reunioes set link = 'meet.google.com/x' where id = %L$$, :'rm'), 'link da reunião começa com http');
+select pg_temp.ok((select count(*) from app.mencoes where origem_tabela = 'reunioes' and origem_id = :'rm') = 2,
+  'colega marcado como participante vira menção da reunião, uma vez por pessoa; quem marcou e quem é de fora, não');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select texto from app.notificacoes where tipo = 'mencao' and origem_id = :'rm') like '% marcou você na reunião de %',
+  'participante da BKM marcado é avisado no sino');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'mencao' and origem_id = :'rm') = 1,
+  'mencionado no texto e marcado como participante recebe um aviso só');
 select pg_temp.ok((select bool_and(email_status is null) from app.notificacoes where tipo = 'tarefa_prazo'), 'lembrete de prazo não vai por e-mail no padrão');
 select pg_temp.falha(format($$select app.salvar_preferencia_notificacao(%L, 'nao_existe', true)$$, :'emp'), 'tipo de notificação desconhecido é recusado');
 select pg_temp.falha(format($$insert into app.preferencias_notificacao values (%L, %L, 'mencao', true)$$, :'emp', :'gestor'), 'preferência só se grava pela função');
@@ -3306,7 +3386,9 @@ update fluxo.listas set tipo = 'aberta', oculta = true where id = :'lnp';
 
 -- outra empresa: equipe, @, domínio e cadastros
 select pg_temp.como(:'intruso');
-select app.criar_empresa('Outra SA', 'Intruso') as emp_x \gset
+reset role;
+select app.criar_empresa('Outra SA', 'Intruso', :'intruso') as emp_x \gset
+select pg_temp.como(:'intruso');
 select pg_temp.falha(format($$insert into app.membros (empresa_id, user_id, papel, nome) values (%L, %L, 'analista', 'Pego')$$, :'emp_x', :'analista'),
   'o administrador de outra empresa não põe alguém da BKM na equipe dele');
 select pg_temp.falha(format($$select app.mudar_arroba(%L, 'pego')$$, :'analista'), 'nem muda o @ dele');
@@ -3341,26 +3423,91 @@ insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_c
 insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, area_registrada_m2) values (:'emp', :'tl', '301.001', '9º CRI', 500) returning id as lm1 \gset
 insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, area_registrada_m2) values (:'emp', :'tl', '301.002', '9º CRI', 300) returning id as lm2 \gset
 insert into app.matriculas (empresa_id, terreno_id, numero, cartorio, area_registrada_m2) values (:'emp', :'tl', '301.003', '9º CRI', 200) returning id as lm3 \gset
-select pg_temp.ok((select count(*) = 0 from app.matriculas where terreno_id = :'tl' and parte_id is not null)
-                  and (select count(*) = 0 from app.inscricoes_municipais where terreno_id = :'tl' and parte_id is not null), 'matrícula e SQL entram sem parte');
--- arrastar a etiqueta para a parte = gravar parte_id direto
-update app.matriculas set parte_id = :'lp1' where id = :'lm1';
-update app.inscricoes_municipais set parte_id = :'lp1' where id = :'li1';
-update app.matriculas set parte_id = :'lp2' where id in (:'lm2', :'lm3');
-update app.inscricoes_municipais set parte_id = :'lp2' where id in (:'li2', :'li3');
-select pg_temp.ok((select area_partes_m2 = 500 and area_fonte = 'matriculas' and area_cadastral_m2 = 480 and divergencia_cadastral_pct = -4.0 from app.v_partes where id = :'lp1'),
-  'área da parte pelas matrículas e divergência com o cadastral dos SQLs dela');
-select pg_temp.ok((select area_partes_m2 = 500 and area_matriculas_m2 = 500 and area_cadastral_m2 = 550 and divergencia_cadastral_pct = 10.0 from app.v_partes where id = :'lp2'),
+select pg_temp.ok((select count(*) = 0 from app.matricula_partes where terreno_id = :'tl')
+                  and (select count(*) = 0 from app.inscricao_partes where terreno_id = :'tl'), 'matrícula e SQL entram sem parte');
+-- arrastar a etiqueta para a parte = uma linha da etiqueta na parte
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tl', :'lm1', :'lp1') returning id as lc1 \gset
+-- o SQL entra na parte sempre dentro de uma matrícula dela (subquadro da matrícula; pedido do Moises, 6/nov/2026)
+select pg_temp.falha(format($$insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, parte_id) values (%L, %L, %L, %L)$$, :'emp', :'tl', :'li1', :'lp1'),
+  'SQL sem matrícula não entra na parte');
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id) values (:'emp', :'tl', :'li1', :'lc1') returning id as lic1 \gset
+select pg_temp.ok((select parte_id = :'lp1' from app.inscricao_partes where id = :'lic1'), 'o SQL dentro da matrícula fica na parte dela');
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tl', :'lm2', :'lp2') returning id as lc_2 \gset
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tl', :'lm3', :'lp2') returning id as lc_3 \gset
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id) values (:'emp', :'tl', :'li2', :'lc_2'), (:'emp', :'tl', :'li3', :'lc_3');
+select pg_temp.ok((select area_partes_m2 = 480 and area_fonte = 'inscricoes' and area_matriculas_m2 = 500 and area_cadastral_m2 = 480 and divergencia_cadastral_pct = -4.0 from app.v_partes where id = :'lp1'),
+  'área da parte pelos SQLs dela e divergência com as matrículas');
+select pg_temp.ok((select area_partes_m2 = 550 and area_matriculas_m2 = 500 and area_cadastral_m2 = 550 and divergencia_cadastral_pct = 10.0 from app.v_partes where id = :'lp2'),
   'parte com duas matrículas e dois SQLs: divergência pela soma de cada lado');
-update app.matriculas set area_registrada_m2 = null where id = :'lm3';
-select pg_temp.ok((select area_partes_m2 is null and area_fonte is null and divergencia_cadastral_pct is null from app.v_partes where id = :'lp2'), 'matrícula sem área: a parte fica sem área (não soma pela metade)');
-update app.matriculas set area_registrada_m2 = 200 where id = :'lm3';
-select pg_temp.falha(format($$update app.matriculas set parte_id = %L where id = %L$$, :'pa', :'lm1'), 'a parte tem que ser do terreno');
+update app.inscricoes_municipais set area_cadastral_m2 = null where id = :'li3';
+select pg_temp.ok((select area_partes_m2 is null and area_fonte is null and divergencia_cadastral_pct is null from app.v_partes where id = :'lp2'), 'SQL sem área: a parte fica sem área (não soma pela metade)');
+update app.inscricoes_municipais set area_cadastral_m2 = 400 where id = :'li3';
+-- o SQL anda com a matrícula: a matrícula muda de parte, ele vai junto; ela sai da parte, ele fica solto
+update app.matricula_partes set parte_id = :'lp1' where id = :'lc_3';
+select pg_temp.ok((select parte_id = :'lp1' from app.inscricao_partes where inscricao_id = :'li3'), 'a matrícula leva os SQLs dela para a outra parte');
+update app.matricula_partes set parte_id = :'lp2' where id = :'lc_3';
+update app.inscricao_partes set parte_id = :'lp2' where id = :'lic1';
+select pg_temp.ok((select parte_id = :'lp1' from app.inscricao_partes where id = :'lic1'), 'o SQL dentro de uma matrícula fica na parte dela, mesmo pedindo outra');
+update app.inscricao_partes set matricula_parte_id = :'lc_2' where id = :'lic1';
+select pg_temp.ok((select parte_id = :'lp2' from app.inscricao_partes where id = :'lic1'), 'o SQL levado para a matrícula de outra parte vai para a parte dela');
+update app.inscricao_partes set matricula_parte_id = :'lc1' where id = :'lic1';
+select pg_temp.falha(format($$update app.matricula_partes set parte_id = %L where id = %L$$, :'pa', :'lc1'), 'a parte tem que ser do terreno');
+-- o mesmo lote em duas partes (etiqueta duplicada; pedido do Moisés, 6/nov/2026)
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tl', :'lm1', :'lp2') returning id as lc2 \gset
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id, percentual) values (:'emp', :'tl', :'lm1', :'lp2', 0) returning id as lc3 \gset
+select pg_temp.ok((select count(*) = 2 from app.matricula_partes where matricula_id = :'lm1' and parte_id = :'lp2'), 'a cópia duplicada nasce na mesma parte da original');
+delete from app.matricula_partes where id = :'lc3';
+select pg_temp.ok((select area_matriculas_m2 = 250 from app.v_partes where id = :'lp1') and (select area_matriculas_m2 = 750 from app.v_partes where id = :'lp2'),
+  'lote de duas partes sem percentual: metade para cada');
+select pg_temp.ok((select bool_and(fracao_estimada) from app.v_etiquetas where lote_id = :'lm1'), 'sem percentual, a fração do lote compartilhado é estimada');
+update app.matricula_partes set percentual = 70 where id = :'lc1';
+select pg_temp.ok((select area_matriculas_m2 = 350 from app.v_partes where id = :'lp1') and (select area_matriculas_m2 = 650 from app.v_partes where id = :'lp2'),
+  'com 70% numa parte, a outra fica com o que sobra');
+select pg_temp.ok((select area_partes_m2 = 336 from app.v_partes where id = :'lp1'),
+  'área da parte = área do SQL × fração da parte no SQL × fração da parte na matrícula (480 × 100% × 70%)');
+select pg_temp.falha(format('update app.matricula_partes set percentual = 40 where id = %L', :'lc2'), 'os percentuais do mesmo lote não passam de 100%');
+update app.matricula_partes set percentual = 30 where id = :'lc2';
+select pg_temp.ok((select count(*) = 0 from app.v_etiquetas where lote_id = :'lm1' and fracao_estimada), 'com os percentuais informados, nada é estimado');
+update app.matricula_partes set percentual = 0 where id = :'lc2';
+update app.matricula_partes set percentual = 100 where id = :'lc1';
+select pg_temp.ok((select area_matriculas_m2 = 500 from app.v_partes where id = :'lp1') and (select area_matriculas_m2 = 500 from app.v_partes where id = :'lp2'),
+  'etiqueta com 0%: a parte fica sem nada do lote');
+-- cópia solta (sem parte), para distribuir depois
+update app.matricula_partes set percentual = 60 where id = :'lc1';
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id, percentual) values (:'emp', :'tl', :'lm1', null, 40) returning id as lcs \gset
+select pg_temp.ok((select fracao = 0.4 from app.v_etiquetas where id = :'lcs'), 'cópia solta guarda a fração dela no lote');
+select pg_temp.ok((select area_matriculas_m2 = 300 from app.v_partes where id = :'lp1'), 'a parte fica só com a fração dela; a solta não entra em parte nenhuma');
+delete from app.matricula_partes where id = :'lc2';
+update app.matricula_partes set parte_id = :'lp2' where id = :'lcs';
+select pg_temp.ok((select area_matriculas_m2 = 700 from app.v_partes where id = :'lp2'), 'a solta levada para uma parte entra nela');
+insert into app.matricula_partes (id, empresa_id, terreno_id, matricula_id, parte_id, percentual) values (:'lc2', :'emp', :'tl', :'lm1', null, 0);
+update app.matricula_partes set parte_id = null where id = :'lcs';
+delete from app.matricula_partes where id = :'lc2';
+update app.matricula_partes set parte_id = :'lp2', percentual = 0 where id = :'lcs';
+update app.matricula_partes set percentual = 100 where id = :'lc1';
+update app.matricula_partes set percentual = 70 where id = :'lc1';
+delete from app.matricula_partes where id in (:'lc2', :'lcs');
+update app.matricula_partes set percentual = null where id = :'lc1';
+select pg_temp.ok((select area_matriculas_m2 = 500 from app.v_partes where id = :'lp1'), 'de volta a uma parte só, o lote inteiro');
 -- parte só com SQLs: a área vem do cadastro da prefeitura
 select app.salvar_parte(:'tl', null, '{"nome":"Vendedor 3"}') as lp3 \gset
-insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao, area_cadastral_m2, origem, endereco_prefeitura, parte_id)
-values (:'emp', :'tl', :'sp', '059.112.0040-3', 220, 'mapa_prefeitura', 'R BRESSER, 120', :'lp3') returning id as lim \gset
-select pg_temp.ok((select area_partes_m2 = 220 and area_fonte = 'inscricoes' and divergencia_cadastral_pct is null from app.v_partes where id = :'lp3'), 'parte sem matrícula: área pela soma dos SQLs');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, municipio_id, inscricao, area_cadastral_m2, origem, endereco_prefeitura)
+values (:'emp', :'tl', :'sp', '059.112.0040-3', 220, 'mapa_prefeitura', 'R BRESSER, 120') returning id as lim \gset
+insert into app.matriculas (empresa_id, terreno_id, numero, cartorio) values (:'emp', :'tl', '301.004', '9º CRI') returning id as lm4 \gset
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tl', :'lm4', :'lp3') returning id as lc4 \gset
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id) values (:'emp', :'tl', :'lim', :'lc4');
+select pg_temp.ok((select area_partes_m2 = 220 and area_fonte = 'inscricoes' and divergencia_cadastral_pct is null from app.v_partes where id = :'lp3'), 'matrícula sem área: a área da parte vem dos SQLs, sem divergência');
+delete from app.matricula_partes where id = :'lc4';
+select pg_temp.ok((select parte_id is null and matricula_parte_id is null from app.inscricao_partes where inscricao_id = :'lim'), 'a matrícula sai da parte: o SQL dela fica solto');
+insert into app.matricula_partes (id, empresa_id, terreno_id, matricula_id, parte_id) values (:'lc4', :'emp', :'tl', :'lm4', :'lp3');
+update app.inscricao_partes set matricula_parte_id = :'lc4' where inscricao_id = :'lim';
+-- pessoas da parte: relação e participação (pedido do Moises, 6/nov/2026)
+insert into app.pessoas (empresa_id, nome_razao_social) values (:'emp', 'Ana Bresser') returning id as pana \gset
+insert into app.pessoas (empresa_id, nome_razao_social) values (:'emp', 'João Bresser') returning id as pjoao \gset
+insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao, parte_id) values (:'emp', :'tl', :'pana', 'proprietario', 100, :'lp3');
+insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, parte_id) values (:'emp', :'tl', :'pjoao', 'conjuge', :'lp3');
+select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao, parte_id) values (%L, %L, %L, 'parente', 10, %L)$$, :'emp', :'tl', :'pjoao', :'lp3'),
+  'participação só de proprietário');
 select pg_temp.falha(format($$insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, origem) values (%L, %L, '059.112.0041-1', 'chute')$$, :'emp', :'tl'), 'origem da inscrição só digitada ou do mapa');
 reset role;
 insert into app.consultas_lote (empresa_id, terreno_id, inscricao_id, base, inscricao_norm, lote, zonas)
@@ -3369,17 +3516,21 @@ select pg_temp.como(:'analista');
 select pg_temp.ok((select zonas = '{ZM}' from app.v_partes where id = :'lp1'), 'zonas da parte pela última consulta dos SQLs dela');
 -- excluir a parte: as etiquetas dela ficam sem parte (voltam para o quadro de cima)
 select app.excluir_parte(:'lp3');
-select pg_temp.ok(not exists (select 1 from app.terreno_partes where id = :'lp3') and (select parte_id is null from app.inscricoes_municipais where id = :'lim'),
-  'parte excluída: o SQL dela fica no terreno, sem parte');
+select pg_temp.ok(not exists (select 1 from app.terreno_partes where id = :'lp3') and exists (select 1 from app.inscricoes_municipais where id = :'lim')
+                  and not exists (select 1 from app.inscricao_partes where inscricao_id = :'lim')
+                  and not exists (select 1 from app.terreno_pessoas where terreno_id = :'tl' and pessoa_id in (:'pana', :'pjoao'))
+                  and exists (select 1 from app.pessoas where id = :'pana'),
+  'parte excluída: o SQL dela fica no terreno, sem parte, e as pessoas saem dela (o cadastro da pessoa fica)');
 select app.excluir_parte(:'lp2');
-select pg_temp.ok((select count(*) = 0 from app.matriculas where terreno_id = :'tl' and parte_id = :'lp2'), 'matrículas da parte excluída ficam sem parte');
+select pg_temp.ok((select count(*) = 0 from app.matricula_partes where parte_id = :'lp2') and (select count(*) = 4 from app.matriculas where terreno_id = :'tl'),
+  'matrículas da parte excluída ficam no terreno, sem parte');
 select pg_temp.falha(format('select app.excluir_parte(%L)', :'lp1'), 'a última parte não sai');
 insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
 values (:'emp', 'Uma parte só', :'analista', 'corretor', :'sp', 'Brás', pg_temp.quadra(-46.8300, -23.7000, 30)) returning id as tl2 \gset
 select pg_temp.falha(format('select app.excluir_parte(id) from app.terreno_partes where terreno_id = %L', :'tl2'), 'o terreno fica sempre com uma parte');
 select pg_temp.como(:'leitor');
-update app.matriculas set parte_id = null where id = :'lm1';
-select pg_temp.ok((select parte_id = :'lp1' from app.matriculas where id = :'lm1'), 'Leitura não muda a parte da matrícula');
+delete from app.matricula_partes where id = :'lc1';
+select pg_temp.ok(exists (select 1 from app.matricula_partes where id = :'lc1'), 'Leitura não tira a matrícula da parte');
 select pg_temp.como(:'analista');
 
 -- ---------------------------------------------------------------------
@@ -3541,5 +3692,104 @@ update app.reunioes set na_agenda = false where id = :'rb';
 reset role; set role service_role; select app.agenda_confirmar(:'rb', null); reset role;
 select pg_temp.como(:'analista');
 select pg_temp.ok((select acao = 'remover' and evento_id is null and situacao = 'sincronizada' from app.reuniao_agenda where reuniao_id = :'rb'), 'tirar da Agenda remove o evento');
+
+-- ---------------------------------------------------------------------
+\echo '# conferência protótipo × banco (4/nov/2026)'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Só o nome', :'analista', :'sp', pg_temp.quadra(-47.31, -23.31)) returning id as tcurto \gset
+select pg_temp.ok((select origem_cadastro from app.terrenos where id = :'tcurto') = 'nao_informado',
+  'o cadastro curto (só o nome) nasce com a origem "não informado"');
+insert into app.matriculas (empresa_id, terreno_id, numero) values (:'emp', :'tcurto', '700.100');
+select pg_temp.ok((select cartorio is null from app.matriculas where numero = '700.100'), 'matrícula entra sem cartório (não informado)');
+select pg_temp.falha(format($$insert into app.matriculas (empresa_id, terreno_id, numero, cartorio) values (%L, %L, '700100', '9º RI')$$, :'emp', :'t1'),
+  'cartório em branco conta como o mesmo: o número não entra noutro terreno com cartório');
+select pg_temp.falha(format($$insert into app.matriculas (empresa_id, terreno_id, numero) values (%L, %L, '184.552')$$, :'emp', :'tcurto'),
+  'nem o número de outro terreno entra sem cartório');
+select pg_temp.ok((select certeza from app.buscar_duplicados(:'emp', '700100', '9º RI') limit 1) = 'certa', 'a busca de duplicados trata o cartório em branco como o mesmo');
+select app.salvar_terreno(:'tcurto', (select versao from app.terrenos where id = :'tcurto'),
+  jsonb_build_object('poligono_desenhado_geojson', pg_temp.quadra(-47.31, -23.31, 25))) as vcurto \gset
+select pg_temp.ok((select poligono_desenhado_geojson is not null from app.terrenos where id = :'tcurto'),
+  'a poligonal desenhada fica guardada quando a do terreno vira a soma dos lotes');
+
+-- ---------------------------------------------------------------------
+\echo '# área cadastral do terreno pela soma dos SQLs (6/nov/2026)'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Soma dos SQLs', :'analista', :'sp', pg_temp.quadra(-47.33, -23.33)) returning id as tsq \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tsq', '501.001.0001-1', 400) returning id as sq1 \gset
+select pg_temp.ok((select area_cadastral_m2 = 400 and area_cadastral_origem = 'sqls' from app.terrenos where id = :'tsq'), 'o primeiro SQL com área vira a cadastral do terreno');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'tsq', '501.001.0002-1') returning id as sq2 \gset
+select pg_temp.ok((select area_cadastral_m2 is null from app.terrenos where id = :'tsq'), 'SQL sem área deixa a soma em branco (não soma pela metade)');
+update app.inscricoes_municipais set area_cadastral_m2 = 250.5 where id = :'sq2';
+select pg_temp.ok((select area_cadastral_m2 = 650.5 from app.terrenos where id = :'tsq'), 'com todos os SQLs com área, a cadastral é a soma');
+select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"fonte_area_adotada":"cadastral"}') \gset
+delete from app.inscricoes_municipais where id = :'sq2';
+select pg_temp.ok((select area_cadastral_m2 = 400 and area_adotada_m2 = 400 from app.terrenos where id = :'tsq'), 'excluir SQL refaz a soma, e a adotada pela cadastral acompanha');
+select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"area_cadastral_m2":420}') \gset
+select pg_temp.ok((select area_cadastral_m2 = 420 and area_cadastral_origem = 'digitada' and area_adotada_m2 = 420 from app.terrenos where id = :'tsq'), 'valor digitado passa a valer');
+update app.inscricoes_municipais set area_cadastral_m2 = 410 where id = :'sq1';
+select pg_temp.ok((select area_cadastral_m2 = 420 from app.terrenos where id = :'tsq'), 'o SQL não sobrescreve a cadastral digitada');
+select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"area_cadastral_m2":null}') \gset
+select pg_temp.ok((select area_cadastral_m2 = 410 and area_cadastral_origem = 'sqls' from app.terrenos where id = :'tsq'), 'apagar a cadastral volta para a soma dos SQLs');
+delete from app.inscricoes_municipais where id = :'sq1';
+select pg_temp.ok((select area_cadastral_m2 is null and area_adotada_m2 is null and fonte_area_adotada is null from app.terrenos where id = :'tsq'),
+  'sem SQL, sem cadastral; a adotada que era a cadastral fica em branco');
+
+-- ---------------------------------------------------------------------
+\echo '# ficha numa chamada só (6/nov/2026)'
+select pg_temp.como(:'analista');
+select pg_temp.ok((select (d->'v'->>'id') = :'tsq' and (d->'t'->>'nome') = 'Soma dos SQLs' and jsonb_typeof(d->'fases') = 'array'
+    and (d->>'q_insc')::int = 0 and jsonb_typeof(d->'procs') = 'array'
+  from (select app.ficha_dados(:'emp', (select codigo from app.terrenos where id = :'tsq')) d) x), 'a ficha vem inteira numa chamada');
+select pg_temp.ok(app.ficha_dados(:'emp', 'Z999') is null, 'código que não existe devolve nulo');
+
+-- ---------------------------------------------------------------------
+\echo '# propostas por parte (9/nov/2026)'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Propostas por parte', :'analista', :'sp', pg_temp.quadra(-47.21, -23.21)) returning id as tpp \gset
+select (app.registrar_oferta(:'tpp', 5000000)->>'processo_id') as npp \gset
+select app.registrar_proposta(:'npp', 'bkm', 4000000, 'dinheiro') as q1 \gset
+select pg_temp.ok((select array_agg(parte_id) from app.proposta_partes where proposta_id = :'q1') = (select array_agg(id) from app.terreno_partes where terreno_id = :'tpp'),
+  'com uma parte só, a proposta é dela sem precisar escolher');
+select app.salvar_parte(:'tpp', null, '{"nome":"Vizinho"}') as ppb \gset
+select id as ppa from app.terreno_partes where terreno_id = :'tpp' and id <> :'ppb' \gset
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L)', :'npp', 'bkm', 'dinheiro'), 'com duas partes, escolher a parte é obrigatório');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L, p_partes => %L)', :'npp', 'bkm', 'dinheiro', '{}'), 'lista vazia de partes é recusada');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L, p_partes => array[%L]::uuid[])', :'npp', 'bkm', 'dinheiro', :'pa'),
+  'parte de outro terreno é recusada');
+select app.registrar_proposta(:'npp', 'bkm', 1500000, 'dinheiro', p_partes => array[:'ppb']::uuid[]) as q2 \gset
+select pg_temp.ok((select versao from app.propostas where id = :'q2') = 2 and (select proposta_anterior_id is null from app.propostas where id = :'q2'),
+  'a versão é uma só sequência; proposta a outra parte não responde à da primeira');
+select app.registrar_proposta(:'npp', 'vendedor', 6000000, 'dinheiro', p_partes => array[:'ppa', :'ppb', :'ppa']::uuid[]) as q3 \gset
+select pg_temp.ok((select count(*) from app.proposta_partes where proposta_id = :'q3') = 2, 'proposta a todas as partes (repetida conta uma vez)');
+select pg_temp.ok((select count(*) from app.propostas where id in (:'q1', :'q2') and status = 'apresentada') = 2
+    and (select proposta_anterior_id from app.propostas where id = :'q3') = :'q2'::uuid,
+  'propostas sobrepostas ficam todas abertas; a nova só aponta para a mais recente com parte em comum');
+reset role;
+select pg_temp.ok((select ultima_proposta_valor from app.v_terrenos where id = :'tpp') = 6000000 and (select proposta_ativa_valor from app.v_terrenos where id = :'tpp') = 6000000
+    and (select app.proposta_vigente(:'npp')) = :'q3'::uuid, 'nos resumos do terreno vale a última feita');
+select pg_temp.como(:'analista');
+select app.excluir_proposta(:'q2');
+select pg_temp.ok(not exists (select 1 from app.propostas where id = :'q2') and (select proposta_anterior_id from app.propostas where id = :'q3') is null
+    and exists (select 1 from app.auditoria where tabela = 'propostas' and registro_id = :'q2'::uuid and acao = 'delete'),
+  'quem edita exclui uma proposta; a que apontava para ela passa à anterior dela, e o log fica');
+select pg_temp.falha(format('select app.excluir_parte(%L)', :'ppb'), 'parte com proposta tem histórico: não se exclui');
+reset role;  -- proposta antiga, de antes das partes
+insert into app.propostas (empresa_id, processo_id, versao, origem, valor_total, forma_pagamento, status)
+  values (:'emp', :'npp', 9, 'bkm', 100, 'dinheiro', 'apresentada') returning id as qv \gset
+select pg_temp.como(:'analista');
+select app.registrar_proposta(:'npp', 'bkm', 4500000, 'dinheiro', p_partes => array[:'ppa']::uuid[]) as q4 \gset
+select pg_temp.ok((select status from app.propostas where id = :'qv') = 'apresentada' and (select proposta_anterior_id from app.propostas where id = :'q4') = :'qv'::uuid
+    and (select versao from app.propostas where id = :'q4') = 10,
+  'proposta antiga, sem parte informada, conta como de todas as partes');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.excluir_proposta(%L)', :'q4'), 'leitura não exclui proposta');
+select pg_temp.como(:'gestor');
+select app.remover_parte(:'ppb', 'Vendeu para outro');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L, p_partes => array[%L]::uuid[])', :'npp', 'bkm', 'dinheiro', :'ppb'),
+  'parte tirada do terreno não recebe proposta');
 
 \echo 'TODOS OS TESTES PASSARAM'

@@ -319,6 +319,13 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .mapa-area:has(.mp-modo:not(:empty)) .leaflet-control-scale { display: none }
 }
 .mp-modo .mp-q { opacity: .75; white-space: nowrap }
+/* desenho no desktop: só o mapa, a busca e a barra Cancelar/Concluir no canto de baixo à direita (opção 5 do Moises, 5/nov/2026) */
+.mapa-area:has(.mp-modo > .mp-fina:not(.rg-b)) :is(.mp-legenda, #mp-ctrl, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+/* régua: o botão dela, no canto, continua à mostra (é ele que desliga) */
+.mapa-area:has(.mp-modo > .rg-b) :is(.mp-legenda, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+.mp-modo:has(> .mp-fina) { top: auto !important; bottom: 28px; left: auto !important; right: 12px; transform: none; flex-wrap: nowrap; max-width: none; padding: 4px 4px 4px 16px !important; gap: 4px !important; border-radius: 22px !important; font-size: 13px; line-height: 18px }
+.mp-modo:has(> .mp-fina) > .mp-fina { flex: 0 0 auto; margin-right: 8px }
+.mp-modo:has(> .mp-fina) .btn { height: 32px; min-height: 32px !important; border-radius: 16px !important }
 /* edição da poligonal no celular: só os dois botões, sem a faixa escura (decisão do Moisés, 24/out/2026) */
 .mp-modo:not(:has(> span)):not(:empty) { background: transparent !important; box-shadow: none !important; padding: 0 !important; gap: 8px !important; justify-content: flex-end; pointer-events: none }
 .mp-modo:not(:has(> span)) .btn { pointer-events: auto; height: 40px; min-height: 40px !important; padding: 0 20px !important; border-radius: 20px !important; box-shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 8px rgba(0,0,0,.15) !important }
@@ -369,6 +376,11 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
 .adv-lista.adv-modal { padding: 4px 24px 8px }
 .adv-l2 { display: flex; gap: 8px; align-items: center }
 .adv-l2 > .btn.primary { flex: 1 1 auto; justify-content: center; min-width: 0 }
+/* painel estreito (1024 a 1180 px): o rótulo longo ("Concluir como Comprado") não pode ser cortado.
+   Recuo de 16 px e, com a linha abaixo de 270 px, sem o ícone e com o rótulo em duas linhas quando não cabe em uma (4/nov/2026). */
+.adv-l2 { container-type: inline-size }
+.adv-l2 > .btn.primary { padding: 0 16px !important }
+@container (max-width: 270px) { .adv-l2 > .btn.primary { padding: 4px 12px !important; height: auto; white-space: normal; line-height: 16px; text-align: center } .adv-l2 > .btn.primary > svg { display: none } .adv-l2 > .btn.primary > span { white-space: normal } }
 .adv-mais { position: relative; flex: none }
 .adv-mb { width: 40px; min-width: 40px; padding: 0; justify-content: center }
 .adv-menu { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 40; min-width: 220px; background: var(--m-sc-low, #f0f4f9); border-radius: 12px; padding: 6px 0; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.14) }
@@ -806,14 +818,18 @@ html[data-tema="escuro"] body.dnd .col[data-col]:not(.origem), html[data-tema="e
 html[data-tema="escuro"] .col.sobre, html[data-tema="escuro"] .tk-col.sobre { background: rgba(128,132,139,0.18) !important; outline-color: rgba(149,153,160,0.9) !important }
 
 /* Mapa: botões do canto (minha localização, tela cheia), X do cartão do terreno e tela cheia (23/out/2026) */
-.mp-ctrl { position: absolute; right: 10px; bottom: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; transition: bottom .15s }
-.mp-cb { width: 40px; height: 40px; border-radius: 20px; border: 0; display: grid; place-items: center; cursor: pointer; background: #fff; color: #444746; box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.15) }
-.mp-cb:hover { color: #0b57d0; background: #f0f4f9 }
+.mp-ctrl { position: absolute; right: 10px; bottom: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; transition: bottom .15s }
+/* no jeito dos botões do Google Maps atual: pequenos, escuros e discretos (pedido do Moisés, 5/nov/2026) */
+.mp-cb { width: 32px; height: 32px; border-radius: 8px; border: 0; display: grid; place-items: center; cursor: pointer; background: rgba(32,33,36,.9); color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3) }
+.mp-cb svg { width: 18px; height: 18px }
+.mp-cb:hover { color: #fff; background: #3c4043 }
+.mapa-area .gm-svpc { width: 32px !important; height: 32px !important; margin-left: 8px !important; border-radius: 8px !important; background-color: rgba(32,33,36,.9) !important; box-shadow: 0 1px 4px rgba(0,0,0,.3) !important }
+.mapa-area .gm-svpc img { max-width: 20px; max-height: 20px }
 .mp-cb:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
 .mp-cb.busca svg { animation: mp-pulso 1s ease-in-out infinite }
 @keyframes mp-pulso { 50% { opacity: .35 } }
-:root[data-tema="escuro"] .mp-cb { background: #1a1a1b; color: #c1d9ff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 6px 16px rgba(0,0,0,.5) }
-:root[data-tema="escuro"] .mp-cb:hover { background: #29292b }
+:root[data-tema="escuro"] .mp-cb { background: rgba(32,33,36,.9); color: #fff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 1px 4px rgba(0,0,0,.5) }
+:root[data-tema="escuro"] .mp-cb:hover { background: #3c4043 }
 .mapa-area.sv-on .mp-cb[data-a="mp-eu"] { display: none }
 .eu-dot { width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2), 0 1px 4px rgba(0,0,0,.35); transform: translateY(50%) }
 .mp-it.cartao { grid-template-columns: auto minmax(0, 1fr) auto auto; column-gap: 4px; padding-right: 4px }
@@ -1020,7 +1036,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 
 /* ---------- Setores do IBGE: camadas de renda e densidade no mapa e quadro "Renda e população do entorno" na ficha ---------- */
 .lg-i .ds-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
-.lg-i .rd-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.lg-i .rd-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#feb600 0 25%, #d32f2f 0 50%, #97d6ff 0 75%, #43a047 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .rd-leg { position: absolute; z-index: 1000; right: 10px; top: 64px; width: 200px; max-height: calc(100% - 160px); overflow-y: auto; overscroll-behavior: contain; background: #fff; color: #1f1f1f; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 2px 8px rgba(0,0,0,.12); font-size: 12px; line-height: 16px }
 .rd-leg summary { cursor: pointer; list-style: none; padding: 8px 12px; font-size: 13px; font-weight: 500 }
 .rd-leg summary::-webkit-details-marker { display: none }
@@ -1041,10 +1057,10 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .mp-cam-m button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 16px; border: 0; background: none; font: inherit; font-size: 14px; color: inherit; text-align: left; cursor: pointer }
 .mp-cam-m button:hover { background: rgba(31,31,31,.06) } .mp-cam-m button[aria-checked="true"] { background: #c2e7ff; color: #001d35; font-weight: 500 }
 .mp-cam-m :is(.rd-ic, .ds-ic, .cam-off) { display: block; flex: none; width: 16px; height: 16px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
-.mp-cam-m .rd-ic { background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0) } .mp-cam-m .ds-ic { background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0) } .mp-cam-m .cam-off { box-shadow: inset 0 0 0 1px #747775 }
+.mp-cam-m .rd-ic { background: conic-gradient(#feb600 0 25%, #d32f2f 0 50%, #97d6ff 0 75%, #43a047 0) } .mp-cam-m .ds-ic { background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0) } .mp-cam-m .cam-off { box-shadow: inset 0 0 0 1px #747775 }
 :root[data-tema="escuro"] .mp-cam-m { background: #1a1a1b; color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 10px 28px rgba(0,0,0,.55) }
 :root[data-tema="escuro"] .mp-cam-m button:hover { background: rgba(149,153,160,0.12) } :root[data-tema="escuro"] .mp-cam-m button[aria-checked="true"] { background: rgba(128,132,139,0.22); color: #c1d9ff }
-.mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#feb600 0 25%, #d32f2f 0 50%, #97d6ff 0 75%, #43a047 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 :root[data-tema="escuro"] .mp-renda-b { background: rgba(25,25,26,0.72); color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.35) }
 :root[data-tema="escuro"] .mp-renda-b[aria-pressed="true"] { background: rgba(128,132,139,0.22); color: #c1d9ff; box-shadow: 0 0 0 1px rgba(149,153,160,0.5) }
 :root[data-tema="escuro"] :is(.rd-esc-m, .rd-esc-u) { color: #c4c7c5 }
@@ -1512,6 +1528,9 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .mp-legenda summary::after { content: "" !important; width: 18px; height: 18px; margin-left: auto; transition: transform .15s;
   background: no-repeat center/18px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
 .mp-legenda[open] summary::after { transform: rotate(180deg) }
+/* o título fica no topo enquanto a lista rola por baixo (pedido do Moisés, 5/nov/2026) */
+.mp-legenda[open] summary { position: sticky; top: 0; z-index: 2; background-color: #f8fafd !important }
+:root[data-tema="escuro"] .mp-legenda[open] summary { background-color: #1e1f20 !important }
 :root[data-tema="escuro"] .mp-legenda summary { color: #e3e3e3 !important }
 :root[data-tema="escuro"] .mp-legenda summary::after { filter: invert(.85) }
 .lg-r { display: grid !important; grid-template-columns: minmax(0, 1fr) 32px }
@@ -4098,11 +4117,11 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 /* ---------- Lista do mapa redimensionável e bolinha com o código (pedido do Moisés, 4/nov/2026) ---------- */
 @media (min-width: 900px) {
   .mapa-pg { grid-template-columns: var(--mp-w, 360px) 16px minmax(0, 1fr); gap: 0 }
-  .mp-redim { position: relative; cursor: grab; touch-action: none; outline: none }
+  .mp-redim { position: relative; cursor: col-resize; touch-action: none; outline: none }
   .mp-redim::after { content: ""; position: absolute; left: 6px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: #c4c7c5; transition: background .15s, height .15s, margin .15s }
   .mp-redim:hover::after, .mp-redim:focus-visible::after, body.mp-arrastando .mp-redim::after { background: #0b57d0; height: 72px; margin-top: -36px }
   .mp-redim:focus-visible { box-shadow: inset 0 0 0 2px #0b57d0; border-radius: 8px }
-  body.mp-arrastando, body.mp-arrastando * { cursor: grabbing !important; user-select: none !important }
+  body.mp-arrastando, body.mp-arrastando * { cursor: col-resize !important; user-select: none !important }
   /* estreita: só as bolinhas com o código, uma embaixo da outra */
   .mp-estreita .mapa-lado { padding-right: 0; overflow-x: hidden }
   .mp-estreita .mapa-lado > :not(#mp-lista), .mp-estreita #mp-lista > :not(.mp-lst) { display: none !important }
@@ -4129,7 +4148,71 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .lg-sb:hover { background: rgba(31,31,31,.06) } :root[data-tema="escuro"] .lg-sb:hover { background: rgba(227,227,227,.08) }
 .lg-sb:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
 .lg-msit[aria-pressed="false"] .mk-b { filter: grayscale(1); opacity: .5 }
+.lg-sub { padding: 8px 8px 2px 36px; font-size: 12px; line-height: 16px; color: var(--m-on-surface-variant, #444746) }
+:root[data-tema="escuro"] .lg-sub { color: #c4c7c5 }
 .lg-msit[disabled] { opacity: .5; cursor: default }
 /* legenda: item desligado (ele ou o ramo de cima) fica apagado; a bolinha e o número de um ramo ligam e desligam tudo dentro */
 #mp-leg .lg-i.lg-off .pin-mini { filter: grayscale(1); opacity: .45 } #mp-leg .lg-i.lg-off { color: var(--m-on-surface-variant, #444746) }
-#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini, #mp-leg .n.lg-tg:hover { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
+#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
+
+/* três pontinhos da barra do mapa: filtros da concorrência e dos terrenos e o tipo de mapa (pedido do Moisés, 5/nov/2026) */
+.mp-maisw { position: relative; flex: none; pointer-events: auto }
+.mp-mais { width: 40px; padding: 0 !important; justify-content: center; position: relative }
+.mp-mais .mf-n { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; font-size: 11px; padding: 0 5px }
+.mp-mais-m { min-width: 248px }
+.mp-mais-m .mm-l { flex: 1 }
+.mp-mais-m .mm-t { padding: 10px 16px 4px; margin-top: 6px; border-top: 1px solid #e3e3e3; font-size: 12px; font-weight: 500; color: #444746 }
+.mp-mais-m .mm-ck { display: inline-flex; width: 18px } .mp-mais-m [aria-checked="false"] .mm-ck { visibility: hidden }
+.mp-mais-m button .ic { color: #444746 } .mp-mais-m button[aria-checked="true"] .ic { color: inherit }
+:root[data-tema="escuro"] .mp-mais-m .mm-t { border-color: #444746; color: #c4c7c5 }
+:root[data-tema="escuro"] .mp-mais-m button .ic { color: #c4c7c5 }
+
+/* olhinho ao lado do título da legenda: fixa a legenda aberta (sem ele, fecha sozinha em 3 s; pedido do Moisés, 5/nov/2026) */
+.mp-legenda .lg-fixar { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 14px; background: none; color: #747775; cursor: pointer }
+.mp-legenda .lg-fixar:hover { background: rgba(31,31,31,.08) }
+.mp-legenda .lg-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mp-legenda .lg-fixar { color: #c4c7c5 }
+:root[data-tema="escuro"] .mp-legenda .lg-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
+
+/* busca do mapa recolhida no botão redondo da lupa; aberta, a seta à direita fecha (pedido do Moisés, 5/nov/2026) */
+.mapa-area .mp-busca { transition: max-width .2s ease }
+.mp-busca .mp-busca-i { display: grid; place-items: center; padding: 0; border: 0; background: none; border-radius: 20px; cursor: default; pointer-events: none; z-index: 1 }
+.mp-busca-x { flex: none; display: grid; place-items: center; width: 36px; height: 36px; margin-right: 2px; padding: 0; border: 0; border-radius: 18px; background: none; color: var(--m-on-var, #444746); cursor: pointer }
+.mp-busca-x:hover { background: rgba(31,31,31,.08) }
+.mp-busca input { padding-right: 4px !important }
+.mapa-area .mp-busca.fechada { flex: none !important; width: 40px; max-width: 40px !important; margin-right: auto; order: 0 !important }
+.mapa-area .mp-busca.fechada input, .mapa-area .mp-busca.fechada .mp-busca-x, .mapa-area .mp-busca.fechada .mp-res { display: none !important }
+.mapa-area .mp-busca.fechada .mp-busca-i { position: static; width: 40px; height: 40px; pointer-events: auto; cursor: pointer }
+.mapa-area .mp-busca.fechada .mp-busca-i:hover { background: rgba(31,31,31,.06) }
+:root[data-tema="escuro"] .mp-busca-x { color: #c4c7c5 } :root[data-tema="escuro"] .mp-busca-x:hover { background: rgba(149,153,160,0.12) }
+.mapa-area .mp-busca input:focus-visible { outline: none } .mapa-area .mp-busca:has(input:focus-visible) { outline: 2px solid #0b57d0; outline-offset: 0 }
+:root[data-tema="escuro"] .mapa-area .mp-busca:has(input:focus-visible) { outline-color: #a8c7fa }
+/* olhinho do card da concorrência: fixa o card aberto (pedido do Moisés, 5/nov/2026) */
+.mk-box .mk-fixar { color: #747775 }
+.mk-box .mk-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mk-box .mk-fixar { color: #c4c7c5 }
+:root[data-tema="escuro"] .mk-box .mk-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
+
+/* Régua do mapa (menu dos três pontinhos; pedido do Moisés, 5/nov/2026) */
+.rg-w { position: relative; width: 0; height: 0 }
+.rg-pt { position: absolute; left: 0; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid #0b57d0; transform: translate(-50%, -50%); box-sizing: border-box }
+.rg-pt.rg-ini { width: 16px; height: 16px; cursor: pointer; background: #0b57d0; box-shadow: 0 0 0 3px rgba(11,87,208,.25) }
+.rg-rot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; background: #fff; color: #1f1f1f; border: 1px solid #c4c7c5; border-radius: 6px; padding: 1px 6px; font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,.2) }
+.rg-rot.rg-tot { background: #0b57d0; color: #fff; border-color: #0b57d0; font-weight: 500; transform: translate(-50%, calc(-100% - 10px)) }
+/* no desenho, na edição e na régua o clique passa pelos pinos do mapa (terrenos e concorrência) e marca o ponto ali */
+:is(.mapa, .mini-mapa).modo gmp-advanced-marker:not(:has(.v-alvo, .rg-pt)) { pointer-events: none !important }
+.rg-pt { pointer-events: auto }
+/* régua como botão do canto, acima da localização (pedido do Moisés, 5/nov/2026): ligada, fica azul */
+.mp-cb.mp-rg[aria-pressed="true"], .mp-cb.mp-rg[aria-pressed="true"]:hover { background: #0b57d0; color: #fff }
+.mapa-area.sv-on .mp-cb.mp-rg { display: none }
+/* a busca a 12 px da borda esquerda, a mesma distância dos três pontinhos à direita (pedido do Moisés, 5/nov/2026);
+   no Leaflet fica depois do + e − do zoom */
+.mapa-area:not(:has(.leaflet-container)) .mp-barra { left: 12px !important }
+/* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
+
+/* ⋮ das abas da ficha: índice fixo com todas as abas, a atual marcada (pedido do Moisés, 6/nov/2026) */
+.fi-mais .adv-menu button.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35); font-weight: 500 }
+.fi-mais .adv-menu button.atual::after { content: '✓'; margin-left: auto; font-weight: 500 }
+html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; color: #c2e7ff }
+.fi-abas { touch-action: pan-y }

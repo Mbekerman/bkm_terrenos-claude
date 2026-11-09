@@ -1,14 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+import { SUPABASE_KEY as key, SUPABASE_URL as url } from './config';
 
 export const configurado = Boolean(url && key);
 
-// O schema `app` precisa estar em Settings → API → Exposed schemas.
+// Os schemas `app` e `fluxo` precisam estar em Settings → API → Exposed schemas.
 export const supabase = createClient(url ?? 'http://localhost', key ?? 'sem-chave', {
   db: { schema: 'app' },
-  auth: { persistSession: true, autoRefreshToken: true },
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' },
 });
 
 /** Converte erro do PostgREST em mensagem legível. */

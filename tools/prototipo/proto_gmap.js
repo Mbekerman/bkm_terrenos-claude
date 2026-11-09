@@ -70,8 +70,8 @@ function gPontoNaTela(lat,lng){const M=edMapa();if(!M)return null;if(!gProj||gPr
 function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1){MAPA.setCenter(pts[0]);MAPA.setZoom(maxZoom||17);return}
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];gSet(gEu,null);gEu=[];
-  const v=UI.mpView;
-  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
+  const v=UI.mpView||mpVistaGuardada();
+  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[mpBaseAtual()],
     mapTypeControl:false,streetViewControl:true,streetViewControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM},cameraControl:false,fullscreenControl:false,clickableIcons:true,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   MAPA.__escuro=temaEscuro();gInfo=new google.maps.InfoWindow({maxWidth:320,headerDisabled:true});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();desenhaEu(false);
@@ -81,7 +81,7 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   MAPA.addListener('dragstart',ctxFechar);MAPA.addListener('zoom_changed',ctxFechar);G_desenhaRascunho();
   MAPA.addListener('dblclick',e=>{if(e.latLng&&!e.placeId)mapaDuplo(e.latLng.lat(),e.latLng.lng(),e.domEvent?.target)});
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
-  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
+  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};mpVistaGuardar(UI.mpView);vMenuDesenha()});
   MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());
   /* Street View: fecha no nosso X (canto de cima, à direita) ou no Esc; o fechar do Google fica escondido para não haver dois */
   const sv=MAPA.getStreetView();sv.setOptions({enableCloseButton:false,fullscreenControl:false});
@@ -114,9 +114,14 @@ function lugarHtml(p){const revs=(p.reviews||[]).slice(0,3),nota=p.rating!=null?
   ${revs.length?`<ul class="lug-revs">${revs.map(r=>{const a=r.authorAttribution||{},txt=String(r.text||'');return `<li><div class="lug-ra">${a.uri?`<a href="${esc(a.uri)}" target="_blank" rel="noopener">${esc(a.displayName||'Usuário do Google')}</a>`:esc(a.displayName||'Usuário do Google')} <span class="lug-est" aria-label="nota ${r.rating}">${estrelas(r.rating||0)}</span> <span class="muted">${esc(r.relativePublishTimeDescription||'')}</span></div>${txt?`<div class="lug-rt">${esc(txt.length>220?txt.slice(0,220).trim()+'…':txt)}</div>`:''}</li>`}).join('')}</ul>`:''}
   ${p.googleMapsURI?`<a class="lug-l" href="${esc(p.googleMapsURI)}" target="_blank" rel="noopener">Ver todas no Google Maps</a>`:''}<div class="lug-g muted">Avaliações do Google</div></div>`}
 /* conteúdo como nó, com o X ligado direto (o InfoWindow pode não deixar o clique subir até o documento) */
-function lugarConteudo(h){const d=document.createElement('div');d.innerHTML=h;d.querySelector('.lug-x')?.addEventListener('click',e=>{e.stopPropagation();lugarFechar()});gInfo.setContent(d)}
-function lugarFechar(){if(gInfo&&gInfo.__lug){gInfo.close();gInfo.__lug=false;return true}return false}
-async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
+function lugarConteudo(h){const d=document.createElement('div');d.innerHTML=h;d.querySelector('.lug-x')?.addEventListener('click',e=>{e.stopPropagation();lugarFechar()});gInfo.setContent(d);setTimeout(()=>lugarSaida(d),0)}
+/* o quadro fecha sozinho 1 s depois que o mouse sai dele e, se o mouse não entrar nele, 1 s depois de aberto (no toque, não; pedido do Moisés, 5/nov/2026) */
+let LUG_T=null,LUG_DENTRO=false;
+function lugarSaida(d){if(TOQUE())return;const c=d.closest('.gm-style-iw-c');if(!c||c.__lugH)return;c.__lugH=true;
+  c.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(LUG_T);LUG_DENTRO=true});
+  c.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;LUG_DENTRO=false;clearTimeout(LUG_T);LUG_T=setTimeout(lugarFechar,1000)})}
+function lugarFechar(){clearTimeout(LUG_T);if(gInfo&&gInfo.__lug){gInfo.close();gInfo.__lug=false;return true}return false}
+async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;clearTimeout(LUG_T);LUG_DENTRO=false;if(!TOQUE())LUG_T=setTimeout(()=>{if(!LUG_DENTRO)lugarFechar()},1000);gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
   try{let p=LUGARES[id];if(!p){const pl=new gLib.places.Place({id});await pl.fetchFields({fields:['displayName','formattedAddress','rating','userRatingCount','reviews','googleMapsURI']});
       p=LUGARES[id]={displayName:pl.displayName,formattedAddress:pl.formattedAddress,rating:pl.rating,userRatingCount:pl.userRatingCount,googleMapsURI:pl.googleMapsURI,
         reviews:(pl.reviews||[]).map(r=>({rating:r.rating,text:r.text,relativePublishTimeDescription:r.relativePublishTimeDescription,authorAttribution:r.authorAttribution&&{displayName:r.authorAttribution.displayName,uri:r.authorAttribution.uri}}))}}
@@ -184,12 +189,19 @@ async function gMatriz(lat,lng,dest,modo){const out=dest.map(()=>null);const ll=
       (res?.rows?.[0]?.elements||[]).forEach((e,j)=>{if(e&&e.status==='OK')out[i+j]={m:e.distance.value,min:Math.max(1,Math.round(e.duration.value/60))}})}
     if(!out.some(Boolean))throw new Error('sem rotas')}
   return out}
+/* filtro do ruído por categoria (ENT_CAT, 5º item): excluir pelo nome, mínimo de avaliações (salvo nome isento) e,
+   no shopping, um lugar por local (as lojas de dentro que o Google marca como shopping ficam fora) */
+const entTem=(nome,lista)=>{if(!lista)return false;const n=' '+normNome(nome).replace(/[^a-z0-9]+/g,' ')+' ';return lista.split('|').some(x=>n.includes(' '+x))};
+function entFiltro(ps,rg){let l=ps.filter(p=>!entTem(p.nome,rg.excluir)&&(rg.min==null||p.av>=rg.min||entTem(p.nome,rg.isento)));
+  if(rg.local){const fica=[];[...l].sort((a,b)=>b.av-a.av).forEach(p=>{if(!fica.some(q=>distKm(p.lat,p.lng,q.lat,q.lng)*1000<=rg.local))fica.push(p)});l=l.filter(p=>fica.includes(p))}
+  return l}
 async function gEntornoTerreno(t){if(!GG||!gLib.places||t.lat==null||ENT_BUSCA[t.id])return;
   ENT_BUSCA[t.id]=true;const lat=t.lat,lng=t.lng;entRefresh(t);
   try{const {Place,SearchNearbyRankPreference}=gLib.places;
-    const res=await Promise.all(ENT_CAT.map(([k,,,tipos])=>Place.searchNearby({fields:['id','displayName','location'],locationRestriction:{center:gLL(lat,lng),radius:RAIO_PE},
-      includedTypes:tipos,maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'})
-      .then(r=>(r.places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:k,lat:p.location.lat(),lng:p.location.lng()})))));
+    const res=await Promise.all(ENT_CAT.map(([k,,,tipos,rg])=>Place.searchNearby({fields:['id','displayName','location','userRatingCount'],locationRestriction:{center:gLL(lat,lng),radius:RAIO_PE},
+      includedPrimaryTypes:tipos,maxResultCount:20,rankPreference:SearchNearbyRankPreference.DISTANCE,language:'pt-BR',region:'br'})
+      .then(r=>entFiltro((r.places||[]).map(p=>({gid:p.id,nome:p.displayName,cat:k,av:p.userRatingCount||0,lat:p.location.lat(),lng:p.location.lng()})),rg||{}))));
+    /* só pelo tipo principal do lugar: com includedTypes vinham autoescola e curso livre (que também têm "school"), restaurante como parque etc. (4/nov/2026) */
     /* um lugar entra uma vez (na primeira categoria); mesmo nome na mesma categoria = mesma estação/hospital, fica o mais perto */
     const ids=new Set(),nomes=new Set();let itens=[];
     res.flat().forEach(p=>{const n=p.cat+'|'+normNome(p.nome);if(ids.has(p.gid)||nomes.has(n))return;ids.add(p.gid);nomes.add(n);p.reta=Math.round(distKm(lat,lng,p.lat,p.lng)*1000);itens.push(p)});

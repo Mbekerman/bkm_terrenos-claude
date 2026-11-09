@@ -1824,9 +1824,9 @@ returns uuid language sql stable security definer set search_path = '' as $$
     and p_tabela in ('tarefas','tarefa_pessoas','tarefa_etiquetas','checklists','checklist_itens','comentarios','comentario_reacoes',
                      'anexos','pausas','tarefa_acessos','tarefa_campos','recorrencias','apontamentos',
                      'tarefa_itens','conclusao_justificativas') $$;
-drop policy auditoria_gestor_ve on app.auditoria;
-create policy auditoria_gestor_ve on app.auditoria for select to authenticated
-  using (app.eh_gestor(empresa_id)
+drop policy auditoria_ver on app.auditoria;
+create policy auditoria_ver on app.auditoria for select to authenticated
+  using (empresa_id in (select app.minhas_empresas())
          and (fluxo.tarefa_do_log(tabela, registro_id, antes, depois) is null
               or fluxo.papel_tarefa(fluxo.tarefa_do_log(tabela, registro_id, antes, depois)) is not null));
 

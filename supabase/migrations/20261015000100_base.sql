@@ -96,7 +96,7 @@ returns boolean
 language sql stable security definer set search_path = ''
 as $$ select exists (select 1 from app.membros where user_id = auth.uid() and empresa_id = p_empresa) $$;
 
--- Gestor ou acima (diretor): força avanço, vê a auditoria.
+-- Gestor ou acima (diretor): força avanço.
 create or replace function app.eh_gestor(p_empresa uuid)
 returns boolean
 language sql stable security definer set search_path = ''
@@ -165,17 +165,20 @@ end $$;
 
 -- Cria a empresa e torna quem chamou diretor e administrador. Usado no primeiro acesso.
 -- A configuração do funil é copiada do modelo padrão por trigger (ver cadastros).
-create or replace function app.criar_empresa(p_nome text, p_meu_nome text)
+-- Empresa nova: só pela carga do sistema (service role ou SQL do dono do banco), nunca pelo usuário
+-- logado (revisão de 4/nov/2026: com o login aberto a todo e-mail do domínio, qualquer um criava
+-- uma empresa e virava diretor dela). p_dono entra como diretor e administrador; sem dono, a empresa
+-- nasce sem equipe e recebe as pessoas pela equipe prevista (app.equipe_prevista) no primeiro login.
+create or replace function app.criar_empresa(p_nome text, p_meu_nome text default null, p_dono uuid default null)
 returns uuid
 language plpgsql security definer set search_path = ''
 as $$
 declare v_id uuid;
 begin
-  if auth.uid() is null then
-    raise exception 'Faça login primeiro' using errcode = '42501';
-  end if;
   insert into app.empresas (nome) values (p_nome) returning id into v_id;
-  insert into app.membros (empresa_id, user_id, papel, nome, administrador) values (v_id, auth.uid(), 'diretor', p_meu_nome, true);
+  if p_dono is not null then
+    insert into app.membros (empresa_id, user_id, papel, nome, administrador) values (v_id, p_dono, 'diretor', p_meu_nome, true);
+  end if;
   return v_id;
 end $$;
 
@@ -298,10 +301,11 @@ create policy membros_ver on app.membros for select to authenticated
   using (empresa_id in (select app.minhas_empresas()));
 create policy membros_admin_gerencia on app.membros for all to authenticated
   using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
-create policy auditoria_gestor_ve on app.auditoria for select to authenticated
-  using (app.eh_gestor(empresa_id));
+-- os logs da ficha: todos da empresa veem (decisão do Moisés, 5/nov/2026)
+create policy auditoria_ver on app.auditoria for select to authenticated
+  using (empresa_id in (select app.minhas_empresas()));
 
 grant select on app.empresas, app.auditoria to authenticated;
 grant select, insert, update, delete on app.membros to authenticated;
-grant execute on function app.criar_empresa(text, text) to authenticated;
+revoke execute on function app.criar_empresa(text, text, uuid) from public, anon, authenticated;
 create trigger t_aud after insert or update or delete on app.membros for each row execute function app.tg_auditoria();

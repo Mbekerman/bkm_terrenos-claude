@@ -52,8 +52,9 @@ create table app.terrenos (
   situacao_cadastral    text not null default 'ativo' check (situacao_cadastral in ('ativo','arquivado')),
   prioridade            text check (prioridade in ('baixa','media','alta','estrategica')),
   responsavel_id        uuid not null references auth.users(id),
-  origem_cadastro       text not null check (origem_cadastro in ('prospeccao','corretor','indicacao','portal','proprietario','outro')),
-  url_origem            text,
+  -- o cadastro curto (só o nome) não pergunta a origem: nasce "não informado" e se completa na ficha
+  origem_cadastro       text not null default 'nao_informado'
+                          check (origem_cadastro in ('nao_informado','prospeccao','corretor','indicacao','portal','proprietario','outro')),
   data_identificacao    date not null default current_date,
   observacoes           text,
   arquivado_em          timestamptz,
@@ -79,6 +80,9 @@ create table app.terrenos (
   latitude              double precision check (latitude between -90 and 90),
   longitude             double precision check (longitude between -180 and 180),
   poligono_geojson      jsonb check (poligono_geojson is null or app.geojson_poligono_valido(poligono_geojson)),
+  -- a poligonal desenhada, guardada quando a do terreno passa a ser a soma dos lotes da prefeitura
+  -- (para poder voltar a ela); nula quando a do terreno é a desenhada
+  poligono_desenhado_geojson jsonb check (poligono_desenhado_geojson is null or app.geojson_poligono_valido(poligono_desenhado_geojson)),
   -- a mesma poligonal como geometria (corrigida se o desenho se cruza), para achar sobreposição
   poligono              extensions.geometry(Geometry, 4326) generated always as
                           (extensions.st_makevalid(extensions.st_setsrid(extensions.st_geomfromgeojson(poligono_geojson::text), 4326))) stored,
@@ -89,6 +93,10 @@ create table app.terrenos (
   -- 3. Áreas e características físicas
   area_documental_m2    numeric(12,2) check (area_documental_m2 > 0),
   area_cadastral_m2     numeric(12,2) check (area_cadastral_m2 > 0),
+  -- de onde vem a cadastral (pedido do Moisés, 6/nov/2026): 'sqls' = a soma das áreas cadastrais dos SQLs
+  -- (app._area_sqls), refeita a cada SQL incluído, excluído ou consultado; 'digitada' = alguém escreveu outro valor,
+  -- que os SQLs não sobrescrevem; apagar o valor volta para a soma
+  area_cadastral_origem text not null default 'sqls' check (area_cadastral_origem in ('sqls','digitada')),
   area_levantamento_m2  numeric(12,2) check (area_levantamento_m2 > 0),
   -- área do desenho, em m² inteiros: não é digitada e acompanha cada ajuste na poligonal (pedido do Moisés, 24/out/2026)
   area_poligonal_m2     numeric(12,2) generated always as
@@ -179,13 +187,32 @@ create table app.matriculas (
   terreno_id         uuid not null references app.terrenos(id) on delete cascade,
   numero             text not null,
   numero_norm        text generated always as (regexp_replace(numero, '\D', '', 'g')) stored,
-  cartorio           text not null,
+  cartorio           text check (cartorio is null or length(trim(cartorio)) > 0),  -- nulo = não informado
   area_registrada_m2 numeric(12,2),
   data_certidao      date,
-  parte_id           uuid references app.terreno_partes(id),  -- de qual dono; nulo = terreno de um dono só
   unique (empresa_id, cartorio, numero_norm)  -- mesma matrícula no mesmo cartório = mesmo terreno
 );
 create index on app.matriculas (terreno_id);
+create index on app.matriculas (empresa_id, numero_norm);
+
+-- Cartório em branco conta como o mesmo (decisão do Moisés, 4/nov/2026): a matrícula sem cartório
+-- não entra se o número já está noutro terreno em qualquer cartório, e a com cartório não entra se o
+-- número já está noutro terreno sem cartório. O índice único cuida de dois cartórios iguais.
+create or replace function app.tg_matricula_repetida()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v text;
+begin
+  select t.codigo into v from app.matriculas m join app.terrenos t on t.id = m.terreno_id
+  where m.empresa_id = new.empresa_id and m.numero_norm = regexp_replace(new.numero, '\D', '', 'g') and m.id <> new.id
+    and (new.cartorio is null or m.cartorio is null)
+  limit 1;
+  if v is not null then
+    raise exception 'A matrícula % já está no terreno %', new.numero, v using errcode = '23505';
+  end if;
+  return new;
+end $$;
+create trigger t_repetida before insert or update of numero, cartorio, empresa_id on app.matriculas
+  for each row execute function app.tg_matricula_repetida();
 
 create table app.inscricoes_municipais (
   id                uuid primary key default gen_random_uuid(),
@@ -200,7 +227,6 @@ create table app.inscricoes_municipais (
   area_cadastral_m2 numeric(12,2),
   cib               text,  -- Cadastro Imobiliário Brasileiro (vem do GeoSampa)
   zona_fiscal       text,  -- ZF-1 a ZF-4 em São Paulo (vem do GeoSampa)
-  parte_id          uuid references app.terreno_partes(id),  -- de qual dono; nulo = terreno de um dono só
   -- De onde veio (4/nov/2026): digitada, ou marcada no mapa de lotes da prefeitura ao cadastrar o
   -- terreno (São Paulo, GeoSampa). Entra sem parte e é ligada à parte depois, na aba Terreno.
   origem            text not null default 'digitada' check (origem in ('digitada', 'mapa_prefeitura')),
@@ -270,6 +296,12 @@ create table app.inscricao_valores (
   data_verificacao       date,
   fonte                  text,  -- carnê, certidão de dados cadastrais, portal da prefeitura...
   observacoes            text,
+  -- O que a notificação de lançamento da Prefeitura de São Paulo traz, lido do PDF pelo
+  -- serviço do IPTU (services/iptu, 9/nov/2026): número da NL, áreas, testada, construção,
+  -- valor do m², fatores, bases de cálculo, impostos predial e territorial e o valor a
+  -- pagar. Nulo quando o valor foi digitado. SQL + exercício + NL bastam para emitir o PDF
+  -- de novo (para guardar no Drive quando houver o armazenamento de documentos).
+  notificacao            jsonb check (notificacao is null or jsonb_typeof(notificacao) = 'object'),
   criado_por             uuid default auth.uid(),
   criado_em              timestamptz not null default now(),
   unique (inscricao_id, exercicio, revisao),
@@ -347,7 +379,8 @@ create table app.terreno_pessoas (
   empresa_id              uuid not null references app.empresas(id),
   terreno_id              uuid not null references app.terrenos(id) on delete cascade,
   pessoa_id               uuid not null references app.pessoas(id),
-  papel                   text not null default 'proprietario' check (papel in ('proprietario','representante','procurador','contato')),
+  -- relação da pessoa com a parte (pedido do Moises, 6/nov/2026): proprietário, cônjuge, representante, procurador, parente, contato ou outro
+  papel                   text not null default 'proprietario' check (papel in ('proprietario','conjuge','representante','procurador','parente','contato','outro')),
   percentual_participacao numeric(5,2) check (percentual_participacao > 0 and percentual_participacao <= 100),  -- na parte, quando há partes
   parte_id                uuid references app.terreno_partes(id),  -- dono (ou representante) de qual parte
   observacoes             text,
@@ -383,9 +416,95 @@ begin
   end if;
   return new;
 end $$;
-create trigger t_parte before insert or update of parte_id, terreno_id on app.matriculas for each row execute function app.tg_parte_do_terreno();
-create trigger t_parte before insert or update of parte_id, terreno_id on app.inscricoes_municipais for each row execute function app.tg_parte_do_terreno();
 create trigger t_parte before insert or update of parte_id, terreno_id on app.terreno_pessoas for each row execute function app.tg_parte_do_terreno();
+
+-- Etiquetas das partes (pedido do Moisés, 6/nov/2026): a matrícula e o SQL são únicos no terreno, mas
+-- mais de uma parte pode ser dona do mesmo lote. Cada linha é uma etiqueta numa parte; a mesma matrícula
+-- pode estar em várias partes (duplicada), uma vez em cada. Sem nenhuma linha, a etiqueta está sem parte.
+-- O percentual da parte no lote é opcional (nulo = não informado): sem ele, o lote se divide em partes
+-- iguais entre as etiquetas sem percentual, no que sobra dos percentuais informados (app.v_etiquetas). Zero vale: a etiqueta
+-- duplicada de um lote que já está 100% nas outras partes nasce com 0% e um alerta (pedido do Moises, 6/nov/2026).
+-- A cópia pode ficar solta (parte_id nulo), para ser distribuída depois: o lote duplicado antes de ir para as partes
+-- (pedido do Moises, 6/nov/2026). A cópia duplicada nasce no mesmo lugar da original, então o mesmo lote pode estar mais
+-- de uma vez na mesma parte, cada etiqueta com a fração dela (pedido do Moises, 6/nov/2026).
+create table app.matricula_partes (
+  id           uuid primary key default gen_random_uuid(),
+  empresa_id   uuid not null references app.empresas(id),
+  terreno_id   uuid not null references app.terrenos(id) on delete cascade,
+  matricula_id uuid not null references app.matriculas(id) on delete cascade,
+  parte_id     uuid references app.terreno_partes(id) on delete cascade,   -- nulo: cópia solta, ainda sem parte
+  percentual   numeric(5,2) check (percentual >= 0 and percentual <= 100)
+);
+create index on app.matricula_partes (parte_id);
+create index on app.matricula_partes (terreno_id);
+create table app.inscricao_partes (
+  id           uuid primary key default gen_random_uuid(),
+  empresa_id   uuid not null references app.empresas(id),
+  terreno_id   uuid not null references app.terrenos(id) on delete cascade,
+  inscricao_id uuid not null references app.inscricoes_municipais(id) on delete cascade,
+  parte_id     uuid references app.terreno_partes(id) on delete cascade,   -- nulo: cópia solta, ainda sem parte
+  percentual   numeric(5,2) check (percentual >= 0 and percentual <= 100),
+  -- a matrícula da parte em que o SQL está (pedido do Moises, 6/nov/2026): na parte, o SQL fica sempre dentro de uma
+  -- matrícula dela (o subquadro da matrícula); a parte do SQL é a da matrícula e anda com ela
+  matricula_parte_id uuid references app.matricula_partes(id) on delete set null
+);
+create index on app.inscricao_partes (parte_id);
+create index on app.inscricao_partes (matricula_parte_id);
+create index on app.inscricao_partes (terreno_id);
+
+-- A etiqueta é do terreno da matrícula ou do SQL, numa parte ativa dele, e os percentuais do mesmo lote
+-- não passam de 100%.
+create or replace function app.tg_etiqueta_parte()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_lote uuid; v_terreno uuid; v_soma numeric; v_mparte uuid;
+begin
+  if tg_table_name = 'matricula_partes' then
+    v_lote := new.matricula_id;
+    select terreno_id into v_terreno from app.matriculas where id = v_lote;
+    select sum(percentual) into v_soma from app.matricula_partes where matricula_id = v_lote and id <> new.id;
+  else
+    v_lote := new.inscricao_id;
+    select terreno_id into v_terreno from app.inscricoes_municipais where id = v_lote;
+    select sum(percentual) into v_soma from app.inscricao_partes where inscricao_id = v_lote and id <> new.id;
+    -- o SQL dentro de uma matrícula fica na parte dela; o SQL que entra numa parte (ou muda de parte) precisa de uma
+    -- matrícula dela (pedido do Moises, 6/nov/2026); o SQL solto não fica preso a matrícula
+    if new.matricula_parte_id is not null then
+      select parte_id into v_mparte from app.matricula_partes where id = new.matricula_parte_id and terreno_id = v_terreno;
+      if not found then raise exception 'A matrícula não é deste terreno' using errcode = '23514'; end if;
+      new.parte_id := v_mparte;
+    elsif new.parte_id is not null and (tg_op = 'INSERT' or new.parte_id is distinct from old.parte_id) then
+      raise exception 'Atribua uma matrícula à parte antes de lançar lotes nela: o SQL entra sempre dentro de uma matrícula'
+        using errcode = '23514';
+    end if;
+  end if;
+  new.terreno_id := v_terreno;
+  if new.parte_id is not null and not exists (select 1 from app.terreno_partes where id = new.parte_id and terreno_id = v_terreno and ativa) then
+    raise exception 'A parte não é deste terreno ou já saiu dele' using errcode = '23514';
+  end if;
+  if coalesce(v_soma, 0) + coalesce(new.percentual, 0) > 100 then
+    raise exception 'As partes deste lote passam de 100%% (as outras já somam %)', replace(trim(trailing '.' from trim(trailing '0' from v_soma::text)), '.', ',') || '%'
+      using errcode = '23514';
+  end if;
+  return new;
+end $$;
+create trigger t_parte before insert or update on app.matricula_partes for each row execute function app.tg_etiqueta_parte();
+create trigger t_parte before insert or update on app.inscricao_partes for each row execute function app.tg_etiqueta_parte();
+
+-- Os SQLs andam com a matrícula: ela mudou de parte (ou ficou solta), eles vão junto; ela saiu, eles ficam soltos.
+create or replace function app.tg_matricula_leva_sqls()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_op = 'DELETE' then
+    update app.inscricao_partes set matricula_parte_id = null, parte_id = null where matricula_parte_id = old.id;
+    return old;
+  end if;
+  if new.parte_id is distinct from old.parte_id then
+    update app.inscricao_partes set parte_id = new.parte_id where matricula_parte_id = new.id;
+  end if;
+  return new;
+end $$;
+create trigger t_leva after update of parte_id on app.matricula_partes for each row execute function app.tg_matricula_leva_sqls();
+create trigger t_leva_del before delete on app.matricula_partes for each row execute function app.tg_matricula_leva_sqls();
 
 create table app.terreno_corretores (
   terreno_id  uuid not null references app.terrenos(id) on delete cascade,
@@ -532,9 +651,8 @@ create table app.analise_zoneamentos (
   excecao_fonte              text,
   restricoes_observacoes     text,
   unique nulls not distinct (analise_id, inscricao_id, zoneamento_id),
-  check (not coalesce(gabarito_sem_limite and gabarito_m is not null, false)),
-  check (num_nonnulls(ca_minimo, ca_basico, ca_maximo, to_maximo, gabarito_m, gabarito_sem_limite, recuo_frente_m, recuo_lateral_m, recuo_lateral_alto_m, cota_parte_m2, max_unidades, permeabilidade, lote_minimo_m2, frente_minima_m, outorga_gratuita) = 0
-         or nullif(trim(excecao_fonte), '') is not null)
+  -- a fonte da alteração no lote é opcional (decisão do Moisés, 6/nov/2026; antes, obrigatória)
+  check (not coalesce(gabarito_sem_limite and gabarito_m is not null, false))
 );
 
 -- O lote da linha tem que ser do terreno da análise.
@@ -698,7 +816,7 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['terrenos','matriculas','inscricoes_municipais','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores',
+  foreach t in array array['terrenos','matriculas','inscricoes_municipais','matricula_partes','inscricao_partes','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores',
                            'terreno_infraestrutura','terreno_viabilidades_tecnicas','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
                            'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias','terreno_pontos_excluidos','consultas_lote','consultas_area'] loop
     execute format('alter table app.%I enable row level security', t);
@@ -711,7 +829,7 @@ begin
     end if;
   end loop;
   -- remover vínculos é permitido; terreno e análise nunca são apagados (arquivar / substituir)
-  foreach t in array array['matriculas','inscricoes_municipais','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores','area_interesse_terrenos','analise_zoneamentos'] loop
+  foreach t in array array['matriculas','inscricoes_municipais','matricula_partes','inscricao_partes','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores','area_interesse_terrenos','analise_zoneamentos'] loop
     execute format('create policy remover on app.%I for delete to authenticated using (empresa_id in (select app.empresas_edicao()))', t);
     execute format('grant delete on app.%I to authenticated', t);
   end loop;
@@ -747,6 +865,11 @@ begin
   if tg_op = 'UPDATE' and new.poligono_geojson::text is distinct from old.poligono_geojson::text then
     new.topo_perfil := null; new.topo_declividade_pct := null; new.topo_inclinacao_pct := null; new.topo_terra_m3m2 := null; new.topo_desnivel_m := null;
     new.topo_fonte := null; new.topo_calculado_em := null; new.topo_calculado_por := null;
+  end if;
+  -- adotada pela cadastral: segue a cadastral (a soma dos SQLs muda sozinha); sem cadastral, fica sem adotada
+  if new.fonte_area_adotada = 'cadastral' then
+    if new.area_cadastral_m2 is null then new.area_adotada_m2 := null; new.fonte_area_adotada := null;
+    else new.area_adotada_m2 := new.area_cadastral_m2; end if;
   end if;
   if new.fonte_area_adotada = 'poligonal' then
     new.area_adotada_m2 := round(extensions.st_area(extensions.st_makevalid(extensions.st_setsrid(
@@ -808,6 +931,8 @@ create trigger t_upd before update on app.terrenos for each row execute function
 create trigger t_aud after insert or update or delete on app.terrenos    for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.matriculas  for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.inscricoes_municipais for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.matricula_partes for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.inscricao_partes for each row execute function app.tg_auditoria();
 
 -- A inscrição escolhida numa cidade tem que ser da cidade do terreno (nulo = outro município).
 create or replace function app.tg_inscricao_municipio()

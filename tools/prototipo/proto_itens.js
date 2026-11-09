@@ -41,7 +41,7 @@ const IT_CAT=(()=>{const tr=(c)=>[t=>t[c],(t,v)=>{t[c]=v}],of=c=>[t=>ofertaRef(t
   ['terreno.nome','Nome do terreno','texto',null,null,null,1,0,1,...tr('nome')],['terreno.descricao','Descrição','texto',null,null,null,1,0,0,...tr('descricao')],
   ['terreno.situacao_cadastral','Situação do cadastro','lista',null,itOpc({ativo:'Ativo',arquivado:'Arquivado'}),null,0,1,0,...ro(t=>t.situacao)],
   ['terreno.prioridade','Prioridade','lista',null,itOpc(OPT.prioridade),null,1,1,1,...tr('prioridade')],['terreno.responsavel_id','Responsável do terreno','pessoa',null,opUs,null,1,1,1,...tr('resp')],
-  ['terreno.origem_cadastro','Origem do terreno','lista',null,itOpc(OPT.origem),null,1,1,0,...tr('origem')],['terreno.url_origem','Link do anúncio','texto',null,null,null,1,0,1,...tr('url')],
+  ['terreno.origem_cadastro','Origem do terreno','lista',null,itOpc(OPT.origem),null,1,1,0,...tr('origem')],
   ['terreno.data_identificacao','Identificado em','data',null,null,null,1,0,0,...tr('dataIdent')],['terreno.observacoes','Observações','texto',null,null,null,1,0,0,...tr('obs')],
   ['terreno.cep','CEP','texto',null,null,null,1,0,0,...tr('cep')],['terreno.logradouro','Rua','texto',null,null,null,1,0,0,...tr('logradouro')],['terreno.numero','Número','texto',null,null,null,1,0,0,...tr('numero')],
   ['terreno.complemento','Complemento','texto',null,null,null,1,0,0,...tr('complemento')],['terreno.bairro','Bairro','texto',null,null,null,1,1,0,...tr('bairro')],

@@ -1,0 +1,44 @@
+                       k                       | ok 
+-----------------------------------------------+----
+ quadro criado na Outra SA apontando para A003 | t
+(1 row)
+
+            k             | processo_bkm |  etapa  |       subetapa        
+--------------------------+--------------+---------+-----------------------
+ (a) a tarefa dele ganhou | t            | triagem | aguardando_documentos
+(1 row)
+
+          k           | v_terrenos | v_tarefas_funil | processos | tarefas_abertas_fase | jornada | campo_cartao | suas_tarefas 
+----------------------+------------+-----------------+-----------+----------------------+---------+--------------+--------------
+ (a) leituras diretas |          0 |               0 |         0 |                    0 | f       |              |            1
+(1 row)
+
+ moveu 
+-------
+ t
+(1 row)
+
+ k | no_quadro_da_outra | count 
+---+--------------------+-------
+(0 rows)
+
+                    k                     |  etapa  |       subetapa        | arquivada 
+------------------------------------------+---------+-----------------------+-----------
+ (b) a tarefa do intruso depois do avanço | triagem | aguardando_documentos | f
+(1 row)
+
+                             k                              | cita 
+------------------------------------------------------------+------
+ (c) pendências do avanço da BKM citam a tarefa do intruso? | f
+(1 row)
+
+                 k                  | count 
+------------------------------------+-------
+ (d) avisos ao intruso sobre o A003 |     0
+(1 row)
+
+                      k                      | count 
+---------------------------------------------+-------
+ (d) avisos da BKM com origem na tarefa dele |     0
+(1 row)
+

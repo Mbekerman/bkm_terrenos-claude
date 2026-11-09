@@ -59,16 +59,17 @@ Arrastar no quadro de etapas chama `mover_para_etapa` (para frente, etapa por et
 
 ## Terreno com vários donos (partes)
 
-Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`parte_id` em `matriculas`, `inscricoes_municipais` e `terreno_pessoas`; participações somam 100% em cada parte) e os corretores dela (`parte_corretores`: uma parte pode ter vários corretores e o mesmo corretor pode trazer várias partes; ligar o corretor à parte o põe entre os corretores do terreno), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
+Um dono com várias matrículas é **uma** negociação. Vários donos que negociam separado são **partes** do terreno (`terreno_partes`): cada parte é um dono, ou um grupo de donos que negocia junto (herdeiros, sócios), com as matrículas, as inscrições e as pessoas dela (`matricula_partes` e `inscricao_partes` para as matrículas e os SQLs, `parte_id` em `terreno_pessoas`; participações somam 100% em cada parte; a relação da pessoa com a parte é proprietário, cônjuge, representante, procurador, parente, contato ou outro, e só o proprietário tem %) e os corretores dela (`parte_corretores`: uma parte pode ter vários corretores e o mesmo corretor pode trazer várias partes; ligar o corretor à parte o põe entre os corretores do terreno), o pedaço da poligonal e a marca de **essencial** (sem ela o terreno não serve) ou dispensável.
 
 - **Todo terreno tem pelo menos uma parte** (decisão do Moisés, 4/nov/2026): nasce com "Vendedor 1" (trigger `t_parte1`), e a última parte ativa não sai. Na aba Terreno, o quadro Partes tem "Quantas partes vendem?" e um cartão por parte com título, nome da pessoa principal, telefone, e-mail, CPF ou CNPJ e observação, todos opcionais (gravados só com os dígitos, conferidos por `fluxo.validar_formato`); "Excluir parte" só com a parte sem histórico (`app.excluir_parte`), senão vale `remover_parte`, com motivo. No Novo terreno, os SQLs se escolhem junto com a poligonal (passo 1, mapa da prefeitura em São Paulo).
-- **Matrículas e SQLs ligados direto à parte** (decisão do Moisés, 4/nov/2026, substituindo os lotes do mesmo dia): não há mais lote. A matrícula (`matriculas.parte_id`) e o SQL (`inscricoes_municipais.parte_id`) apontam para a parte, conferidos pelo trigger `t_parte` (a parte tem que ser do terreno); sem parte, ficam livres no terreno. Na aba Terreno, a seção Matrículas e SQLs tem dois formulários (matrícula com número, cartório já preenchido pelo terreno e área registrada; SQL digitado ou escolhido no mapa da prefeitura) que criam etiquetas (amarelas as matrículas, roxas os SQLs), e as etiquetas são arrastadas para o quadro de cada parte. Cada SQL incluído ou excluído refaz a poligonal pela soma dos lotes da prefeitura (a desenhada fica guardada). Área da parte: a soma das matrículas quando todas têm área, senão a soma das áreas cadastrais dos SQLs; divergência Matrícula × Prefeitura por parte, em % da matrícula; zonas pelos SQLs consultados (`v_partes`). Excluir a parte devolve as matrículas e os SQLs ao terreno, sem parte. Os SQLs marcados no mapa da prefeitura entram com `origem = 'mapa_prefeitura'`, área cadastral e `endereco_prefeitura`.
+- **Matrículas e SQLs ligados direto à parte** (decisão do Moisés, 4/nov/2026, substituindo os lotes do mesmo dia): não há mais lote. A matrícula e o SQL são únicos no terreno, mas o mesmo lote pode ser de mais de uma parte (pedido do Moisés, 6/nov/2026): cada etiqueta numa parte é uma linha de `matricula_partes` ou `inscricao_partes` (uma vez por parte, com o **percentual** da parte no lote opcional), conferida pelo trigger `t_parte` (a parte tem que ser ativa e do terreno do lote, e os percentuais do lote não passam de 100%); sem nenhuma linha, o lote fica livre no terreno. A fração de cada parte (`v_etiquetas`) é o percentual informado ou, sem ele, o que sobra dos informados dividido igual entre as etiquetas sem percentual (estimada); uma etiqueta só é o lote inteiro. Na aba Terreno, a seção Matrículas e SQLs tem dois formulários (matrícula com número, cartório já preenchido pelo terreno e área registrada; SQL digitado ou escolhido no mapa da prefeitura) que criam etiquetas (amarelas as matrículas, roxas os SQLs), e as etiquetas são arrastadas para o quadro de cada parte. Cada SQL incluído ou excluído refaz a poligonal pela soma dos lotes da prefeitura (a desenhada fica guardada em `terrenos.poligono_desenhado_geojson`, para voltar a ela). A matrícula pode ficar sem cartório (não informado), e aí conta como o mesmo cartório na repetição: o número não entra noutro terreno, com ou sem cartório (`t_repetida`; com os dois cartórios preenchidos, o índice único). O SQL entra na parte sempre dentro de uma matrícula dela (`inscricao_partes.matricula_parte_id`, pedido do Moises, 6/nov/2026): o trigger põe no SQL a parte da matrícula e recusa SQL numa parte sem matrícula; mover a matrícula de parte leva os SQLs dela (`t_leva`) e tirá-la da parte os deixa soltos (`t_leva_del`). Área da parte: a soma, nos SQLs dela, de área cadastral × fração do SQL × fração da matrícula em que ele está; sem SQL, a soma das matrículas; divergência Matrícula × Prefeitura por parte, em % da matrícula; zonas pelos SQLs consultados (`v_partes`). Excluir a parte apaga as etiquetas dela; a matrícula e o SQL ficam no terreno. Os SQLs marcados no mapa da prefeitura entram com `origem = 'mapa_prefeitura'`, área cadastral e `endereco_prefeitura`.
 - **Antes da etapa da divisão** (`fases_modelo.etapa_partes`, só na fase de entrada; padrão Negociação) há uma negociação só, a do terreno: Triagem e Estudos são da área toda.
 - **Ao chegar nela**, com duas ou mais partes ativas, cada parte ganha a sua negociação: um processo da mesma fase com `parte_id` e `principal_id` (código `NEG-00012-1`), com oferta de referência, propostas, documentos, reuniões, tarefas, subetapa, status, aprovações e histórico próprios. Parte cadastrada depois disso já nasce com a sua.
 - **A negociação do terreno passa a andar pelas partes** (`_sincronizar_principal`): fica na etapa e na subetapa da parte mais atrasada em aberto, com cada mudança no histórico ("Pelas negociações das partes"), e não se move à mão. A de uma parte só anda da etapa da divisão em diante e enquanto a do terreno estiver ativa.
 - **Comprado do terreno** só com todas as partes ativas compradas (pendência que nem o gestor força); o checklist de documentos fica com cada parte; relato e pontos de sucesso só na compra do terreno. A compra de uma parte não abre a fase seguinte.
 - **Parte perdida ou descartada** trava a compra: ou sai do terreno (`remover_parte`, com motivo; parte essencial só com gestor ou diretor, e tornar uma parte dispensável também), ou o terreno se encerra. Parte comprada não sai.
 - **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
+- **Proposta** é feita a uma ou mais partes ativas do terreno (`proposta_partes`; pedido do Moises, 9/nov/2026): com uma parte só ela entra sozinha, com duas ou mais escolher é obrigatório, na negociação de uma parte é a dela. Nenhuma proposta muda o status de outra: com duas em aberto e parte em comum a ficha avisa, e quem edita muda o status de qualquer uma, exclui uma (`app.excluir_proposta`) ou deixa as duas; nos resumos vale a de maior versão. 
 - **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço e a condição de pagamento de cada uma quando informados); a negociação da parte usa como referência a oferta mais recente que a cobre. Na aba Comercial, o quadro Partes lista cada parte com a área adotada (soma dos lotes), o zoneamento, o valor pedido e o valor por m² (digitar um calcula o outro) e a condição de pagamento; só a oferta, sem proposta.
 - `v_partes`: cada parte com donos, corretores, matrículas, negociação (etapa, subetapa, prazo, status), preço pedido e última proposta. A temperatura é uma só, a da negociação do terreno: `definir_temperatura` recusa a negociação de uma parte.
 
@@ -76,7 +77,7 @@ Um dono com várias matrículas é **uma** negociação. Vários donos que negoc
 
 Papéis: `diretor`, `gestor`, `analista` (editam), `leitura` (consulta) e `basico` (entrou pelo domínio da empresa; até os perfis definitivos, consulta como `leitura`, decisão do Moisés de 28/out/2026). `membros.superior_id` liga cada analista a um gestor e cada gestor a um diretor, sempre um nível acima (trigger). `administrador` é permissão à parte, em qualquer papel: gerencia a equipe e a configuração do funil. Quem cria a empresa vira diretor e administrador.
 
-**Login e perfil do usuário** (decisão do Moisés, 28/out/2026). Só login pelo Google do Workspace; e-mail e senha ficam desligados no Supabase Auth. `empresa_dominios` liga um domínio de e-mail (bkm.com.br) a uma empresa, editado pelo administrador. O gancho "Before User Created" do Auth chama `app.hook_antes_de_criar_usuario`, que recusa e-mail de domínio não cadastrado (o `hd` do Google é só dica na tela). No primeiro login, o trigger `t_usuario_novo` em `auth.users` cria `usuarios` (nome, e-mail, foto do Google e o `arroba`, o texto antes do @ do e-mail em minúsculas e sem acento, único, com número no fim se repetir) e o membro `basico` da empresa do domínio. A cada login, nome, foto e e-mail se atualizam (`t_usuario_login`); o @ fica, e só o administrador o muda (`app.mudar_arroba`). Quem cada um vê em `usuarios`: o próprio perfil e os de quem está nas suas empresas. O primeiro administrador é promovido à mão no banco. As chaves do Google para Agenda e Gmail (refresh token) não passam pelo navegador nem ficam em tabela legível: ficam no Vault, gravadas por uma função do servidor (a fazer).
+**Login e perfil do usuário** (decisão do Moisés, 28/out/2026). Só login pelo Google do Workspace; e-mail e senha ficam desligados no Supabase Auth. `empresa_dominios` liga um domínio de e-mail (bkm.com.br) a uma empresa, editado pelo administrador. O gancho "Before User Created" do Auth chama `app.hook_antes_de_criar_usuario`, que recusa e-mail de domínio não cadastrado (o `hd` do Google é só dica na tela). No primeiro login, o trigger `t_usuario_novo` em `auth.users` cria `usuarios` (nome, e-mail, foto do Google e o `arroba`, o texto antes do @ do e-mail em minúsculas e sem acento, único, com número no fim se repetir) e o membro `basico` da empresa do domínio. A cada login, nome, foto e e-mail se atualizam (`t_usuario_login`); o @ fica, e só o administrador o muda (`app.mudar_arroba`). Conta do Workspace com a foto restrita à organização não manda a foto no login (5/nov/2026): logo depois do login, o front pede a foto à API People em nome da própria pessoa e grava com `app.salvar_minha_foto` (só a própria, só endereço `googleusercontent.com`); login sem foto não apaga a gravada. Precisa da People API ligada no projeto `bkm-terrenos` do Google Cloud. Quem cada um vê em `usuarios`: o próprio perfil e os de quem está nas suas empresas. Empresa nova só pela carga do sistema (`app.criar_empresa`, fora do alcance do usuário logado; revisão de 4/nov/2026: antes qualquer um criava uma empresa e virava diretor dela). Papel combinado antes do primeiro login (4/nov/2026, sem a tela de equipe na primeira versão): `equipe_prevista` (empresa, e-mail, papel, administrador, e-mail do superior, nome), editada pelo administrador; no primeiro login a pessoa entra com o combinado em vez de `basico` (`app._aplicar_equipe_prevista`), o superior que ainda não entrou fica para quando ele entrar, e erro na equipe prevista nunca impede o login (fica `basico`). A carga da BKM (empresa, domínio e equipe do primeiro uso) está em `supabase/carga/bkm.sql`. As chaves do Google para Agenda e Gmail (refresh token) não passam pelo navegador nem ficam em tabela legível: ficam no Vault, gravadas por uma função do servidor (a fazer).
 
 A configuração do funil é **por empresa** (`empresa_id`); as linhas com `empresa_id` nulo são o modelo padrão, copiado para cada empresa nova. O administrador edita pelo app, só por RPC, e toda alteração vai para a auditoria:
 
@@ -241,6 +242,8 @@ erDiagram
   municipios ||--o| bases_cadastrais : "GeoSampa, GeoSanja"
   municipios ||--o{ inscricoes_municipais : "cidade da inscricao"
   inscricoes_municipais ||--o{ inscricao_valores : "valor venal e IPTU do exercicio atual"
+  matriculas ||--o{ matricula_partes : "etiqueta em cada parte"
+  inscricoes_municipais ||--o{ inscricao_partes : "etiqueta em cada parte"
   terrenos ||--o{ confrontacoes : mede
   terrenos ||--o{ terreno_pessoas : vincula
   terrenos ||--o{ terreno_partes : "donos que negociam separado"
@@ -277,7 +280,6 @@ erDiagram
     text prioridade "baixa | media | alta | estrategica"
     uuid responsavel_id FK
     text origem_cadastro
-    text url_origem
     date data_identificacao
     text cep
     text logradouro
@@ -296,7 +298,8 @@ erDiagram
     uuid_array sobreposicoes_aceitas
     text precisao_localizacao
     numeric area_documental_m2
-    numeric area_cadastral_m2
+    numeric area_cadastral_m2 "soma dos SQLs ou digitada"
+    text area_cadastral_origem "sqls | digitada"
     numeric area_levantamento_m2
     numeric area_poligonal_m2 "gerada, do desenho"
     numeric area_adotada_m2
@@ -326,12 +329,23 @@ erDiagram
     text cartorio
     numeric area_registrada_m2
     date data_certidao
-    uuid parte_id FK "de qual dono"
+  }
+  matricula_partes {
+    uuid id PK
+    uuid matricula_id FK
+    uuid parte_id FK "uma vez por parte"
+    numeric percentual "opcional; nulo = divide o que sobra"
+  }
+  inscricao_partes {
+    uuid id PK
+    uuid inscricao_id FK
+    uuid parte_id FK "uma vez por parte"
+    uuid matricula_parte_id FK "a matrícula da parte em que o SQL está"
+    numeric percentual "opcional; nulo = divide o que sobra"
   }
   inscricoes_municipais {
     uuid id PK
     uuid terreno_id FK
-    uuid parte_id FK "de qual dono"
     uuid municipio_id FK "nulo = outro municipio"
     text inscricao "SQL ou inscricao imobiliaria"
     numeric area_cadastral_m2
@@ -382,6 +396,7 @@ erDiagram
     numeric iptu_mensal_informado
     date data_verificacao
     text fonte
+    jsonb notificacao "o que a notificação de lançamento de SP traz (serviço do IPTU)"
   }
   terreno_partes {
     uuid id PK
@@ -437,7 +452,7 @@ erDiagram
     numeric to_maximo "excecao"
     numeric gabarito_m "excecao"
     bool gabarito_sem_limite "excecao"
-    text excecao_fonte "obrigatoria com excecao"
+    text excecao_fonte "opcional"
   }
   zona_parametros {
     uuid id PK
@@ -478,9 +493,9 @@ erDiagram
 
 **Inscrição por cidade.** Cada inscrição guarda a cidade (`municipio_id`), escolhida antes de digitar: São Paulo, São José dos Campos ou outro município (nulo, inscrição digitada). A cidade com base da prefeitura está em `bases_cadastrais`, com o nome da base, como a prefeitura chama a inscrição e a máscara (`000.000.0000-0` em SP, `00.0000.0000.0000` em SJC); o front abre o campo com essa máscara e busca o lote na base. A inscrição de uma cidade tem que ser da cidade do terreno (trigger `tg_inscricao_municipio`), e a unicidade é por empresa, cidade e número. Nos dois cadastros os 6 primeiros dígitos são setor e quadra, o que dá o aviso de "mesma quadra" em `buscar_duplicados`. A consulta do lote, nas duas bases, é gravada por `app.registrar_consulta_lote` em `consultas_lote` (campo `base`), e planta e desenho são os documentos `lote_pdf` e `lote_dxf`.
 
-**GeoSampa pelo SQL (São Paulo).** Na inscrição, "Buscar no GeoSampa" (automático ao cadastrar o SQL) consulta o servidor de camadas do Novo GeoSampa (`geoserver.geosampa.prefeitura.sp.gov.br`, WFS/WMS) pelo repasse do Caddy em `/geosampa`, porque o servidor só aceita chamadas de navegador vindas do próprio GeoSampa. Traz o lote fiscal (`lote_cidadao`: poligonal em UTM 23S SIRGAS 2000, áreas, uso, CIB, condomínio) e os atributos de cada camada que toca a poligonal (zoneamento das Leis 18.081 e 18.177, ZEIS, eixos, macroárea e fator de planejamento, operação urbana, mananciais, tombamento e áreas envoltórias, áreas contaminadas, melhoramento viário, faixa não edificável, córrego a até 50 m, risco, inundação, influência de Metrô e CPTM, vegetação significativa, zona fiscal). `app.registrar_consulta_lote` confere que o lote é o da inscrição, grava a consulta inteira (nunca alterada), completa só o que está vazio na inscrição (área cadastral) e o cadastro fiscal (CIB, zona fiscal) e, se pedido, troca as zonas desse lote (com a área de cada uma) na análise urbanística, sem mexer nos outros lotes. Poligonal e áreas do terreno continuam passando por `app.salvar_terreno`. A planta (PDF, gerada pelo próprio servidor) e o desenho (DXF R12 com lotes, calçada, quadra, edificações, curvas de nível com cota e pontos cotados, montado no navegador) entram como documentos `lote_pdf` e `lote_dxf`, com versão. Testada, valor do m² e valor venal não estão no GeoSampa novo; continuam digitados por exercício em `inscricao_valores`.
+**GeoSampa pelo SQL (São Paulo).** Na inscrição, "Buscar no GeoSampa" (automático ao cadastrar o SQL) consulta o servidor de camadas do Novo GeoSampa (`geoserver.geosampa.prefeitura.sp.gov.br`, WFS/WMS) pelo repasse do Caddy em `/geosampa`, porque o servidor só aceita chamadas de navegador vindas do próprio GeoSampa. Traz o lote fiscal (`lote_cidadao`: poligonal em UTM 23S SIRGAS 2000, áreas, uso, CIB, condomínio) e os atributos de cada camada que toca a poligonal (zoneamento das Leis 18.081 e 18.177, ZEIS, eixos, macroárea e fator de planejamento, operação urbana, mananciais, tombamento e áreas envoltórias, áreas contaminadas, melhoramento viário, faixa não edificável, córrego a até 50 m, risco, inundação, influência de Metrô e CPTM, vegetação significativa, zona fiscal). `app.registrar_consulta_lote` confere que o lote é o da inscrição, grava a consulta inteira (nunca alterada), completa só o que está vazio na inscrição (área cadastral, que entra na soma da área cadastral do terreno enquanto ninguém digitou outra: `app._area_sqls`, trigger `t_area_terreno`) e o cadastro fiscal (CIB, zona fiscal) e, se pedido, troca as zonas desse lote (com a área de cada uma) na análise urbanística, sem mexer nos outros lotes. Poligonal e áreas do terreno continuam passando por `app.salvar_terreno`. A planta (PDF, gerada pelo próprio servidor) e o desenho (DXF R12 com lotes, calçada, quadra, edificações, curvas de nível com cota e pontos cotados, montado no navegador) entram como documentos `lote_pdf` e `lote_dxf`, com versão. Testada, valor do m² e valor venal não estão no GeoSampa novo; ficam por exercício em `inscricao_valores`, digitados ou, em São Paulo, trazidos da **notificação de lançamento do IPTU** (9/nov/2026): o serviço `services/iptu` (Cloud Run `terrenos-iptu`, chamado pelo Caddy em `/iptu`) entra no portal da Prefeitura com a Senha Web do Secret Manager, emite a 2ª via do SQL, lê o PDF e grava, com o login de quem pediu, valor venal do terreno (bases do terreno incorporado e não incorporado) e da construção, IPTU anual (total a pagar), data e fonte, mais o conteúdo da notificação em `inscricao_valores.notificacao` (NL, áreas, testada, construção, valor do m², fatores, impostos predial e territorial). Mesmo exercício com os mesmos valores não cria revisão. SQL + exercício bastam para emitir o PDF de novo, para guardar no Drive quando houver o armazenamento de documentos.
 
-**Cartório da circunscrição** (3/nov/2026). `terrenos.cartorio` guarda o cartório de registro de imóveis da área do terreno ("13º CRI") e `cartorio_origem` diz de onde veio: `prefeitura` (em São Paulo, a camada `cartorio_registro_imovel` do GeoSampa) ou `digitado`. A consulta do lote (`registrar_consulta_lote`) preenche só o vazio, e só quando a camada acha um cartório; sem lote consultado, o front consulta pelo pino e grava por `app.cartorio_da_prefeitura`, que preenche o vazio ou troca o que veio da prefeitura (o pino mudou), nunca o digitado. Mudar pelo `salvar_terreno` marca `digitado`; apagar volta a vazio, sem origem. O cartório de cada matrícula continua em `matriculas.cartorio`.
+**Cartório da circunscrição** (3/nov/2026). `terrenos.cartorio` guarda o cartório de registro de imóveis da área do terreno ("13º CRI") e `cartorio_origem` diz de onde veio: `prefeitura` (em São Paulo, a camada `cartorio_registro_imovel` do GeoSampa) ou `digitado`. A consulta do lote (`registrar_consulta_lote`) preenche só o vazio, e só quando a camada acha um cartório; sem lote consultado, o front consulta pelo pino e grava por `app.cartorio_da_prefeitura`, que preenche o vazio ou troca o que veio da prefeitura (o pino mudou), nunca o digitado. Mudar pelo `salvar_terreno` marca `digitado`; apagar volta a vazio, sem origem. O cartório de cada matrícula continua em `matriculas.cartorio` (opcional). A origem do cadastro (`terrenos.origem_cadastro`) nasce `nao_informado`: o cadastro curto só pede o nome.
 
 **Infraestrutura** (lote 3 da ficha em abas, 4/nov/2026; decisões do Moisés de 3/nov). Três quadros na aba:
 
@@ -524,6 +539,8 @@ erDiagram
   processos ||--o{ processo_transicoes : historico
   processos ||--o{ propostas : recebe
   propostas |o--o| propostas : "responde a"
+  propostas ||--o{ proposta_partes : "feita a"
+  terreno_partes ||--o{ proposta_partes : recebe
   terrenos ||--o{ atividades : registra
   processos |o--o{ viabilidades : usa
   terrenos ||--o{ diligencias : investiga
@@ -571,6 +588,10 @@ erDiagram
     uuid parte_id PK
     numeric valor_pedido "da parte, se informado"
   }
+  proposta_partes {
+    uuid proposta_id PK
+    uuid parte_id PK
+  }
   negociacoes {
     uuid processo_id PK
     uuid oferta_referencia_id FK
@@ -600,10 +621,14 @@ erDiagram
     text providencia
   }
   entorno_categorias {
-    text codigo PK "metro_trem | shopping | hospital | escola | supermercado | parque"
+    text codigo PK "metro_trem | onibus | shopping | hospital | escola | supermercado | parque | faculdade"
     text nome
-    text_arr tipos_google "tipos do Places"
+    text_arr tipos_google "tipo principal do lugar no Places"
     int raio_pe_m "1500"
+    int min_avaliacoes "nulo = sem mínimo"
+    text isento_nomes "trechos do nome que dispensam o mínimo"
+    text excluir_nomes "trechos do nome que tiram o lugar"
+    int um_por_local_m "junta lugares próximos (shopping)"
     bool ativo
   }
   terreno_entorno_buscas {
@@ -649,6 +674,7 @@ erDiagram
     text modalidade "presencial | online"
     text local "bkm | externo (so presencial)"
     text endereco
+    text link "online: link da reuniao, digitado"
     text pauta
     text resumo
     text encaminhamentos
@@ -707,7 +733,7 @@ Lote 6 da ficha em abas (4/nov/2026). Migration `20261015001600_reunioes_agenda.
 | `v_entorno_buscas` | por terreno localizado: quando foi buscado, se a rota a pé respondeu e `precisa_buscar` (nunca buscado ou desatualizado) |
 | `v_tarefas` | cartão dos quadros dos terrenos (`fluxo.v_tarefas`: lista, atraso e andamento do checklist) com o código e o nome do terreno; o quadro ordena por lista e `posicao` |
 
-Entorno do terreno: as categorias são configuração (`entorno_categorias`: tipos do Google e raio a pé; ligar outra categoria é migration de dados). O front busca sozinho quando o terreno é localizado ou muda de lugar (`precisa_buscar`), e só então, e grava por `salvar_entorno`. `pontos_interesse` é a lista cadastrada pela própria empresa (sede, polos, pontos marcados à mão): todos aparecem na ficha de cada terreno, numa lista só com os lugares do Google, sempre com a distância a pé pela rota (`terreno_ponto_distancias`; a coluna de carro fica, sem uso na ficha; decisão do Moisés, 4/nov/2026). Excluir: lugar do Google é marcado no próprio terreno por `excluir_lugar_entorno` (só aquele terreno; continua fora se a busca for refeita porque o terreno mudou de lugar) e volta por `restaurar_lugar_entorno`; ponto da empresa sai também só daquele terreno (`excluir_ponto_terreno` grava em `terreno_pontos_excluidos`, auditado; `v_terreno_pontos` não o mostra mais ali) e volta por `restaurar_ponto_terreno`; desligar o ponto para todos (`ativo = false`) continua possível no cadastro, fora da ficha. A busca no Google é feita uma vez por localização: não há "buscar de novo" manual.
+Entorno do terreno: as categorias são configuração (`entorno_categorias`: tipos do Google e raio a pé; ligar outra categoria é migration de dados). A busca vale pelo **tipo principal** do lugar (`includedPrimaryTypes`) e depois passa pelo filtro do ruído (decisão do Moisés, 4/nov/2026): escola pública, creche, praça, shopping, estação de metrô, trem ou ônibus, posto de saúde e hipermercado entram com qualquer número de avaliações (estação de metrô, escola e faculdade sempre; nas outras, pelo nome em `isento_nomes`: "praça", "UBS", "shopping", "terminal", "atacad"...); os demais (clínica, mercearia, loja marcada como shopping, ponto de ônibus na rua, lugar marcado como parque sem ser praça nem parque) precisam de `min_avaliacoes` (50, pela medição em Guaianases e Vila Prudente); `excluir_nomes` tira autoescola, curso de vigilante, conservatório, veterinário, portaria de parque etc.; no shopping, lugares a até 200 m um do outro viram um só, o de mais avaliações, o que tira as lojas que o Google marca como shopping. O front busca sozinho quando o terreno é localizado ou muda de lugar (`precisa_buscar`), e só então, e grava por `salvar_entorno`. `pontos_interesse` é a lista cadastrada pela própria empresa (sede, polos, pontos marcados à mão): todos aparecem na ficha de cada terreno, numa lista só com os lugares do Google, sempre com a distância a pé pela rota (`terreno_ponto_distancias`; a coluna de carro fica, sem uso na ficha; decisão do Moisés, 4/nov/2026). Excluir: lugar do Google é marcado no próprio terreno por `excluir_lugar_entorno` (só aquele terreno; continua fora se a busca for refeita porque o terreno mudou de lugar) e volta por `restaurar_lugar_entorno`; ponto da empresa sai também só daquele terreno (`excluir_ponto_terreno` grava em `terreno_pontos_excluidos`, auditado; `v_terreno_pontos` não o mostra mais ali) e volta por `restaurar_ponto_terreno`; desligar o ponto para todos (`ativo = false`) continua possível no cadastro, fora da ficha. A busca no Google é feita uma vez por localização: não há "buscar de novo" manual.
 
 O dashboard agrega `v_terrenos` no front (filtro cruzado por clique). A poligonal continua em `terrenos.poligono_geojson`; importar KMZ/KML é feito no front e gravado por `salvar_terreno`.
 

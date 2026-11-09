@@ -1,0 +1,49 @@
+# Aplica as migrations e a carga da BKM no banco do Supabase, numa transação só (tudo ou nada).
+# Até o primeiro uso, o banco é o próprio BKM_Desenvolvimento_Imobiliario (CLAUDE.md, Ambientes › Banco):
+# só os esquemas app e fluxo, nunca o public. Recusa rodar se o esquema app já existe.
+#
+# Precisa do segredo SUPABASE_DB_URL no repositório (Settings › Secrets and variables › Actions):
+# a cadeia de conexão do Supabase (botão Connect › Session pooler), com a senha do banco.
+# Dispara pelo botão "Run workflow" (quando o arquivo estiver na main) ou por um push cuja
+# mensagem de commit tenha [aplicar-banco].
+name: Banco no Supabase
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  aplicar:
+    name: Aplicar migrations e carga
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[aplicar-banco]')
+    runs-on: ubuntu-24.04
+    env:
+      DB: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conferir o segredo e o banco
+        run: |
+          test -n "$DB" || { echo "::error::Falta o segredo SUPABASE_DB_URL"; exit 1; }
+          # Limpa espaços, quebras de linha e aspas coladas por engano e confere o formato, sem mostrar a senha.
+          url=$(printf '%s' "$DB" | tr -d '\r\n' | sed -E "s/^[[:space:]\"']+//; s/[[:space:]\"']+$//")
+          case "$url" in postgres://*|postgresql://*) ;; *)
+            echo "::error::O segredo não começa com postgresql:// ($(printf '%s' "$url" | wc -c) caracteres). Cole a cadeia do botão Connect › Session pooler, no formato URI."; exit 1;; esac
+          case "$url" in *YOUR-PASSWORD*|*'[YOUR'*) echo "::error::O segredo ainda tem [YOUR-PASSWORD]: troque pela senha do banco, sem os colchetes."; exit 1;; esac
+          echo "host: $(printf '%s' "$url" | sed -E 's#^[a-z]+://[^@]*@##; s#[:/?].*##')"
+          echo "::add-mask::$url"
+          echo "DBURL=$url" >> "$GITHUB_ENV"
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          existe=$(psql "$url" -tAc "select count(*) from pg_namespace where nspname in ('app','fluxo')")
+          echo "esquemas app/fluxo já existentes: $existe"
+          test "$existe" = "0" || { echo "::error::O esquema app ou fluxo já existe; para recriar, apague antes (só com o ok do Moisés)."; exit 1; }
+      - name: Aplicar (uma transação)
+        run: |
+          args=()
+          for f in supabase/migrations/*.sql; do args+=(-f "$f"); done
+          psql "$DBURL" -v ON_ERROR_STOP=1 --single-transaction -q "${args[@]}" -f supabase/carga/bkm.sql
+      - name: Conferir
+        run: |
+          psql "$DBURL" -c "select (select count(*) from pg_tables where schemaname = 'app') as tabelas_app,
+                               (select count(*) from pg_tables where schemaname = 'fluxo') as tabelas_fluxo,
+                               (select count(*) from app.equipe_prevista) as equipe_prevista,
+                               (select string_agg(dominio, ', ') from app.empresa_dominios) as dominios,
+                               (select count(*) from cron.job) as rotinas"
