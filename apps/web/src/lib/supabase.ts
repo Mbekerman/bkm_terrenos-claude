@@ -10,6 +10,13 @@ export const supabase = createClient(url ?? 'http://localhost', key ?? 'sem-chav
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' },
 });
 
+/** Marca a gravação como consequência automática de outra ação (consulta do GeoSampa, frentes medidas pela
+ * poligonal...): o banco grava o log com automatico = true (app.origem_automatica) e o painel de Logs o recolhe
+ * dentro da ação de quem está usando. Só muda como o log aparece. */
+export function automatico<T extends { setHeader(n: string, v: string): T }>(q: T): T {
+  return q.setHeader('x-bkm-automatico', '1');
+}
+
 /** Converte erro do PostgREST em mensagem legível. */
 export function mensagemErro(e: unknown): string {
   if (!e) return 'Erro desconhecido';

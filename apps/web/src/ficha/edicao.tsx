@@ -23,7 +23,7 @@ export const OPT: Record<string, Record<string, string>> = {
   formato: { nao_informado: 'Não informado', regular: 'Regular', irregular: 'Irregular' },
   ocupacao: { nao_informado: 'Não informado', vazio: 'Vazio', ocupado: 'Ocupado', parcialmente_ocupado: 'Parcialmente ocupado' },
   demolicao: { nao_avaliada: 'Não avaliada', provavel: 'Provável', confirmada: 'Confirmada', dispensada: 'Dispensada' },
-  fonteArea: { documental: 'Documental (matrícula)', cadastral: 'Cadastral (IPTU)', levantamento: 'Levantamento topográfico', estimativa: 'Estimativa', poligonal: 'Poligonal (desenho no mapa)' },
+  fonteArea: { documental: 'Documental (matrícula)', cadastral: 'Cadastral (IPTU)', levantamento: 'Topográfica (levantamento)', poligonal: 'Poligonal (desenho no mapa)' },
   papel: { proprietario: 'Proprietário', conjuge: 'Cônjuge', representante: 'Representante', procurador: 'Procurador', parente: 'Parente', contato: 'Contato', outro: 'Outros' },
 };
 const NI_OPT = new Set(['nao_informado', 'nao_informada', 'nao_avaliada']);
@@ -82,7 +82,7 @@ export function fmtCampo(f: Ficha, [k, , tipo, opt]: Campo, listas?: { membros: 
   if (k === 'municipio_id') return [f.municipio, f.uf].filter(Boolean).join(' · ') || null;
   if (v == null || v === '' || (tipo === 'sel' && NI_OPT.has(v))) return null;
   switch (tipo) {
-    case 'sel': return OPT[opt!][v] ?? v;
+    case 'sel': return k === 'zona' && t.zona_origem === 'prefeitura' ? <>{OPT.zona[v] ?? v}<span className="faint" style={{ fontSize: 12 }}> · do GeoSampa</span></> : OPT[opt!][v] ?? v;
     case 'date': return fd(v);
     case 'm2': return m2(v);
     case 'm': return metros(v) + ' m';

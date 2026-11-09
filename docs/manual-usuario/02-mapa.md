@@ -25,7 +25,7 @@ Cada linha mostra:
 - a **área** e a **etapa** do funil;
 - uma **lupa**, que abre a ficha do terreno numa gaveta sobre o mapa.
 
-No alto da lista ficam o total (**"N terrenos · m²"**, com **"N sem localização"** quando há terrenos sem ponto no mapa) e a barra de **Filtros** (ver [11](11-filtros-e-visoes.md)). A ordem é a da legenda (fase, etapa, subetapa) e depois o nome.
+No alto da lista ficam o total (**"N terrenos · m²"**, com **"N sem localização"** quando há terrenos sem ponto no mapa) e a barra de **Filtros** (ver [11](11-filtros-e-visoes.md)). A ordem padrão é a da legenda (fase, etapa, subetapa) e depois o nome; para ordenar por outros campos, use a aba **Ordenação** da gaveta de Filtros (ver [11](11-filtros-e-visoes.md#ordenação-só-no-mapa)).
 
 **Como mudar a largura da lista:** arraste a borda entre a lista e o mapa (o cursor vira ⇔). No mínimo, a lista mostra só as bolinhas. **Dois cliques** na borda voltam à largura padrão. O sistema lembra a largura no seu navegador.
 
@@ -68,6 +68,8 @@ A legenda mostra os terrenos em árvore: **Terrenos › fases › etapas › sub
 - **"Limpar busca e legenda"** acende tudo de novo.
 
 O que você apagou fica guardado no navegador e vale na próxima vez.
+
+**Cores pensadas para o satélite.** Backlog é **amarelo-claro**, Obras é **lavanda**, Entregue é **verde-menta** e Descartado é **cinza-claro**; nesses quatro, o ponto do pino e o código na lista ficam escuros. As outras fases, Stand By e Perdido mantêm as cores de antes. Os tons claros existem porque o cinza e o azul-marinho sumiam sobre a imagem de satélite, e o pino cinza se confundia com os lugares do Google.
 
 ### Concorrência
 
@@ -203,7 +205,7 @@ Bom saber:
 
 **Como começar:**
 
-- **Dois cliques** sobre a poligonal; ou
+- **Dois cliques** em qualquer ponto dentro da poligonal (não precisa ser sobre a linha; sobre o pino, não: ele abre a ficha); ou
 - selecione o terreno na lista e clique em **"Editar poligonal"**.
 
 **Editando:**

@@ -83,6 +83,7 @@ apps/web/
 | --- | --- |
 | `Moldura.tsx` | Barra superior (logo, selo do ambiente, busca, sino, perfil; na largura toda, com o logo alinhado ao menu e o perfil à mesma margem da direita, regras no fim de `app.css`), menu lateral recolhível, barra inferior do celular, FAB "Novo terreno" e as janelas globais (`NovoTerreno`, `TrocarEndereco`). Passa a busca da barra às telas pelo `Outlet context` (`ContextoMoldura`); digitar fora do Mapa leva a `/mapa`. Quem filtra é `bate()` em `mapa/dados.ts`: código, nome, endereço, bairro, zona, município, corretor, matrículas e SQLs (estes também só pelos dígitos). Tem também `Ic` e `Bi` (ícones), `SeloAmbiente`, `Logo`, `Perfil` e `Sino`. |
 | `ui.tsx` | `Dialogo` (janela modal), `ToastProvider`/`useToast` (aviso de 3,2 s), `Carregando`, `Erro`, `Marca`, `Icon`. Tem sobras de outubro sem uso (`ChipStatus`, `ChipDoc`, `Avatar`). |
+| `MenuTerreno.tsx` | Menu ⋮ do terreno (Excluir; Deletar de vez só para o administrador), só para diretor e administrador; na gaveta (`ficha/Gaveta.tsx`) e no cabeçalho da página da ficha (`ficha/Ficha.tsx`); pronto para a linha da futura seção Terrenos. Exporta `DialogoDeletar` (aviso e nome digitado), usado também em `pages/TerrenosExcluidos.tsx`. |
 | `Desfazer.tsx` | Ctrl+Z / Ctrl+Y globais (ver [seção 7](#7-edição-na-ficha)). |
 | `Rascunho.tsx` | Aviso de formulário não registrado e rascunho guardado no navegador (ver [seção 7](#7-edição-na-ficha)). |
 
@@ -96,6 +97,7 @@ apps/web/
 | `Mapa.tsx` | Página Mapa (1.049 linhas): lista, legenda em árvore, pinos, busca de endereço, desenho e edição da poligonal, régua, camadas por setor, concorrência, gaveta da ficha, filtros. Também atende `/terrenos/novo`. |
 | `FichaPagina.tsx` | Ficha em página própria (`/terrenos/A123/<aba>`); código inexistente volta ao mapa com aviso; links antigos viram a aba nova. |
 | `Funil.tsx` | Funil em três níveis (fases, etapas, subetapas) com arrastar. |
+| `TerrenosExcluidos.tsx` | `/configuracoes/excluidos`, só administrador (pelo menu do avatar): lista de `terrenos_excluidos` com Restaurar e Deletar de vez. Vira seção de Configurações quando ela for portada. |
 | `EmPorte.tsx` | Aviso "tela sendo portada" (sem uso no momento). |
 
 ### `src/ficha/` — ficha do terreno
@@ -113,7 +115,7 @@ apps/web/
 | `Contaminacao.tsx` | Popup "Ver detalhes" da contaminação: registros SIGAC e SVMA com todos os atributos e o recorte do mapa de lotes do GeoSampa (WMS) com o terreno e os registros. |
 | `Parametros.tsx` | Seção Parâmetros urbanísticos da aba Terreno (`SecParametros`, quadro `param` com os quadros `indices`, `rest` e `histuso` dentro, em `.qd-filhos`; desde 9/nov/2026): panorama do terreno (parâmetros de todos os lotes unidos por " / ", camadas somadas e o "não toca" uma vez só), zonas por lote (em "Ver lote por lote"), potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
 | `Entorno.tsx` + `entorno.ts` | Aba Entorno: pontos de interesse (busca no Google, rota a pé, excluir/restaurar), renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
-| `Painel.tsx` | Painel lateral: quadro de avanço no topo e as abas Ações, Tarefas e Logs (sem olhinho nem lixeira). |
+| `Painel.tsx` | Painel lateral: quadro de avanço no topo e as abas Ações, Tarefas e Logs (sem olhinho nem lixeira). Os logs automáticos (`auditoria.automatico`) ficam recolhidos dentro da última ação da mesma pessoa (`agrupar`, janela de 30 min); a aba conta só ações. Gravação feita pelo sistema como consequência leva `automatico(...)` (`lib/supabase.ts`). |
 | `Avanco.tsx` | Quadro de avanço: subetapa, prazo, pendências, Avançar / Pedir aprovação / Concluir, Stand By / Perdido / Descartado, aprovar e recusar. Só por RPC. |
 | `MiniMapa.tsx` | Mini-mapa da Visão geral, com edição da poligonal no lugar. |
 | `Temperatura.tsx` | Os cinco níveis; clicar de novo no marcado volta a "não avaliada". |
@@ -149,7 +151,8 @@ apps/web/
 | Arquivo | Papel |
 | --- | --- |
 | `dados.ts` | Definição dos filtros (`FX`, `GRUPOS`), quem passa (`passa`), contagens, leitura de "12 mi"; `carregarFx` lê os dados que os filtros precisam. |
-| `Filtros.tsx` | `useFiltros(ctx)`, a barra (`BarraFx`: botão, chips, Limpar, Visão) e a gaveta (`GavetaFx`). |
+| `Filtros.tsx` | `useFiltros(ctx)`, a barra (`BarraFx`: botão, chips, Limpar, Visão) e a gaveta (`GavetaFx`, com as abas Filtros e Ordenação). |
+| `ordem.ts` | Ordenação da lista (`ORD`, `alternar`, `comparar`, `soOrdValida`): campos das colunas de `COLS_TER` do protótipo, mais código, etapa e subetapa (`posFunil`: ordem do funil no processo aberto da fase mais adiante). |
 
 ---
 
@@ -169,6 +172,7 @@ As rotas ficam em `src/App.tsx`. Todas moram dentro da `Moldura` (barra e menu).
 | `/funil` | Funil, nível das fases | |
 | `/funil/<fase>` | Etapas da fase | Ex.: `/funil/novos_negocios` (o código da fase, de `fases_modelo.codigo`). |
 | `/funil/<fase>/<etapa>` | Subetapas da etapa | |
+| `/configuracoes/excluidos` | Terrenos excluídos | Só administrador; os outros voltam ao Mapa. |
 | `/fases/*` | redireciona para `/funil` | Perde o resto do caminho (ver armadilhas). |
 | qualquer outro | redireciona para `/mapa` | |
 
@@ -322,7 +326,7 @@ A consulta do GeoSampa depois do cadastro (`novo/consulta.ts`, `consultarTerreno
 
 `lib/buscando.tsx` guarda, por terreno, as buscas em segundo plano em curso: `geosampa` (`consultarTerreno` e o "Buscar no GeoSampa" de um SQL), `cartorio` (`cartorioPelaArea`), `frentes` (`atualizarFrentes`) e `entorno` (`buscarEntorno`). Quem busca embrulha a promessa em `buscando(terreno, fonte, p)`; quem mostra usa `<Busca terreno fontes texto? />` (círculo girando, com "Buscando no GeoSampa..." no lugar do "Não informado" quando o campo está vazio) ou `useBuscando`. A ficha abre na hora com o que já tem; o carregando aparece no rótulo dos campos de `FONTE_CAMPO` (cartório, posição na quadra, testada) e no título dos quadros Áreas e dimensões, Índices urbanísticos, Restrições e entorno e Pontos de interesse. Ao terminar, `consultarTerreno` e `cartorioPelaArea` disparam `terreno-gravado` e `ficha/CartorioAuto.tsx` recarrega a ficha e as consultas do terreno.
 
-`ficha/CartorioAuto.tsx` também preenche o cartório de registro de imóveis em São Paulo ao abrir a ficha (o protótipo já fazia, `geoCartorio`): WFS `cartorio_registro_imovel` pela poligonal (a circunscrição com a maior área dentro dela, por amostragem) ou, sem poligonal, pelo pino; grava por `app.cartorio_da_prefeitura`, que nunca troca o digitado. Uma consulta por localização na sessão, só para quem edita.
+`ficha/CartorioAuto.tsx` também preenche o cartório de registro de imóveis em São Paulo ao abrir a ficha (o protótipo já fazia, `geoCartorio`): WFS `cartorio_registro_imovel` pela poligonal (a circunscrição com a maior área dentro dela, por amostragem) ou, sem poligonal, pelo pino; grava por `app.cartorio_da_prefeitura`, que nunca troca o digitado. Uma consulta por localização na sessão, só para quem edita. Do mesmo jeito preenche a **Zona** (`zonaPelaArea`): WFS `subprefeitura_v2`, campo `nm_regiao_05` (a região oficial da prefeitura: Centro, Norte, Sul, Leste, Oeste), gravada por `app.zona_da_prefeitura`; não roda quando a zona foi digitada ou já estava escolhida sem origem.
 
 ### Desfazer e refazer (Ctrl+Z, Ctrl+Y)
 
@@ -364,6 +368,7 @@ A consulta do GeoSampa depois do cadastro (`novo/consulta.ts`, `consultarTerreno
 - **Clique**: no desktop, clique no pino ou na poligonal abre a ficha na gaveta (`/mapa/A123/ficha`); no celular, seleciona e mostra o cartão. Com camada por setor ligada, o clique abre o quadro do setor.
 - **Menu do clique direito** (`Mapa.tsx`, `.mp-ctx`): "Novo terreno aqui" (só quem edita; dois cliques no vazio fazem o mesmo, no desktop) e "Traçar rota até aqui" (todos). O `contextmenu` do motor (`motor.ts`) diz se o mouse estava sobre um terreno: pino pelo `data-terreno` do conteúdo do marcador, poligonal por ponto-dentro-do-polígono (`dentro`) sobre os pinos desenhados; aí o menu mostra código e nome, sem "Novo terreno aqui", e a rota vai até o pino do terreno.
 - **Rota** (`mapa/Rota.tsx` + `mapa/rota.ts`; 9/nov/2026): quadro no canto de cima à esquerda. Origem pelo Autocompletar do Places novo (`AutocompleteSuggestion`, com token de sessão; reserva `Place.searchByText`) ou pela geolocalização. `calcularRota` chama `directions/v2:computeRoutes` (DRIVE, TWO_WHEELER, WALK, BICYCLE, TRANSIT; `TRAFFIC_UNAWARE` para não cair no SKU Pro; no transporte, o field mask traz as linhas) e cai no `DirectionsService` se a Routes falhar (sem moto). `motor.rota()` desenha a linha (a pé pontilhada), a origem e o destino e enquadra; `rotaLimpar()` ao fechar. Com a rota aberta, `.mapa-area.rota-on` apaga os quadrados da concorrência (o Google desenha marcadores por cima das linhas). Último modo em `bkm-terrenos-rota-modo`. Esc fecha. A saída também se escolhe no mapa: o quadro registra na página uma função (`pegar` → `rotaPega`) enquanto a escolha está ligada (ao abrir, até escolher, ou pela mira); os ganchos `pino` (pino e poligonal), `vazio`, `mk` (concorrência) e `lugar` (lugar do Google, novo no motor) a chamam no lugar da ação normal, e `duplo` não começa terreno. Nome: terreno e concorrente pelo próprio dado; lugar pelo `Place.fetchFields(['displayName'])`; ponto pelo `Geocoder` (reserva "Ponto no mapa"). Cursor de mira por `.mapa-area.rota-pega`.
+- **Dois cliques dentro da poligonal** (`motor.ts`, ouvinte `dblclick` do mapa; `ficha/MiniMapa.tsx`): o Google nem sempre entrega o duplo clique do preenchimento ao `Polygon` (só o da linha), então o mapa confere a posição com `dentro` sobre os terrenos desenhados (`poligonalEm`, a menor quando uma está dentro da outra) e chama `editar`, cancelando o clique simples pendente (`cliqueTerreno`, 260 ms, que abriria a ficha); sobre o pino (`[data-terreno]`) e em modo de desenho/edição segue o fluxo antigo. No mini-mapa, `dentroPoly` (`novo/geo.ts`).
 - **Desenho e edição da poligonal**: barra pequena no canto (pontos, área, Cancelar, Concluir), menu do ponto (`MenuPonto.tsx`), Enter ou dois cliques salvam, Esc ou dois cliques fora do mapa cancelam, Ctrl+Z/Ctrl+Y por ponto. Ao salvar a edição, o pino vai para o centro da poligonal e, se a rua mudou, abre `TrocarEndereco`. Em São Paulo, "Selecionar lotes" troca os SQLs (`trocarSqls.ts`).
 - **Régua**: botão no canto; distância e área; Esc e Del apagam.
 - **Lugares do Google**: tocar num comércio ou escola do mapa abre nome, nota e até 3 avaliações (`lugarAbrir`, `motor.ts:214`, `Place.fetchFields` com `reviews`); o resultado fica em memória (`LUGARES`) para não pagar de novo.
@@ -427,6 +432,7 @@ A planta (PDF) e o desenho (DXF) do lote, que o protótipo guarda em Documentos,
 - A seleção fica no `sessionStorage` (`bkm-terrenos-filtros-pag`, um objeto por página) e no endereço (`#f=`); o endereço vale primeiro (link recebido abre com o filtro).
 - Filtro antigo ou desconhecido é descartado (`soValidos`).
 - **Visões salvas** em `app.filtros_salvos`: cada um salva as suas; as da empresa, só o administrador (a RLS confere).
+- **Ordenação** (pedido do Moises, 9/nov/2026; só com `ctx === 'mapa'`, `fx.ordena`): `fx.o` é a fila `[{k, dir}]`, `fx.setO`, `fx.cmp(idA, idB)` compara pelos dados de `carregarFx` (que passou a ler `nome`). Guardada no `localStorage` (`bkm-terrenos-ordem`, um objeto por página; a página sempre abre com ela) e no endereço (`#o=`, que vale primeiro); fora das visões salvas. Em `Mapa.tsx`, com `fx.o` cheia a lista é uma só pela ordem pedida (desempate pela legenda e pelo nome); vazia, a ordem de antes.
 - `ok(id)`: terreno que ainda não está nos dados dos filtros (acabou de entrar) passa, para não sumir logo depois de cadastrado.
 - A gaveta dos filtros, a do filtro da concorrência e a da ficha não abrem juntas (`Mapa.tsx:161`).
 - A página Pipeline (tabela de Terrenos), que também teria filtro próprio no protótipo, não foi portada.

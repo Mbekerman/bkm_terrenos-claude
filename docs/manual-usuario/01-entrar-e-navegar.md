@@ -33,9 +33,13 @@ Da esquerda para a direita:
 - **Logo da BKM.** No ambiente de desenvolvimento, ao lado do logo aparece o selo **"Desenvolvimento"** e, embaixo dele, **"PR #N · dia hora"**: é a versão que está no ar. Serve para saber se uma mudança já chegou. Na produção o selo não aparece.
 - **Busca** (campo "Buscar por nome, endereço, matrícula, SQL ou corretor").
 - **Sino** de avisos.
-- **Avatar** (sua foto).
+- **Avatar** (sua foto). O menu dele mostra seu nome e papel, **Terrenos excluídos** (só para o administrador; ver abaixo) e **Sair**.
 
 A barra ocupa a largura toda da tela, em qualquer tamanho de monitor: o logo fica alinhado com o menu lateral e o avatar fica no canto direito, com a mesma margem do logo.
+
+### Terrenos excluídos (administrador)
+
+No menu do avatar, **Terrenos excluídos** lista os terrenos que um diretor ou administrador excluiu, do mais recente ao mais antigo, com quem excluiu, quando e o dia em que serão apagados de vez (180 dias depois). Cada linha tem **Restaurar** (o terreno volta para a lista, o mapa e o funil, com tudo o que tinha) e **Deletar de vez** (o mesmo aviso e o nome digitado da ficha). Quando a tela de Configurações chegar ao sistema, esta lista passa para lá. Ver também [Excluir ou deletar o terreno](04-ficha-visao-geral.md#excluir-ou-deletar-o-terreno).
 
 ### Busca de cima
 

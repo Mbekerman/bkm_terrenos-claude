@@ -87,7 +87,7 @@ Nunca coloque segredo no repositório nem nas variáveis `SUPABASE_*`/`GOOGLE_*`
 
 ## Serviço do IPTU (`terrenos-iptu`)
 
-Serviço à parte no Cloud Run (`services/iptu/Dockerfile`, imagem do Playwright com Chromium), porque o Caddy não roda navegador. Um só para dev e produção (o banco é o mesmo). Configuração sugerida: região `southamerica-east1`, 1 GiB de memória, 1 CPU, 0 a 1 instância (a fila é em memória), concorrência 8, tempo limite 300 s, acesso público (a autenticação é o login do Supabase, conferido pelo próprio serviço). Os serviços web recebem `IPTU_URL=https://terrenos-iptu-....run.app`. Comandos em `services/iptu/README.md`.
+Serviço à parte no Cloud Run (`services/iptu/Dockerfile`, imagem do Playwright com Chromium), porque o Caddy não roda navegador. Um só para dev e produção (o banco é o mesmo). Configuração sugerida: região `southamerica-east1`, 1 GiB de memória, 1 CPU, 0 a 1 instância (a fila é em memória), concorrência 8, tempo limite 300 s, CPU sempre alocada (`--no-cpu-throttling`, para a fila em segundo plano andar depois da resposta), acesso público (a autenticação é o login do Supabase, conferido pelo próprio serviço). Os serviços web recebem `IPTU_URL=https://terrenos-iptu-....run.app`. Comandos em `services/iptu/README.md`.
 
 ## Banco
 

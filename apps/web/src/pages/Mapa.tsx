@@ -849,7 +849,9 @@ export default function Mapa() {
 
   const temApag = Object.values(apag).some((l) => l.length);
   const ord = itens(fases, f, e).map((i) => i.k);
-  const linhas = visiveis.slice().sort((a, b) => ord.indexOf(classe(fases, a, f, e)!) - ord.indexOf(classe(fases, b, f, e)!) || a.nome.localeCompare(b.nome, 'pt'));
+  /* com ordenação escolhida na gaveta, uma lista só pela ordem pedida; sem ela, a da legenda e o nome */
+  const porLegenda = (a: TerrenoMapa, b: TerrenoMapa) => ord.indexOf(classe(fases, a, f, e)!) - ord.indexOf(classe(fases, b, f, e)!);
+  const linhas = visiveis.slice().sort((a, b) => (fx.o.length ? fx.cmp(a.id, b.id) : porLegenda(a, b)) || porLegenda(a, b) || a.nome.localeCompare(b.nome, 'pt'));
   const semLoc = visiveis.filter((t) => t.lat == null).length;
 
   function linha(t: TerrenoMapa, cartao?: boolean) {

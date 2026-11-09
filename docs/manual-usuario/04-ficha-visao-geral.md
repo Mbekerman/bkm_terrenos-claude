@@ -100,7 +100,7 @@ Duas metades: **à esquerda o mapa, à direita o Resumo**. Em tela estreita, o m
 
 - Mostra a poligonal em azul e o pino.
 - A **roda do mouse rola a página**; **Shift + roda** dá zoom.
-- **Dois cliques sobre a poligonal** começam a edição ali mesmo: arraste os pontos; clique direito ou dois cliques num ponto abrem o menu do ponto; **clique no mini-mapa fora da poligonal, dois cliques ou Enter salvam**; clique fora do mini-mapa ou **Esc** cancelam; Ctrl+Z desfaz.
+- **Dois cliques em qualquer ponto dentro da poligonal** (não só sobre a linha) começam a edição ali mesmo: arraste os pontos; clique direito ou dois cliques num ponto abrem o menu do ponto; **clique no mini-mapa fora da poligonal, dois cliques ou Enter salvam**; clique fora do mini-mapa ou **Esc** cancelam; Ctrl+Z desfaz.
 - **Dois cliques no resto do mapa** abrem a página Mapa centrada no ponto, com o terreno selecionado.
 - Sem poligonal, aparece "Sem localização."
 
@@ -113,9 +113,9 @@ Cada linha tem uma **seta** que leva à aba onde o dado mora.
 | Linha | O que mostra | Como mudar |
 |---|---|---|
 | **Endereço** | Logradouro, número, bairro | Lápis **"Editar no mapa"**: abre a página Mapa com a poligonal em edição (ver [05](05-ficha-terreno.md#endereço-e-localização)). |
-| **Município e região** | Município · UF · Zona | O seletor de **Zona** (Norte, Sul, Leste, Oeste, Centro...) se edita ali mesmo. |
+| **Município e região** | Município · UF · Zona | O seletor de **Zona** (Norte, Sul, Leste, Oeste, Centro...) se edita ali mesmo. Em São Paulo a zona vem sozinha do GeoSampa (região oficial da subprefeitura); trocada à mão, fica a sua. |
 | **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Terreno › Parâmetros urbanísticos (a seta abre a seção em Índices urbanísticos). |
-| **Área adotada** | Área e a fonte | O seletor de **fonte** troca a área adotada ali mesmo. |
+| **Área adotada** | Área e a fonte | O seletor de **fonte** troca a área adotada ali mesmo (a Cadastral aparece sempre; as outras, quando preenchidas). |
 | **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido | **Ainda não disponível**: ficam vazias até a viabilidade chegar ao sistema real. |
 | **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Entorno). |
 | **Valor pedido na entrada** | Valor da **primeira** oferta, com a data | Aba Comercial. |
@@ -136,6 +136,15 @@ Igual à página, com:
 - clicar noutro terreno no mapa troca o terreno da gaveta.
 
 A gaveta da ficha e a gaveta de filtros não abrem juntas.
+
+## Excluir ou deletar o terreno
+
+Só para **diretor** e **administrador**: no topo da ficha, à direita do responsável (na gaveta do Mapa, ao lado do ícone **Abrir página**), fica o botão **⋮ Mais ações**. Para os outros papéis o botão não aparece.
+
+- **Excluir terreno** (diretor e administrador): pede confirmação e tira o terreno de todos os lugares para todos: lista, mapa, funil (inclusive o Backlog), busca, tarefas e avisos do sino. Nada é apagado: o terreno fica guardado por **180 dias** e o administrador pode **restaurar** nesse prazo, voltando com tudo (negociação, propostas, tarefas). Passados os 180 dias, o sistema apaga de vez sozinho.
+- **Deletar de vez** (só administrador): apaga **na hora** o terreno e tudo o que é dele (partes, matrículas e SQLs, negociação, ofertas, propostas, reuniões, estudos, documentos, tarefas e o histórico). Não passa pela lista de excluídos e **não tem volta**. A janela mostra o aviso e só libera o botão depois que você digita o nome do terreno (maiúsculas e espaços a mais não importam). Quando os documentos forem para o Google Drive, as pastas do terreno também serão apagadas.
+
+Enquanto o terreno está excluído, a matrícula e os SQLs dele continuam presos a ele: tentar incluí-los em outro terreno mostra "está num terreno excluído". Para usar o número noutro terreno, o administrador restaura ou deleta o excluído.
 
 ## O que não é possível na ficha hoje
 

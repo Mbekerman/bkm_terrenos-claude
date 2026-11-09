@@ -101,7 +101,8 @@ select pg_temp.ok((select situacao_ocupacao from app.terrenos where id = :'t1') 
 select versao as v from app.terrenos where id = :'t1' \gset
 select pg_temp.falha(format($$update app.terrenos set zona = 'leste' where id = %L$$, :'t1'), 'terreno não é alterado direto na tabela');
 select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"zona":"centro-oeste"}')$$, :'t1', :v), 'zona aceita só as 9 opções');
-select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"area_adotada_m2":2000}')$$, :'t1', :v), 'área adotada exige a fonte');
+select app.salvar_terreno(:'t1', :v, '{"area_adotada_m2":2000}') as v \gset
+select pg_temp.ok((select fonte_area_adotada = 'cadastral' and area_adotada_m2 is not distinct from area_cadastral_m2 from app.terrenos where id = :'t1'), 'a área adotada não se digita: segue a fonte (cadastral)');
 select app.salvar_terreno(:'t1', :v, '{"area_documental_m2":2000,"area_levantamento_m2":1920,"area_adotada_m2":1920,"fonte_area_adotada":"levantamento","area_construida_existente_m2":300,"area_construida_demolir_m2":180,"cep":"04366-000","zona":"centro"}') as v2 \gset
 select pg_temp.ok(:v2 = :v + 1, 'salvar sobe a versão');
 select pg_temp.ok((select cep from app.terrenos where id = :'t1') = '04366000', 'CEP guardado só com dígitos');
@@ -700,8 +701,25 @@ select app.salvar_terreno(:'tm', :tmv, '{"cartorio":""}') \gset
 select pg_temp.ok((select cartorio is null and cartorio_origem is null from app.terrenos where id = :'tm'), 'cartório apagado volta a vazio, sem origem');
 select app.cartorio_da_prefeitura(:'tm', '13º CRI') as crok \gset
 select pg_temp.ok(:'crok' and (select cartorio_origem from app.terrenos where id = :'tm') = 'prefeitura', 'pino preenche o cartório vazio');
+\echo '# zona da cidade pelo GeoSampa'
+select versao as tmv from app.terrenos where id = :'tm' \gset
+select app.salvar_terreno(:'tm', :tmv, '{"zona":null}') \gset
+select app.zona_da_prefeitura(:'tm', 'sul') as zok \gset
+select pg_temp.ok(:'zok' and (select zona = 'sul' and zona_origem = 'prefeitura' from app.terrenos where id = :'tm'), 'GeoSampa preenche a zona vazia');
+select app.zona_da_prefeitura(:'tm', 'oeste') as zok \gset
+select pg_temp.ok(:'zok' and (select zona = 'oeste' and zona_origem = 'prefeitura' from app.terrenos where id = :'tm'), 'terreno mudou de lugar: troca a zona que veio do GeoSampa');
+select pg_temp.falha(format('select app.zona_da_prefeitura(%L, %L)', :'tm', 'sudeste'), 'GeoSampa só grava as 5 regiões oficiais');
+select versao as tmv from app.terrenos where id = :'tm' \gset
+select app.salvar_terreno(:'tm', :tmv, '{"zona":"centro"}') \gset
+select pg_temp.ok((select zona = 'centro' and zona_origem = 'digitado' from app.terrenos where id = :'tm'), 'usuário troca a zona: fica digitada');
+select app.zona_da_prefeitura(:'tm', 'sul') as zok \gset
+select pg_temp.ok(not :'zok' and (select zona from app.terrenos where id = :'tm') = 'centro', 'GeoSampa não troca a zona digitada');
+select versao as tmv from app.terrenos where id = :'tm' \gset
+select app.salvar_terreno(:'tm', :tmv, '{"zona":null}') \gset
+select pg_temp.ok((select zona is null and zona_origem is null from app.terrenos where id = :'tm'), 'zona apagada volta a vazia, sem origem');
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format('select app.cartorio_da_prefeitura(%L, %L)', :'tm', '1º CRI'), 'leitura não grava o cartório');
+select pg_temp.falha(format('select app.zona_da_prefeitura(%L, %L)', :'tm', 'sul'), 'leitura não grava a zona');
 select pg_temp.como(:'analista');
 select pg_temp.ok((select base = 'geosampa' and inscricao_norm = '00902700091' and camadas_com_erro = '{drenagem}' and lote->>'qt_area_construida' = '4994'
                      from app.consultas_lote where id = :'gc'),
@@ -3401,7 +3419,7 @@ insert into app.corretores (empresa_id, pessoa_id) values (:'emp_x', :'pfx') ret
 select pg_temp.como(:'diretor');
 select pg_temp.falha(format($$insert into app.terreno_corretores (terreno_id, corretor_id, empresa_id) values (%L, %L, %L)$$, :'tce', :'cfx', :'emp'),
   'corretor de outra empresa não entra no terreno');
-select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel) values (%L, %L, %L, 'proprietario')$$, :'emp', :'tce', :'pfx'),
+select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao) values (%L, %L, %L, 'proprietario', 10)$$, :'emp', :'tce', :'pfx'),
   'nem pessoa de outra empresa');
 
 -- ---------------------------------------------------------------------
@@ -3506,6 +3524,10 @@ insert into app.pessoas (empresa_id, nome_razao_social) values (:'emp', 'Ana Bre
 insert into app.pessoas (empresa_id, nome_razao_social) values (:'emp', 'João Bresser') returning id as pjoao \gset
 insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao, parte_id) values (:'emp', :'tl', :'pana', 'proprietario', 100, :'lp3');
 insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, parte_id) values (:'emp', :'tl', :'pjoao', 'conjuge', :'lp3');
+select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, parte_id) values (%L, %L, %L, 'proprietario', %L)$$, :'emp', :'tl', :'pjoao', :'lp3'),
+  'proprietário sem a participação não entra');
+insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Só o Nome') returning id as psn \gset
+select pg_temp.ok((select telefone is null and email is null and cpf_cnpj is null from app.pessoas where id = :'psn'), 'pessoa entra só com o nome (telefone, e-mail e CPF opcionais)');
 select pg_temp.falha(format($$insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao, parte_id) values (%L, %L, %L, 'parente', 10, %L)$$, :'emp', :'tl', :'pjoao', :'lp3'),
   'participação só de proprietário');
 select pg_temp.falha(format($$insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, origem) values (%L, %L, '059.112.0041-1', 'chute')$$, :'emp', :'tl'), 'origem da inscrição só digitada ou do mapa');
@@ -3733,8 +3755,27 @@ select pg_temp.ok((select area_cadastral_m2 = 420 from app.terrenos where id = :
 select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"area_cadastral_m2":null}') \gset
 select pg_temp.ok((select area_cadastral_m2 = 410 and area_cadastral_origem = 'sqls' from app.terrenos where id = :'tsq'), 'apagar a cadastral volta para a soma dos SQLs');
 delete from app.inscricoes_municipais where id = :'sq1';
-select pg_temp.ok((select area_cadastral_m2 is null and area_adotada_m2 is null and fonte_area_adotada is null from app.terrenos where id = :'tsq'),
-  'sem SQL, sem cadastral; a adotada que era a cadastral fica em branco');
+select pg_temp.ok((select area_cadastral_m2 is null and area_adotada_m2 is null and fonte_area_adotada = 'cadastral' from app.terrenos where id = :'tsq'),
+  'sem SQL, sem cadastral; a adotada continua pela cadastral, em branco');
+\echo '# área adotada nasce pela cadastral; só a topográfica toma o lugar sozinha (9/nov/2026)'
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Adotada nasce cadastral', :'analista', :'sp', pg_temp.quadra(-47.34, -23.34)) returning id as tad \gset
+select pg_temp.ok((select fonte_area_adotada = 'cadastral' and area_adotada_m2 is null from app.terrenos where id = :'tad'), 'terreno novo nasce com a adotada pela cadastral');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tad', '502.001.0001-1', 900);
+select pg_temp.ok((select area_adotada_m2 = 900 from app.terrenos where id = :'tad'), 'a soma dos SQLs que chega vira a adotada');
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"area_documental_m2":950}') \gset
+select pg_temp.ok((select fonte_area_adotada = 'cadastral' and area_adotada_m2 = 900 from app.terrenos where id = :'tad'), 'a documental digitada não toma o lugar sozinha');
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"fonte_area_adotada":"poligonal"}') \gset
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"area_levantamento_m2":880}') \gset
+select pg_temp.ok((select fonte_area_adotada = 'levantamento' and area_adotada_m2 = 880 from app.terrenos where id = :'tad'), 'a topográfica digitada toma o lugar mesmo de uma escolha à mão');
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"fonte_area_adotada":"documental"}') \gset
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"nome":"Adotada escolhida"}') \gset
+select pg_temp.ok((select fonte_area_adotada = 'documental' and area_adotada_m2 = 950 from app.terrenos where id = :'tad'), 'escolha à mão continua valendo quando a topográfica não muda');
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"area_documental_m2":null}') \gset
+select pg_temp.ok((select fonte_area_adotada = 'cadastral' and area_adotada_m2 = 900 from app.terrenos where id = :'tad'), 'a fonte escolhida apagada volta para a cadastral');
+select app.salvar_terreno(:'tad', (select versao from app.terrenos where id = :'tad'), '{"fonte_area_adotada":null,"area_adotada_m2":null}') \gset
+select pg_temp.ok((select fonte_area_adotada = 'cadastral' from app.terrenos where id = :'tad'), 'sem escolha, a adotada é a cadastral');
+select pg_temp.falha(format($$select app.salvar_terreno(%L, (select versao from app.terrenos where id = %L), '{"fonte_area_adotada":"estimativa"}')$$, :'tad', :'tad'), 'a estimativa saiu das fontes');
 
 -- ---------------------------------------------------------------------
 \echo '# ficha numa chamada só (6/nov/2026)'
@@ -3745,6 +3786,21 @@ select pg_temp.ok((select (d->'v'->>'id') = :'tsq' and (d->'t'->>'nome') = 'Soma
 select pg_temp.ok(app.ficha_dados(:'emp', 'Z999') is null, 'código que não existe devolve nulo');
 
 -- ---------------------------------------------------------------------
+\echo '# logs automáticos (9/nov/2026)'
+select pg_temp.como(:'analista');
+select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"historico_uso":"ação da pessoa"}') \gset
+select pg_temp.ok((select not automatico from app.auditoria where tabela = 'terrenos' and registro_id = :'tsq' order by id desc limit 1), 'gravação comum: ação da pessoa');
+select set_config('request.headers', '{"x-bkm-automatico":"1"}', false);
+select app.salvar_terreno(:'tsq', (select versao from app.terrenos where id = :'tsq'), '{"historico_uso":"consequência"}') \gset
+select pg_temp.ok((select automatico and depois->>'historico_uso' = 'consequência' from app.auditoria where tabela = 'terrenos' and registro_id = :'tsq' order by id desc limit 1),
+  'com o cabeçalho x-bkm-automatico, o log é automático e não se junta ao da pessoa (mesmo campo, menos de 7 s)');
+select pg_temp.ok((select count(*) = 2 from app.auditoria where tabela = 'terrenos' and registro_id = :'tsq' and depois->>'historico_uso' in ('ação da pessoa', 'consequência')), 'os dois logs ficam');
+select set_config('request.headers', '', false);
+reset role;
+select set_config('app.automatico', '1', false);
+select pg_temp.ok(app.origem_automatica(), 'app.automatico na transação também marca');
+select set_config('app.automatico', '', false);
+select pg_temp.ok(not app.origem_automatica(), 'sem marca, ação da pessoa');
 \echo '# propostas por parte (9/nov/2026)'
 select pg_temp.como(:'analista');
 insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
@@ -3791,5 +3847,87 @@ select app.remover_parte(:'ppb', 'Vendeu para outro');
 select pg_temp.como(:'analista');
 select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L, p_partes => array[%L]::uuid[])', :'npp', 'bkm', 'dinheiro', :'ppb'),
   'parte tirada do terreno não recebe proposta');
+
+-- ---------------------------------------------------------------------
+\echo '# excluir e deletar terreno (9/nov/2026)'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Vai Sumir', :'analista', :'sp', pg_temp.quadra(-44.501, -21.501)) returning id as tex \gset
+select (app.registrar_oferta(:'tex', 3000000)->>'processo_id') as nex \gset
+select app.registrar_proposta(:'nex', 'bkm', 2500000, 'dinheiro') as qex \gset
+insert into app.matriculas (empresa_id, terreno_id, numero, cartorio) values (:'emp', :'tex', '777.001', '9º CRI');
+select pg_temp.tarefa(:'tex', 'Tarefa do excluído', current_date - 3, :'analista', :'nex') as kex \gset
+select pg_temp.falha(format('select app.excluir_terreno(%L)', :'tex'), 'analista não exclui terreno');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format('select app.excluir_terreno(%L)', :'tex'), 'gestor não exclui terreno');
+select pg_temp.como(:'intruso');
+select pg_temp.falha(format('select app.excluir_terreno(%L)', :'tex'), 'quem é de fora não exclui');
+reset role;
+-- diretor sem ser administrador
+insert into auth.users values ('00000000-0000-0000-0000-00000000001f', 'diretor2@bkm.test');
+insert into app.membros (empresa_id, user_id, papel, nome) values (:'emp', '00000000-0000-0000-0000-00000000001f', 'diretor', 'Dir2')
+  on conflict (empresa_id, user_id) do update set papel = 'diretor', nome = 'Dir2';
+select pg_temp.como('00000000-0000-0000-0000-00000000001f');
+select app.excluir_terreno(:'tex');
+select pg_temp.falha(format('select app.excluir_terreno(%L)', :'tex'), 'excluir duas vezes não acha o terreno');
+select pg_temp.falha(format('select app.terrenos_excluidos(%L)', :'emp'), 'só o administrador vê a lista de excluídos');
+select pg_temp.falha(format('select app.deletar_terreno(%L, %L)', :'tex', 'Vai Sumir'), 'diretor que não é administrador não deleta');
+select pg_temp.como(:'analista');
+select pg_temp.ok(not exists (select 1 from app.terrenos where id = :'tex') and not exists (select 1 from app.v_terrenos where id = :'tex')
+    and not exists (select 1 from app.processos where terreno_id = :'tex') and app.ficha_dados(:'emp', (select codigo from app.terrenos_apagados limit 0)) is null,
+  'excluído some do terreno, da listagem e do funil');
+select pg_temp.ok(not app.ve_terreno(:'tex') and not exists (select 1 from fluxo.tarefas where id = :'kex'), 'e os cartões do quadro dele somem');
+select pg_temp.ok((select count(*) from app.terrenos_sobrepostos(:'emp', pg_temp.quadra(-44.501, -21.501))) = 0, 'não aparece na sobreposição do cadastro');
+select pg_temp.ok(exists (select 1 from app.matriculas where terreno_id = :'tex'), 'a matrícula continua guardada (e segura o número até restaurar ou deletar)');
+select pg_temp.falha(format('select app.salvar_terreno(%L, 1, %L)', :'tex', '{"nome":"x"}'), 'excluído não se edita');
+reset role;
+select pg_temp.ok((select excluido_por from app.terrenos where id = :'tex') = '00000000-0000-0000-0000-00000000001f'::uuid, 'guarda quem excluiu');
+select pg_temp.ok(app.rotina_diaria() >= 0 and not exists (select 1 from app.notificacoes where terreno_id = :'tex' and tipo = 'tarefa_atrasada'),
+  'a rotina não avisa tarefa atrasada de terreno excluído');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.terrenos_excluidos(:'emp') where id = :'tex' and excluido_por_nome = 'Dir2'
+    and apagar_em = current_date + 180) = 1, 'administrador vê o excluído, quem excluiu e quando some de vez');
+select pg_temp.ok(app.restaurar_terreno(:'tex') like 'A%', 'administrador restaura (devolve o código)');
+select pg_temp.ok(exists (select 1 from app.processos where terreno_id = :'tex') and exists (select 1 from fluxo.tarefas where id = :'kex'),
+  'restaurado, volta com a negociação e os cartões');
+-- 180 dias depois
+select app.excluir_terreno(:'tex');
+reset role;
+select pg_temp.ok(app.purgar_terrenos_excluidos(current_date + 179) = 0 and exists (select 1 from app.terrenos where id = :'tex'), 'antes dos 180 dias fica guardado');
+select pg_temp.ok(app.purgar_terrenos_excluidos(current_date + 180) = 1, 'no 180º dia a rotina apaga de vez');
+select pg_temp.ok(not exists (select 1 from app.terrenos where id = :'tex') and not exists (select 1 from app.processos where id = :'nex')
+    and not exists (select 1 from app.propostas where id = :'qex') and not exists (select 1 from fluxo.tarefas where id = :'kex')
+    and not exists (select 1 from app.matriculas where terreno_id = :'tex')
+    and not exists (select 1 from app.auditoria where registro_id in (:'tex', :'nex', :'qex', :'kex'))
+    and (select apagado_por is null and codigo is not null from app.terrenos_apagados where terreno_id = :'tex'),
+  'apagado com negociação, propostas, cartões, matrículas e logs; fica só o registro de que foi apagado');
+-- deletar na hora
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Apagar  Já', :'analista', :'sp', pg_temp.quadra(-44.521, -21.521)) returning id as tdl \gset
+select pg_temp.falha(format('select app.deletar_terreno(%L, %L)', :'tdl', 'Apagar Já'), 'analista não deleta');
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format('select app.deletar_terreno(%L, %L)', :'tdl', 'Apagar'), 'deletar exige o nome do terreno');
+select app.deletar_terreno(:'tdl', ' apagar já ') as rdl \gset
+select pg_temp.ok((:'rdl'::jsonb->>'codigo') is not null and jsonb_typeof(:'rdl'::jsonb->'storage') = 'array' and not exists (select 1 from app.terrenos where id = :'tdl'),
+  'administrador deleta digitando o nome (sem diferença de maiúsculas e espaços)');
+select pg_temp.ok((select pendencias ? 'storage' and pendencias ? 'drive' and limpo_em is not null from app.terrenos_apagados where terreno_id = :'tdl'),
+  'o registro guarda o que falta apagar fora do banco (storage e Drive); sem arquivo, já nasce limpo');
+reset role;
+update app.terrenos_apagados set limpo_em = null, pendencias = '{"storage":["x/y/z.pdf"],"drive":[]}' where terreno_id = :'tdl';
+select pg_temp.como(:'analista');
+select app.limpeza_feita((select id from app.terrenos_apagados where terreno_id = :'tdl' limit 0));
+select pg_temp.ok(not exists (select 1 from app.terrenos_apagados), 'só o administrador vê o registro dos apagados');
+select pg_temp.como(:'diretor');
+select app.limpeza_feita((select id from app.terrenos_apagados where terreno_id = :'tdl'));
+select pg_temp.ok((select limpo_em is not null from app.terrenos_apagados where terreno_id = :'tdl'), 'limpeza de fora marcada como feita');
+-- todos os terrenos dos testes, com tudo o que os outros testes criaram, apagam sem erro
+reset role;
+select count(*) as napag from (select app._apagar_terreno(id, null) from app.terrenos) x \gset
+select pg_temp.ok(:napag > 10
+    and not exists (select 1 from app.terrenos) and not exists (select 1 from app.processos) and not exists (select 1 from app.ofertas)
+    and not exists (select 1 from app.documentos) and not exists (select 1 from app.reunioes)
+    and not exists (select 1 from fluxo.quadros q join app.terrenos_apagados a on a.terreno_id = q.objeto_id),
+  'deletar funciona em todos os terrenos dos testes, sem sobrar processo, oferta, documento, reunião nem quadro');
 
 \echo 'TODOS OS TESTES PASSARAM'
