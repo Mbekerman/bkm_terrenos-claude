@@ -16,7 +16,13 @@ import {
 import { ORD, alternar, comparar, ordTxt, soOrdValida, type Ord } from './ordem';
 
 const GK = 'bkm-terrenos-filtros-pag';
-type Guardado = Record<string, { f: Filtro; v: string | null; o?: Ord[] }>;
+type Guardado = Record<string, { f: Filtro; v: string | null }>;
+/* a ordenação fica no navegador (localStorage), por página: a página sempre abre com ela (pedido do Moises, 9/nov/2026) */
+const OK = 'bkm-terrenos-ordem';
+const lerOrd = (ctx: string): unknown => { try { return (JSON.parse(localStorage.getItem(OK) || '{}') || {})[ctx]; } catch { return null; } };
+function gravarOrd(ctx: string, o: Ord[]) {
+  try { const g = JSON.parse(localStorage.getItem(OK) || '{}') || {}; if (o.length) g[ctx] = o; else delete g[ctx]; localStorage.setItem(OK, JSON.stringify(g)); } catch { /* sem armazenamento */ }
+}
 const lerG = (): Guardado => { try { return JSON.parse(sessionStorage.getItem(GK) || '{}') || {}; } catch { return {}; } };
 function doEndereco(): Filtro | null {
   try { const h = location.hash.match(/[#&?]f=([^&]+)/); return h ? soValidos(JSON.parse(decodeURIComponent(h[1]))) : null; } catch { return null; }
@@ -50,13 +56,14 @@ export function useFiltros(ctx: Ctx): Fx {
     const g = lerG()[ctx];
     return { f: soValidos(g?.f ?? {}), v: g?.v ?? null, m: false };
   });
-  const [o, setO] = useState<Ord[]>(() => (ordena ? ordDoEndereco() ?? soOrdValida(lerG()[ctx]?.o) : []));
+  const [o, setO] = useState<Ord[]>(() => (ordena ? ordDoEndereco() ?? soOrdValida(lerOrd(ctx)) : []));
   const [aberto, setAberto] = useState(false);
   useEffect(() => {
-    const g = lerG(); g[ctx] = { f: st.f, v: st.v, ...(o.length ? { o } : {}) };
+    const g = lerG(); g[ctx] = { f: st.f, v: st.v };
     try { sessionStorage.setItem(GK, JSON.stringify(g)); } catch { /* sem sessão */ }
     porNoEndereco(st.f, o);
-  }, [st, o, ctx]);
+    if (ordena) gravarOrd(ctx, o);
+  }, [st, o, ctx, ordena]);
   const D = q.data ?? null;
   const porId = useMemo(() => new Map((D?.ters ?? []).map((t) => [t.id, t])), [D]);
   const cmp = useCallback((a: string, b: string) => (D && o.length ? comparar(o, D, porId.get(a), porId.get(b)) : 0), [D, o, porId]);

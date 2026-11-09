@@ -63,7 +63,7 @@ No **Mapa**, a legenda continua ligando e desligando camadas e conta só os terr
 - Quem não tem o dado (sem área, sem VGV...) fica sempre no fim, nos dois sentidos.
 - Com uma ordenação ligada, a lista vira uma só, na ordem pedida, sem agrupar pela legenda (a bolinha continua com a cor da etapa). Sem ordenação, volta a ordem da legenda e do nome.
 - Na barra aparece o chip **"Ordem: Imóvel ↓, Negociação ↑"**; o X dele, ou **"Tirar ordenação"** na gaveta, volta à ordem padrão.
-- A ordenação fica guardada na sessão e no endereço (depois de `#o=`), como os filtros. Ela **não entra** nas visões salvas.
+- A ordenação fica guardada **no seu navegador**: o Mapa sempre abre com a última ordenação escolhida, mesmo depois de fechar o navegador (em outro computador ou navegador, começa sem). Ela também vai no endereço (depois de `#o=`), e o link recebido vale primeiro. Ela **não entra** nas visões salvas.
 
 ## Visões salvas
 
