@@ -80,7 +80,7 @@ apps/web/
 
 | Arquivo | Papel |
 | --- | --- |
-| `Moldura.tsx` | Barra superior (logo, selo do ambiente, busca, sino, perfil), menu lateral recolhível, barra inferior do celular, FAB "Novo terreno" e as janelas globais (`NovoTerreno`, `TrocarEndereco`). Passa a busca da barra às telas pelo `Outlet context` (`ContextoMoldura`); digitar fora do Mapa leva a `/mapa`. Quem filtra é `bate()` em `mapa/dados.ts`: código, nome, endereço, bairro, zona, município, corretor, matrículas e SQLs (estes também só pelos dígitos). Tem também `Ic` e `Bi` (ícones), `SeloAmbiente`, `Logo`, `Perfil` e `Sino`. |
+| `Moldura.tsx` | Barra superior (logo, selo do ambiente, busca, sino, perfil; na largura toda, com o logo alinhado ao menu e o perfil à mesma margem da direita, regras no fim de `app.css`), menu lateral recolhível, barra inferior do celular, FAB "Novo terreno" e as janelas globais (`NovoTerreno`, `TrocarEndereco`). Passa a busca da barra às telas pelo `Outlet context` (`ContextoMoldura`); digitar fora do Mapa leva a `/mapa`. Quem filtra é `bate()` em `mapa/dados.ts`: código, nome, endereço, bairro, zona, município, corretor, matrículas e SQLs (estes também só pelos dígitos). Tem também `Ic` e `Bi` (ícones), `SeloAmbiente`, `Logo`, `Perfil` e `Sino`. |
 | `ui.tsx` | `Dialogo` (janela modal), `ToastProvider`/`useToast` (aviso de 3,2 s), `Carregando`, `Erro`, `Marca`, `Icon`. Tem sobras de outubro sem uso (`ChipStatus`, `ChipDoc`, `Avatar`). |
 | `Desfazer.tsx` | Ctrl+Z / Ctrl+Y globais (ver [seção 7](#7-edição-na-ficha)). |
 | `Rascunho.tsx` | Aviso de formulário não registrado e rascunho guardado no navegador (ver [seção 7](#7-edição-na-ficha)). |
