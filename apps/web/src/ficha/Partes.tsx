@@ -940,8 +940,56 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
 
 /* ---------- janela da etiqueta ---------- */
 type OpsEtq = { parte: (k: string, pid: string | null, mp?: string | null) => Promise<void>; duplicar: (k: string) => Promise<void>; percentual: (tipo: Tp, c: R, v: number | null) => Promise<boolean>; tirar: (k: string) => void; apagar: (k: string) => void };
+/** Lançar ou atualizar o IPTU de um SQL à mão: só fora de São Paulo (pedido do Moises, 9/nov/2026), onde não há a busca na
+ * Prefeitura. Cada lançamento é uma revisão nova em app.inscricao_valores; só vale o exercício mais recente. */
+export function FormIptu({ f, x, vv, onFeito }: { f: Ficha; x: R; vv: R | undefined; onFeito?: () => void }) {
+  const { empresa } = useSessao();
+  const toast = useToast(), recarregar = useRecarregar(f);
+  const IPTU0 = { ex: String(vv?.exercicio ?? new Date().getFullYear()), sit: 'tributado', parc: '10' };
+  const kI = `${f.id}:iptu:${x.id}`;
+  const [iptu, setIptu] = useState<Record<string, string>>(() => comRasc(kI, IPTU0));
+  const iref = useRef<HTMLFormElement>(null);
+  const temI = ['vt', 'vc', 'iptu', 'mensal', 'fonte'].some((c) => (iptu[c] ?? '').trim() !== '');
+  useGuardarRasc(kI, iptu, temI);
+  async function lancar(ev: FormEvent) {
+    ev.preventDefault();
+    const ex = parseInt(iptu.ex, 10);
+    if (vv && ex < vv.exercicio) { toast(`Já há IPTU de ${vv.exercicio}: só vale o exercício mais recente.`, true); return; }
+    const { error } = await supabase.from('inscricao_valores').insert({
+      empresa_id: empresa!.id, inscricao_id: x.id, exercicio: ex, valor_venal_terreno: lerNum(iptu.vt), valor_venal_construcao: lerNum(iptu.vc),
+      situacao_iptu: iptu.sit, iptu_valor_anual: iptu.sit === 'isento' ? null : lerNum(iptu.iptu), iptu_parcelas: iptu.parc ? parseInt(iptu.parc, 10) : null,
+      iptu_mensal_informado: iptu.sit === 'isento' ? null : lerNum(iptu.mensal), fonte: iptu.fonte?.trim() || null,
+    });
+    if (error) { toast(error.message, true); return; }
+    apagarRasc(kI);
+    setIptu({ ex: String(ex), sit: 'tributado', parc: '10' });
+    recarregar();
+    onFeito?.();
+  }
+  const ip = (k2: string, l: string, extra: Record<string, unknown> = {}) => (
+    <div className="field" key={k2} style={extra.style as any}><label htmlFor={`v-${x.id}-${k2}`}>{l.replace(' (R$)', '')}</label>{(() => {
+      const r = / \(R\$\)/.test(l), i = <input id={`v-${x.id}-${k2}`} inputMode="decimal" data-fmt={r ? 'moeda' : (extra.attrs as any)?.inputMode === 'numeric' ? 'none' : undefined} value={iptu[k2] ?? ''} onChange={(e) => setIptu({ ...iptu, [k2]: e.target.value })} {...(extra.attrs as any)} />;
+      return r ? <Adorno t="moeda">{i}</Adorno> : i; })()}</div>
+  );
+  return (
+    <>
+          <form className="inline-form" ref={iref} style={{ border: 0, paddingTop: 4 }} onSubmit={lancar}>
+            {ip('ex', 'Exercício', { style: { flex: '0 1 96px' }, attrs: { inputMode: 'numeric', required: true } })}
+            {ip('vt', 'Venal terreno (R$)')}{ip('vc', 'Venal construção (R$)')}
+            <div className="field"><label htmlFor={`v-${x.id}-sit`}>Situação do IPTU</label><select id={`v-${x.id}-sit`} value={iptu.sit} onChange={(e) => setIptu({ ...iptu, sit: e.target.value })}>{Object.entries(SIT_IPTU).map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select></div>
+            {ip('iptu', 'IPTU anual (R$)')}{ip('parc', 'Parcelas', { style: { flex: '0 1 86px' }, attrs: { inputMode: 'numeric' } })}
+            {ip('mensal', 'IPTU mensal informado (R$)', { attrs: { placeholder: 'se a fonte trouxer' } })}
+            <div className="field grow"><label htmlFor={`v-${x.id}-fonte`}>Fonte</label><input id={`v-${x.id}-fonte`} required placeholder="Carnê, certidão de dados cadastrais..." value={iptu.fonte ?? ''} onChange={(e) => setIptu({ ...iptu, fonte: e.target.value })} /></div>
+            <button className="btn sm"><Ic n="add" s={16} />{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</button>
+            <LimparRasc chave={kI} mostrar={temI} limpar={() => setIptu(IPTU0)} />
+          </form>
+          <div className="hint">Só vale o exercício mais recente: lançar o ano novo substitui o anterior.</div>
+    </>
+  );
+}
+
 function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fechar: () => void; ops: OpsEtq }) {
-  const { edita, empresa } = useSessao();
+  const { edita } = useSessao();
   const toast = useToast(), recarregar = useRecarregar(f);
   const [tipo, id, cid] = k.split(':') as [Tp, string, string | undefined];
   const x = lotesDe(L, tipo).find((l) => l.id === id);
@@ -954,12 +1002,6 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
   useEffect(() => { setPct(Object.fromEntries(cs.map((y) => [y.id, y.percentual != null ? num(+y.percentual, +y.percentual % 1 ? 2 : 0) : '']))); }, [pctSig]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [v, setV] = useState<Record<string, string>>({});
   const [busc, setBusc] = useState(false);
-  const IPTU0 = { ex: String(new Date().getFullYear()), sit: 'tributado', parc: '10' };
-  const kI = `${f.id}:iptu:${id}`;
-  const [iptu, setIptu] = useState<Record<string, string>>(() => comRasc(kI, IPTU0));
-  const iref = useRef<HTMLFormElement>(null);
-  const temI = ['vt', 'vc', 'iptu', 'mensal', 'fonte'].some((c) => (iptu[c] ?? '').trim() !== '');
-  useGuardarRasc(kI, iptu, temI);
   useEffect(() => {
     if (!x) return;
     setV(tipo === 'm' ? { numero: x.numero, cartorio: x.cartorio ?? '', area_registrada_m2: x.area_registrada_m2 != null ? num(x.area_registrada_m2, 2) : '', data_certidao: x.data_certidao ?? '' }
@@ -1059,25 +1101,6 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
     try { const ok = await buscando(f.id, 'geosampa', consultarLote(x!.id, x!.inscricao)); toast(ok ? 'GeoSampa consultado.' : 'O GeoSampa não achou o lote deste SQL.', !ok); recarregar(); }
     catch (e: any) { toast(e?.message ?? String(e), true); } finally { setBusc(false); }
   }
-  async function lancar(ev: FormEvent) {
-    ev.preventDefault();
-    const ex = parseInt(iptu.ex, 10);
-    if (vv && ex < vv.exercicio) { toast(`Já há IPTU de ${vv.exercicio}: só vale o exercício mais recente.`, true); return; }
-    const { error } = await supabase.from('inscricao_valores').insert({
-      empresa_id: empresa!.id, inscricao_id: x!.id, exercicio: ex, valor_venal_terreno: lerNum(iptu.vt), valor_venal_construcao: lerNum(iptu.vc),
-      situacao_iptu: iptu.sit, iptu_valor_anual: iptu.sit === 'isento' ? null : lerNum(iptu.iptu), iptu_parcelas: iptu.parc ? parseInt(iptu.parc, 10) : null,
-      iptu_mensal_informado: iptu.sit === 'isento' ? null : lerNum(iptu.mensal), fonte: iptu.fonte?.trim() || null,
-    });
-    if (error) { toast(error.message, true); return; }
-    apagarRasc(kI);
-    setIptu({ ex: String(ex), sit: 'tributado', parc: '10' });
-    recarregar();
-  }
-  const ip = (k2: string, l: string, extra: Record<string, unknown> = {}) => (
-    <div className="field" key={k2} style={extra.style as any}><label htmlFor={`v-${k2}`}>{l.replace(' (R$)', '')}</label>{(() => {
-      const r = / \(R\$\)/.test(l), i = <input id={`v-${k2}`} inputMode="decimal" data-fmt={r ? 'moeda' : (extra.attrs as any)?.inputMode === 'numeric' ? 'none' : undefined} value={iptu[k2] ?? ''} onChange={(e) => setIptu({ ...iptu, [k2]: e.target.value })} {...(extra.attrs as any)} />;
-      return r ? <Adorno t="moeda">{i}</Adorno> : i; })()}</div>
-  );
   return (
     <Dialogo titulo={`${rot} ${x.inscricao}`} sub={x.endereco_prefeitura ?? undefined} onFechar={fechar} rodape={rodape}>
       <div className="pt2-g">
@@ -1106,21 +1129,8 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
             <td className="muted vv-f">{vv.fonte || '—'}</td></tr>
         </tbody></table></div>
       ) : <div className="muted">Sem IPTU lançado.</div>}
-      {edita && (
-        <details className="details"><summary>{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</summary>
-          <form className="inline-form" ref={iref} style={{ border: 0, paddingTop: 4 }} onSubmit={lancar}>
-            {ip('ex', 'Exercício', { style: { flex: '0 1 96px' }, attrs: { inputMode: 'numeric', required: true } })}
-            {ip('vt', 'Venal terreno (R$)')}{ip('vc', 'Venal construção (R$)')}
-            <div className="field"><label htmlFor="v-sit">Situação do IPTU</label><select id="v-sit" value={iptu.sit} onChange={(e) => setIptu({ ...iptu, sit: e.target.value })}>{Object.entries(SIT_IPTU).map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select></div>
-            {ip('iptu', 'IPTU anual (R$)')}{ip('parc', 'Parcelas', { style: { flex: '0 1 86px' }, attrs: { inputMode: 'numeric' } })}
-            {ip('mensal', 'IPTU mensal informado (R$)', { attrs: { placeholder: 'se a fonte trouxer' } })}
-            <div className="field grow"><label htmlFor="v-fonte">Fonte</label><input id="v-fonte" required placeholder="Carnê, certidão de dados cadastrais..." value={iptu.fonte ?? ''} onChange={(e) => setIptu({ ...iptu, fonte: e.target.value })} /></div>
-            <button className="btn sm"><Ic n="add" s={16} />{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</button>
-            <LimparRasc chave={kI} mostrar={temI} limpar={() => setIptu(IPTU0)} />
-          </form>
-          <div className="hint">Só vale o exercício mais recente: lançar o ano novo substitui o anterior.</div>
-        </details>
-      )}
+      {edita && !sp && <details className="details"><summary>{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</summary><FormIptu f={f} x={x} vv={vv} /></details>}
+      {sp && <div className="hint">Em São Paulo, o valor venal e o IPTU vêm sozinhos da Prefeitura e não se digitam (seção IPTU da aba Terreno).</div>}
     </Dialogo>
   );
 }
