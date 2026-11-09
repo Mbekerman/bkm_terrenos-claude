@@ -296,6 +296,12 @@ create table app.inscricao_valores (
   data_verificacao       date,
   fonte                  text,  -- carnê, certidão de dados cadastrais, portal da prefeitura...
   observacoes            text,
+  -- O que a notificação de lançamento da Prefeitura de São Paulo traz, lido do PDF pelo
+  -- serviço do IPTU (services/iptu, 9/nov/2026): número da NL, áreas, testada, construção,
+  -- valor do m², fatores, bases de cálculo, impostos predial e territorial e o valor a
+  -- pagar. Nulo quando o valor foi digitado. SQL + exercício + NL bastam para emitir o PDF
+  -- de novo (para guardar no Drive quando houver o armazenamento de documentos).
+  notificacao            jsonb check (notificacao is null or jsonb_typeof(notificacao) = 'object'),
   criado_por             uuid default auth.uid(),
   criado_em              timestamptz not null default now(),
   unique (inscricao_id, exercicio, revisao),

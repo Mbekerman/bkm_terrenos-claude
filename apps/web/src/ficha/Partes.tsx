@@ -43,7 +43,7 @@ export function useLotes(f: Ficha) {
       const [pt, m, i, c, b, cm, ci] = await Promise.all([
         supabase.from('terreno_partes').select('id,nome,pessoa_nome,telefone,email,documento,observacoes,ativa,criado_em').eq('terreno_id', f.id).eq('ativa', true).order('criado_em'),
         supabase.from('matriculas').select('id,numero,numero_norm,cartorio,area_registrada_m2,data_certidao').eq('terreno_id', f.id).order('numero_norm'),
-        supabase.from('inscricoes_municipais').select('id,inscricao,inscricao_norm,municipio_id,area_cadastral_m2,cib,zona_fiscal,origem,endereco_prefeitura,inscricao_valores(id,exercicio,revisao,vigente,valor_venal_terreno,valor_venal_construcao,valor_venal_imovel,situacao_iptu,iptu_valor_anual,iptu_parcelas,iptu_mensal_informado,fonte)').eq('terreno_id', f.id).order('inscricao_norm'),
+        supabase.from('inscricoes_municipais').select('id,inscricao,inscricao_norm,municipio_id,area_cadastral_m2,cib,zona_fiscal,origem,endereco_prefeitura,inscricao_valores(id,exercicio,revisao,vigente,valor_venal_terreno,valor_venal_construcao,valor_venal_imovel,situacao_iptu,iptu_valor_anual,iptu_parcelas,iptu_mensal_informado,fonte,data_verificacao)').eq('terreno_id', f.id).order('inscricao_norm'),
         supabase.from('consultas_lote').select('inscricao_id,consultado_em,base,lote,zonas,poligono_geojson,area_poligono_m2,camadas_com_erro').eq('terreno_id', f.id).order('consultado_em', { ascending: false }),
         f.t.municipio_id ? supabase.from('bases_cadastrais').select('codigo,municipio_id,nome,rotulo,mascara').eq('municipio_id', f.t.municipio_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
         supabase.from('matricula_partes').select('id,matricula_id,parte_id,percentual').eq('terreno_id', f.id),
