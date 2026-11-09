@@ -33,9 +33,13 @@ Da esquerda para a direita:
 - **Logo da BKM.** No ambiente de desenvolvimento, ao lado do logo aparece o selo **"Desenvolvimento"** e, embaixo dele, **"PR #N · dia hora"**: é a versão que está no ar. Serve para saber se uma mudança já chegou. Na produção o selo não aparece.
 - **Busca** (campo "Buscar por nome, endereço, matrícula, SQL ou corretor").
 - **Sino** de avisos.
-- **Avatar** (sua foto).
+- **Avatar** (sua foto). O menu dele mostra seu nome e papel, **Terrenos excluídos** (só para o administrador; ver abaixo) e **Sair**.
 
 A barra ocupa a largura toda da tela, em qualquer tamanho de monitor: o logo fica alinhado com o menu lateral e o avatar fica no canto direito, com a mesma margem do logo.
+
+### Terrenos excluídos (administrador)
+
+No menu do avatar, **Terrenos excluídos** lista os terrenos que um diretor ou administrador excluiu, do mais recente ao mais antigo, com quem excluiu, quando e o dia em que serão apagados de vez (180 dias depois). Cada linha tem **Restaurar** (o terreno volta para a lista, o mapa e o funil, com tudo o que tinha) e **Deletar de vez** (o mesmo aviso e o nome digitado da ficha). Quando a tela de Configurações chegar ao sistema, esta lista passa para lá. Ver também [Excluir ou deletar o terreno](04-ficha-visao-geral.md#excluir-ou-deletar-o-terreno).
 
 ### Busca de cima
 
@@ -120,6 +124,15 @@ Os formulários de inclusão (registrar oferta, proposta, reunião, zonas, matr�
 Por isso, sair do formulário sem registrar (clicar noutro botão, trocar de aba, fechar a janela, sair da página ou clicar em **"Cancelar"**) não pergunta nada: o que você digitou continua guardado e volta quando reabrir o formulário.
 
 **Regra:** o rascunho fica no navegador daquele computador. Num computador diferente ele não aparece.
+
+### Mover as janelas (pop-ups) pela tela
+
+Toda janela que abre por cima da tela (perguntas como "Trocar o endereço?", formulários, a tabela completa de um concorrente, o mapa de lotes da prefeitura) e os quadros que abrem sobre o mapa (setor censitário, card da concorrência, rota) podem ser **arrastados pelo título** para ver o que está atrás. O cursor vira uma mãozinha sobre o título; segure e arraste (no celular, segure o título com o dedo e arraste).
+
+- Enquanto você arrasta, o fundo escurecido some; solta a janela, ele fica bem mais claro, para enxergar o mapa ou a ficha atrás. Ele continua cobrindo a tela: clicar fora da janela ainda a fecha.
+- O X de fechar nunca sai da tela.
+- **Dois cliques no título** devolvem a janela ao lugar de origem.
+- Cada janela abre sempre no lugar padrão; a posição não fica guardada.
 
 ## Celular
 

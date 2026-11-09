@@ -72,6 +72,7 @@ Os arquivos rodam em ordem alfabética (é o que o `run.sh` e o `banco.yml` faze
 | `20261015001400_jornada.sql` (270) | Jornada do terreno | `jornada_itens`, `jornada_regras` | `jornada_processo`, `salvar_item_jornada`, `_jornada_pendencias` |
 | `20261015001500_estudos_massa.sql` (411) | estudos de massa e viabilidade presa ao estudo | `estudos_massa`, `estudo_massa_tipologias` | `solicitar_estudo_massa`, `salvar_estudo_massa`, `vincular_massa` |
 | `20261015001600_reunioes_agenda.sql` (324) | fila do Google Agenda para reuniões; ficha numa chamada só | `reuniao_agenda` | `agenda_confirmar` (servidor), `decidir_resumo_ia`, `ficha_dados` |
+| `20261015001700_exclusao_terreno.sql` | excluir (180 dias) e deletar terreno; políticas de leitura de `terrenos`, `processos` e `notificacoes` trocadas | `terrenos_apagados` | `excluir_terreno`, `restaurar_terreno`, `terrenos_excluidos`, `deletar_terreno`, `_apagar_terreno`, `purgar_terrenos_excluidos` |
 
 **Por que a ordem importa.** Uma migration só pode usar o que as anteriores criaram. Duas consequências que já apareceram:
 
@@ -223,6 +224,14 @@ Para o responsável pela [avaliação de segurança](seguranca.md) conferir. Nad
 
 **Concorrência entre duas pessoas na mesma ficha.** `app.salvar_terreno(id, versao, dados)` recusa com `PT409` se a versão mudou desde que a tela carregou (regra 11). A coluna `versao` sobe sozinha pelo trigger `tg_atualizado_em` (`20261015000100_base.sql:189-201`). Só as chaves enviadas em `dados` mudam; colunas de controle (`id`, `empresa_id`, `codigo`, `versao`, `criado_*`, `atualizado_*`, `situacao_cadastral`, `arquivado_em`, `motivo_arquivamento`) são recusadas.
 
+## Terreno excluído e deletado (9/nov/2026)
+
+Pedido do Moises. **Excluir** (diretor ou administrador, `app.excluir_terreno`) só marca `terrenos.excluido_em`/`excluido_por`. A política `ver` de `app.terrenos` passou a exigir `excluido_em is null`, então o terreno some de toda leitura do app: `v_terrenos` e as demais views (são `security_invoker`), `ficha_dados`, `terrenos_sobrepostos`, `buscar_duplicados`. As tabelas que o front lê pela empresa inteira, `processos` (funil, mapa, filtros) e `notificacoes` (sino), escondem as linhas do excluído com `terreno_id not in (select app.terrenos_ocultos())`; as demais filhas são lidas por `terreno_id`, que o front não acha mais. `app.ve_terreno` devolve falso para o excluído, o que esconde os cartões do `fluxo`. A rotina diária não avisa nada de terreno excluído (`app.terreno_excluido`) e apaga de vez os excluídos há 180 dias (`purgar_terrenos_excluidos`). O trigger `t_excluido` recusa qualquer update no terreno excluído que não seja restaurar. Matrículas e SQLs do excluído continuam nos índices únicos: o front avisa "está num terreno excluído".
+
+**Deletar** (`app.deletar_terreno`, só administrador, com o nome digitado) e a limpeza dos 180 dias usam `app._apagar_terreno` (ver [funcoes.md](funcoes.md#funções-só-do-servidor-e-do-próprio-banco)). Os logs do terreno saem junto. Fica uma linha em `app.terrenos_apagados` (código, nome, quem, quando; só o administrador lê) com as pendências de fora do banco em `pendencias` (`storage`: caminhos em `documento_versoes`; `drive`: a pasta do terreno, quando existir), e `limpo_em` quando não há nada a apagar fora. O app não apaga arquivo do storage (não há política de delete, de propósito); a função do servidor que fizer isso, junto com o Drive, chama `app.limpeza_feita`.
+
+Travas que deixam passar com `app.apagando_terreno = '1'` (só `_apagar_terreno` liga, dentro da transação): `tg_inscricao_historico`, `tg_analise_substituida`, `tg_matricula_leva_sqls`, `tg_inscricao_area`, `fluxo.tg_automacao_apagar`, `fluxo.tg_tarefa_item`, `fluxo.tg_aprovadores`. O teste final de `regras.sql` apaga todos os terrenos criados pelos outros testes, para pegar chave ou trava nova que impeça deletar.
+
 ## Auditoria e histórico
 
 ### `app.auditoria`: o log de tudo
@@ -233,7 +242,9 @@ Para o responsável pela [avaliação de segurança](seguranca.md) conferir. Nad
 
 ### Cliques seguidos viram um log só
 
-Quem clica na temperatura 2 → 3 → 4 não quer três linhas no histórico. `app.juntar_auditoria` (`:247-272`) olha o último log do mesmo registro: se é um `update` do mesmo usuário, nas mesmas colunas, dentro da janela de `app.janela_log()` (7 segundos; 2 minutos quando só a poligonal do terreno mudou), ele é atualizado para o valor final, e some se o valor final é o de antes. A gravação na tabela acontece na hora; só o log é que junta. `processos` fica de fora, porque cada passagem conta no SLA. A temperatura (que mora em `negociacoes`, sem `t_aud`) junta do mesmo jeito em `processo_transicoes`, dentro de `app.definir_temperatura`.
+Quem clica na temperatura 2 → 3 → 4 não quer três linhas no histórico. `app.juntar_auditoria` (`:247-272`) olha o último log do mesmo registro: se é um `update` do mesmo usuário, nas mesmas colunas, dentro da janela de `app.janela_log()` (7 segundos; 2 minutos quando só a poligonal do terreno mudou), ele é atualizado para o valor final, e some se o valor final é o de antes. A gravação na tabela acontece na hora; só o log é que junta. Ação e consequência automática nunca se juntam.
+
+**Consequências automáticas (`automatico`, 9/nov/2026).** O que o sistema grava por consequência de outra ação (consulta do GeoSampa, frentes medidas pela poligonal) fica com `auditoria.automatico = true`, pela função `app.origem_automatica()`: verdadeira quando a requisição traz o cabeçalho `x-bkm-automatico: 1` (o front põe com `automatico()` de `lib/supabase.ts`) ou quando a transação ligou `app.automatico`. Só muda como o log aparece (recolhido dentro da ação no painel); permissão e gravação são as mesmas. `processos` fica de fora, porque cada passagem conta no SLA. A temperatura mora em `terrenos` desde 9/nov/2026 e junta pelo mesmo caminho (o `t_aud` do terreno); antes ficava em `negociacoes` e o log em `processo_transicoes` (evento `temperatura`, que continua aceito para o histórico antigo). Ela não sobe a `versao` do terreno: `app.tg_atualizado_em` ignora uma alteração só de `temperatura`/`temperatura_em`, para o clique não derrubar com PT409 quem edita a ficha; e `salvar_terreno` e `desfazer_alteracao` recusam essas colunas.
 
 ### Lixeira do log: desfazer sem apagar
 
@@ -253,7 +264,7 @@ Leitura completa em `docs/modelo.md`, seções "Fases" e "Funil de cada fase".
 - **Status**: `ativo`, `concluido` (com o nome da fase: Comprado, Aprovado...), `perdido`, `descartado` ou `stand_by`. O fim é status, não etapa; o processo encerrado guarda onde estava. Comprado, Perdido e Descartado não voltam.
 - **Dependências** (`fase_dependencias`): a fase abre sozinha quando a fase requisito foi concluída ou passou por uma etapa ou subetapa (`app._abrir_fases_liberadas`, `20261015000500_regras.sql:576`). Funding não depende de nada e abre à mão (`app.abrir_fase`).
 - **Toda passagem passa por `app._passagem`** (`:1044`): confere editor, processo ativo e sem pedido aberto, movimento permitido; junta as **pendências** (`app._pendencias`, `:803`: checklist de documentos, pré-requisitos lidos do histórico, diligência impeditiva, partes, Jornada, tarefas que travam); com pendência, só gestor ou diretor força, com justificativa; sem pendência, pede as **aprovações** configuradas (uma linha por nível em `app.aprovacoes`) ou executa na hora (`_executar_passagem`, `:957`), gravando `processo_transicoes`.
-- **Negociação** (`app.negociacoes`, 1:1 com o processo da fase de entrada): oferta de referência e temperatura.
+- **Negociação** (`app.negociacoes`, 1:1 com o processo da fase de entrada): oferta de referência (a temperatura passou para `terrenos` em 9/nov/2026).
 
 ### Partes (vários donos)
 

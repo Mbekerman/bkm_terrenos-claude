@@ -219,8 +219,8 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        p.motivo_encerramento, mo.nome as motivo_encerramento_nome, p.retomar_em, p.data_encerramento,
        -- pedido de aprovação aberto: para onde e de qual nível se espera agora
        ap.destino_tipo as aprovacao_destino_tipo, ap.destino as aprovacao_destino, ap.nivel as aprovacao_aguardando,
-       -- da negociação (processo da fase de entrada): temperatura, propostas, viabilidade
-       pn.id as negociacao_id, pn.status as negociacao_status, n.temperatura,
+       -- da negociação (processo da fase de entrada): propostas, viabilidade; a temperatura é do terreno
+       pn.id as negociacao_id, pn.status as negociacao_status, t.temperatura,
        -- condições pedidas: oferta de referência, ou a mais recente ativa
        o.id as oferta_id, o.valor_pedido, o.forma_pagamento_pedida, o.aceita_permuta, o.observacao_pagamento,
        round(o.valor_pedido / nullif(t.area_adotada_m2, 0), 2) as valor_pedido_m2,
@@ -722,40 +722,21 @@ begin
   return jsonb_build_object('oferta_id', v_of, 'processo_id', v_proc, 'negociacao_nova', v_nova);
 end $$;
 
-create or replace function app.definir_temperatura(p_processo uuid, p_temperatura int)
+-- Temperatura do terreno (decisão do Moises, 9/nov/2026): uma só por terreno, com ou sem negociação. Não passa pela
+-- salvar_terreno (não mexe na versão da ficha, para o clique não brigar com quem edita); o log é o da app.auditoria do
+-- terreno, e cliques seguidos do mesmo usuário viram um registro só (app.juntar_auditoria). Não se desfaz pela lixeira.
+create or replace function app.definir_temperatura(p_terreno uuid, p_temperatura int)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
-declare p app.processos; antes int; ult app.processo_transicoes; inicial int;
+declare t app.terrenos;
 begin
-  select * into p from app.processos where id = p_processo;
-  if not found then raise exception 'Negociação não encontrada' using errcode = 'P0002'; end if;
-  perform app.exigir_editor(p.empresa_id);
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
   if p_temperatura is not null and p_temperatura not between 1 and 5 then raise exception 'Temperatura vai de 1 a 5' using errcode = '22023'; end if;
-  if p.parte_id is not null then
-    raise exception 'A temperatura é uma só, da negociação do terreno' using errcode = '22023';
-  end if;
-  select temperatura into antes from app.negociacoes where processo_id = p.id;
-  if not found then raise exception 'Temperatura só na negociação (fase de entrada)' using errcode = '22023'; end if;
-  if antes is not distinct from p_temperatura then return; end if;
-  update app.negociacoes set temperatura = p_temperatura, temperatura_em = now() where processo_id = p.id;
-  -- cliques seguidos do mesmo usuário (app.janela_log) viram um registro só,
-  -- do valor de antes da sequência ao final; se voltou ao de antes, some
-  select * into ult from app.processo_transicoes where processo_id = p.id order by em desc, id desc limit 1;
-  if found and ult.evento = 'temperatura' and ult.user_id is not distinct from auth.uid()
-     and ult.em >= clock_timestamp() - app.janela_log() then
-    inicial := nullif(split_part(ult.comentario, ' → ', 1), '—')::int;
-    if inicial is not distinct from p_temperatura then
-      delete from app.processo_transicoes where id = ult.id;
-    else
-      update app.processo_transicoes set em = clock_timestamp(),
-        comentario = coalesce(inicial::text, '—') || ' → ' || coalesce(p_temperatura::text, '—')
-      where id = ult.id;
-    end if;
-    return;
-  end if;
-  insert into app.processo_transicoes (empresa_id, processo_id, evento, comentario)
-  values (p.empresa_id, p.id, 'temperatura', coalesce(antes::text, '—') || ' → ' || coalesce(p_temperatura::text, '—'));
+  if t.temperatura is not distinct from p_temperatura then return; end if;
+  update app.terrenos set temperatura = p_temperatura, temperatura_em = now() where id = t.id;
 end $$;
 
 create or replace function app.definir_oferta_referencia(p_processo uuid, p_oferta uuid)
@@ -1494,7 +1475,7 @@ begin
     insert into app.processos (empresa_id, codigo, terreno_id, fase, etapa_atual, subetapa_atual, responsavel_id, parte_id, principal_id)
     values (p.empresa_id, p.codigo || '-' || v_seq, p.terreno_id, p.fase, f.etapa_partes, v_sub, p.responsavel_id, tp.id, p.id)
     returning id into v_id;
-    -- sem temperatura: ela é uma só, a da negociação do terreno
+    -- sem temperatura: ela é do terreno
     insert into app.negociacoes (processo_id, empresa_id, oferta_referencia_id)
     values (v_id, p.empresa_id, coalesce(v_oferta, n.oferta_referencia_id));
     insert into app.processo_transicoes (empresa_id, processo_id, evento, para_etapa, para_subetapa, comentario)
@@ -2094,6 +2075,7 @@ end $$;
 create or replace function app.tg_inscricao_area()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
+  if coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return null; end if;   -- o terreno está sendo apagado
   if tg_op in ('UPDATE','DELETE') then perform app._sincronizar_area_cadastral(old.terreno_id); end if;
   if tg_op in ('INSERT','UPDATE') and (tg_op = 'INSERT' or new.terreno_id is distinct from old.terreno_id) then
     perform app._sincronizar_area_cadastral(new.terreno_id);
@@ -2108,7 +2090,7 @@ returns int
 language plpgsql security definer set search_path = ''
 as $$
 declare t app.terrenos; v_novo app.terrenos; fixos text[] := array['id','empresa_id','codigo','versao','criado_por','criado_em',
-  'atualizado_em','atualizado_por','situacao_cadastral','arquivado_em','motivo_arquivamento'];
+  'atualizado_em','atualizado_por','situacao_cadastral','arquivado_em','motivo_arquivamento','temperatura','temperatura_em'];
 begin
   select * into t from app.terrenos where id = p_terreno for update;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
@@ -2125,6 +2107,7 @@ begin
     origem_cadastro = v_novo.origem_cadastro, data_identificacao = v_novo.data_identificacao,
     observacoes = v_novo.observacoes, cep = v_novo.cep, logradouro = v_novo.logradouro, numero = v_novo.numero,
     complemento = v_novo.complemento, bairro = v_novo.bairro, municipio_id = v_novo.municipio_id, zona = v_novo.zona,
+    zona_origem = case when v_novo.zona is null then null when v_novo.zona is distinct from t.zona then 'digitado' else t.zona_origem end,
     eixo_comercial_id = v_novo.eixo_comercial_id, referencia_localizacao = v_novo.referencia_localizacao,
     cartorio = nullif(trim(v_novo.cartorio), ''),
     cartorio_origem = case when nullif(trim(v_novo.cartorio), '') is null then null
@@ -2182,7 +2165,7 @@ begin
   -- a geometria sai da poligonal (coluna gerada)
   v_cols := array(select x from unnest(app.colunas_mudadas(a.antes, a.depois)) x where x <> 'poligono');
   if cardinality(v_cols) = 0 then raise exception 'Nada a desfazer' using errcode = '22023'; end if;
-  if v_cols && array['situacao_cadastral','arquivado_em','motivo_arquivamento','criado_por','criado_em','codigo'] then
+  if v_cols && array['situacao_cadastral','arquivado_em','motivo_arquivamento','criado_por','criado_em','codigo','temperatura','temperatura_em'] then
     raise exception 'Esta alteração não se desfaz por aqui' using errcode = '22023';
   end if;
   foreach c in array v_cols loop
@@ -2874,6 +2857,29 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- Zona da cidade (região) pelo GeoSampa, em São Paulo (9/nov/2026): o front
+-- acha a subprefeitura da poligonal (ou do pino) e grava a região oficial dela
+-- aqui. Preenche só o vazio ou troca o que veio da prefeitura (o terreno mudou
+-- de lugar); nunca o digitado, nem a zona escolhida antes de existir a origem.
+-- ---------------------------------------------------------------------
+create or replace function app.zona_da_prefeitura(p_terreno uuid, p_zona text)
+returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare t app.terrenos;
+begin
+  select * into t from app.terrenos where id = p_terreno for update;
+  if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(t.empresa_id);
+  if p_zona is null or p_zona not in ('leste','oeste','norte','sul','centro') then
+    raise exception 'Zona inválida: %', p_zona using errcode = '22023';
+  end if;
+  if t.zona_origem = 'digitado' or (t.zona is not null and t.zona_origem is null) or t.zona = p_zona then return false; end if;
+  update app.terrenos set zona = p_zona, zona_origem = 'prefeitura' where id = t.id;
+  return true;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- Zonas da análise urbanística, por lote. Troca as zonas de um lote
 -- (p_inscricao; nulo = parte do terreno sem inscrição, pela poligonal) numa
 -- análise nova, que copia as zonas dos outros lotes da vigente; a anterior
@@ -3022,7 +3028,7 @@ grant execute on function
   app.excluir_lugar_entorno(uuid, text), app.restaurar_lugar_entorno(uuid, text),
   app.excluir_ponto_terreno(uuid, uuid), app.restaurar_ponto_terreno(uuid, uuid),
   app.salvar_distancias_pontos(uuid, double precision, double precision, jsonb),
-  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.registrar_consulta_area(uuid, jsonb, text[]), app.cartorio_da_prefeitura(uuid, text),
+  app.registrar_consulta_lote(uuid, jsonb, jsonb, numeric, jsonb, jsonb, text[], boolean), app.registrar_consulta_area(uuid, jsonb, text[]), app.cartorio_da_prefeitura(uuid, text), app.zona_da_prefeitura(uuid, text),
   app.classificar_topografia(uuid, numeric, numeric), app.registrar_topografia(uuid, numeric, numeric, numeric, numeric, text), app.salvar_topografia_config(uuid, numeric, numeric, numeric, numeric, numeric, numeric, numeric),
   app.registrar_zonas_sem_inscricao(uuid, jsonb, text), app.registrar_zonas_lote(uuid, uuid, jsonb, text), app.salvar_zona_parametro(uuid, uuid, jsonb),
   app.parametros_zona(uuid, uuid, text, text, numeric, text),

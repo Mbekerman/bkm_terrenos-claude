@@ -37,7 +37,7 @@ Campos que **se editam** no lugar:
 |---|---|
 | **Número** | Só informativo: não mexe no pino nem na poligonal. Se for diferente dos números de porta dos SQLs do terreno, aparece **"Número diferente do cadastro da prefeitura"** ("O número informado diverge dos números cadastrados no município para os lotes selecionados"), com **Cancelar** e **"Alterar mesmo assim"**. |
 | **Complemento** | Texto livre. |
-| **Zona** | Norte, Sul, Leste, Oeste, Centro, Sudeste, Sudoeste, Nordeste, Noroeste. |
+| **Zona** | Norte, Sul, Leste, Oeste, Centro, Sudeste, Sudoeste, Nordeste, Noroeste. Em São Paulo vem sozinha do GeoSampa ao abrir a ficha e aparece marcada "do GeoSampa": é a região oficial da prefeitura (Centro, Norte, Sul, Leste ou Oeste) da subprefeitura onde fica a maior parte da poligonal. Enquanto busca, um círculo girando aparece ao lado do nome do campo. Se você trocar, vale o que você escolheu, e o GeoSampa não sobrescreve mais. A zona que já estava escolhida antes desta busca existir também não é trocada. |
 | **Cartório de registro de imóveis** | Em São Paulo vem do GeoSampa e aparece marcado "do GeoSampa": pela poligonal (a circunscrição que cobre a maior parte do terreno) ao abrir a ficha, mesmo sem SQL. Enquanto busca, um círculo girando aparece ao lado do nome do campo. Se você trocar, vale o que você escolheu, e o GeoSampa não sobrescreve mais. |
 | **Referência** | Ponto de referência ("em frente ao mercado X"). |
 
@@ -59,13 +59,15 @@ O lápis abre a janela **"Editar pessoas da parte"**: o formulário em cima e a 
 |---|---|
 | **Título da parte** | Obrigatório, sem repetir outro título do terreno. |
 | **Nome** | Obrigatório. |
-| **Telefone** | Com DDD (10 ou 11 dígitos). |
-| **E-mail** | Precisa ser válido. |
-| **CPF/CNPJ** | 11 dígitos (CPF) ou 14 (CNPJ). |
-| **% de participação** | Só para quem é Proprietário; de 0 a 100%. |
+| **Telefone** | Opcional. Se preencher, com DDD (10 ou 11 dígitos). |
+| **E-mail** | Opcional. Se preencher, precisa ser válido. |
+| **CPF/CNPJ** | Opcional. Se preencher, 11 dígitos (CPF) ou 14 (CNPJ). |
+| **% de participação** | Obrigatória para quem é Proprietário, de 0 a 100%; nas outras relações fica desligada. |
 | **Relação** | Proprietário, Cônjuge, Representante, Procurador, Parente, Contato ou Outros. |
 
-**Dica:** cadastre também o procurador e o contato do dia a dia, não só os donos. Quem é proprietário conta para o item "Proprietário" da completude.
+Do proprietário, só o **nome** e a **participação** são obrigatórios; o resto pode ficar em branco e completar depois, sem contar como pendência da ficha.
+
+**Dica:** cadastre também o procurador e o contato do dia a dia, não só os donos. O item "Proprietário" da completude só sai da lista do que falta quando **cada parte** tem proprietários somando **100%** de participação; enquanto alguma parte estiver abaixo disso, ele continua em "Falta preencher".
 
 ### Excluir uma parte (lixeira)
 
@@ -118,7 +120,7 @@ Para uma matrícula: número, cartório, área registrada, as partes deste lote 
 Para um SQL, também:
 
 - **GeoSampa**: **"Buscar no GeoSampa"** (ou "Buscar de novo") traz do GeoSampa o lote, a área cadastral, as zonas e as restrições. Só funciona na versão publicada. Se o GeoSampa não achar o lote, aparece "O GeoSampa não achou o lote deste SQL."
-- **Valor venal e IPTU**: **"Lançar IPTU"** (ou "Atualizar IPTU") com Exercício, Venal terreno, Venal construção, Situação (Tributado ou Isento), IPTU anual, Parcelas e Fonte ("Carnê, certidão de dados cadastrais...").
+- **Valor venal e IPTU**: em São Paulo vem sozinho da Prefeitura (ver IPTU, abaixo) e não se digita. Fora de São Paulo, **"Lançar IPTU"** (ou "Atualizar IPTU") com Exercício, Venal terreno, Venal construção, Situação (Tributado ou Isento), IPTU anual, Parcelas e Fonte ("Carnê, certidão de dados cadastrais...").
 
 **Regra do IPTU:** só vale o exercício mais recente. Lançar o ano novo substitui o anterior (o anterior fica no histórico); lançar um ano mais antigo é recusado.
 
@@ -144,17 +146,16 @@ Mostra a **área da parte** e a **divergência Matrícula × Prefeitura** (a ár
 
 ## Áreas e dimensões
 
-Cinco cartões de área, cada um com sua fonte:
+Quatro cartões de área, nesta ordem: lado a lado quando cabem, senão em dois pares (Documental e Cadastral em cima, Topográfica e Poligonal embaixo).
 
 | Cartão | De onde vem |
 |---|---|
 | **Documental** | Digitada (da matrícula). |
 | **Cadastral** | Em São Paulo, não se digita: é a soma das áreas dos SQLs do terreno (só quando todos têm área), refeita a cada SQL incluído, excluído ou consultado; uma área digitada antes volta para a soma ao abrir a ficha. Nas outras cidades, digitada. |
-| **Levantamento** | Digitada (levantamento topográfico). **Ao digitar, vira a área adotada** (pode trocar depois). |
-| **Estimativa** | Digitada. |
+| **Topográfica** | Digitada (levantamento topográfico). **Ao digitar ou trocar o valor, vira a área adotada**, mesmo que outra tivesse sido escolhida (pode trocar depois). |
 | **Poligonal** | Calculada pelo desenho, em m² inteiros. Nunca se digita. Muda quando a poligonal é ajustada. |
 
-**Área adotada:** clique num cartão preenchido para escolhê-lo ("Clique na área que vale"). A adotada fica em azul com "Área adotada". Se a adotada é a Poligonal, ela acompanha cada ajuste do desenho.
+**Área adotada:** todo terreno nasce com a **Cadastral** como adotada (enquanto os SQLs não trazem a área, aparece "Cadastral · sem área ainda"). A única que toma o lugar sozinha é a **Topográfica**, quando é digitada. Para escolher outra, clique num cartão preenchido; a adotada fica em azul com "Área adotada". Se a área escolhida é apagada, a adotada volta para a Cadastral. Se a adotada é a Poligonal, ela acompanha cada ajuste do desenho. Não há mais área estimada.
 
 Abaixo:
 
@@ -176,13 +177,20 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 
 ## IPTU
 
-Logo abaixo de Áreas e dimensões, já aberto, como Parâmetros urbanísticos. Em cima, o **Panorama do terreno**, a soma de todos os SQLs: valor venal do terreno, da construção e total, **IPTU anual**, **IPTU mensal** (anual ÷ 12, a média do mês, não a parcela), impostos predial e territorial, área do terreno e área construída da Prefeitura, e, juntos, separados por " / ", o valor do m² do terreno, o uso, o padrão e o vencimento da 1ª prestação; diz também quantos SQLs ainda não têm IPTU. Em **Ver SQL por SQL**, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.
+Logo abaixo de Áreas e dimensões. Nasce fechado, como os outros quadros da aba (abre pela seta do título). Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
 
-- **Buscar na Prefeitura** (só São Paulo, só quem edita): no título do quadro ("Buscar todos na Prefeitura" com mais de um SQL) ou em cada linha ("Buscar"). O sistema emite a notificação de lançamento do IPTU (a "2ª via") no site da Prefeitura e grava o venal e o IPTU do exercício. Cada SQL leva até um minuto; os SQLs vão um de cada vez. Se a Prefeitura não tiver a notificação do ano ainda, vem a do ano anterior.
+- três caixas, como as de Áreas e dimensões: **valor venal do terreno**, **da construção** e **total**, este em destaque (três por linha, também na gaveta da ficha);
+- embaixo, em dupla: **área total do terreno** e **área construída** (da Prefeitura);
+- por último, em destaque: **IPTU anual** e **IPTU mensal** (anual ÷ 10, as 10 prestações da Prefeitura).
+
+O título do panorama diz o exercício e quantos SQLs ainda não têm IPTU. Em **Ver SQL por SQL**, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.
+
+- **Em São Paulo o IPTU vem sozinho**: ao cadastrar o terreno, ao incluir um SQL (digitado, pelo mapa de lotes ou em Selecionar lotes) e ao abrir a ficha de um SQL que ainda não tem o IPTU da Prefeitura, o sistema emite a notificação de lançamento (a "2ª via") no site da Prefeitura e grava o venal e o IPTU do exercício. Isso corre por trás: dá para continuar cadastrando. Enquanto não chega, a seção IPTU fica apagada, com um brilho passando e "Buscando o IPTU na Prefeitura: N de M SQLs". Cada SQL leva até um minuto, um de cada vez. Se a Prefeitura não tiver a notificação do ano ainda, vem a do ano anterior. Em São Paulo o valor venal e o IPTU **não se digitam**.
+- Se a busca de um SQL falha, o motivo aparece na coluna Fonte do SQL por SQL. **Buscar de novo** (no título do quadro, ou "Buscar" em cada linha; só quem edita) tenta outra vez.
 - **Detalhe** (na linha trazida da Prefeitura): número da notificação, área do terreno, testada, área construída, uso, padrão, ano da construção, valor do m² do terreno e da construção, fatores, alíquota, descontos, impostos predial e territorial, total do ano e vencimento da 1ª prestação.
 - **PDF** (na mesma linha): emite a notificação e baixa o PDF, mesmo antes de o valor ter sido trazido (aí vale o exercício do ano corrente).
 - Buscar de novo no mesmo ano com os mesmos valores não muda nada; com valores diferentes, vira uma correção (a anterior fica no histórico).
-- **Fora de São Paulo**, o IPTU continua sendo lançado à mão na janela de cada SQL (Matrículas e SQLs).
+- **Fora de São Paulo** não há busca: o IPTU se lança à mão em **Lançar** (ou **Atualizar**) na linha do SQL, em Ver SQL por SQL, ou na janela do SQL (Matrículas e SQLs).
 - O que pode dar errado: a Prefeitura pedir captcha ("Tente mais tarde"), recusar a senha do sistema, não ter notificação para o SQL, ou o site estar fora. A mensagem aparece embaixo da tela.
 
 ## O que não é possível na aba Terreno

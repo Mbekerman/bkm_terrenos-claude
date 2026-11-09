@@ -46,6 +46,7 @@ insert into app.campos_catalogo (chave, origem, coluna, titulo, tipo, unidade, o
   ('terreno.origem_cadastro','terreno','origem_cadastro','Origem do terreno','lista',null,'{nao_informado,prospeccao,corretor,indicacao,portal,proprietario,outro}',null,true,true,false,6),
   ('terreno.data_identificacao','terreno','data_identificacao','Identificado em','data',null,null,null,true,false,false,8),
   ('terreno.observacoes','terreno','observacoes','Observações','texto',null,null,null,true,false,false,9),
+  ('terreno.temperatura','terreno','temperatura','Temperatura','lista',null,'{1,2,3,4,5}',null,true,true,true,7),
   ('terreno.cep','terreno','cep','CEP','texto',null,null,null,true,false,false,10),
   ('terreno.logradouro','terreno','logradouro','Rua','texto',null,null,null,true,false,false,11),
   ('terreno.numero','terreno','numero','Número','texto',null,null,null,true,false,false,12),
@@ -61,7 +62,7 @@ insert into app.campos_catalogo (chave, origem, coluna, titulo, tipo, unidade, o
   ('terreno.area_levantamento_m2','terreno','area_levantamento_m2','Área do levantamento','numero','m²',null,null,true,true,true,22),
   ('terreno.area_poligonal_m2','terreno','area_poligonal_m2','Área da poligonal','numero','m²',null,null,false,true,true,23),
   ('terreno.area_adotada_m2','terreno','area_adotada_m2','Área adotada','numero','m²',null,null,false,true,true,24),
-  ('terreno.fonte_area_adotada','terreno','fonte_area_adotada','Fonte da área adotada','lista',null,'{documental,cadastral,levantamento,estimativa,poligonal}',null,false,false,false,25),
+  ('terreno.fonte_area_adotada','terreno','fonte_area_adotada','Fonte da área adotada','lista',null,'{documental,cadastral,levantamento,poligonal}',null,false,false,false,25),
   ('terreno.testada_principal_m','terreno','testada_principal_m','Testada principal','numero','m',null,null,true,true,true,26),
   -- medido pelas cotas (app.registrar_topografia); o relevo digitado saiu em 4/nov/2026 (decisão do Moisés)
   ('terreno.topo_perfil','terreno','topo_perfil','Perfil topográfico','lista',null,'{plano,inclinado,acidentado_leve,acidentado_mediano,acidentado_intenso,acidentado_agudo,acidentado_critico}',null,false,true,true,27),
@@ -78,7 +79,6 @@ insert into app.campos_catalogo (chave, origem, coluna, titulo, tipo, unidade, o
   ('negociacao.subetapa','negociacao','subetapa_atual','Subetapa','lista',null,null,null,false,true,false,41),
   ('negociacao.status','negociacao','status','Situação da negociação','lista',null,'{ativo,concluido,perdido,descartado,stand_by}',null,false,true,false,42),
   ('negociacao.responsavel_id','negociacao','responsavel_id','Responsável da negociação','pessoa',null,null,null,false,true,true,43),
-  ('negociacao.temperatura','negociacao','temperatura','Temperatura','lista',null,'{1,2,3,4,5}',null,true,true,true,44),
   ('negociacao.data_inicio','negociacao','data_inicio','Início da negociação','data',null,null,null,false,false,false,45),
   ('negociacao.retomar_em','negociacao','retomar_em','Retomar em (Stand By)','data',null,null,null,false,false,false,46),
   ('negociacao.motivo_encerramento','negociacao','motivo_encerramento','Motivo do encerramento','lista',null,null,null,false,false,false,47),
@@ -259,11 +259,7 @@ begin
     execute format('select to_jsonb(t.%I) from app.terrenos t where t.id = $1', c.coluna) into v using p_terreno;
   elsif c.origem = 'negociacao' then
     v_proc := app.negociacao_do_terreno(p_terreno);
-    if c.coluna = 'temperatura' then
-      select to_jsonb(temperatura) into v from app.negociacoes where processo_id = v_proc;
-    else
-      execute format('select to_jsonb(p.%I) from app.processos p where p.id = $1', c.coluna) into v using v_proc;
-    end if;
+    execute format('select to_jsonb(p.%I) from app.processos p where p.id = $1', c.coluna) into v using v_proc;
   elsif c.origem = 'oferta' then
     execute format('select to_jsonb(o.%I) from app.ofertas o where o.id = $1', c.coluna) into v using app.oferta_do_terreno(p_terreno);
   elsif c.origem = 'proposta' then
@@ -443,16 +439,15 @@ begin
   select formato into v_fmt from app.campo_def(t.empresa_id, p_chave);
   if c.tipo = 'texto' and v_fmt is not null and v_val is not null then v_val := to_jsonb(fluxo.validar_formato(v_fmt, v_val #>> '{}')); end if;
   if v_val is null and c.vazio is not null then v_val := to_jsonb(c.vazio); end if;
-  if c.origem = 'terreno' then
+  if p_chave = 'terreno.temperatura' then
+    perform app.definir_temperatura(t.id, (v_val #>> '{}')::int);
+  elsif c.origem = 'terreno' then
     perform app.salvar_terreno(t.id, t.versao, jsonb_build_object(c.coluna, v_val));
   elsif c.origem = 'oferta' then
     v_of := app.oferta_do_terreno(t.id);
     if v_of is null then raise exception 'O terreno não tem oferta' using errcode = '23514'; end if;
     execute format('update app.ofertas set %1$I = (jsonb_populate_record(null::app.ofertas, $1)).%1$I where id = $2', c.coluna)
     using jsonb_build_object(c.coluna, v_val), v_of;
-  elsif p_chave = 'negociacao.temperatura' then
-    if app.negociacao_do_terreno(t.id) is null then raise exception 'O terreno não tem negociação' using errcode = '23514'; end if;
-    perform app.definir_temperatura(app.negociacao_do_terreno(t.id), (v_val #>> '{}')::int);
   end if;
 end $$;
 

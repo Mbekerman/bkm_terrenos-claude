@@ -73,7 +73,7 @@ Todas essas chaves são **públicas por natureza** (a chave publicável do Supab
 | Nome | Onde mora | Público? | Para quê |
 | --- | --- | --- | --- |
 | `SUPABASE_URL`, `SUPABASE_KEY` (publicável, `sb_publishable_...`) | variáveis do serviço Cloud Run | sim | o front falar com o banco |
-| `GOOGLE_MAPS_KEY` | variável do serviço Cloud Run | sim, restrita a 2 domínios e 7 APIs | mapa, Places, Routes, Elevation, Geocoding |
+| `GOOGLE_MAPS_KEY` | variável do serviço Cloud Run | sim, restrita a 2 domínios e 8 APIs | mapa, Places, Routes, Elevation, Geocoding, Maps Static |
 | `AMBIENTE` | variável do serviço (só no dev) | sim | selo do ambiente |
 | `SUPABASE_DB_URL` | segredo do GitHub Actions | **não** (senha do banco) | `banco.yml` aplicar o esquema |
 | Segredo do cliente OAuth do Google | painel do Supabase (Auth › Google) | **não** | login |
@@ -87,7 +87,7 @@ Nunca coloque segredo no repositório nem nas variáveis `SUPABASE_*`/`GOOGLE_*`
 
 ## Serviço do IPTU (`terrenos-iptu`)
 
-Serviço à parte no Cloud Run (`services/iptu/Dockerfile`, imagem do Playwright com Chromium), porque o Caddy não roda navegador. Um só para dev e produção (o banco é o mesmo). Configuração sugerida: região `southamerica-east1`, 1 GiB de memória, 1 CPU, 0 a 1 instância (a fila é em memória), concorrência 8, tempo limite 300 s, acesso público (a autenticação é o login do Supabase, conferido pelo próprio serviço). Os serviços web recebem `IPTU_URL=https://terrenos-iptu-....run.app`. Comandos em `services/iptu/README.md`.
+Serviço à parte no Cloud Run (`services/iptu/Dockerfile`, imagem do Playwright com Chromium), porque o Caddy não roda navegador. Um só para dev e produção (o banco é o mesmo). Configuração sugerida: região `southamerica-east1`, 1 GiB de memória, 1 CPU, 0 a 1 instância (a fila é em memória), concorrência 8, tempo limite 300 s, CPU sempre alocada (`--no-cpu-throttling`, para a fila em segundo plano andar depois da resposta), acesso público (a autenticação é o login do Supabase, conferido pelo próprio serviço). Os serviços web recebem `IPTU_URL=https://terrenos-iptu-....run.app`. Comandos em `services/iptu/README.md`.
 
 ## Banco
 

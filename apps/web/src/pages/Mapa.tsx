@@ -484,7 +484,7 @@ export default function Mapa() {
   useEffect(() => { motor.current?.marcar(selId); }, [selId]);
   /* desenho: modo do mapa, rascunho e o pedido vindo do passo 1 do Novo terreno */
   useEffect(() => { if (motorPronto) motor.current?.setModo(!!des || !!rg); }, [motorPronto, des, rg]);
-  useEffect(() => { if (motorPronto) motor.current?.cursorSeta(!!rg); }, [motorPronto, !!rg]);
+  useEffect(() => { if (motorPronto) motor.current?.cursorMarcar(des || (rota && pegando) ? 'pointer' : rg ? 'default' : null); }, [motorPronto, !!des, !!rg, !!rota, pegando]);
   useEffect(() => {
     if (motorPronto) motor.current?.regua(rg?.pts || [], !!rg?.fechado, () => { const r = rgR.current; if (r && r.pts.length > 2 && !r.fechado) setRg({ ...r, fechado: true }); },
       (i, x, y) => setRgMenu({ i, x, y }));
@@ -849,7 +849,9 @@ export default function Mapa() {
 
   const temApag = Object.values(apag).some((l) => l.length);
   const ord = itens(fases, f, e).map((i) => i.k);
-  const linhas = visiveis.slice().sort((a, b) => ord.indexOf(classe(fases, a, f, e)!) - ord.indexOf(classe(fases, b, f, e)!) || a.nome.localeCompare(b.nome, 'pt'));
+  /* com ordenação escolhida na gaveta, uma lista só pela ordem pedida; sem ela, a da legenda e o nome */
+  const porLegenda = (a: TerrenoMapa, b: TerrenoMapa) => ord.indexOf(classe(fases, a, f, e)!) - ord.indexOf(classe(fases, b, f, e)!);
+  const linhas = visiveis.slice().sort((a, b) => (fx.o.length ? fx.cmp(a.id, b.id) : porLegenda(a, b)) || porLegenda(a, b) || a.nome.localeCompare(b.nome, 'pt'));
   const semLoc = visiveis.filter((t) => t.lat == null).length;
 
   function linha(t: TerrenoMapa, cartao?: boolean) {
@@ -1006,7 +1008,7 @@ export default function Mapa() {
               <button role="menuitem" autoFocus={!novo} onClick={() => {
                 const m = menu; setMenu(null); setMkBox(null); setSetor(null); motor.current?.lugarFechar();
                 setRota(t && t.lat != null && t.lng != null ? { lat: t.lat, lng: t.lng, nome: `${t.codigo} · ${t.nome}` } : { lat: m.lat, lng: m.lng });
-              }}><Ic n="rota" s={18} />Traçar rota até aqui</button>
+              }}><Ic n="rota" s={18} />Traçar rota a partir daqui</button>
             </div>
           );
         })()}

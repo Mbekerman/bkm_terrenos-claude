@@ -197,6 +197,10 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 .etq-form .field { flex: 1 1 150px; min-width: min(100%, 150px) }
 .etq-form .field.grow { flex: 2 1 190px; min-width: min(100%, 190px) }
 .fi-aba .areas { grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)) }
+/* áreas e dimensões: as 4 fontes lado a lado quando cabem, senão em dois pares (pedido do Moises, 9/nov/2026) */
+.areas4 { container-type: inline-size }
+.fi-aba .areas4 .areas { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+@container (min-width: 640px) { .fi-aba .areas4 .areas { grid-template-columns: repeat(4, minmax(0, 1fr)) } }
 .fi-aba .cond { grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)) }
 .fi-aba .fields, .dialog .fields { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) }
 .dialog.mini .fields { grid-template-columns: 1fr }
@@ -315,7 +319,8 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 /* Traçar rota até aqui (mapa/Rota.tsx; pedido do Moises, 9/nov/2026) */
 .mp-rt { position: absolute; top: 64px; left: 12px; z-index: 520; width: 360px; max-width: calc(100% - 24px); display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px; background: #fff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 4px 12px rgba(0,0,0,.12); font-size: 14px; color: #1f1f1f }
 .mp-rt-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-right: -8px }
-.mp-rt-t { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 500; min-width: 0 }
+.mp-rt-t { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500; min-width: 0; flex: 1 }
+.mp-rt-pre { flex: none; white-space: nowrap }
 .mp-rt-t b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .mp-rt-t .ic { flex: none; color: #0b57d0 }
 .mp-rt-modos { display: flex; justify-content: space-between; gap: 2px }
@@ -332,7 +337,12 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .mp-rt-busca .mp-res { top: 48px }
 .mp-rt-o, .rt-o { flex: none; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid #1f1f1f; box-sizing: border-box }
 .rt-o { width: 16px; height: 16px; border-width: 4px; transform: translateY(50%); box-shadow: 0 1px 3px rgba(0,0,0,.35) }
-.rt-d { width: 22px; height: 30px; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 30'%3E%3Cpath d='M11 1C5.5 1 1 5.4 1 10.9 1 18.3 11 29 11 29s10-10.7 10-18.1C21 5.4 16.5 1 11 1z' fill='%23ea4335' stroke='%23a50e0e' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='3.6' fill='%23a50e0e'/%3E%3C/svg%3E"); filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)) }
+/* o mapa já é a mão aberta: sobre o ponto que se arrasta, o dedo e o ponto um pouco maior, como no Google Maps */
+.rt-o, .rt-d { cursor: pointer; transition: transform .12s } .rt-d { transform-origin: 50% 100% }
+.rt-o:hover { transform: translateY(50%) scale(1.25) } .rt-d:hover { transform: scale(1.15) }
+.rt-o:active, .rt-d:active { cursor: grabbing }
+.mp-rt-dp { flex: none; width: 13px; height: 18px; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 36'%3E%3Cdefs%3E%3Cpattern id='x' width='6' height='6' patternUnits='userSpaceOnUse' x='1' y='1'%3E%3Crect width='6' height='6' fill='%23fff'/%3E%3Crect width='3' height='3' fill='%23111'/%3E%3Crect x='3' y='3' width='3' height='3' fill='%23111'/%3E%3C/pattern%3E%3CclipPath id='c'%3E%3Ccircle cx='13' cy='12.5' r='9'/%3E%3C/clipPath%3E%3C/defs%3E%3Cpath d='M13 1C6.4 1 1 6.3 1 12.9 1 21.8 13 35 13 35s12-13.2 12-22.1C25 6.3 19.6 1 13 1z' fill='%23fff' stroke='%23111' stroke-width='1.6'/%3E%3Crect x='3' y='2' width='20' height='21' fill='url%28%23x%29' clip-path='url%28%23c%29'/%3E%3Ccircle cx='13' cy='12.5' r='9' fill='none' stroke='%23111' stroke-width='1.2'/%3E%3C/svg%3E") }
+.rt-d { width: 26px; height: 36px; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 36'%3E%3Cdefs%3E%3Cpattern id='x' width='6' height='6' patternUnits='userSpaceOnUse' x='1' y='1'%3E%3Crect width='6' height='6' fill='%23fff'/%3E%3Crect width='3' height='3' fill='%23111'/%3E%3Crect x='3' y='3' width='3' height='3' fill='%23111'/%3E%3C/pattern%3E%3CclipPath id='c'%3E%3Ccircle cx='13' cy='12.5' r='9'/%3E%3C/clipPath%3E%3C/defs%3E%3Cpath d='M13 1C6.4 1 1 6.3 1 12.9 1 21.8 13 35 13 35s12-13.2 12-22.1C25 6.3 19.6 1 13 1z' fill='%23fff' stroke='%23111' stroke-width='1.6'/%3E%3Crect x='3' y='2' width='20' height='21' fill='url%28%23x%29' clip-path='url%28%23c%29'/%3E%3Ccircle cx='13' cy='12.5' r='9' fill='none' stroke='%23111' stroke-width='1.2'/%3E%3C/svg%3E"); filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)) }
 .mp-rt-r { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-top: 2px }
 .mp-rt-tempo { font-size: 20px; font-weight: 400; color: #146c2e }
 .mp-rt-erro { color: #b3261e }
@@ -342,16 +352,64 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .mp-rt-s { display: flex; flex-direction: column; min-width: 0 } .mp-rt-s .muted { font-size: 12px }
 /* com a rota aberta, os quadrados da concorrência ficam apagados para a linha aparecer (ficam por cima dela no Google) */
 .mapa-area.rota-on .mk.g:not(.mk-dest) { opacity: .12 }
-/* escolher a saída da rota no mapa (9/nov/2026): mira ao lado da busca e cursor de mira no mapa */
+/* escolher a saída da rota no mapa (9/nov/2026): mira ao lado da busca e dedo indicador no mapa (antes a mira; Moises, 9/nov/2026) */
 .mp-rt-busca { padding-right: 4px }
 .mp-rt-mira { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 18px; background: transparent; color: #444746; cursor: pointer }
 .mp-rt-mira:hover { background: rgba(68,71,70,.08) }
 .mp-rt-mira.on { background: #c2e7ff; color: #001d35 }
 .mp-rt-dica { margin-top: -4px; font-size: 12px; color: #444746 }
-.mapa-area.rota-pega .mapa, .mapa-area.rota-pega .mapa div, .mapa-area.rota-pega .mapa .pin, .mapa-area.rota-pega .mapa .mk { cursor: crosshair !important }
+.mapa-area.rota-pega .mapa, .mapa-area.rota-pega .mapa div, .mapa-area.rota-pega .mapa .pin, .mapa-area.rota-pega .mapa .mk { cursor: pointer !important }
+.mapa-area.rota-pega .mapa.leaflet-dragging, .mapa-area.rota-pega .mapa.leaflet-dragging div { cursor: grabbing !important }
 .mapa-area.rota-on.rota-pega .mk.g:not(.mk-dest) { opacity: .6 }
 /* cabeçalho e moldura na largura toda (pedido do Moises, 9/nov/2026): em tela grande o logo e o perfil iam para o meio, porque .top-in e .layout tinham largura máxima centrada.
    O desenho do logo começa na mesma linha do menu lateral (12 px, a borda dos botões do menu) e o perfil termina a 12 px da direita, a mesma margem.
    O SVG do logo tem 4 px de folga à esquerda na largura de 120 px, por isso o recuo da esquerda é 8. */
 .layout, .top-in, body.menu-min .layout { max-width: none }
 @media (min-width: 900px) { .top { padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)) } }
+
+/* Popups arrastáveis pelo título (lib/arrastar.ts; pedido do Moises, 9/nov/2026) */
+:is(.dialog .dh, .cc-box .cc-hd, .mp-rt .mp-rt-h, [data-arrastar]) { cursor: grab; touch-action: none; user-select: none }
+:is(.dialog .dh, .cc-box .cc-hd, .mp-rt .mp-rt-h, [data-arrastar]) :is(button, a, input, select, textarea) { cursor: pointer }
+:is(.dialog, .cc-box, .mp-rt).arrastando, .arrastando :is(.dh, .cc-hd, .mp-rt-h) { cursor: grabbing }
+.dialog.arrastado { box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 12px 32px rgba(0,0,0,.22) }
+/* movido o pop-up, o fundo clareia para enxergar o que está atrás (continua cobrindo a tela: clicar nele fecha o pop-up) */
+:root:not(#_) .scrim.movido, :root[data-tema]:not(#_) .scrim.movido { background: rgba(29, 46, 92, .08) !important; transition: background .15s }
+:root:not(#_) .scrim.arrastando, :root[data-tema]:not(#_) .scrim.arrastando { background: transparent !important }
+/* Seção IPTU (pedido do Moises, 9/nov/2026): venais em caixas como as de Áreas, lado a lado quando cabem; o resto em duplas;
+ * IPTU anual e mensal por último, em destaque; enquanto a Prefeitura não respondeu, a seção toda carrega */
+.iptu-pan { margin-top: 4px }
+.fi-aba .areas.iptu-venal, .areas.iptu-venal { grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 8px; margin-bottom: 12px }
+.iptu-venal .area { padding: 10px 12px; min-width: 0 }
+.iptu-venal .area .al { min-height: 0 }
+.iptu-venal .area .av { font-size: 17px; line-height: 22px; overflow-wrap: anywhere }
+.iptu-pares { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px }
+.iptu-pares .area .av { font-size: 18px }
+.iptu-dest .area { background: #d3e3fd }
+.iptu-venal .area.iptu-tot .al { color: #1f1f1f; font-weight: 500 }
+.iptu-venal .area.iptu-tot .av { font-weight: 600; color: #0b57d0 }
+.iptu-dest .area .al { color: #041e49 }
+.iptu-dest .area .av { font-size: 24px; line-height: 30px; font-weight: 400; color: #041e49 }
+:root[data-tema="escuro"] .iptu-dest .area { background: #004a77 }
+:root[data-tema="escuro"] .iptu-venal .area.iptu-tot .al { color: #e3e3e3 }
+:root[data-tema="escuro"] .iptu-venal .area.iptu-tot .av { color: #a8c7fa }
+:root[data-tema="escuro"] .iptu-dest .area :is(.al, .av) { color: #c2e7ff }
+.iptu-erro { color: #b3261e }
+.iptu-corpo { position: relative }
+.iptu-corpo.carregando > :not(.iptu-load) { opacity: .45; pointer-events: none }
+.iptu-corpo.carregando::after { content: ''; position: absolute; inset: 0; border-radius: 12px; pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.75) 50%, transparent 80%); background-size: 200% 100%; animation: iptu-brilho 1.4s linear infinite }
+:root[data-tema="escuro"] .iptu-corpo.carregando::after { background-image: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.08) 50%, transparent 80%) }
+@keyframes iptu-brilho { from { background-position: 150% 0 } to { background-position: -50% 0 } }
+.iptu-load { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--m-primary, #0b57d0); margin: 0 0 8px }
+.iptu-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: iptu-gira .8s linear infinite }
+@keyframes iptu-gira { to { transform: rotate(360deg) } }
+@media (prefers-reduced-motion: reduce) { .iptu-corpo.carregando::after, .iptu-spin { animation: none } }
+
+/* marcando pontos no mapa (desenho e edição da poligonal no Mapa e no mini-mapa, régua): o dedo indicador em vez da
+   mãozinha aberta de arrastar, e na régua a seta; arrastando o mapa, a mão fechada (pedido do Moises, 9/nov/2026; antes,
+   mira no desenho). No Google vale o draggableCursor (Motor.cursorMarcar, MiniMapa). Aqui, e não no styles.css, que o build.py
+   do protótipo sobrescreve. */
+:is(.mapa, .mini-mapa).modo, :is(.mapa, .mini-mapa).modo .leaflet-grab, :is(.mapa, .mini-mapa).modo .leaflet-interactive { cursor: pointer }
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
+:is(.mapa, .mini-mapa).modo.leaflet-dragging, :is(.mapa, .mini-mapa).modo.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive),
+.mapa.regua.leaflet-dragging, .mapa.regua.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive) { cursor: grabbing }

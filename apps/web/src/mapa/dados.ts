@@ -6,14 +6,17 @@ import { supabase } from '../lib/supabase';
 
 /** rótulo, cor, glifo e cor do glifo das situações fora das etapas */
 export const SIT = {
-  sem_negociacao: ['Backlog', '#8a8d91', '·', '#fff'],
+  sem_negociacao: ['Backlog', '#fff176', '·', '#5c4a00'],
   stand_by: ['Stand By', '#c98a2e', '‖', '#fff'],
   comprado: ['Comprado', '#6f9a3a', '✓', '#fff'],
   perdido: ['Perdido', '#9a3b30', '×', '#fff'],
-  descartado: ['Descartado', '#6b6560', '–', '#fff'],
+  descartado: ['Descartado', '#d9d4cf', '–', '#3a3633'],
 } as const;
 type Sit = keyof typeof SIT;
-const COR_FASE = ['#0b74d6', '#863d8f', '#c67355', '#00838f', '#c2477a', '#7d8a3e', '#1d2e5c', '#5f6368'];
+/* Backlog amarelo bebê, Obras lavanda, Entregue verde-menta e Descartado cinza claro: os cinzas e o marinho sumiam no
+   satélite (pedido do Moisés, 9/nov/2026); fundo claro leva o ponto e o código em tom escuro (FG_FASE) */
+const COR_FASE = ['#0b74d6', '#863d8f', '#c67355', '#00838f', '#c2477a', '#7d8a3e', '#c9a7ff', '#69f0ae'];
+const FG_FASE = ['#fff', '#fff', '#fff', '#fff', '#fff', '#fff', '#2e1a5c', '#0b3d1e'];
 const RAMPA = ['#8fc8f7', '#4aa3f0', '#0b74d6', '#0a4fa0', '#1d2e5c'];
 const rampa = (i: number, n: number): [string, string] => {
   const j = n <= 1 ? 2 : Math.round((i * (RAMPA.length - 1)) / (n - 1));
@@ -41,7 +44,7 @@ const etapaF = (fs: Fase[], f: string, e: string) => fs.find((x) => x.k === f)?.
 /** itens da legenda no nível (f, e) */
 export function itens(fs: Fase[], f: string, e: string): Item[] {
   if (!f) return [
-    ...fs.filter((x) => x.ativo).map((x, i) => ({ k: x.k, nome: x.nome, cor: COR_FASE[i % COR_FASE.length], g: String(i + 1), fg: '#fff', desce: x.etapas.length > 0 })),
+    ...fs.filter((x) => x.ativo).map((x, i) => ({ k: x.k, nome: x.nome, cor: COR_FASE[i % COR_FASE.length], g: String(i + 1), fg: FG_FASE[i % FG_FASE.length], desce: x.etapas.length > 0 })),
     sit('sem_negociacao'), sit('perdido'), sit('descartado'),
   ];
   const L: (Etapa | Sub)[] = e ? etapaF(fs, f, e)?.subs ?? [] : fs.find((x) => x.k === f)?.etapas ?? [];

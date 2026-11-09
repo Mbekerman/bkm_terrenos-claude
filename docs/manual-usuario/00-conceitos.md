@@ -14,10 +14,10 @@ Esta é a ideia mais importante do sistema.
 |---|---|---|
 | **Terreno** | A área estudada, desenhada no mapa (a poligonal). Tem um código (A001, A002...) e um nome de referência. | "Vila Mariana - Domingos de Morais", código A123. |
 | **Oferta** | Alguém oferecendo o terreno (ou parte dele) à BKM, com um valor pedido e uma forma de pagamento. Um terreno pode ter várias ofertas ao longo do tempo, de corretores diferentes. | O corretor João oferece por R$ 12 milhões em dinheiro. |
-| **Negociação** | O andamento da BKM com aquele terreno na fase de Novos Negócios: etapa, subetapa, temperatura, propostas. Abre com a primeira oferta. | Está na etapa "Estudos Preliminares", subetapa "Estudo de Massa", temperatura Quente. |
+| **Negociação** | O andamento da BKM com aquele terreno na fase de Novos Negócios: etapa, subetapa, propostas. Abre com a primeira oferta. | Está na etapa "Estudos Preliminares", subetapa "Estudo de Massa", temperatura Quente. |
 | **Proposta** | Um valor e condições que a BKM apresenta ao vendedor, ou que o vendedor devolve. Cada resposta vira uma nova versão (v1, v2...). | BKM propõe R$ 10 milhões, vendedor contrapropõe R$ 11,5 milhões. |
 
-**Regra:** as condições pedidas (valor, forma de pagamento, aceita permuta) pertencem à **oferta**. A ficha mostra a oferta "de referência" (a primeira, até alguém escolher outra). A **temperatura** pertence à **negociação**.
+**Regra:** as condições pedidas (valor, forma de pagamento, aceita permuta) pertencem à **oferta**. A ficha mostra a oferta "de referência" (a primeira, até alguém escolher outra). A **temperatura** pertence ao **terreno**: dá para avaliar mesmo antes da primeira oferta.
 
 ## Fase, etapa e subetapa
 
@@ -64,7 +64,7 @@ Em São Paulo, o sistema consulta cada SQL no **GeoSampa** (o mapa oficial da pr
 
 ## Áreas
 
-O terreno pode ter até cinco áreas, de fontes diferentes: **Documental** (da matrícula), **Cadastral** (da prefeitura, soma dos SQLs), **Levantamento** (topográfico), **Estimativa** e **Poligonal** (calculada pelo desenho). A pessoa escolhe uma delas como **área adotada**, que é a usada nas contas (valor por m², por exemplo).
+O terreno pode ter até quatro áreas, de fontes diferentes: **Documental** (da matrícula), **Cadastral** (da prefeitura, soma dos SQLs), **Topográfica** (levantamento) e **Poligonal** (calculada pelo desenho). Uma delas é a **área adotada**, a usada nas contas (valor por m², por exemplo): o terreno nasce com a Cadastral, a Topográfica toma o lugar sozinha quando é digitada, e a pessoa pode escolher outra.
 
 ## Papéis das pessoas
 
@@ -111,7 +111,7 @@ Cada terreno recebe sozinho um código de uma letra e três números, na ordem A
 | SLA | Prazo de uma etapa ou subetapa. |
 | SQL | Número do lote na prefeitura de São Paulo. |
 | Stand By | Negociação parada de propósito, com data para retomar. |
-| Temperatura | O quanto a negociação está promissora: Muito fria, Fria, Morna, Quente, Muito quente. |
+| Temperatura | O quanto o terreno está promissor para a BKM (com ou sem negociação): Muito fria, Fria, Morna, Quente, Muito quente. |
 | VGV | Valor Geral de Vendas: soma do preço de todas as unidades do empreendimento. |
 | VSO | Velocidade de vendas: vendidas ÷ (vendidas + à venda) no período. |
 | Zoneamento | A zona da lei de uso do solo onde o terreno fica (ZC, ZM, ZEU...). |

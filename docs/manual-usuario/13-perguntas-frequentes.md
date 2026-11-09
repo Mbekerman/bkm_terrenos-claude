@@ -23,7 +23,7 @@ Pelo lápis "Editar no mapa": ajuste a poligonal e, se a rua mudou, aceite "Troc
 Porque ainda não tem oferta. Registre uma oferta na aba Comercial: ela abre a negociação. Ver [06](06-ficha-comercial.md#ofertas-recebidas).
 
 **Não consigo dar temperatura.**
-Temperatura é da negociação. Sem oferta, não há negociação. Registre a oferta primeiro.
+A temperatura é do terreno e vale mesmo sem oferta. Se as barras estão apagadas e não respondem, seu acesso é só de consulta.
 
 **Como sei o que falta preencher?**
 Clique em "Ficha N% completa" no topo da ficha (ou no alerta da barra das abas). Cada item leva direto ao campo. Ver [04](04-ficha-visao-geral.md#ficha-n-completa).

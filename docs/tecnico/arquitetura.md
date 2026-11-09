@@ -67,7 +67,7 @@ Estão no `CLAUDE.md` ("Regras de arquitetura"). Em resumo, com o motivo:
 6. **Auditoria automática** por gatilho em `app.auditoria` e histórico do funil em `processo_transicoes`.
 7. **"Não informado" nunca vira zero.** Número desconhecido é nulo; seleção tem `nao_informado`.
 8. **O que muda com o tempo tem histórico** (valores venais, análise urbanística, propostas, documentos).
-9. **Condições pedidas pertencem à oferta**; temperatura pertence à negociação.
+9. **Condições pedidas pertencem à oferta**; temperatura pertence ao terreno (desde 9/nov/2026; antes, à negociação).
 10. **Papéis**: diretor, gestor, analista, leitura, básico, com hierarquia por `membros.superior_id`; administrador é uma marca à parte.
 11. **A ficha só muda por `app.salvar_terreno(id, versao, dados)`**, que recusa versão antiga (duas pessoas editando ao mesmo tempo).
 

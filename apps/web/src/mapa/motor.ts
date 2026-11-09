@@ -101,7 +101,18 @@ export class Motor {
     });
     M.addListener('dragstart', g.fecharMenu); M.addListener('zoom_changed', g.fecharMenu);
     M.addListener('dragstart', () => g.movendo(true)); M.addListener('zoom_changed', () => g.movendo(true));
-    M.addListener('dblclick', (e: any) => { if (e.latLng && !e.placeId) g.duplo(e.latLng.lat(), e.latLng.lng(), e.domEvent?.target ?? null); });
+    /* dois cliques em qualquer ponto dentro da poligonal de um terreno editam a poligonal, não só sobre a linha (pedido do Moises,
+       9/nov/2026): o Google nem sempre entrega o duplo clique do preenchimento ao polígono, então o mapa confere pela posição.
+       Sobre o pino, nada muda (o pino abre a ficha). */
+    M.addListener('dblclick', (e: any) => {
+      if (!e.latLng || e.placeId) return;
+      const alvo = e.domEvent?.target ?? null;
+      if (!this.modo && !(alvo as HTMLElement | null)?.closest?.('[data-terreno]')) {
+        const t = this.poligonalEm(e.latLng.lat(), e.latLng.lng());
+        if (t) { clearTimeout(this.tc); g.editar?.(t); return; }
+      }
+      g.duplo(e.latLng.lat(), e.latLng.lng(), alvo);
+    });
     M.addListener('idle', () => { const c = M.getCenter(); guardarVista({ c: { lat: c.lat(), lng: c.lng() }, z: M.getZoom() }); g.movendo(false); });
     /* Street View: fecha no nosso X ou no Esc; o fechar do Google fica escondido para não haver dois */
     const sv = M.getStreetView();
@@ -116,6 +127,15 @@ export class Motor {
       else g.vazio(e.latLng.lat(), e.latLng.lng());
     });
   }
+  /** o terreno cuja poligonal contém o ponto (a menor, quando uma está dentro da outra) */
+  private poligonalEm(lat: number, lng: number): string | null {
+    let id: string | null = null, menor = Infinity;
+    for (const p of this.ps) if (p.poly && dentro(lat, lng, p.poly)) { const a = areaGraus(p.poly); if (a < menor) { menor = a; id = p.id; } }
+    return id;
+  }
+  /** clique simples no terreno: espera um pouco para o duplo clique (edição) cancelar a abertura da ficha */
+  private tc: ReturnType<typeof setTimeout> | undefined;
+  private cliqueTerreno(id: string) { clearTimeout(this.tc); this.g.passar?.(id); this.tc = setTimeout(() => this.g.pino(id), 260); }
   temVista() { return !!vista; }
   setBase(b: Base) { this.mapa.setMapTypeId(TIPO[b]); }
   /** pinos e poligonais na cor do item da legenda */
@@ -136,10 +156,9 @@ export class Motor {
       this.pinos.push(mk);
       if (t.poly) {
         const pg = new google.maps.Polygon({ map: this.mapa, paths: t.poly.map((p) => gLL(p[0], p[1])), strokeColor: t.cor, strokeWeight: 2, fillColor: t.cor, fillOpacity: 0.18, clickable: !this.modo });
-        let tc: ReturnType<typeof setTimeout> | undefined;
         pg.addListener('mouseover', () => this.g.passar?.(t.id));
-        pg.addListener('click', () => { clearTimeout(tc); this.g.passar?.(t.id); tc = setTimeout(() => this.g.pino(t.id), 260); });
-        pg.addListener('dblclick', (e: any) => { e?.stop?.(); clearTimeout(tc); this.g.editar?.(t.id); });
+        pg.addListener('click', () => this.cliqueTerreno(t.id));
+        pg.addListener('dblclick', (e: any) => { e?.stop?.(); clearTimeout(this.tc); this.g.editar?.(this.poligonalEm(e?.latLng?.lat?.(), e?.latLng?.lng?.()) ?? t.id); });
         this.pinos.push(pg);
       }
     }
@@ -300,9 +319,10 @@ export class Motor {
     if (this.mercUlt) this.mercado(...this.mercUlt);
     if (this.mercDest) this.mercDest.gmpClickable = !on;
   }
-  /* régua ligada: o cursor do mapa vira a seta em vez da mãozinha (pedido do Moisés, 5/nov/2026); null volta ao do Google */
-  cursorSeta(on: boolean) {
-    this.mapa.setOptions({ draggableCursor: on ? 'default' : null });
+  /* marcando pontos, nunca a mãozinha aberta de arrastar (pedido do Moises, 9/nov/2026): dedo indicador no desenho ou
+     edição da poligonal e na saída da rota, seta na régua (5/nov, confirmada em 9/nov); null volta ao do Google */
+  cursorMarcar(c: 'pointer' | 'default' | null) {
+    this.mapa.setOptions({ draggableCursor: c });
   }
   private rasc: any[] = [];
   rascunho(pts: [number, number][], sel: number | null, editar: boolean, gp: GestosPonto) {
@@ -377,12 +397,22 @@ export class Motor {
   }
   /** rota (Traçar rota até aqui): o destino aparece logo; a linha e a origem quando a rota chega */
   rotaLimpar() { this.rt.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.rt = []; }
-  rota(d: { lat: number; lng: number }, o?: { lat: number; lng: number } | null, path?: { lat: number; lng: number }[] | null, pe?: boolean) {
+  /** d = chegada (pino vermelho), o = saída (bolinha); qualquer um pode faltar enquanto a rota não existe.
+   *  soltarO / soltarD: o ponto se arrasta (mãozinha) e, solto, devolve o lugar novo; enquadrar = false mantém a vista */
+  rota(d: { lat: number; lng: number } | null, o?: { lat: number; lng: number } | null, path?: { lat: number; lng: number }[] | null, pe?: boolean,
+    op: { soltarO?: (p: { lat: number; lng: number }) => void; soltarD?: (p: { lat: number; lng: number }) => void; enquadrar?: boolean } = {}) {
     const { google } = window;
     this.rotaLimpar();
-    const mk = (p: { lat: number; lng: number }, cls: string, titulo: string) => {
+    const mk = (p: { lat: number; lng: number }, cls: string, titulo: string, soltar?: (p: { lat: number; lng: number }) => void) => {
       const el = document.createElement('div'); el.className = cls;
-      return new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(p.lat, p.lng), content: el, title: titulo, gmpClickable: false, zIndex: 950 });
+      const m = new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(p.lat, p.lng), content: el, title: soltar ? titulo + ': arraste para mudar' : titulo,
+        gmpClickable: false, gmpDraggable: !!soltar, zIndex: soltar ? 960 : 950 });
+      if (soltar) m.addListener('dragend', () => {
+        const ps: any = m.position;
+        const lat = typeof ps?.lat === 'function' ? ps.lat() : ps?.lat, lng = typeof ps?.lng === 'function' ? ps.lng() : ps?.lng;
+        if (typeof lat === 'number' && typeof lng === 'number') soltar({ lat, lng });
+      });
+      return m;
     };
     if (path?.length) {
       /* a pé, pontilhada, como no Google Maps; os outros modos, linha cheia com contorno */
@@ -393,9 +423,9 @@ export class Motor {
         this.rt.push(new google.maps.Polyline({ map: this.mapa, path, strokeColor: '#1a73e8', strokeWeight: 5, strokeOpacity: 1, clickable: false, zIndex: 40 }));
       }
     }
-    if (o) this.rt.push(mk(o, 'rt-o', 'Origem'));
-    this.rt.push(mk(d, 'rt-d', 'Destino'));
-    if (path?.length) {
+    if (d) this.rt.push(mk(d, 'rt-d', 'Chegada', op.soltarD));
+    if (o) this.rt.push(mk(o, 'rt-o', 'Saída', op.soltarO));
+    if (path?.length && op.enquadrar !== false) {
       const b = new google.maps.LatLngBounds();
       path.forEach((p) => b.extend(p));
       this.mapa.fitBounds(b, { top: 80, left: 400, right: 80, bottom: 60 });
@@ -417,6 +447,12 @@ function dentro(lat: number, lng: number, poly: [number, number][]) {
     if ((bi > lng) !== (bj > lng) && lat < ((aj - ai) * (lng - bi)) / (bj - bi) + ai) d = !d;
   }
   return d;
+}
+/** área aproximada em graus², só para escolher a menor entre poligonais sobrepostas */
+function areaGraus(poly: [number, number][]) {
+  let a = 0;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) a += (poly[j][1] + poly[i][1]) * (poly[j][0] - poly[i][0]);
+  return Math.abs(a / 2);
 }
 export const TOQUE = () => matchMedia('(pointer: coarse)').matches;
 export function vGestos(el: HTMLElement, i: number, gp: GestosPonto) {

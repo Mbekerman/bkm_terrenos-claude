@@ -4,7 +4,7 @@ import { useSessao } from '../lib/sessao';
 import { data as fd, milhoes, m2 } from '../lib/format';
 import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
-import { carregarFicha, completude, type Falta, FONTE_AREA, TEMP, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
+import { carregarFicha, completude, type Falta, FONTE_AREA, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
 import MiniMapa from './MiniMapa';
 import { fixa, geojson } from '../novo/geo';
 import { LapisMapa, verificarEndereco } from '../novo/TrocarEndereco';
@@ -13,9 +13,12 @@ import AbaComercial from './Comercial';
 import Painel, { Avancos, usePN } from './Painel';
 import AbaEntorno, { EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
+import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
 import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
 import { useToast } from '../components/ui';
+import MenuTerreno from '../components/MenuTerreno';
+import { useNavigate } from 'react-router-dom';
 
 // Ficha do terreno, porte de tools/prototipo/proto.js › pgFicha (topo, abas, fiAbasCaber), proto_fases.js › linhaTopo,
 // proto_funil.js › linhaEtapas e proto_mod.js › abaGeral (Visão geral: Localização e Resumo). Mesma marcação e classes do
@@ -90,12 +93,10 @@ function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
   );
 }
 
-/** a temperatura do topo (na gaveta, vai para o cabeçalho dela) */
+/** a temperatura do topo (na gaveta, vai para o cabeçalho dela); é do terreno, com ou sem negociação (9/nov/2026) */
 export function TempTopo({ f }: { f: F }) {
   const { edita } = useSessao();
-  if (!f.negId) return null;
-  return f.negStatus === 'ativo' ? <Temperatura f={f} pode={edita} />
-    : f.temp ? <>{TEMP[f.temp]}</> : <span className="faint">Temperatura não avaliada</span>;
+  return <Temperatura f={f} pode={edita} />;
 }
 
 /** fase, etapa e subetapa do topo; fora de andamento, a situação no lugar da etapa */
@@ -331,13 +332,13 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
           {edita ? lin('Endereço', end, <LapisMapa codigo={f.codigo} />) : lin('Endereço', end)}
           {edita ? lin('Município e região', <span className="kv-vivo">{[f.municipio, f.uf].filter(Boolean).join(' · ')}{f.municipio ? ' · ' : ''}
             <Vivo ini={f.t.zona ?? ''} imediato gravar={(v) => salvarT({ zona: v || null })}>{(p) =>
-              <select className="inl-x" aria-label="Zona" {...p}><option value="">Zona não informada</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>Zona {l}</option>)}</select>}</Vivo></span>)
+              <select className="inl-x" aria-label="Zona" {...p}><option value="">Zona não informada</option>{Object.entries(OPT.zona).map(([k, l]) => <option key={k} value={k}>Zona {l}</option>)}</select>}</Vivo><Busca terreno={f.id} fontes={['zona']} /></span>)
             : lin('Município e região', mun)}
           {lin('Zoneamento', f.zonas, ir('terreno', 'Ver os parâmetros urbanísticos', 'indices'))}
           {edita ? lin('Área adotada', <span className="kv-vivo">{f.area != null ? m2(f.area) + ' · ' : ''}
-            <Vivo ini={f.t.fonte_area_adotada ?? ''} imediato gravar={(v) => { const d = dadosArea(f, { ...valoresArea(f.t), fonte_area_adotada: v }); if (typeof d === 'string') { toast(d); return false; } return salvarT(d); }}>{(p) =>
+            <Vivo ini={f.t.fonte_area_adotada ?? 'cadastral'} imediato gravar={(v) => { const d = dadosArea(f, { ...valoresArea(f.t), fonte_area_adotada: v }); if (typeof d === 'string') { toast(d); return false; } return salvarT(d); }}>{(p) =>
               fonteSel('g-fonteArea', { ...p, className: 'inl-x', 'aria-label': 'Fonte da área adotada' } as any,
-                Object.entries(FONTE_AREA).filter(([k]) => k === f.t.fonte_area_adotada || (k === 'poligonal' ? f.t.area_poligonal_m2 != null : k !== 'estimativa' && f.t[`area_${k}_m2`] != null)), 'Sem área adotada')}</Vivo>
+                Object.entries(FONTE_AREA).filter(([k]) => k === 'cadastral' || k === f.t.fonte_area_adotada || (k === 'poligonal' ? f.t.area_poligonal_m2 != null : f.t[`area_${k}_m2`] != null)), null)}</Vivo>
             </span>, ir('terreno', 'Ver as áreas'))
             : lin('Área adotada', f.area != null ? dois(m2(f.area), f.fonteArea ? FONTE_AREA[f.fonteArea] : null) : '', ir('terreno', 'Ver as áreas'))}
           {lin('Unidades do estudo válido', f.unidades != null ? `${num(f.unidades)} unidades` : '', ir('viabilidade', 'Ver os estudos de viabilidade'))}
@@ -422,6 +423,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   abrirMapa: (lat: number, lng: number, z: number) => void; naGaveta?: boolean;
 }) {
   const [pn] = usePN();
+  const navegar = useNavigate();
   const c = completude(f);
   const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
   const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;
@@ -448,10 +450,10 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
               const sepCel = !cl && meta.slice(0, i).every((m) => m[1]);
               return <span key={i} className={cl} style={{ display: 'contents' }}>{i > 0 && <span className={`fi-sep${sepCel ? ' fi-so-cel' : ''}`}>·</span>}<span>{x}</span></span>;
             })}
-            {f.negId && !naGaveta && <><span className="fi-sep">·</span><span className="fi-temp"><TempTopo f={f} /></span></>}
+            {!naGaveta && <><span className="fi-sep">·</span><span className="fi-temp"><TempTopo f={f} /></span></>}
           </div>
         </div>
-        <Resp r={f.resp} />
+        <div className="fi-head-d"><Resp r={f.resp} />{!naGaveta && <MenuTerreno t={f} aoSair={() => navegar('/mapa', { replace: true })} />}</div>
       </div>
       <div className="stack">
         {c.pct < 100 && (

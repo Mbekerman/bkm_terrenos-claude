@@ -4,7 +4,7 @@ import { gLib } from './google';
 import type { Motor } from './motor';
 import { calcularRota, distancia, guardarModo, modoGuardado, MODOS, SemRota, tempo, urlGoogle, type Modo, type PontoRota, type Rota } from './rota';
 
-// Quadro "Traçar rota até aqui" (pedido do Moises, 9/nov/2026): aberto pelo clique direito no mapa; a busca escolhe a origem
+// Quadro "Traçar rota a partir daqui" (antes "até aqui"; pedido do Moises, 9/nov/2026): aberto pelo clique direito no mapa; a busca escolhe a origem
 // (endereço ou lugar do Google, ou a minha localização) e a rota vai dela até o ponto clicado (ou o terreno sob o mouse),
 // no modo escolhido. Fecha no X ou no Esc, e a rota sai do mapa.
 
@@ -100,23 +100,50 @@ export function QuadroRota({ motor, destino, fechar, pegar }: { motor: Motor | n
   }, [noMapa, pegar]);
   const inp = useRef<HTMLInputElement>(null), bT = useRef<ReturnType<typeof setTimeout>>(), atual = useRef('');
 
-  /* o destino aparece no mapa já ao abrir; a rota sai ao fechar */
-  useEffect(() => { motor?.rota(destino); return () => motor?.rotaLimpar(); }, [motor, destino]);
+  /* o ponto do clique direito ("fixo") também se arrasta (pedido do Moises, 9/nov/2026) e troca quando a pessoa usa o clique
+     direito de novo com o quadro aberto; inv = a rota sai do ponto fixo e vai até o escolhido (o padrão); o botão ⇅ inverte */
+  const [fixo, setFixo] = useState<DestinoRota>(destino);
+  useEffect(() => { setFixo(destino); }, [destino]);
+  const [inv, setInv] = useState(true); /* padrão: do ponto do clique direito até o escolhido (pedido do Moises, 9/nov/2026) */
+  const soltarFixo = (p: PontoRota) => {
+    arrastou.current = true;
+    setFixo({ lat: p.lat, lng: p.lng, nome: 'Ponto no mapa' });
+    nomeDoPonto(p).then((n) => setFixo((f) => (f.lat === p.lat && f.lng === p.lng ? { ...f, nome: n } : f)));
+  };
+  /* antes de haver rota, só o ponto fixo aparece (arrastável); a rota sai do mapa ao fechar */
+  useEffect(() => { if (!origem) motor?.rota(inv ? null : fixo, inv ? fixo : null, null, false, inv ? { soltarO: soltarFixo } : { soltarD: soltarFixo }); },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [motor, fixo.lat, fixo.lng, inv, !origem]);
+  useEffect(() => () => motor?.rotaLimpar(), [motor]);
   useEffect(() => { inp.current?.focus(); }, []);
+
+  /* a saída arrastada no mapa (pedido do Moises, 9/nov/2026): vale o endereço de onde ela foi solta, e a rota se refaz
+     sem reenquadrar o mapa, para a pessoa continuar ajustando no mesmo lugar */
+  const arrastou = useRef(false);
+  const soltar = (p: PontoRota) => {
+    arrastou.current = true;
+    const prov = 'Ponto no mapa';
+    setNoMapa(false); setLista(false); setSug(null);
+    setQ(prov); atual.current = prov;
+    setOrigem({ lat: p.lat, lng: p.lng, nome: prov });
+    nomeDoPonto(p).then((n) => { if (atual.current === prov) { setQ(n); atual.current = n; setOrigem((o) => (o && o.lat === p.lat && o.lng === p.lng ? { ...o, nome: n } : o)); } });
+  };
 
   /* cada origem ou modo novo refaz a rota */
   useEffect(() => {
     if (!origem || !motor) return;
     let vivo = true;
     setCalc(true); setMsg(null);
-    const o = origem;
-    calcularRota(o, destino, modo).then((r) => {
+    const a = inv ? fixo : origem, b = inv ? origem : fixo, enquadrar = !arrastou.current;
+    const op = inv ? { soltarO: soltarFixo, soltarD: soltar } : { soltarO: soltar, soltarD: soltarFixo };
+    arrastou.current = false;
+    calcularRota(a, b, modo).then((r) => {
       if (!vivo) return;
-      setRes(r); motor.rota(destino, o, r.path, modo === 'WALK');
+      setRes(r); motor.rota(b, a, r.path, modo === 'WALK', { ...op, enquadrar });
     }).catch((e) => {
       if (!vivo) return;
       console.warn('Rota', e);
-      setRes(null); motor.rota(destino, o);
+      setRes(null); motor.rota(b, a, null, false, op);
       const de = MODOS.find((x) => x.k === modo)!.de;
       setMsg(e instanceof SemRota
         ? { t: `O Google não tem rota ${de} entre esses dois pontos.`, erro: true }
@@ -124,7 +151,7 @@ export function QuadroRota({ motor, destino, fechar, pegar }: { motor: Motor | n
     }).finally(() => { if (vivo) setCalc(false); });
     return () => { vivo = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [origem?.lat, origem?.lng, modo, motor, destino]);
+  }, [origem?.lat, origem?.lng, fixo.lat, fixo.lng, inv, modo, motor]);
 
   function buscar(v: string) {
     setQ(v); atual.current = v; clearTimeout(bT.current); setLista(true);
@@ -154,7 +181,11 @@ export function QuadroRota({ motor, destino, fechar, pegar }: { motor: Motor | n
   return (
     <div className="mp-rt" role="dialog" aria-label="Traçar rota" onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (lista && sug) { setLista(false); return; } fechar(); } }}>
       <div className="mp-rt-h">
-        <span className="mp-rt-t"><Ic n="rota" s={20} />Rota até {destino.nome ? <b>{destino.nome}</b> : 'o ponto marcado'}</span>
+        <span className="mp-rt-t"><Ic n="rota" s={20} /><span className="mp-rt-pre">{inv ? 'Rota a partir de' : 'Rota até'}</span>{fixo.nome ? <b>{fixo.nome}</b> : 'o ponto marcado'}</span>
+        <button type="button" className="iconbtn sm" aria-label="Inverter o sentido da rota" title={inv ? 'Inverter: ir até o ponto marcado' : 'Inverter: sair do ponto marcado'}
+          aria-pressed={inv} onClick={() => { arrastou.current = true; setInv((v) => !v); }}>
+          <svg className="ic" viewBox="0 0 24 24" width={18} height={18} aria-hidden="true"><path fill="currentColor" d="M16 17.01V10h-2v7.01h-3L15 21l4-3.99h-3zM9 3 5 6.99h3V14h2V6.99h3L9 3z" /></svg>
+        </button>
         <button type="button" className="iconbtn sm" aria-label="Fechar a rota" title="Fechar (Esc)" onClick={fechar}><Ic n="close" s={18} /></button>
       </div>
       <div className="mp-rt-modos" role="radiogroup" aria-label="Forma de condução">
@@ -165,12 +196,12 @@ export function QuadroRota({ motor, destino, fechar, pegar }: { motor: Motor | n
         ))}
       </div>
       <div className="mp-rt-busca">
-        <span className="mp-rt-o" aria-hidden="true" />
-        <input ref={inp} type="search" placeholder="Saindo de: endereço ou lugar" aria-label="Origem da rota: endereço ou lugar" autoComplete="off" value={q}
+        <span className={inv ? 'mp-rt-dp' : 'mp-rt-o'} aria-hidden="true" />
+        <input ref={inp} type="search" placeholder={inv ? 'Indo para: endereço ou lugar' : 'Saindo de: endereço ou lugar'} aria-label={inv ? 'Chegada da rota: endereço ou lugar' : 'Origem da rota: endereço ou lugar'} autoComplete="off" value={q}
           onChange={(e) => buscar(e.target.value)} onFocus={() => setLista(true)} onBlur={() => setTimeout(() => setLista(false), 150)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (sug?.[0]) escolherAchado(sug[0]); } }} />
-        <button type="button" className={`mp-rt-mira${noMapa ? ' on' : ''}`} aria-pressed={noMapa} title={noMapa ? 'Escolhendo no mapa: clique num ponto, lugar, terreno ou concorrente' : 'Escolher a saída no mapa'}
-          aria-label="Escolher a saída no mapa" onMouseDown={(e) => e.preventDefault()} onClick={() => setNoMapa((v) => !v)}><Ic n="eu" s={18} /></button>
+        <button type="button" className={`mp-rt-mira${noMapa ? ' on' : ''}`} aria-pressed={noMapa} title={noMapa ? 'Escolhendo no mapa: clique num ponto, lugar, terreno ou concorrente' : inv ? 'Escolher a chegada no mapa' : 'Escolher a saída no mapa'}
+          aria-label={inv ? 'Escolher a chegada no mapa' : 'Escolher a saída no mapa'} onMouseDown={(e) => e.preventDefault()} onClick={() => setNoMapa((v) => !v)}><Ic n="eu" s={18} /></button>
         {lista && (
           <div className="mp-res" role="listbox">
             <button type="button" role="option" aria-selected={false} onMouseDown={(e) => e.preventDefault()} onClick={eu}><Ic n="eu" s={18} /><span>Minha localização</span></button>
@@ -191,7 +222,7 @@ export function QuadroRota({ motor, destino, fechar, pegar }: { motor: Motor | n
               {modo === 'TRANSIT' && res.linhas.length > 0 && <div className="mp-rt-linhas">{res.linhas.map((l) => <span key={l} className="chip">{l}</span>)}</div>}
               {modo === 'TWO_WHEELER' && <div className="hint">Rota de moto do Google, ainda em teste por lá: confira o trajeto.</div>}
             </>}
-          {origem && !calc && <a className="btn sm text mp-rt-g" href={urlGoogle(origem, destino, modo)} target="_blank" rel="noopener">Abrir no Google Maps</a>}
+          {origem && !calc && <a className="btn sm text mp-rt-g" href={inv ? urlGoogle(fixo, origem, modo) : urlGoogle(origem, fixo, modo)} target="_blank" rel="noopener">Abrir no Google Maps</a>}
         </div>
       )}
     </div>

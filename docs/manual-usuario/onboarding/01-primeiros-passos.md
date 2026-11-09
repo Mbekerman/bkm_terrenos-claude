@@ -15,7 +15,7 @@
 | 7 | 1:50 | Clicar na bolinha de uma etapa para apagar; depois "Limpar busca e legenda". | "Clicando na bolinha, você esconde os terrenos daquela etapa do mapa e da lista. Para voltar tudo, Limpar busca e legenda." |
 | 8 | 2:10 | Digitar parte do nome do terreno na busca de cima. | "Para achar um terreno, digite o código ou o nome na busca de cima. A lista filtra na hora. Atenção: por enquanto ela não procura matrícula nem SQL." |
 | 9 | 2:30 | Clicar no pino do terreno. A gaveta da ficha abre. | "Clicando no pino, a ficha do terreno abre aqui mesmo, por cima do mapa." |
-| 10 | 2:45 | Apontar o topo da ficha: código, nome, fase · etapa · subetapa, temperatura, "Ficha N% completa". | "No topo: o código, o nome, em que fase e etapa ele está, a temperatura da negociação e quanto da ficha está preenchido." |
+| 10 | 2:45 | Apontar o topo da ficha: código, nome, fase · etapa · subetapa, temperatura, "Ficha N% completa". | "No topo: o código, o nome, em que fase e etapa ele está, a temperatura do terreno e quanto da ficha está preenchido." |
 | 11 | 3:05 | Clicar em "Ficha N% completa" e escolher um item. O campo acende. | "Clicando aqui você vê o que falta. Escolha um item e o sistema leva direto ao campo." |
 | 12 | 3:25 | Voltar à Visão geral; apontar o mini-mapa e o Resumo. | "A Visão geral tem o mapa do terreno e o resumo: endereço, zoneamento, área, distância do metrô, valor pedido e corretor. A seta de cada linha leva à aba onde o dado mora." |
 | 13 | 3:50 | Rolar a barra das abas com Shift + roda; abrir o ⋮. | "As abas ficam nesta barra. Ela rola de lado com Shift e a roda do mouse, ou arrastando. O menu de três pontinhos lista todas." |
