@@ -21,10 +21,11 @@ Três quadros: **Parâmetros urbanísticos**, **Restrições e entorno** e **His
 ### O que você vê
 
 - **Zonas da área**: as zonas do terreno, com a área de cada uma.
-- **Potencial construtivo** de **Mercado**, **HIS** e **HMP**, lado a lado: a soma de (área da zona × CA máximo da zona para aquele tipo). O sistema **nunca** mostra um "CA médio".
-- **Por lote, um quadro por zona** com: CA mínimo, CA básico, CA máximo de cada tipo (ou **"Não admitido"** quando a zona não aceita o tipo), taxa de ocupação, gabarito (altura ou "Sem limite"), recuo de frente, recuos laterais e de fundo, cota-parte máxima, unidades por lote, permeabilidade mínima, lote mínimo, frente mínima e outorga onerosa (Gratuita, "Paga acima do básico" ou Dispensado).
+- **Potencial construtivo** de **Mercado**, **HIS** e **HMP**, lado a lado: a soma de (área da zona × CA máximo da zona para aquele tipo). Ao lado do potencial aparece o **CA máx.**, o maior CA máximo entre as zonas que admitem aquele tipo. O sistema **nunca** mostra um "CA médio".
+- **Panorama do terreno**: os mesmos parâmetros do quadro de cada zona, para o terreno inteiro. Quando os lotes ou as zonas têm valores diferentes, aparecem todos, separados por barra ("4 / 2"), com "varia por zona ou lote" embaixo; parar o mouse sobre o quadrinho mostra de qual zona é cada valor. Logo abaixo, **"Demais parâmetros e restrições"** do terreno inteiro: o que toca algum dos lotes consultados na prefeitura, junto. No fim, **uma vez só**, a lista do que **nenhum** lote toca ("Nenhum dos 2 lotes toca: ZEIS 1, Eixo de estruturação..."). O que toca só um lote aparece no relatório daquele lote.
+- **"Ver lote por lote"** (seta para abrir, começa fechado): por lote, um quadro por zona com: CA mínimo, CA básico, CA máximo de cada tipo (ou **"Não admitido"** quando a zona não aceita o tipo), taxa de ocupação, gabarito (altura ou "Sem limite"), recuo de frente, recuos laterais e de fundo, cota-parte máxima, unidades por lote, permeabilidade mínima, lote mínimo, frente mínima e outorga onerosa (Gratuita, "Paga acima do básico" ou Dispensado).
 - **"Regras e fontes"**: o texto das regras da zona e de onde veio cada número.
-- **"O que toca o lote"** / **"Demais parâmetros e restrições"**: as outras camadas da última consulta do lote (Conpresp, tombamento, ZEIS, mananciais, macrozona, operação urbana...).
+- Dentro de cada lote, **"Demais parâmetros e restrições"**: só o que toca aquele lote na última consulta (Conpresp, tombamento, ZEIS, mananciais, macrozona, operação urbana...). A lista do que não toca saiu do lote e fica no panorama.
 - O selo **"A validar"** quando algum parâmetro do catálogo ainda não foi conferido ("Há parâmetros a validar no catálogo").
 
 Os parâmetros vêm de um catálogo da lei, por zona e tipo de empreendimento, mantido pelo administrador. Hoje o catálogo tem São Paulo e São José dos Campos.
@@ -61,7 +62,10 @@ Temas:
 
 - **Ambiental**: Perímetro de qualificação ambiental (Quota Ambiental; Lei 16.402/2016, Mapa 3), inundação em 5, 25 e 100 anos, córrego a até 30 m, árvores na calçada a até 30 m, vegetação significativa, área contaminada no terreno e a até 30 m, parque ou unidade de conservação, manancial.
 - **Patrimônio**: bem tombado, área envoltória (Conpresp, Condephaat, Iphan), interesse arqueológico, ZEPEC.
-- **Vias e redes**: classificação viária da CET, melhoramento viário, vila a até 20 m, linha de alta tensão e ferrovia a até 30 m, distância da rede da Comgás, influência do Metrô ou da CPTM.
+- **Vias e redes**: classificação viária da CET, melhoramento viário, vila ou rua sem saída, linha de alta tensão e ferrovia a até 30 m, distância da rede da Comgás, influência do Metrô ou da CPTM.
+  - **Classificação viária (CET)**: só as ruas que são frente do terreno (as mesmas das frentes medidas pela poligonal), uma linha por rua. A CET classifica a rua por trechos de quarteirão; quando os trechos junto do terreno têm classificações diferentes, vale a mais alta e a outra aparece entre parênteses, por exemplo "R Sebastião Sisson: Coletora (trecho Local)". Rua de frente que a CET não classifica aparece como "sem classificação".
+  - **Vila ou rua sem saída**: vila enquadrada pela prefeitura a até 20 m, com a distância, ou rua de frente sem saída. O GeoSampa não tem um cadastro de ruas sem saída: o sistema deduz pela rede de ruas da prefeitura (até 400 m em volta), olhando se a rua de frente só sai por um caminho que termina. Viela, passagem e escadaria aparecem como "só passagem de pedestres". É uma dedução; confira no mapa antes de decidir.
+  - **Melhoramento viário** e **faixa não edificável** mostram a lei, o tipo, a largura da faixa (quando a prefeitura informa) e quanto do terreno a faixa atinge, em m². **Córrego**, **vila**, **alta tensão** e **ferrovia** mostram a distância até o terreno ("encosta no terreno" quando toca).
 - **Riscos e interferências**: risco geológico, restrição geotécnica, faixa não edificável.
 
 Cada linha diz sim, não, a distância, "Nada cadastrado no terreno nem a até 30 m" ou "Não respondeu" (quando a fonte falhou).

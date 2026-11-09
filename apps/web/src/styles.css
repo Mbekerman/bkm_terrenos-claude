@@ -2184,6 +2184,10 @@ body.vb-aberto { overflow: hidden }
 .lz-sem{padding:4px 0}
 .lz-cam{border-top:1px solid var(--linha);padding-top:10px;margin-top:4px}
 .lz-cam .geo-toca{margin:0}
+.lz-naotoca{margin-top:12px}
+.lz-pan{margin-top:16px}
+.lz-pan .geo-toca{margin-top:12px}
+.lz-lotes{margin-top:16px;border-top:1px solid var(--linha);padding-top:4px}
 @media (max-width:600px){.lz-lote{padding:10px 12px}}
 .lz-exc{padding:8px 0}
 .lz-fontes{margin-top:12px}
@@ -5036,7 +5040,6 @@ html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; 
 
 /* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
-.scrim.rasc-av { z-index: 70 }
 
 /* Frentes do terreno, em Áreas e dimensões (pedido do Moises, 8/nov/2026) */
 .fr-l { list-style: none; margin: 2px 0 0; padding: 0; max-width: 560px }

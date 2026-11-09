@@ -9,6 +9,8 @@ import { useSyncExternalStore } from 'react';
 import { supabase } from '../lib/supabase';
 import { GEO_BASE, digitos, geoAneis, geoAreaAnel, geoNoAnel, geoWfs, geoWkt, latLngUtm, utmLatLng } from './geosampa';
 import type { P } from './geo';
+import { medirFrentes } from './frentesCalc';
+import { classificarFrentes, frentesSemSaida } from './viasCalc';
 
 /** [camada ("camada@raio" = a mesma com outro raio), geometria, raio em metros (0 = só o que toca), atributos guardados (todos se vazio)] */
 const GEO_CAMADAS: [string, string, number?, string[]?][] = [
@@ -31,7 +33,7 @@ const GEO_CAMADAS: [string, string, number?, string[]?][] = [
   ['area_contaminada_reabilitada_svma@30', 'ge_multipoligono', 30], ['GEOSAMPA_area_contaminada_sigac@30', 'ge_poligono', 30],
   ['GEOSAMPA_cadparcs_parque_unidade_conservacao', 'ge_multipoligono'], ['pde_outra_unidade_conservacao', 'ge_multipoligono'],
   ['arvore_v2', 'ge_ponto', 30, ['cd_identificador']],
-  ['classificacao_viaria_cet', 'ge_linha', 30, ['nm_logradouro_completo', 'dc_tipo_classificacao_viaria']],
+  ['classificacao_viaria_cet', 'ge_linha', 45, ['nm_logradouro_completo', 'dc_tipo_classificacao_viaria', 'cd_logradouro']],
   ['enquadramento_vila', 'ge_poligono', 20, ['tx_indicador_enquadramento_vila', 'tx_link_despacho_diario_oficial']],
   ['linha_alta_tensao_v2', 'ge_linha', 30, ['cd_identificador_alta_tensao']],
   ['linha_subterranea_alta_tensao', 'ge_linha', 30, ['nm_linha_subterranea_alta_tensao']],
@@ -83,6 +85,8 @@ async function geoConsultar(area: any) {
       camadas[k] = fs.map((f) => {
         const p: any = campos ? Object.fromEntries(campos.map((c) => [c, f.properties[c]])) : { ...f.properties };
         if (dist && f.geometry) p._dist_m = geoDist(area, f.geometry);
+        /* melhoramento viário e faixa não edificável: quanto do terreno a faixa atinge */
+        if (/^geoconvias_/.test(cam) && f.geometry) p._area_m2 = geoAreaZonas(area, [f], () => 'a')[0]?.area_m2 ?? 0;
         return { ...f, properties: p };
       }).sort((a, b) => (a.properties._dist_m ?? 0) - (b.properties._dist_m ?? 0));
     } catch { erros.push(k); }
@@ -90,6 +94,29 @@ async function geoConsultar(area: any) {
   return { camadas, erros };
 }
 const atributos = (camadas: Record<string, any[]>) => Object.fromEntries(Object.entries(camadas).map(([k, fs]) => [k, fs.map((f) => f.properties)]));
+
+/** Classificação viária e rua sem saída só das ruas que são frente da área (pedido do Moises, 9/nov/2026; viasCalc.ts):
+ * a CET em volta (30 m pegava as ruas do outro lado do cruzamento) vira uma linha por rua de frente, e a rede de eixos
+ * da prefeitura até 400 m em volta diz se a rua de frente tem saída. Sem resposta, as duas camadas ficam como erro. */
+const VIAS_RAIO = 400;
+async function viasDaArea(anel: number[][], camadas: Record<string, any[]>, props: Record<string, any[]>, erros: string[]) {
+  const ter = anel.slice(0, -1), xs = ter.map((p) => p[0]), ys = ter.map((p) => p[1]);
+  const cx = (m: number) => [Math.min(...xs) - m, Math.min(...ys) - m, Math.max(...xs) + m, Math.max(...ys) + m];
+  const bb = (m: number) => cx(m).join(',') + ',urn:ogc:def:crs:EPSG::31983';
+  try {
+    if (erros.includes('classificacao_viaria_cet')) throw new Error('CET sem resposta');
+    const [ls, vs] = await Promise.all([
+      geoWfs({ typeNames: 'geoportal:lote_cidadao', count: '5000', propertyName: 'ge_poligono', bbox: bb(20) }),
+      geoWfs({ typeNames: 'geoportal:v_logradouro_segmento', count: '5000', bbox: bb(VIAS_RAIO) }),
+    ]);
+    const med = medirFrentes(ter, ls.flatMap((f) => geoAneis(f.geometry).slice(0, 1)), vs);
+    props.classificacao_viaria_cet = classificarFrentes(med.frentes, camadas.classificacao_viaria_cet || []);
+    props.rua_sem_saida = frentesSemSaida(med.frentes, vs, cx(VIAS_RAIO));
+  } catch {
+    delete props.classificacao_viaria_cet;
+    for (const k of ['classificacao_viaria_cet', 'rua_sem_saida']) if (!erros.includes(k)) erros.push(k);
+  }
+}
 
 /* perímetro de qualificação ambiental (Quota Ambiental, Lei 16.402, Mapa 3), de docs/dados/quota-ambiental-3550308.json */
 let qa: Promise<any> | null = null;
@@ -117,6 +144,7 @@ export async function consultarLote(inscricaoId: string, sql: string) {
   const { camadas, erros } = await geoConsultar(lote.geometry);
   const zf = camadas.perimetro_zona_lei_18081_24 || [], zonas = zf.length ? geoAreaZonas(lote.geometry, zf, (p) => p.cd_zoneamento_perimetro) : [];
   const anel = geoAneis(lote.geometry)[0], props = atributos(camadas);
+  await viasDaArea(anel, camadas, props, erros);
   const pa = await geoPA(anel.slice(0, -1).map((p) => utmLatLng(p[0], p[1]))).catch(() => null);
   if (pa) props.quota_ambiental = [{ pa }];
   const { error } = await supabase.rpc('registrar_consulta_lote', {
@@ -131,6 +159,7 @@ export async function consultarArea(terrenoId: string, poly: P[]) {
   const anel = poly.map(([la, ln]) => latLngUtm(la, ln)); anel.push(anel[0]);
   const { camadas, erros } = await geoConsultar({ type: 'Polygon', coordinates: [anel] });
   const props = atributos(camadas);
+  await viasDaArea(anel, camadas, props, erros);
   const pa = await geoPA(poly).catch(() => null);
   if (pa) props.quota_ambiental = [{ pa }];
   const { error } = await supabase.rpc('registrar_consulta_area', { p_terreno: terrenoId, p_camadas: props, p_camadas_com_erro: erros });

@@ -68,7 +68,7 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Parâmetros, Estudos d
 **Como andar pelas abas:**
 
 - Clique na aba.
-- A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (cursor de mãozinha). Solta com força, ela continua rodando e freia aos poucos.
+- A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (com o mouse em cima, o cursor é o dedinho, como em qualquer botão; vira mão fechada enquanto você segura o botão do mouse). Solta com força, ela continua rodando e freia aos poucos.
 - As **setas** no fim da barra vão para a aba anterior e a próxima.
 - O **⋮ "Mais ações"** lista todas as abas, com a atual marcada.
 

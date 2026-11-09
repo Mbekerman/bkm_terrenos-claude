@@ -269,6 +269,9 @@ function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Ra
           <div className="rd-m"><div className="k">Domicílios ocupados</div><div className="v">{num(Math.round(r.dom))}</div><div className="s">particulares</div></div>
           <div className="rd-m"><div className="k">Moradores por domicílio</div><div className="v">{o.domD ? num(o.morD / o.domD, 2) : '–'}</div><div className="s">domicílios particulares ocupados</div></div>
           <div className="rd-m"><div className="k">Homens · Mulheres</div><div className="v pf-hm"><span className="pf-h">{pf(o.h, sx)}</span> · <span className="pf-m">{pf(o.m, sx)}</span></div><div className="s">{num(Math.round(o.h))} · {num(Math.round(o.m))} pessoas</div></div>
+          <div className="rd-m"><div className="k">Densidade demográfica</div><div className="v">{r.area > 0 ? num(Math.round(r.dens)) : '–'}</div><div className="s">habitantes por km² (bruta)</div></div>
+          <div className="rd-m"><div className="k">Idade média</div><div className="v">{o.idPes > 0 ? num(o.idSoma / o.idPes, 1) + ' anos' : '–'}</div>
+            <div className="s">estimada pelas faixas do IBGE{o.idPes > 0 && o.idPes / Math.max(o.pes, 1) < 0.95 ? ` · ${pct((o.idPes / Math.max(o.pes, 1)) * 100)}% das pessoas` : ''}</div></div>
         </div>
         <div className="rd-dh">Pessoas por idade e sexo</div>
         <div className="pf-leg"><span><i className="pf-h" />Homens</span><span><i className="pf-m" />Mulheres</span></div>
@@ -291,8 +294,10 @@ function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Ra
       <div className="sec-b">{corpo}</div>
       {met && <Dialogo titulo="Perfil da população: os dados" onFechar={() => setMet(false)} rodape={<button type="button" className="btn primary" onClick={() => setMet(false)}>Fechar</button>}>
         <div className="rd-mt">
-          <p>Tudo vem do Censo Demográfico {c.censoAno} do IBGE, agregados por setor censitário, sem estimativa: só somas das variáveis publicadas.</p>
+          <p>Tudo vem do Censo Demográfico {c.censoAno} do IBGE, agregados por setor censitário: somas das variáveis publicadas, menos a idade média, que é estimada (ver abaixo).</p>
           <h3>Idade e sexo</h3><p>{c.idadeOrigem} Grupos usados: {c.idade.map((g: any) => g.rotulo).join(', ')}.</p>
+          <h3>Densidade demográfica</h3><p>População residente ÷ área do raio ou da poligonal, em habitantes por km². É bruta: a área inclui ruas, praças, parques e terrenos vazios.</p>
+          <h3>Idade média</h3><p>É a única estimativa do quadro. O IBGE não publica a idade ano a ano por setor, só os cortes 0–4, 5–9, 10–14, 15–19, 20–24, 25–29, 30–39, 40–49, 50–59, 60–69 e 70+. Cada pessoa entra pela idade do meio do seu corte (2,5; 7,5; 12,5 ... 65) e quem tem 70 ou mais conta como 78 anos, a média real dessa faixa em São Paulo no Censo 2022. Conferido com a idade ano a ano da cidade inteira: dá 38,1 anos contra 38,1 de verdade em São Paulo e 37,4 contra 37,3 em São José dos Campos. Setor com algum corte em sigilo fica fora da média; se eles somam mais de 5% das pessoas, o quadro diz quanto entrou.</p>
           <h3>Moradores por domicílio</h3><p>Moradores dos domicílios particulares ocupados (permanentes e improvisados) ÷ esses domicílios; asilos, alojamentos e outros coletivos ficam fora.</p>
           <h3>Raio e poligonal</h3><p>Cada setor entra pela fração da área dele que cai dentro, supondo os moradores espalhados por igual no setor.</p>
           <h3>Sigilo</h3><p>Quando um setor tem poucas pessoas num grupo, o IBGE não divulga o número (X). Ele nunca vira zero: a diferença para o total aparece como "não divulgado". "5 ou mais moradores" é o total de domicílios menos os de 1 a 4, só nos setores com os quatro divulgados.</p>

@@ -47,12 +47,14 @@ Com o **seletor de raio próprio** (independente do quadro da renda): 500 m, 1, 
 
 - População residente, domicílios ocupados, **moradores por domicílio**;
 - **Homens · Mulheres**;
+- **Densidade demográfica** em habitantes por km², bruta (a área inclui ruas, praças e vazios);
+- **Idade média**, estimada pelas faixas de idade do IBGE (ver as regras abaixo);
 - **Pessoas por idade e sexo** (pirâmide): 0–4, 5–14, 15–19, 20–29, 30–39, 40–49, 50–59 e 60+;
 - **Domicílios por número de moradores** (1, 2, 3, 4, 5 ou mais);
 - **Tipo de domicílio** (casa, vila ou condomínio, apartamento, cortiço, degradada);
 - vagos e de uso ocasional ("Fora dos ocupados").
 
-**Regras:** dado em sigilo do IBGE aparece como **"Não divulgado (sigilo)"**, nunca zero. As faixas de idade são os cortes exatos que o IBGE divulga por setor; faixas mais finas exigiriam estimativa. **"Sobre os dados"** explica a fonte.
+**Regras:** dado em sigilo do IBGE aparece como **"Não divulgado (sigilo)"**, nunca zero. As faixas de idade são os cortes exatos que o IBGE divulga por setor; faixas mais finas exigiriam estimativa. A **idade média** é a única estimativa do quadro: cada pessoa conta pela idade do meio da faixa dela e quem tem 70 ou mais conta como 78 anos (a média real dessa faixa em São Paulo no Censo 2022); conferida com a idade ano a ano da cidade inteira, erra menos de 0,2 ano. Setores com alguma faixa em sigilo ficam fora da média, e o quadro avisa quando eles passam de 5% das pessoas. **"Sobre os dados"** explica a fonte.
 
 ## Concorrência no entorno
 
