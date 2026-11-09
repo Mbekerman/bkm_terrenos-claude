@@ -3,6 +3,8 @@ import { Ic } from '../components/Moldura';
 import { Carregando, Erro } from '../components/ui';
 import Ficha, { abaN, TempTopo, useFicha } from './Ficha';
 import { ativarLojaQd, LojaQdCtx, type LojaQd } from './edicao';
+import MenuTerreno from '../components/MenuTerreno';
+import { useNavigate } from 'react-router-dom';
 import { guardarPos, lerPos } from './lembrar';
 
 // Gaveta da ficha na página Mapa (/mapa/A123/ficha; proto_tabela.js › pgFicha com UI.gav, tgavPosMapa): à direita, sobre o
@@ -100,6 +102,7 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
     if (n == null) return;
     ev.preventDefault(); guardar(n);
   }
+  const navegar = useNavigate();
   const fecharR = useRef(fechar);
   fecharR.current = fechar;
   useEffect(() => {
@@ -118,6 +121,7 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
         title="Arraste para mudar a largura da ficha (dois cliques voltam ao padrão)" onPointerDown={arrastar} onDoubleClick={() => guardar(null)} onKeyDown={tecla} />
       <div className="tgav-h"><span className="num">{codigo}</span><span className="tgav-n">{f?.nome ?? ''}</span>
         {f && <span className="fi-temp tgav-temp"><TempTopo f={f} /></span>}
+        {f && <MenuTerreno t={f} aoSair={() => navegar('/mapa', { replace: true })} />}
         <button className="iconbtn" aria-label="Abrir página" title="Abrir página" onClick={() => abrirPagina(aba)}><Ic n="tela" s={20} /></button>
         <button className="iconbtn" aria-label="Fechar a ficha" title="Fechar (Esc)" onClick={fechar}><Ic n="close" s={22} /></button>
       </div>

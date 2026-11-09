@@ -59,6 +59,11 @@ create table app.terrenos (
   observacoes           text,
   arquivado_em          timestamptz,
   motivo_arquivamento   text,
+  -- Excluído (pedido do Moises, 9/nov/2026): diretor ou administrador tira o terreno de todos os lugares
+  -- (a RLS de leitura esconde); fica guardado 180 dias e a rotina diária apaga de vez (app.purgar_terrenos_excluidos).
+  -- O administrador restaura em Configurações › Terrenos excluídos. Ver 20261015001700_exclusao_terreno.sql.
+  excluido_em           timestamptz,
+  excluido_por          uuid,
 
   -- 2. Endereço e localização
   cep                   text check (cep is null or cep ~ '^\d{8}$'),  -- só dígitos (trigger normaliza)
@@ -147,6 +152,7 @@ create table app.terrenos (
 );
 create index on app.terrenos (empresa_id, situacao_cadastral);
 create index on app.terrenos using gist (poligono);
+create index on app.terrenos (empresa_id, excluido_em) where excluido_em is not null;
 
 -- Partes do terreno: cada dono, ou grupo de donos que negocia junto, com os
 -- seus lotes, matrículas e inscrições. Sem parte cadastrada (ou com uma só),
@@ -348,7 +354,7 @@ create trigger t_revisao before insert or update on app.inscricao_valores for ea
 create or replace function app.tg_inscricao_historico()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  if auth.uid() is null then return old; end if;
+  if auth.uid() is null or coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return old; end if;   -- sistema ou deletar terreno
   if exists (select 1 from app.inscricao_valores where inscricao_id = old.id) then
     raise exception 'A inscrição tem histórico de IPTU e valor venal: não se apaga' using errcode = '23514';
   end if;
@@ -497,6 +503,7 @@ create or replace function app.tg_matricula_leva_sqls()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if tg_op = 'DELETE' then
+    if coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return old; end if;   -- deletar terreno: as etiquetas saem juntas
     update app.inscricao_partes set matricula_parte_id = null, parte_id = null where matricula_parte_id = old.id;
     return old;
   end if;
@@ -686,7 +693,7 @@ create or replace function app.tg_analise_substituida()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare v_status text;
 begin
-  if auth.uid() is null then return coalesce(new, old); end if;
+  if auth.uid() is null or coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return coalesce(new, old); end if;
   if tg_table_name = 'analises_urbanisticas' then
     if old.status = 'substituida' then
       raise exception 'Análise substituída é histórico: não muda' using errcode = '23514';
@@ -897,7 +904,7 @@ create trigger t_quadro after insert on app.terrenos for each row execute functi
 create or replace function app.ve_terreno(p_terreno uuid, p_user uuid default auth.uid())
 returns boolean language sql stable security definer set search_path = '' as $$
   select exists (select 1 from app.terrenos t join app.membros m on m.empresa_id = t.empresa_id and m.user_id = p_user
-                 where t.id = p_terreno) $$;
+                 where t.id = p_terreno and t.excluido_em is null) $$;
 grant execute on function app.ve_terreno(uuid, uuid) to authenticated;
 insert into fluxo.objeto_tipos (tipo, funcao) values ('terreno', 'app.ve_terreno');
 
