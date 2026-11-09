@@ -700,8 +700,25 @@ select app.salvar_terreno(:'tm', :tmv, '{"cartorio":""}') \gset
 select pg_temp.ok((select cartorio is null and cartorio_origem is null from app.terrenos where id = :'tm'), 'cartório apagado volta a vazio, sem origem');
 select app.cartorio_da_prefeitura(:'tm', '13º CRI') as crok \gset
 select pg_temp.ok(:'crok' and (select cartorio_origem from app.terrenos where id = :'tm') = 'prefeitura', 'pino preenche o cartório vazio');
+\echo '# zona da cidade pelo GeoSampa'
+select versao as tmv from app.terrenos where id = :'tm' \gset
+select app.salvar_terreno(:'tm', :tmv, '{"zona":null}') \gset
+select app.zona_da_prefeitura(:'tm', 'sul') as zok \gset
+select pg_temp.ok(:'zok' and (select zona = 'sul' and zona_origem = 'prefeitura' from app.terrenos where id = :'tm'), 'GeoSampa preenche a zona vazia');
+select app.zona_da_prefeitura(:'tm', 'oeste') as zok \gset
+select pg_temp.ok(:'zok' and (select zona = 'oeste' and zona_origem = 'prefeitura' from app.terrenos where id = :'tm'), 'terreno mudou de lugar: troca a zona que veio do GeoSampa');
+select pg_temp.falha(format('select app.zona_da_prefeitura(%L, %L)', :'tm', 'sudeste'), 'GeoSampa só grava as 5 regiões oficiais');
+select versao as tmv from app.terrenos where id = :'tm' \gset
+select app.salvar_terreno(:'tm', :tmv, '{"zona":"centro"}') \gset
+select pg_temp.ok((select zona = 'centro' and zona_origem = 'digitado' from app.terrenos where id = :'tm'), 'usuário troca a zona: fica digitada');
+select app.zona_da_prefeitura(:'tm', 'sul') as zok \gset
+select pg_temp.ok(not :'zok' and (select zona from app.terrenos where id = :'tm') = 'centro', 'GeoSampa não troca a zona digitada');
+select versao as tmv from app.terrenos where id = :'tm' \gset
+select app.salvar_terreno(:'tm', :tmv, '{"zona":null}') \gset
+select pg_temp.ok((select zona is null and zona_origem is null from app.terrenos where id = :'tm'), 'zona apagada volta a vazia, sem origem');
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format('select app.cartorio_da_prefeitura(%L, %L)', :'tm', '1º CRI'), 'leitura não grava o cartório');
+select pg_temp.falha(format('select app.zona_da_prefeitura(%L, %L)', :'tm', 'sul'), 'leitura não grava a zona');
 select pg_temp.como(:'analista');
 select pg_temp.ok((select base = 'geosampa' and inscricao_norm = '00902700091' and camadas_com_erro = '{drenagem}' and lote->>'qt_area_construida' = '4994'
                      from app.consultas_lote where id = :'gc'),
