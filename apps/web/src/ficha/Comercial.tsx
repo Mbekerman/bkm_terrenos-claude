@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useRascunho, mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
+import { mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -84,7 +84,6 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
   const fref = useRef<HTMLFormElement>(null);
   const temOf = Object.values(v).some((x) => x.trim() !== '');
   useGuardarRasc(kOf, v, temOf);
-  const { aviso, pedir } = useRascunho(fref, temOf, 'a oferta', fechar);
   const m = (k: string) => (ev: { target: { value: string } }) => setV((o) => ({ ...o, [k]: ev.target.value }));
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -103,7 +102,7 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
     fechar();
   }
   return (
-    <Dialogo titulo="Registrar oferta" onFechar={() => pedir(fechar)} rodape={<><LimparRasc chave={kOf} mostrar={temOf} limpar={() => setV(OF0)} /><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
+    <Dialogo titulo="Registrar oferta" onFechar={fechar} rodape={<><LimparRasc chave={kOf} mostrar={temOf} limpar={() => setV(OF0)} /><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
       <form id="f-of" ref={fref} onSubmit={enviar}><div className="fields">
         <div className="field"><label htmlFor="o-c">Corretor</label><select id="o-c" value={v.cid} onChange={m('cid')}><option value="">Sem corretor / direto</option>
           {corretores.filter((c) => c.ativo !== false).map((c) => <option key={c.id} value={c.id}>{c.nome}{c.imobiliaria ? ' · ' + c.imobiliaria : ''}</option>)}</select></div>
@@ -114,7 +113,6 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
         <div className="field full"><label htmlFor="o-o">Observação sobre a forma de pagamento</label><input id="o-o" value={v.obs} onChange={m('obs')} /></div>
         <div className="field full"><label htmlFor="o-a">Aceita permuta</label><input id="o-a" value={v.aceita} onChange={m('aceita')} /></div>
       </div></form>
-      {aviso}
     </Dialogo>
   );
 }
@@ -371,7 +369,6 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const fref = useRef<HTMLFormElement>(null);
   const sujoPr = form && mudou(v, ini);
   useGuardarRasc(kPr, v, sujoPr);
-  const { aviso } = useRascunho(fref, sujoPr, 'a proposta', () => setForm(false));
   const m = (k: string) => (ev: { target: { value: string } }) => setV((x) => ({ ...x, [k]: ev.target.value }));
   const n = c.props.length;
   async function enviar(ev: FormEvent) {
@@ -415,7 +412,6 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
             <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kPr} mostrar={sujoPr} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar</button></div>
           </form>
         )}
-        {aviso}
         {chain.length ? (
           <div className="chain" style={{ marginTop: form ? 16 : 0 }}>{chain.map((p, i) => (
             <div key={p.id} className={`pnode ${p.origem}`}><span className="pd">v{p.versao}</span><div className="pc">
@@ -451,7 +447,6 @@ function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
   const fref = useRef<HTMLFormElement>(null);
   const kRe = `${f.id}:reuniao`, sujoRe = form && mudou(v, ini);
   useGuardarRasc(kRe, v, sujoRe);
-  const { aviso } = useRascunho(fref, sujoRe, 'a reunião', () => setForm(false));
   const abrir = () => {
     const o = { status: 'realizada', data: hojeISO(), hora: '10:00', modalidade: 'presencial', local: 'bkm', endereco: '', pbkm: membro?.nome ?? '', pext: '', pauta: '', resumo: '', enc: '' };
     setV(comRasc(kRe, o)); setIni(o);
@@ -517,7 +512,6 @@ function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
             </>}
           </div><div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kRe} mostrar={sujoRe} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar reunião</button></div></form>
         )}
-        {aviso}
         {ms.length ? (
           <div className="reus">{ms.map((r) => {
             const bk = part(r, true), ex = part(r, false);
