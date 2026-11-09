@@ -4,7 +4,7 @@ Toda mudança que entra na `develop` ganha uma linha aqui, no mesmo PR (ver [com
 
 ## 2026-11-09
 
-- #PR Gaveta da ficha sem código e nome repetidos: `Ficha` ganha a prop `naGaveta` (passada só por `ficha/Gaveta.tsx`), que tira o `.eyebrow` com o código e o `h1` do `.fi-head`, porque o `.tgav-h` já mostra os dois; `.fi-meta:first-child` sem margem de cima. Por quê: pedido do Moises (9/nov). A página `/terrenos/A123` não tem cabeçalho com o nome e continua igual. Sem mudança no banco nem em permissão.
+- #259 Gaveta da ficha sem código e nome repetidos: `Ficha` ganha a prop `naGaveta` (passada só por `ficha/Gaveta.tsx`), que tira o `.eyebrow` com o código e o `h1` do `.fi-head`, porque o `.tgav-h` já mostra os dois; `.fi-meta:first-child` sem margem de cima. Por quê: pedido do Moises (9/nov). A página `/terrenos/A123` não tem cabeçalho com o nome e continua igual. Sem mudança no banco nem em permissão.
 - #247 Busca da barra superior: `mapa/dados.ts` (`carregar`) passa a ler `terrenos` (logradouro, número, CEP), `matriculas.numero` e `inscricoes_municipais.inscricao` da empresa e `bate()` procura também neles, sem acento, e casa matrícula e SQL só pelos dígitos (palavra só de dígitos e pontuação, 3+ dígitos). `Moldura.tsx` leva ao `/mapa` quando se digita em outra página. Completude (`ficha/dados.ts`): o item "Visita técnica" só conta com `INFRA_PORTADA = true` (hoje `false`, a aba Infraestrutura não foi portada); vale para a ficha, o painel e o filtro "ficha com menos de N%". Por quê: o manual (#244) achou o texto da busca prometendo matrícula e SQL sem procurar, e a ficha presa abaixo de 100%. Sem mudança no banco nem em permissão (as tabelas já eram lidas pela ficha com a mesma RLS).
 
 ## 2026-11-08
