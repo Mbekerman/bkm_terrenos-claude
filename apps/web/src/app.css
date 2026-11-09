@@ -111,9 +111,11 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 :is(#sec-rd, #sec-pf) .rd-raios button[disabled] { opacity: .45 }
 .qd-fechado .rd-raios { display: none }
 
-/* barra de abas da ficha: com abas escondidas, a mãozinha avisa que ela se arrasta (pedido do Moisés, 6/nov/2026) */
-.fi-abas.desliza, .fi-abas.desliza button { cursor: grab }
-.fi-abas.arrastando, .fi-abas.arrastando button { cursor: grabbing; user-select: none }
+/* barra de abas da ficha: o mouse em cima mostra o dedinho, como em qualquer botão; a mão fechada só aparece com o botão
+   do mouse apertado, quando a barra pode ser arrastada (pedido do Moisés, 9/nov/2026, trocando a mãozinha aberta de 6/nov) */
+.fi-abas.desliza, .fi-abas.desliza button { cursor: pointer }
+.fi-abas.segurando, .fi-abas.segurando button, .fi-abas.arrastando, .fi-abas.arrastando button { cursor: grabbing }
+.fi-abas.arrastando, .fi-abas.arrastando button { user-select: none }
 .fi-abas.arrastando button:hover { background: none }
 
 /* unidade dentro do campo também em metros e m² (pedido do Moisés, 6/nov/2026); nos campos editados no lugar, sem recuo */

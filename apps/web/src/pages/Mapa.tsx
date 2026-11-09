@@ -931,7 +931,7 @@ export default function Mapa() {
           <MenuPonto area={areaEl.current} px={motor.current.pontoNaTela(des[vSel][0], des[vSel][1])} i={vSel} n={des.length} area2={areaPoly(des) || 0} desfazer={hist.current.length > 0} acao={vAcao} editando={!!ed} />
         )}
         {lgEd && ed && des && empresa && createPortal(
-          <div className="scrim" data-rasc-livre onMouseDown={(e) => e.target === e.currentTarget && setLgEd(false)}>
+          <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setLgEd(false)}>
             <div className="dialog" role="dialog" aria-modal="true">
               <LotesGeo empresa={empresa.id} L={{ modo: 'ficha', ficha: { codigo: todos.find((x) => x.id === ed.id)?.codigo ?? '', nome: todos.find((x) => x.id === ed.id)?.nome ?? '', poly: des, sqls: lgSqls,
                 fechar: () => { marcas.current.inicio = Date.now(); setLgEd(false); }, incluir: lotesEscolhidos } }} />
