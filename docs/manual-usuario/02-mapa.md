@@ -188,6 +188,7 @@ O passo a passo do cadastro está em [03. Novo terreno](03-novo-terreno.md). Lei
    - no campo **"Saindo de"**, digite um endereço ou o nome de um lugar (loja, estação, prédio) e escolha na lista;
    - escolha **"Minha localização"** (o navegador pede permissão);
    - **clique no mapa**: num ponto qualquer (vale o endereço dali), num lugar do Google (loja, escola, estação), no pino ou na poligonal de outro terreno, ou num quadrado da concorrência. Ao abrir o quadro, o clique no mapa já escolhe a saída (o cursor vira uma mira); depois de escolhida, o mapa volta ao normal, e para escolher de novo no mapa clique na **mira** ao lado do campo. Enquanto a mira está ligada, o clique não abre a ficha, o card da concorrência nem o quadro do lugar.
+   - **arrastando a saída**: com a rota traçada, passe o mouse sobre a bolinha da saída (o cursor vira mãozinha), segure e arraste até outro lugar. Ao soltar, a saída passa a ser o endereço dali e a rota é recalculada, sem mudar o enquadramento do mapa.
 3. A rota aparece no mapa (a pé, pontilhada), com o tempo e a distância. O mapa se ajusta para mostrar a rota inteira, e os quadrados da concorrência ficam apagados enquanto a rota está aberta.
 4. Troque a forma de condução nos botões **Carro, Moto, A pé, Bicicleta e Transporte**: a rota se refaz na hora. O sistema lembra a última escolha.
 5. **"Abrir no Google Maps"** abre a mesma rota no Google Maps, com o trânsito e as alternativas de lá.
