@@ -319,10 +319,10 @@ export class Motor {
     if (this.mercUlt) this.mercado(...this.mercUlt);
     if (this.mercDest) this.mercDest.gmpClickable = !on;
   }
-  /* marcando pontos (desenho ou edição da poligonal, régua, saída da rota): o cursor do mapa vira o dedo indicador
-     em vez da mãozinha aberta de arrastar (pedido do Moises, 9/nov/2026; antes, na régua, a seta); null volta ao do Google */
-  cursorDedo(on: boolean) {
-    this.mapa.setOptions({ draggableCursor: on ? 'pointer' : null });
+  /* marcando pontos, nunca a mãozinha aberta de arrastar (pedido do Moises, 9/nov/2026): dedo indicador no desenho ou
+     edição da poligonal e na saída da rota, seta na régua (5/nov, confirmada em 9/nov); null volta ao do Google */
+  cursorMarcar(c: 'pointer' | 'default' | null) {
+    this.mapa.setOptions({ draggableCursor: c });
   }
   private rasc: any[] = [];
   rascunho(pts: [number, number][], sel: number | null, editar: boolean, gp: GestosPonto) {

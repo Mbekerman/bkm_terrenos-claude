@@ -151,7 +151,7 @@ O card fecha sozinho 1 s depois que o mouse sai dele, quando o mapa se move, no 
 
 **Como usar:**
 
-1. Clique no botão **Régua** no canto de baixo à direita (ou ⋮ › Régua). O botão fica azul e o cursor vira o dedo indicador.
+1. Clique no botão **Régua** no canto de baixo à direita (ou ⋮ › Régua). O botão fica azul e o cursor vira seta.
 2. Cada clique no mapa marca um ponto. A linha mostra a distância de cada trecho e o total. A régua mede em linha reta; não segue a rua.
 3. Para medir uma **área**, marque 3 pontos ou mais e clique no **primeiro ponto**: a forma fecha e mostra a área (m², ou km² acima de 1 km²). O clique seguinte começa outra medida.
 

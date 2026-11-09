@@ -381,10 +381,10 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 @media (prefers-reduced-motion: reduce) { .iptu-corpo.carregando::after, .iptu-spin { animation: none } }
 
 /* marcando pontos no mapa (desenho e edição da poligonal no Mapa e no mini-mapa, régua): o dedo indicador em vez da
-   mãozinha aberta de arrastar; arrastando o mapa, a mão fechada (pedido do Moises, 9/nov/2026; antes, mira no desenho e
-   seta na régua). No Google vale o draggableCursor (Motor.cursorDedo, MiniMapa). Aqui, e não no styles.css, que o build.py
+   mãozinha aberta de arrastar, e na régua a seta; arrastando o mapa, a mão fechada (pedido do Moises, 9/nov/2026; antes,
+   mira no desenho). No Google vale o draggableCursor (Motor.cursorMarcar, MiniMapa). Aqui, e não no styles.css, que o build.py
    do protótipo sobrescreve. */
-:is(.mapa, .mini-mapa).modo, :is(.mapa, .mini-mapa).modo .leaflet-grab, :is(.mapa, .mini-mapa).modo .leaflet-interactive,
-.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: pointer }
+:is(.mapa, .mini-mapa).modo, :is(.mapa, .mini-mapa).modo .leaflet-grab, :is(.mapa, .mini-mapa).modo .leaflet-interactive { cursor: pointer }
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
 :is(.mapa, .mini-mapa).modo.leaflet-dragging, :is(.mapa, .mini-mapa).modo.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive),
 .mapa.regua.leaflet-dragging, .mapa.regua.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive) { cursor: grabbing }

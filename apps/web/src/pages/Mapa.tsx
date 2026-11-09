@@ -484,7 +484,7 @@ export default function Mapa() {
   useEffect(() => { motor.current?.marcar(selId); }, [selId]);
   /* desenho: modo do mapa, rascunho e o pedido vindo do passo 1 do Novo terreno */
   useEffect(() => { if (motorPronto) motor.current?.setModo(!!des || !!rg); }, [motorPronto, des, rg]);
-  useEffect(() => { if (motorPronto) motor.current?.cursorDedo(!!des || !!rg || (!!rota && pegando)); }, [motorPronto, !!des, !!rg, !!rota, pegando]);
+  useEffect(() => { if (motorPronto) motor.current?.cursorMarcar(des || (rota && pegando) ? 'pointer' : rg ? 'default' : null); }, [motorPronto, !!des, !!rg, !!rota, pegando]);
   useEffect(() => {
     if (motorPronto) motor.current?.regua(rg?.pts || [], !!rg?.fechado, () => { const r = rgR.current; if (r && r.pts.length > 2 && !r.fechado) setRg({ ...r, fechado: true }); },
       (i, x, y) => setRgMenu({ i, x, y }));
