@@ -11,7 +11,7 @@ import { carregarGoogle, googleRecusado } from '../mapa/google';
 import GavetaFicha from '../ficha/Gaveta';
 import { usePreCarregarFicha } from '../ficha/Ficha';
 import { MenuPonto } from '../mapa/MenuPonto';
-import { QuadroRota, type DestinoRota } from '../mapa/Rota';
+import { QuadroRota, type DestinoRota, type PontoMapa } from '../mapa/Rota';
 import { Motor, vista, reguaA, reguaArea, reguaM, reguaTotal, type Base, type GestosPonto, type Pino } from '../mapa/motor';
 import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
 import { useConsultaGeo } from '../novo/consulta';
@@ -123,6 +123,15 @@ export default function Mapa() {
   const [menu, setMenu] = useState<{ x: number; y: number; lat: number; lng: number; terreno?: string } | null>(null);
   /* Traçar rota até aqui (pedido do Moises, 9/nov/2026) */
   const [rota, setRota] = useState<DestinoRota | null>(null);
+  /* com a escolha da saída ligada no quadro da rota, o clique no mapa (ponto, lugar, terreno, concorrente) vai para ela */
+  const rotaPega = useRef<((p: PontoMapa) => void) | null>(null);
+  const [pegando, setPegando] = useState(false);
+  const pegar = useCallback((fn: ((p: PontoMapa) => void) | null) => { rotaPega.current = fn; setPegando(!!fn); }, []);
+  const pegarTerreno = (id: string) => {
+    const t = todos.find((x) => x.id === id);
+    if (!t || t.lat == null || t.lng == null || !rotaPega.current) return false;
+    rotaPega.current({ lat: t.lat, lng: t.lng, nome: `${t.codigo} · ${t.nome}` }); return true;
+  };
   const [cheia, setCheia] = useState(false);
   const [sv, setSv] = useState(false);
   const [semMapa, setSemMapa] = useState<string | null>(null);
@@ -410,8 +419,9 @@ export default function Mapa() {
   /* o card da concorrência fecha quando o mapa se move, menos fixado no olhinho (pedido do Moisés, 5/nov/2026) */
   ganchos.current.mover = () => { if (mkBox && !mkFixa() && Date.now() - mkAbertoEm.current > 350) setMkBox(null); };
   /* no desktop, o clique no pino ou na poligonal abre a ficha na gaveta; no celular, seleciona (o cartão) */
-  ganchos.current.pino = (id) => { setMenu(null); setMkBox(null); if (innerWidth >= 900 && !des && !rg) abrirGav(id); else selecionar(id); };
+  ganchos.current.pino = (id) => { if (rotaPega.current && !des && !rg && pegarTerreno(id)) return; setMenu(null); setMkBox(null); if (innerWidth >= 900 && !des && !rg) abrirGav(id); else selecionar(id); };
   ganchos.current.vazio = (lat, lng) => {
+    if (rotaPega.current && !des && !rg) { setMenu(null); rotaPega.current({ lat, lng }); return; }
     setMenu(null);
     if (selId) selecionar(null);
     if (mkBox && !mkFixa() && Date.now() - mkAbertoEm.current > 350) setMkBox(null);
@@ -427,7 +437,7 @@ export default function Mapa() {
   ganchos.current.passar = (id) => { if (innerWidth >= 900) passar(id); };
   ganchos.current.editar = (id) => { if (!TOQUE() && !rgR.current && !desR.current) edComecar(id); };
   ganchos.current.duplo = (lat, lng, alvo) => {
-    if (!edita || des || rg || TOQUE()) return;
+    if (rotaPega.current || !edita || des || rg || TOQUE()) return;
     const el = alvo as HTMLElement | null;
     if (el?.closest?.('.mp-barra,.mp-ctrl,.mp-legenda,.mp-cartao,.mp-ctx,button,a,input')) return;
     setMenu(null);
@@ -449,6 +459,7 @@ export default function Mapa() {
         menu: (x, y, lat, lng, terreno) => { if (!desR.current && !rgR.current) setMenu({ x, y, lat, lng, terreno }); },
         clique: (a, b) => ganchos.current.clique(a, b),
         editar: (id) => ganchos.current.editar(id),
+        lugar: (pid, lat, lng) => { if (!rotaPega.current || desR.current || rgR.current) return false; rotaPega.current({ lat, lng, placeId: pid }); return true; },
         passar: (id) => ganchos.current.passar(id),
         movendo: (on) => { setMovendo(on); if (on) ganchos.current.mover?.(); },
         fecharMenu: () => setMenu(null),
@@ -644,7 +655,8 @@ export default function Mapa() {
     if (mkBox && (!merc || !b || !mfPassa(mf, b) || !mkVisivel(b, mkOff))) setMkBox(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mf, merc, mkOff]);
-  ganchos.current.mk = (id) => { mkAbertoEm.current = Date.now(); setMenu(null); setSetor(null); setMkBox(id); setMkDest(id); if (selId) selecionar(null); };
+  ganchos.current.mk = (id) => {
+    if (rotaPega.current) { const e = mkLista?.find((x) => x.id === id); if (e) { rotaPega.current({ lat: e.lat, lng: e.lng, nome: e.nome }); return; } } mkAbertoEm.current = Date.now(); setMenu(null); setSetor(null); setMkBox(id); setMkDest(id); if (selId) selecionar(null); };
 
   function ligarCamada(k: Camada | null) {
     if (k === camada) return;
@@ -874,7 +886,7 @@ export default function Mapa() {
       </aside>
       <div className="mp-redim" role="separator" aria-orientation="vertical" aria-label="Largura da lista de terrenos" aria-valuemin={MP_LMIN} aria-valuemax={mpLmax()} aria-valuenow={largura}
         tabIndex={0} title="Arraste para mudar a largura da lista (dois cliques voltam ao padrão)" onPointerDown={arrastar} onDoubleClick={() => guardarL(mpLpad())} onKeyDown={teclaL} />
-      <section className={`mapa-area${sv ? ' sv-on' : ''}${rota ? ' rota-on' : ''}`} aria-label="Mapa dos terrenos" ref={areaEl}>
+      <section className={`mapa-area${sv ? ' sv-on' : ''}${rota ? ' rota-on' : ''}${rota && pegando ? ' rota-pega' : ''}`} aria-label="Mapa dos terrenos" ref={areaEl}>
         <div id="mapa" className="mapa" ref={mapaEl}>{semMapa && <div className="mapa-erro">{semMapa}</div>}</div>
         <div className="mp-barra">
           <form className={`mp-busca${busAberta ? '' : ' fechada'}`} role="search" onSubmit={(ev) => { ev.preventDefault(); clearTimeout(buscaT.current); rodarBusca(busEnd, true); }}
@@ -998,7 +1010,7 @@ export default function Mapa() {
             </div>
           );
         })()}
-        {rota && !des && !rg && <QuadroRota motor={motor.current} destino={rota} fechar={() => setRota(null)} />}
+        {rota && !des && !rg && <QuadroRota motor={motor.current} destino={rota} fechar={() => setRota(null)} pegar={pegar} />}
       </section>
       {met && <Metodologia camada={met} fechar={() => setMet(null)} />}
       {mfAberto && mkOk && <FiltroConc f={mf} mudar={setMf} fechar={() => setMfAberto(false)} aviso={(m) => toast(m)} />}

@@ -18,6 +18,8 @@ export interface Ganchos {
   streetView(on: boolean): void;
   aviso(msg: string, erro?: boolean): void;
   pronto(): void;
+  /** clique num lugar do Google; true = já tratado (escolher a origem da rota), não abre o quadro do lugar */
+  lugar?(placeId: string, lat: number, lng: number): boolean;
   /** clique no mapa no modo de desenho */
   clique(lat: number, lng: number): void;
   /** o mapa começou (true) ou parou (false) de se mexer: o menu do ponto some e volta no lugar */
@@ -107,7 +109,7 @@ export class Motor {
     sv.addListener('visible_changed', () => g.streetView(sv.getVisible()));
     google.maps.event.addListenerOnce(M, 'tilesloaded', () => setTimeout(g.pronto, 300));
     M.addListener('click', (e: any) => {
-      if (e.placeId) { e.stop(); if (!this.modo) { this.lugarAbrir(e.placeId, e.latLng); return; } }
+      if (e.placeId) { e.stop(); if (!this.modo) { if (g.lugar?.(e.placeId, e.latLng.lat(), e.latLng.lng())) return; this.lugarAbrir(e.placeId, e.latLng); return; } }
       if (this.lugarFechar() && !this.modo) return;
       if (!e.latLng) return;
       if (this.modo) g.clique(e.latLng.lat(), e.latLng.lng());
