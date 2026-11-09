@@ -186,6 +186,7 @@ export default function Moldura() {
   useEffect(() => { document.body.classList.toggle('menu-min', menuMin); }, [menuMin]);
   useEffect(() => { document.body.dataset.rota = rota; }, [rota]);
   const novo = () => abrirNovo();
+  /* busca da barra superior: filtra a lista de terrenos da página Mapa; digitada em outra página, leva ao Mapa com o texto */
   const [busca, setBusca] = useState('');
   return (
     <>
@@ -198,7 +199,8 @@ export default function Moldura() {
           <SeloAmbiente />
           <label className="search" htmlFor="q-top">
             <Bi n="busca" s={20} />
-            <input id="q-top" type="search" placeholder="Buscar por nome, endereço, matrícula, SQL ou corretor" autoComplete="off" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            <input id="q-top" type="search" placeholder="Buscar por nome, endereço, matrícula, SQL ou corretor" autoComplete="off" value={busca}
+              onChange={(e) => { setBusca(e.target.value); if (rota !== 'mapa' && e.target.value.trim()) navegar('/mapa'); }} />
           </label>
           <div className="top-right">
             <Sino />

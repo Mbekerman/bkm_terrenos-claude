@@ -37,7 +37,11 @@ Da esquerda para a direita:
 
 ### Busca de cima
 
-O campo diz "Buscar por nome, endereço, matrícula, SQL ou corretor", mas **na versão atual ele filtra a lista de terrenos da página Mapa** pelo código, nome, bairro, zona, município e corretor. **Não busca por matrícula nem por SQL**, apesar do texto. Para achar um terreno por matrícula ou SQL hoje, tente cadastrar a matrícula ou o SQL num terreno qualquer: se ele já estiver em outro terreno, o sistema avisa qual é. Esse caminho é um contorno, não o jeito certo; a busca completa ainda está por fazer.
+O campo filtra a **lista de terrenos da página Mapa** (e os pinos) pelo código, nome, endereço (rua, número e CEP), bairro, zona, município, corretor, **número da matrícula** e **SQL / inscrição**. Digitado em outra página, ele leva ao Mapa já com o texto.
+
+- Com várias palavras, o terreno precisa ter todas ("itapura 120").
+- Acento não importa ("tatuape" acha "Tatuapé").
+- Matrícula e SQL valem com ou sem pontos e traço: "030.045.0012-3", "03004500123" e um pedaço como "0450012" acham o mesmo SQL; "12345" acha a matrícula "12.345". Para números sem pontuação é preciso digitar pelo menos 3 dígitos.
 
 ### Sino de avisos
 
