@@ -228,12 +228,12 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 
 **Onde.**
 - Arquivos: `docs/dados/setores-<município>-2022.json` (geometria simplificada a ~1 m e valores) e `docs/dados/demografia-<município>-2022.json`, servidos em `/prototipo/dados/` (o `Dockerfile` copia `docs/dados` para `/srv/prototipo/dados`).
-- Metodologia (fonte única para protótipo, React e teste do banco): `tools/setores/metodologia_renda.json` (16 faixas, cores, fator familiar 1,6, PNAD 2.148 → 2.956), `metodologia_densidade.json` (10 faixas), `demografia.json` (grupos de idade e domicílio).
+- Metodologia (fonte única para protótipo, React e teste do banco): `tools/setores/metodologia_renda.json` (16 faixas, cores, fator familiar 1,6, PNAD 2.148 → 2.956), `metodologia_densidade.json` (10 faixas), `demografia.json` (grupos de idade e domicílio e, em `idadeMedia`, os pontos médios da idade média estimada, só no front).
 - React: `mapa/setores.ts` (`SET_MUN`, `:17`; carrega e junta os municípios), `mapa/CamadasSetor.tsx`, `ficha/Entorno.tsx`.
 - Protótipo: `proto_setores.js` (`SET_MUN` lá também).
 - Banco: `app.setores_censitarios`, `app.setor_valores`, `app.perfil_area`, `app.perfil_terreno` (carga gerada pela mesma ferramenta).
 
-**Regras que não se mudam sem o Moisés.** Faixas fixas, nunca quantis; renda sempre "estimada", com o V06004 original à vista; setor em sigilo fica sem cor, "não divulgado", nunca zero; idade só nos cortes exatos do IBGE.
+**Regras que não se mudam sem o Moisés.** Faixas fixas, nunca quantis; renda sempre "estimada", com o V06004 original à vista; setor em sigilo fica sem cor, "não divulgado", nunca zero; idade só nos cortes exatos do IBGE (a idade média é a única estimativa, pedida pelo Moisés em 9/nov/2026, e sempre dita "estimada").
 
 **Custo.** Nenhum. **Limites:** a primeira geração de São Paulo baixa cerca de 600 MB. Os arquivos de São Paulo têm 5,2 MB (setores) e 4,4 MB (demografia), e o navegador baixa tudo na primeira vez que liga a camada.
 

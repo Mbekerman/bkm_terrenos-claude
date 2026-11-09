@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **Perfil da população do entorno** (aba Entorno) ganhou a **densidade demográfica** (habitantes por km²) e a **idade média** estimada. (#PRN)
 - **Busca da barra de cima** procura de fato por matrícula, SQL e endereço (rua, número, CEP), com ou sem pontuação e sem ligar para acento; digitada fora do Mapa, leva ao Mapa com o texto. (#247)
 - **Completude da ficha** chega a 100%: a "Visita técnica" saiu da conta enquanto a aba Infraestrutura não existe no sistema real. (#247)
 
