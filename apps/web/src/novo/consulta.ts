@@ -12,6 +12,7 @@ import type { P } from './geo';
 import { medirFrentes } from './frentesCalc';
 import { filaIptu } from '../lib/iptu';
 import { classificarFrentes, frentesSemSaida } from './viasCalc';
+import { buscando } from '../lib/buscando';
 
 /** [camada ("camada@raio" = a mesma com outro raio), geometria, raio em metros (0 = só o que toca), atributos guardados (todos se vazio)] */
 const GEO_CAMADAS: [string, string, number?, string[]?][] = [
@@ -168,6 +169,36 @@ export async function consultarArea(terrenoId: string, poly: P[]) {
   return erros.length;
 }
 
+/** a consulta em segundo plano gravou no terreno (cartório, áreas, análise): a ficha aberta se refaz (9/nov/2026: o terreno
+    cadastrado abria com o cartório em branco, porque a consulta dos SQLs terminava depois e a ficha não sabia) */
+export const avisarConsultado = (terrenoId: string) => window.dispatchEvent(new CustomEvent('terreno-gravado', { detail: terrenoId }));
+
+/** Cartório da circunscrição (São Paulo), como o protótipo (proto_geosampa.js, geoCartorio): pela poligonal, a circunscrição
+    que cobre a maior parte dela; sem poligonal, pelo pino. Grava por app.cartorio_da_prefeitura, que só preenche o vazio ou
+    troca o que veio do GeoSampa, nunca o digitado. Devolve o cartório achado ("7º CRI") ou null. */
+export const cartorioPelaArea = (terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null) =>
+  buscando(terrenoId, 'cartorio', cartorioBuscar(terrenoId, poly, lat, lng));
+async function cartorioBuscar(terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null) {
+  let c: string | null | undefined = null;
+  if (poly && poly.length >= 3) {
+    const anel = poly.map(([la, ln]) => latLngUtm(la, ln)); anel.push(anel[0]);
+    const g = { type: 'Polygon', coordinates: [anel] };
+    const f = await geoWfs({ typeNames: 'geoportal:cartorio_registro_imovel', propertyName: 'cd_numero_cartorio,ge_poligono', CQL_FILTER: `INTERSECTS(ge_poligono,${geoWkt(g)})` });
+    const cs = [...new Set(f.map((x) => x.properties?.cd_numero_cartorio).filter(Boolean))];
+    c = cs.length > 1 ? geoAreaZonas(g, f.filter((x) => x.geometry), (p) => p.cd_numero_cartorio)[0]?.sigla : cs[0];
+  } else if (lat != null && lng != null) {
+    const [x, y] = latLngUtm(lat, lng);
+    const f = await geoWfs({ typeNames: 'geoportal:cartorio_registro_imovel', propertyName: 'cd_numero_cartorio', CQL_FILTER: `INTERSECTS(ge_poligono,POINT(${x} ${y}))` });
+    c = f.length === 1 ? f[0].properties?.cd_numero_cartorio : null;
+  }
+  if (!c) return null;
+  const v = String(c).trim() + ' CRI';
+  const { data, error } = await supabase.rpc('cartorio_da_prefeitura', { p_terreno: terrenoId, p_cartorio: v });
+  if (error) throw error;
+  if (data) avisarConsultado(terrenoId);
+  return v;
+}
+
 /* ---------- andamento ("Consultando o GeoSampa: N de M"), lido pela lista do mapa ---------- */
 export interface Andamento { terreno: string; feitos: number; total: number }
 let A: Andamento | null = null;
@@ -176,11 +207,17 @@ const mudar = (a: Andamento | null) => { A = a; ouvintes.forEach((f) => f()); };
 export const useConsultaGeo = () => useSyncExternalStore((f) => { ouvintes.add(f); return () => ouvintes.delete(f); }, () => A);
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** avisa a ficha aberta que o terreno mudou no banco (ela se refaz; ficha/Ficha.tsx, useFicha) */
+const gravado = (id: string) => window.dispatchEvent(new CustomEvent('terreno-gravado', { detail: id }));
+
 /** depois do cadastro: cada SQL (com uma nova tentativa) e depois a poligonal; avisa no fim */
 export async function consultarTerreno(terrenoId: string, poly: P[] | null, ins: { id: string; sql: string }[], aviso: (m: string, erro?: boolean) => void) {
   /* o IPTU de cada SQL vem da Prefeitura em segundo plano, pelo serviço do IPTU (pedido do Moises, 9/nov/2026) */
   if (GEO_BASE && ins.length) void filaIptu(ins.map((i) => i.id));
   if (!GEO_BASE || A || !ins.length) return;
+  return buscando(terrenoId, 'geosampa', consultarTudo(terrenoId, poly, ins, aviso));
+}
+async function consultarTudo(terrenoId: string, poly: P[] | null, ins: { id: string; sql: string }[], aviso: (m: string, erro?: boolean) => void) {
   mudar({ terreno: terrenoId, feitos: 0, total: ins.length });
   let falhas = 0, areaOk = true;
   try {
@@ -191,9 +228,10 @@ export async function consultarTerreno(terrenoId: string, poly: P[] | null, ins:
         try { ok = await consultarLote(i.id, i.sql); } catch (e) { console.warn('GeoSampa', i.sql, e); }
       }
       if (!ok) falhas++;
+      else gravado(terrenoId);
       mudar({ terreno: terrenoId, feitos: A!.feitos + 1, total: ins.length });
     }
-    if (poly && poly.length >= 3) { try { await consultarArea(terrenoId, poly); } catch (e) { areaOk = false; console.warn('GeoSampa área', e); } }
+    if (poly && poly.length >= 3) { try { await consultarArea(terrenoId, poly); gravado(terrenoId); } catch (e) { areaOk = false; console.warn('GeoSampa área', e); } }
   } finally { mudar(null); }
   const n = ins.length;
   if (falhas) aviso(`GeoSampa consultado; ${falhas} SQL${falhas > 1 ? 's' : ''} não respondeu. Use "Buscar no GeoSampa" no SQL.`, true);

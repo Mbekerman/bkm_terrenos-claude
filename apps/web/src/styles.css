@@ -5098,3 +5098,9 @@ html[data-tema="escuro"] .reu-ed:hover { background: #282a2c }
 .ct-n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #b3261e; color: #fff; font-size: 12px; font-weight: 600; margin-right: 6px }
 .ct-ver { font-size: 13px; margin-left: 4px; white-space: nowrap }
 @media (max-width: 599px) { .ct-b { padding: 0 16px 16px } }
+
+/* carregando dos campos que vêm de outras fontes (lib/buscando.tsx; pedido do Moises, 9/nov/2026) */
+.busca { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; vertical-align: middle; color: var(--m-on-surface-var, #444746); font-size: 12px; font-weight: 400 }
+.busca-sp { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--m-outline-var, #c4c7c5); border-top-color: var(--m-primary, #0b57d0); animation: busca-gira .8s linear infinite; flex: none }
+@keyframes busca-gira { to { transform: rotate(360deg) } }
+@media (prefers-reduced-motion: reduce) { .busca-sp { animation-duration: 2.4s } }
