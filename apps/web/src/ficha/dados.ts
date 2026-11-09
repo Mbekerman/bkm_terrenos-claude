@@ -59,11 +59,18 @@ function anel(g: unknown): [number, number][] | null {
 
 const conta = (r: { count: number | null }) => r.count ?? 0;
 
+/** proprietários completos (pedido do Moises, 9/nov/2026; como app.proprietarios_completos): cada parte ativa com
+   proprietários somando 100% de participação; sem parte ativa, a soma de todos */
+export function proprietariosCompletos(partes: string[], donos: R[]): boolean {
+  const soma = (f: (d: R) => boolean) => donos.filter(f).reduce((s, d) => s + Number(d.percentual_participacao ?? 0), 0);
+  return partes.length ? partes.every((pa) => soma((d) => d.parte_id === pa) >= 100 - 1e-9) : soma(() => true) >= 100 - 1e-9;
+}
+
 /** o que a ficha junta, venha da função do banco ou dos pedidos separados */
 interface Partes {
   x: R; tr: R; ru: R | null; o1: R | undefined; qOfertas: number; cor: { id: string; imob: string | null; nome: string | null } | null; e1: R | undefined;
   buscado: boolean; unidades: number | null; fs: R[]; es: R[]; ss: R[]; ps: R[]; trs: R[];
-  qMat: number; qInsc: number; qProp: number; infraNV: number; qPropostas: number; qReu: number; qViab: number; qMassa: number; qDocs: number;
+  qMat: number; qInsc: number; qProp: number; propOk?: boolean; infraNV: number; qPropostas: number; qReu: number; qViab: number; qMassa: number; qDocs: number;
 }
 
 function montar(p: Partes): Ficha {
@@ -94,7 +101,7 @@ function montar(p: Partes): Ficha {
     topo: tr.topo_perfil ? { perfil: tr.topo_perfil, decl: tr.topo_declividade_pct, desnivel: tr.topo_desnivel_m } : null,
     fases, etapasEnt: ent ? etapasPorFase[ent] : [], etapasPorFase, procs,
     trans: p.trs.map((r) => ({ processo: r.processo_id, deEtapa: r.de_etapa, paraEtapa: r.para_etapa, em: r.em })),
-    qMat: p.qMat, qInsc: p.qInsc, temProprietario: p.qProp > 0, infraNV: p.infraNV,
+    qMat: p.qMat, qInsc: p.qInsc, temProprietario: p.propOk ?? p.qProp > 0, infraNV: p.infraNV,
     qComercial: p.qOfertas + p.qPropostas + p.qReu, qViab: p.qViab, qMassa: p.qMassa,
     qDocs: p.qDocs + (x.diligencias_abertas ?? 0),
   };
@@ -117,7 +124,7 @@ export async function carregarFicha(empresa: string, codigo: string): Promise<Fi
         cor: d.cor ? { id: d.cor.corretor_id, imob: d.cor.imobiliaria ?? null, nome: d.cor.nome ?? null } : null,
         e1: d.est ?? undefined, buscado: !!d.buscado, unidades: d.unidades ?? null,
         fs: d.fases ?? [], es: d.etapas ?? [], ss: d.subetapas ?? [], ps: d.procs ?? [], trs: d.trans ?? [],
-        qMat: n(d.q_mat), qInsc: n(d.q_insc), qProp: n(d.q_prop), infraNV: n(d.infra_nv), qPropostas: n(d.q_propostas),
+        qMat: n(d.q_mat), qInsc: n(d.q_insc), qProp: n(d.q_prop), propOk: typeof d.prop_ok === 'boolean' ? d.prop_ok : undefined, infraNV: n(d.infra_nv), qPropostas: n(d.q_propostas),
         qReu: n(d.q_reunioes), qViab: n(d.q_viab), qMassa: n(d.q_massa), qDocs: n(d.q_docs),
       });
     }
@@ -135,7 +142,7 @@ async function carregarSeparado(empresa: string, codigo: string): Promise<Ficha 
   if (!v.data) return null;
   const x = v.data as R, id = x.id as string, neg = x.negociacao_id as string | null;
   const cnt = { count: 'exact' as const, head: true };
-  const [t, u, of1, cor, est, bus, pn, fs, es, ss, ps, mat, ins, pes, inf, itI, prop, reu, viab, mas, docs] = await Promise.all([
+  const [t, u, of1, cor, est, bus, pn, fs, es, ss, ps, mat, ins, pes, inf, itI, prop, reu, viab, mas, docs, pts] = await Promise.all([
     supabase.from('terrenos').select('*').eq('id', id).single(),
     x.responsavel_id ? supabase.from('usuarios').select('nome,email,foto_url').eq('user_id', x.responsavel_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
     supabase.from('ofertas').select('id,valor_pedido,data_oferta', { count: 'exact' }).eq('terreno_id', id).order('data_oferta').order('criado_em').limit(1),
@@ -149,7 +156,7 @@ async function carregarSeparado(empresa: string, codigo: string): Promise<Ficha 
     supabase.from('processos').select('id,fase,etapa_atual,subetapa_atual,status,etapa_desde,data_inicio,data_encerramento').eq('terreno_id', id).is('parte_id', null).order('data_inicio'),
     supabase.from('matriculas').select('id', cnt).eq('terreno_id', id),
     supabase.from('inscricoes_municipais').select('id', cnt).eq('terreno_id', id),
-    supabase.from('terreno_pessoas').select('id', cnt).eq('terreno_id', id).eq('papel', 'proprietario'),
+    supabase.from('terreno_pessoas').select('parte_id,percentual_participacao').eq('terreno_id', id).eq('papel', 'proprietario'),
     supabase.from('v_terreno_infraestrutura').select('item,disponibilidade').eq('terreno_id', id),
     supabase.from('itens_infraestrutura').select('codigo,viabilidade_tecnica'),
     neg ? supabase.from('propostas').select('id', cnt).eq('processo_id', neg) : Promise.resolve({ count: 0, error: null }),
@@ -157,8 +164,9 @@ async function carregarSeparado(empresa: string, codigo: string): Promise<Ficha 
     supabase.from('viabilidades').select('id', cnt).eq('terreno_id', id),
     supabase.from('estudos_massa').select('id', cnt).eq('terreno_id', id),
     supabase.from('documentos').select('id', cnt).eq('terreno_id', id),
+    supabase.from('terreno_partes').select('id').eq('terreno_id', id).eq('ativa', true),
   ]);
-  for (const r of [t, u, of1, cor, est, bus, pn, fs, es, ss, ps, mat, ins, pes, inf, itI, prop, reu, viab, mas, docs]) if (r.error) throw r.error;
+  for (const r of [t, u, of1, cor, est, bus, pn, fs, es, ss, ps, mat, ins, pes, inf, itI, prop, reu, viab, mas, docs, pts]) if (r.error) throw r.error;
   /* unidades do estudo válido: a viabilidade presa à negociação */
   let unidades: number | null = null;
   const vid = (pn.data as R | null)?.viabilidade_id;
@@ -179,7 +187,7 @@ async function carregarSeparado(empresa: string, codigo: string): Promise<Ficha 
     cor: c?.pessoas ? { id: c0.corretor_id, imob: c.imobiliaria, nome: (c.pessoas as R).nome_razao_social } : null,
     e1: (est.data as R[])[0], buscado: conta(bus) > 0, unidades,
     fs: fs.data as R[], es: es.data as R[], ss: ss.data as R[], ps: ps.data as R[], trs: trs.data as R[],
-    qMat: conta(mat), qInsc: conta(ins), qProp: conta(pes),
+    qMat: conta(mat), qInsc: conta(ins), qProp: (pes.data as R[]).length, propOk: proprietariosCompletos((pts.data as R[]).map((x) => x.id), pes.data as R[]),
     infraNV: (inf.data as R[]).filter((i) => visita.has(i.item) && i.disponibilidade === 'nao_verificado').length,
     qPropostas: conta(prop as { count: number | null }), qReu: conta(reu), qViab: conta(viab), qMassa: conta(mas), qDocs: conta(docs),
   });

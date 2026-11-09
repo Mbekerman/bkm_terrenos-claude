@@ -43,7 +43,7 @@ Os 11 itens:
 | Testada | Terreno › Áreas e dimensões |
 | Matrícula | Terreno › Matrículas e SQLs |
 | Inscrição e IPTU | Terreno › Matrículas e SQLs |
-| Proprietário | Terreno › Partes (lápis da parte) |
+| Proprietário (cada parte com proprietários somando 100%) | Terreno › Partes (lápis da parte) |
 | Zoneamento | Terreno › Parâmetros urbanísticos › Registrar zonas (ou automático pelo GeoSampa) |
 | Valor pedido | Comercial › Condições pedidas (ou registrar oferta) |
 | Temperatura | Topo da ficha |

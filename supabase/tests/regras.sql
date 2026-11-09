@@ -1237,6 +1237,14 @@ insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, perce
   (:'emp', :'tv', :'pas', 'proprietario', 50, :'pa'), (:'emp', :'tv', :'pbs', 'proprietario', 50, :'pa'), (:'emp', :'tv', :'pcp', 'proprietario', 100, :'pb');
 select pg_temp.ok((select sum(percentual_participacao) from app.terreno_pessoas where terreno_id = :'tv') = 200, 'participações somam 100% em cada parte (herdeiros juntos numa parte)');
 select pg_temp.ok((select qtd_matriculas = 2 and proprietarios = 'Ana Souza, Beto Souza' from app.v_partes where id = :'pa'), 'parte mostra matrículas e donos');
+select pg_temp.ok(not app.proprietarios_completos(:'tv'), 'proprietários incompletos com uma parte ativa sem dono (Oficina do Zé com 0%)');
+insert into app.pessoas (empresa_id, tipo_pessoa, nome_razao_social) values (:'emp', 'PF', 'Zé da Oficina') returning id as pze \gset
+insert into app.terreno_pessoas (empresa_id, terreno_id, pessoa_id, papel, percentual_participacao, parte_id) values (:'emp', :'tv', :'pze', 'proprietario', 60, :'pc') returning id as tpze \gset
+select pg_temp.ok(not app.proprietarios_completos(:'tv'), 'proprietários incompletos com uma parte em 60%');
+update app.terreno_pessoas set percentual_participacao = 100 where id = :'tpze';
+select pg_temp.ok(app.proprietarios_completos(:'tv'), 'proprietários completos com 100% em todas as partes ativas');
+select pg_temp.ok((app.ficha_dados(:'emp', (select codigo from app.terrenos where id = :'tv')) ->> 'prop_ok')::boolean, 'a ficha recebe prop_ok');
+delete from app.terreno_pessoas where id = :'tpze';
 insert into app.parte_corretores (empresa_id, parte_id, corretor_id) values (:'emp', :'pb', :'c1'), (:'emp', :'pb', :'c2'), (:'emp', :'pa', :'c1');
 select pg_temp.ok((select count(*) from app.parte_corretores where parte_id = :'pb') = 2, 'uma parte pode ter vários corretores');
 select pg_temp.ok((select count(*) from app.parte_corretores where corretor_id = :'c1' and parte_id in (:'pa', :'pb')) = 2, 'o mesmo corretor pode trazer várias partes');

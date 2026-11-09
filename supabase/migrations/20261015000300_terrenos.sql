@@ -433,6 +433,21 @@ begin
 end $$;
 create trigger t_parte before insert or update of parte_id, terreno_id on app.terreno_pessoas for each row execute function app.tg_parte_do_terreno();
 
+-- Proprietários completos (pedido do Moises, 9/nov/2026): a ficha só deixa de pedir "Proprietário" quando cada
+-- parte ativa do terreno tem proprietários somando 100% de participação. Sem parte ativa, vale a soma de todos.
+create or replace function app.proprietarios_completos(p_terreno uuid)
+returns boolean language sql stable security invoker set search_path = '' as $$
+  select case
+    when exists (select 1 from app.terreno_partes where terreno_id = p_terreno and ativa) then
+      not exists (select 1 from app.terreno_partes pa where pa.terreno_id = p_terreno and pa.ativa
+                    and coalesce((select sum(tp.percentual_participacao) from app.terreno_pessoas tp
+                                   where tp.parte_id = pa.id and tp.papel = 'proprietario'), 0) < 100)
+    else coalesce((select sum(percentual_participacao) from app.terreno_pessoas
+                    where terreno_id = p_terreno and papel = 'proprietario'), 0) >= 100
+  end
+$$;
+grant execute on function app.proprietarios_completos(uuid) to authenticated;
+
 -- Etiquetas das partes (pedido do Moisés, 6/nov/2026): a matrícula e o SQL são únicos no terreno, mas
 -- mais de uma parte pode ser dona do mesmo lote. Cada linha é uma etiqueta numa parte; a mesma matrícula
 -- pode estar em várias partes (duplicada), uma vez em cada. Sem nenhuma linha, a etiqueta está sem parte.
