@@ -50,6 +50,21 @@ No **Funil**, não há filtro de fase, etapa e subetapa: "No quadro, a fase e a 
 
 No **Mapa**, a legenda continua ligando e desligando camadas e conta só os terrenos que passaram pelo filtro.
 
+## Ordenação (só no Mapa)
+
+**Para que serve:** mudar a ordem da lista de terrenos do Mapa, por um ou mais campos.
+
+**Onde:** na gaveta do botão **Filtros**, troque de **Filtros** para **Ordenação** no alto. Os campos são **Terreno** (nome), **Código**, **Etapa** e **Subetapa** (na ordem do funil, pela fase mais adiante que está aberta; terreno sem fase aberta fica no fim), **Cidade**, **Região**, **Imóvel** (área adotada), **Projeto** (VGV do estudo válido), **Negociação** (preço pedido), **Corretor** (o primeiro), **Temperatura** e **Responsável** (nome).
+
+**Como funciona:**
+
+- Um clique no campo ordena **crescente**, o segundo **decrescente** e o terceiro **tira** aquele campo.
+- Vários campos valem juntos, na ordem em que foram escolhidos: o primeiro manda e os seguintes desempatam. Com mais de um, cada campo mostra o número da sua posição.
+- Quem não tem o dado (sem área, sem VGV...) fica sempre no fim, nos dois sentidos.
+- Com uma ordenação ligada, a lista vira uma só, na ordem pedida, sem agrupar pela legenda (a bolinha continua com a cor da etapa). Sem ordenação, volta a ordem da legenda e do nome.
+- Na barra aparece o chip **"Ordem: Imóvel ↓, Negociação ↑"**; o X dele, ou **"Tirar ordenação"** na gaveta, volta à ordem padrão.
+- A ordenação fica guardada **no seu navegador**: o Mapa sempre abre com a última ordenação escolhida, mesmo depois de fechar o navegador (em outro computador ou navegador, começa sem). Ela também vai no endereço (depois de `#o=`), e o link recebido vale primeiro. Ela **não entra** nas visões salvas.
+
 ## Visões salvas
 
 **Para que serve:** guardar uma combinação de filtros com um nome ("Quentes em São Paulo") e voltar a ela com um clique.
