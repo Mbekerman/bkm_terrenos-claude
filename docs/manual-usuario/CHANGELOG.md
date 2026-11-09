@@ -8,7 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
-- **Pessoas da parte** (Terreno › Partes › Pessoas): o botão **Limpar dados** saiu de cima do Incluir e fica ao lado do título da janela ("Pessoas · Vendedor 1"). (#PR)
+- **Pessoas da parte** (Terreno › Partes › Pessoas): o botão **Limpar dados** saiu de cima do Incluir e fica ao lado do título da janela ("Pessoas · Vendedor 1"). O **Incluir** passou a ser o botão azul e o **Concluir** ficou branco. (#PR)
 - **IPTU** (Terreno › IPTU): o botão **PDF** de cada SQL aparece mesmo antes de o valor ser trazido da Prefeitura (exercício do ano). A Senha Web da Prefeitura pode ser de CPF ou de CNPJ. (#266)
 - **Detalhes da contaminação** (Terreno › Parâmetros urbanísticos, em Restrições e entorno e Histórico de uso): "Ver detalhes" abre uma janela com o mapa de lotes do GeoSampa (terreno em azul, registros numerados em vermelho) e tudo o que a prefeitura guarda de cada registro: lote, atividade, origem e data do cadastro, processo; na área contaminada, classificação, endereço, contaminantes e restrições. (#263)
 - **Parâmetros urbanísticos viraram seção da aba Terreno**, logo depois de Endereço e localização (a aba Parâmetros saiu; o link antigo abre a aba Terreno). Dentro, três quadros: **Índices urbanísticos** (zonas, potencial, panorama e lote por lote), **Restrições e entorno** e **Histórico de uso**. Nos índices saíram CA básico, CA mínimo, lote mínimo, frente mínima e outorga onerosa (também do "Alterar valores", menos o CA básico); no potencial saiu o "CA máx." ao lado, que já aparece logo abaixo. (#263)
