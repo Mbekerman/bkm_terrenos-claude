@@ -203,7 +203,7 @@ Bom saber:
 
 **Como começar:**
 
-- **Dois cliques** sobre a poligonal; ou
+- **Dois cliques** em qualquer ponto dentro da poligonal (não precisa ser sobre a linha; sobre o pino, não: ele abre a ficha); ou
 - selecione o terreno na lista e clique em **"Editar poligonal"**.
 
 **Editando:**

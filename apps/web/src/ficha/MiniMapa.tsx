@@ -127,6 +127,8 @@ export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }:
       M.addListener('click', (e: any) => { if (e.latLng) ganchos.current.clique(e.latLng.lat(), e.latLng.lng()); });
       M.addListener('dblclick', (e: any) => {
         if (desR.current) { ganchos.current.duplo(); return; }
+        /* dois cliques em qualquer ponto dentro da poligonal editam, não só sobre a linha (pedido do Moises, 9/nov/2026) */
+        if (e.latLng && poly && salvarR.current && !TOQUE() && dentroPoly(e.latLng.lat(), e.latLng.lng(), poly)) { ganchos.current.editar(); return; }
         if (e.latLng) abrir.current(e.latLng.lat(), e.latLng.lng(), M.getZoom());
       });
       const pin = document.createElement('div');
