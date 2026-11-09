@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **Panorama do terreno** (Parâmetros › Parâmetros urbanísticos): os parâmetros de todos os lotes juntos, com os valores diferentes separados por barra, e as restrições do terreno inteiro; o "Não toca" aparece uma vez só, para todos os lotes, e o lote por lote fica atrás de "Ver lote por lote". (#PRN)
 - **Busca da barra de cima** procura de fato por matrícula, SQL e endereço (rua, número, CEP), com ou sem pontuação e sem ligar para acento; digitada fora do Mapa, leva ao Mapa com o texto. (#247)
 - **Completude da ficha** chega a 100%: a "Visita técnica" saiu da conta enquanto a aba Infraestrutura não existe no sistema real. (#247)
 

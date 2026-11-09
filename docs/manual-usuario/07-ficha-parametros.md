@@ -22,9 +22,10 @@ Três quadros: **Parâmetros urbanísticos**, **Restrições e entorno** e **His
 
 - **Zonas da área**: as zonas do terreno, com a área de cada uma.
 - **Potencial construtivo** de **Mercado**, **HIS** e **HMP**, lado a lado: a soma de (área da zona × CA máximo da zona para aquele tipo). O sistema **nunca** mostra um "CA médio".
-- **Por lote, um quadro por zona** com: CA mínimo, CA básico, CA máximo de cada tipo (ou **"Não admitido"** quando a zona não aceita o tipo), taxa de ocupação, gabarito (altura ou "Sem limite"), recuo de frente, recuos laterais e de fundo, cota-parte máxima, unidades por lote, permeabilidade mínima, lote mínimo, frente mínima e outorga onerosa (Gratuita, "Paga acima do básico" ou Dispensado).
+- **Panorama do terreno**: os mesmos parâmetros do quadro de cada zona, para o terreno inteiro. Quando os lotes ou as zonas têm valores diferentes, aparecem todos, separados por barra ("4 / 2"), com "varia por zona ou lote" embaixo; parar o mouse sobre o quadrinho mostra de qual zona é cada valor. Logo abaixo, **"Demais parâmetros e restrições"** do terreno inteiro: o que toca algum dos lotes consultados na prefeitura, junto. No fim, **uma vez só**, a lista do que **nenhum** lote toca ("Nenhum dos 2 lotes toca: ZEIS 1, Eixo de estruturação..."). O que toca só um lote aparece no relatório daquele lote.
+- **"Ver lote por lote"** (seta para abrir, começa fechado): por lote, um quadro por zona com: CA mínimo, CA básico, CA máximo de cada tipo (ou **"Não admitido"** quando a zona não aceita o tipo), taxa de ocupação, gabarito (altura ou "Sem limite"), recuo de frente, recuos laterais e de fundo, cota-parte máxima, unidades por lote, permeabilidade mínima, lote mínimo, frente mínima e outorga onerosa (Gratuita, "Paga acima do básico" ou Dispensado).
 - **"Regras e fontes"**: o texto das regras da zona e de onde veio cada número.
-- **"O que toca o lote"** / **"Demais parâmetros e restrições"**: as outras camadas da última consulta do lote (Conpresp, tombamento, ZEIS, mananciais, macrozona, operação urbana...).
+- Dentro de cada lote, **"Demais parâmetros e restrições"**: só o que toca aquele lote na última consulta (Conpresp, tombamento, ZEIS, mananciais, macrozona, operação urbana...). A lista do que não toca saiu do lote e fica no panorama.
 - O selo **"A validar"** quando algum parâmetro do catálogo ainda não foi conferido ("Há parâmetros a validar no catálogo").
 
 Os parâmetros vêm de um catálogo da lei, por zona e tipo de empreendimento, mantido pelo administrador. Hoje o catálogo tem São Paulo e São José dos Campos.
