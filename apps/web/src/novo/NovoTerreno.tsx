@@ -257,8 +257,9 @@ function IncluirSql({ lista, fechar, empresa }: { lista: LoteSql[]; fechar: Reac
     try {
       /* SQL que já está em outro terreno não entra */
       const { data: ja } = await supabase.from('inscricoes_municipais').select('terrenos(codigo)').eq('empresa_id', empresa).eq('inscricao_norm', d).limit(1);
-      const cod = (ja?.[0] as { terrenos?: { codigo?: string } } | undefined)?.terrenos?.codigo;
+      const cod = (ja?.[0] as { terrenos?: { codigo?: string } | null } | undefined)?.terrenos?.codigo;
       if (cod) { toast(`O SQL ${sqlFmt(d)} já está no ${cod}.`, true); return; }
+      if (ja?.length) { toast(`O SQL ${sqlFmt(d)} está num terreno excluído. O administrador pode restaurar ou deletar esse terreno em Configurações.`, true); return; }
       const lote = await loteDoSql(d);
       listaSql([...(novoEstado().sql || []), lote]);
       setTxt('');

@@ -236,6 +236,7 @@ Resumo: **0 Crítico, 2 Alto, 7 Médio, 10 Baixo, 6 Informativo.** Nenhum segred
 #### M6. Build não reprodutível: `npm install` em vez de `npm ci`, imagens e actions sem pin
 
 - **Arquivos:** `Dockerfile:4,8,13`; `.github/workflows/ci.yml:13-14,27,35-36`; `banco.yml:22`.
+- **Atualização (#243, 9/nov/2026):** o `ci.yml` passou a usar `npm ci` (front e serviço do IPTU) e ganhou `permissions: contents: read, pull-requests: read`; só roda no PR. Continuam abertos o `npm install` do `Dockerfile` e as actions em tag (`@v4`), não em SHA.
 - **Cenário:** `npm install` com `^` no `package.json` pode instalar versões diferentes das do `package-lock.json` e grava o lock no build. Um pacote comprometido publicado como versão menor (o caso dos *worms* do npm em 2025) entra no bundle de produção sem passar pelo CI. `node:22-alpine` e `caddy:2-alpine` mudam por baixo a cada build. As actions estão em tag (`@v4`), não em SHA.
 - **Impacto:** cadeia de suprimentos (OWASP A06/A08).
 - **Evidência:** `grep -n "npm install\|FROM" Dockerfile` → `4:FROM node:22-alpine`, `8:RUN npm install --no-audit --no-fund`, `13:FROM caddy:2-alpine`.

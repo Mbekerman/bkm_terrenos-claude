@@ -18,6 +18,7 @@ import { Metodologia } from '../mapa/CamadasSetor';
 import { buscarEntorno, distM, medirPontos, rotaPe } from './entorno';
 import type { Ficha, R } from './dados';
 import { Quadro } from './edicao';
+import { Busca, buscando } from '../lib/buscando';
 
 const num = (v: number | null | undefined, d = 0) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d }));
 const kmTxt = (m: number) => (m < 1000 ? Math.round(m / 10) * 10 + ' m' : num(m / 1000, m < 10000 ? 2 : 1) + ' km');
@@ -62,7 +63,7 @@ function useAuto(f: Ficha, d: D | undefined, ve: () => void) {
     const kb = f.id + '|' + lat + '|' + lng;
     if (!(d.bus && mesmo(d.bus.latitude, lat) && mesmo(d.bus.longitude, lng)) && !TENT.has(kb)) {
       TENT.add(kb); EM_CURSO.add(f.id); ve();
-      buscarEntorno(f.id, lat, lng)
+      buscando(f.id, 'entorno', buscarEntorno(f.id, lat, lng))
         .then((r) => { if (!r.rota) toast('A rota a pé não respondeu; os pontos foram filtrados pela distância em linha reta.'); })
         .catch((e) => { console.warn('entorno', e); toast('Não foi possível buscar os pontos de interesse no Google agora.'); })
         .finally(() => { EM_CURSO.delete(f.id); ve(); qc.invalidateQueries({ queryKey: ['entorno', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); });
@@ -172,7 +173,7 @@ function SecPontos({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="entorno" id="ent" primeiro titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span></>}>
+    <Quadro aba="entorno" id="ent" primeiro titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
       <div className="sec-b">{corpo}</div>
     </Quadro>
   );

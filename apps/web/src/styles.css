@@ -1784,6 +1784,26 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .fx-op[data-zero] { color: #556b8f }
 :root[data-tema="escuro"] .fx-vis select { background: #131314 }
 :root[data-tema="escuro"] .fx-in { background: transparent }
+/* aba Ordenação da gaveta (pedido do Moises, 9/nov/2026) */
+.fx-modo { display: grid; grid-template-columns: 1fr 1fr; margin: 12px 24px 4px; padding: 0; border: 1px solid #747775; border-radius: 20px; background: transparent; overflow: hidden }
+.fx-modo button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 0; font-family: inherit; font-size: 14px; font-weight: 500; color: #1f1f1f; cursor: pointer }
+.fx-modo button + button { border-left: 1px solid #747775 }
+.fx-modo button[aria-selected="true"] { background: #c2e7ff; color: #001d35 }
+.fx-ords { display: flex; flex-direction: column; border: 1px solid #c4c7c5; border-radius: 12px; overflow: hidden }
+.fx-ord { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 16px; border: 0; border-top: 1px solid #e3e3e3; background: transparent; color: #1f1f1f; font-family: inherit; text-align: left; cursor: pointer }
+.fx-ord:first-child { border-top: 0 } .fx-ord:hover { background: rgba(31,31,31,.06) }
+.fx-ord[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+.fx-ord-t { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 14px; font-weight: 500; line-height: 20px } .fx-ord-t small { font-size: 12px; font-weight: 400; color: #5f6368 }
+.fx-ord[aria-pressed="true"] .fx-ord-t small { color: #0b3a66 }
+.fx-ord-n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 11px; background: #0b57d0; color: #fff; font-size: 12px; font-weight: 500 }
+.fx-ord-d { min-width: 104px; text-align: right; font-size: 13px; color: #444746 } .fx-ord[aria-pressed="true"] .fx-ord-d { color: #001d35; font-weight: 500 }
+@media (max-width: 699px) { .fx-modo { margin-left: 16px; margin-right: 16px } }
+:root[data-tema="escuro"] :is(.fx-modo, .fx-modo button + button) { border-color: #8e918f }
+:root[data-tema="escuro"] .fx-modo button, :root[data-tema="escuro"] .fx-ord { color: #e3e3e3 }
+:root[data-tema="escuro"] :is(.fx-modo button[aria-selected="true"], .fx-ord[aria-pressed="true"]) { background: #004a77; color: #c2e7ff }
+:root[data-tema="escuro"] .fx-ords { border-color: #444746 } :root[data-tema="escuro"] .fx-ord { border-color: #2a2a2c }
+:root[data-tema="escuro"] :is(.fx-ord-t small, .fx-ord-d) { color: #c4c7c5 } :root[data-tema="escuro"] .fx-ord[aria-pressed="true"] :is(.fx-ord-t small, .fx-ord-d) { color: #c2e7ff }
+:root[data-tema="escuro"] .fx-ord-n { background: #a8c7fa; color: #062e6f }
 /* ---------- Concorrência: quadro ao tocar no ícone e gaveta de cadastro ---------- */
 .cc-box { position: absolute; z-index: 1060; top: 64px; right: 10px; width: min(400px, calc(100% - 20px)); max-height: calc(100% - 150px); overflow-y: auto; overscroll-behavior: contain; background: #fff; color: #1f1f1f; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 4px 16px rgba(0,0,0,.16); padding: 4px 0 12px }
 .cc-hd { display: flex; align-items: flex-start; gap: 8px; padding: 12px 8px 4px 20px }
@@ -5113,3 +5133,26 @@ html[data-tema="escuro"] .reu-ed:hover { background: #282a2c }
 .ct-n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #b3261e; color: #fff; font-size: 12px; font-weight: 600; margin-right: 6px }
 .ct-ver { font-size: 13px; margin-left: 4px; white-space: nowrap }
 @media (max-width: 599px) { .ct-b { padding: 0 16px 16px } }
+
+/* carregando dos campos que vêm de outras fontes (lib/buscando.tsx; pedido do Moises, 9/nov/2026) */
+.busca { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; vertical-align: middle; color: var(--m-on-surface-var, #444746); font-size: 12px; font-weight: 400 }
+.busca-sp { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--m-outline-var, #c4c7c5); border-top-color: var(--m-primary, #0b57d0); animation: busca-gira .8s linear infinite; flex: none }
+@keyframes busca-gira { to { transform: rotate(360deg) } }
+@media (prefers-reduced-motion: reduce) { .busca-sp { animation-duration: 2.4s } }
+
+/* Menu ⋮ do terreno e Terrenos excluídos (pedido do Moises, 9/nov/2026) */
+.fi-head-d { display: flex; align-items: center; gap: 8px; flex: none }
+.mt-mais .iconbtn { color: var(--m-on-surface-var, #444746) }
+.mt-mais .adv-menu { min-width: 200px }
+.btn.primary.mt-perigo:not(:disabled) { background: #b3261e !important; border-color: #b3261e !important; color: #fff !important }
+.btn.mt-perigo-t { color: #b3261e !important }
+html[data-tema="escuro"] .btn.primary.mt-perigo:not(:disabled) { background: #ffb4ab !important; border-color: #ffb4ab !important; color: #690005 !important }
+html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
+.tx-lista { padding: 0 }
+.tx-l { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 12px var(--q-px, 24px); border-top: 1px solid var(--m-outline-var, #c4c7c5) }
+.tx-l:first-child { border-top: 0 }
+.tx-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere }
+.tx-t .num { font-size: 12px; color: var(--m-on-var, #444746) }
+.tx-t .muted { font-size: 13px }
+.tx-b { flex: none; display: flex; gap: 8px }
+@media (max-width: 640px) { .tx-l { flex-direction: column; align-items: stretch; padding: 12px 16px } .tx-b { justify-content: flex-end } }

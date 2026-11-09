@@ -26,10 +26,10 @@ UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
 // rótulo, cor, glifo no pin, cor do glifo. Etapas ativas em rampa de azul (ordem = avanço);
 // Stand By, Comprado, Perdido e Descartado com cores próprias e glifo, para não depender só da cor.
-const SIT={sem_negociacao:['Backlog','#8a8d91','·','#fff'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
+const SIT={sem_negociacao:['Backlog','#fff176','·','#5c4a00'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
   estudos:['Estudos Preliminares','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
   contrato:['Contrato','#1d2e5c','4','#fff'],stand_by:['Stand By','#c98a2e','‖','#fff'],comprado:['Comprado','#6f9a3a','✓','#fff'],
-  perdido:['Perdido','#9a3b30','×','#fff'],descartado:['Descartado','#6b6560','–','#fff']};
+  perdido:['Perdido','#9a3b30','×','#fff'],descartado:['Descartado','#d9d4cf','–','#3a3633']};
 /* nomes das etapas seguem a configuração da empresa */
 const sitNome=k=>STAGES.find(s=>s[0]===k)?.[1]||SIT[k][0];
 const sitMapa=t=>!t.neg?'sem_negociacao':t.neg.status==='ativo'?t.neg.etapa:t.neg.status;
@@ -37,11 +37,12 @@ const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT
 const ativosBanco=()=>S.terrenos.filter(t=>t.situacao!=='arquivado');
 /* mapa em três níveis, como o kanban: fases › etapas de uma fase (UI.mp.f) › subetapas de uma etapa (UI.mp.e).
    Cada nível tem a sua legenda (rótulo, cor, glifo, cor do glifo) e classifica o terreno; fora do nível = não aparece. */
-const COR_FASE=['#0b74d6','#863d8f','#c67355','#00838f','#c2477a','#7d8a3e','#1d2e5c','#5f6368'];
+/* Backlog, Obras, Entregue e Descartado em tons claros: sumiam no satélite (Moisés, 9/nov/2026) */
+const COR_FASE=['#0b74d6','#863d8f','#c67355','#00838f','#c2477a','#7d8a3e','#c9a7ff','#69f0ae'],FG_FASE=['#fff','#fff','#fff','#fff','#fff','#fff','#2e1a5c','#0b3d1e'];
 const RAMPA=['#8fc8f7','#4aa3f0','#0b74d6','#0a4fa0','#1d2e5c'];
 const rampa=(i,n)=>{const j=n<=1?2:Math.round(i*(RAMPA.length-1)/(n-1));return [RAMPA[j],j===0?'#1d2e5c':'#fff']};
 function mpItens(){const m=UI.mp,sit=k=>({k,nome:SIT[k][0],cor:SIT[k][1],g:SIT[k][2],fg:SIT[k][3]});
-  if(!m.f)return [...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:'#fff',desce:etapasF(f.k).length>0})),sit('sem_negociacao'),sit('perdido'),sit('descartado')];
+  if(!m.f)return [...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:FG_FASE[i%FG_FASE.length],desce:etapasF(f.k).length>0})),sit('sem_negociacao'),sit('perdido'),sit('descartado')];
   const L=m.e?(etapaF(m.f,m.e)?.subs||[]):etapasF(m.f);
   return [...L.map((x,i)=>{const [cor,fg]=rampa(i,L.length);return {k:x.k,nome:x.nome,cor,g:String(i+1),fg,desce:!m.e&&x.subs?.length>0}}),sit('stand_by')]}
 function mpClasse(t){const m=UI.mp;

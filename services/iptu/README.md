@@ -8,6 +8,8 @@ endereço do sistema (o Caddy repassa para cá pela variável `IPTU_URL`).
 - `GET /iptu/saude` → `{ ok, credencial }`
 - `POST /iptu/consultar` `{ inscricao_id, exercicio? }` com `Authorization: Bearer <token do Supabase>` → grava e devolve `{ valor, novo }`
 - `POST /iptu/notificacao` `{ inscricao_id, exercicio }` → o PDF (não grava)
+- `POST /iptu/fila` `{ inscricao_ids }` → 202, consulta em segundo plano, um por vez (até 60)
+- `POST /iptu/situacao` `{ inscricao_ids }` → `{ id: { estado: na_fila|consultando|ok|erro, error? } }`
 
 Só quem edita, só SQL de São Paulo de um terreno da empresa (a RLS decide), 40 consultas por
 pessoa por hora, uma emissão por vez. Captcha não é resolvido. Ver `docs/tecnico/integracoes.md` §10b.
@@ -20,16 +22,19 @@ npm ci && npm test   # leitura do PDF com uma notificação fictícia; não fala
 
 ## Implantar (uma vez, no Cloud Shell do projeto `bkm-terrenos`)
 
-A senha é digitada só no Cloud Shell, sem aparecer na tela nem no histórico. Nunca cole a
+A senha é digitada só na tela do Secret Manager (no terminal, um bloco colado com `read -s` já
+engoliu as linhas seguintes e deixou a senha no histórico, 9/nov/2026). Nunca cole a
 senha em chat, e-mail, repositório ou no banco.
 
 ```sh
 gcloud config set project bkm-terrenos
 gcloud services enable secretmanager.googleapis.com run.googleapis.com cloudbuild.googleapis.com
 
-# 1. Segredos (digite o CPF e depois a senha; Enter em cada um)
-read -rs V && printf '%s' "$V" | gcloud secrets create iptu-cpf --data-file=- ; unset V
-read -rs V && printf '%s' "$V" | gcloud secrets create iptu-senha --data-file=- ; unset V
+# 1. Segredos: crie pela tela, nunca pelo terminal
+#    https://console.cloud.google.com/security/secret-manager/create?project=bkm-terrenos
+#    iptu-cpf   = CPF (11) ou CNPJ (14), só os números
+#    iptu-senha = a Senha Web
+#    Cole os comandos abaixo um por vez.
 SA="$(gcloud projects describe bkm-terrenos --format='value(projectNumber)')-compute@developer.gserviceaccount.com"
 # projeto novo: a conta padrão também monta o código enviado (sem isso, o deploy dá 403 em storage.objects.get)
 gcloud projects add-iam-policy-binding bkm-terrenos --member="serviceAccount:$SA" --role=roles/run.builder --condition=None
@@ -39,7 +44,7 @@ for s in iptu-cpf iptu-senha; do gcloud secrets add-iam-policy-binding $s --memb
 git clone -b develop https://github.com/Mbekerman/bkm_terrenos-claude && cd bkm_terrenos-claude
 ENVS=$(gcloud run services describe terrenos-web-dev --region southamerica-east1 --format=json | python3 -c "import json,sys;e={x['name']:x.get('value','') for x in json.load(sys.stdin)['spec']['template']['spec']['containers'][0].get('env',[])};print('SUPABASE_URL=%s,SUPABASE_KEY=%s'%(e['SUPABASE_URL'],e['SUPABASE_KEY']))")
 gcloud run deploy terrenos-iptu --source services/iptu --region southamerica-east1 \
-  --memory 1Gi --cpu 1 --min-instances 0 --max-instances 1 --concurrency 8 --timeout 300 \
+  --memory 1Gi --cpu 1 --no-cpu-throttling --min-instances 0 --max-instances 1 --concurrency 8 --timeout 300 \
   --allow-unauthenticated --set-env-vars "$ENVS" \
   --set-secrets IPTU_CPF=iptu-cpf:latest,IPTU_SENHA=iptu-senha:latest
 
@@ -55,4 +60,5 @@ curl -s $URL/iptu/saude   # {"ok":true,"credencial":true}
 
 `--max-instances 1`: a fila é em memória e a Prefeitura recebe um pedido por vez.
 Atualizar o código depois: repetir o `gcloud run deploy` (os segredos e variáveis ficam).
-Trocar a senha: `read -rs V && printf '%s' "$V" | gcloud secrets versions add iptu-senha --data-file=- ; unset V` e um novo deploy.
+`--no-cpu-throttling`: a fila (`/fila`) consulta depois de responder; sem CPU alocada fora dos pedidos, ela para. No serviço criado antes da fila (9/nov/2026), acrescentar `--no-cpu-throttling` ao `gcloud run deploy --source` (a opção fica gravada).
+Trocar a senha: na tela do Secret Manager, abrir `iptu-senha` › Nova versão (desativando as anteriores) e repetir o `gcloud run deploy`.

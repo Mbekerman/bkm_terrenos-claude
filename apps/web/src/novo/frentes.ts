@@ -4,6 +4,7 @@ import { automatico, supabase } from '../lib/supabase';
 import { GEO_BASE, geoAneis, geoWfs, latLngUtm } from './geosampa';
 import { nomeRef, normRua, type P } from './geo';
 import { medirFrentes, type Medicao } from './frentesCalc';
+import { buscando } from '../lib/buscando';
 
 export type { Medicao, Posicao, FrenteMedida } from './frentesCalc';
 
@@ -39,7 +40,7 @@ const chaveRua = (s: string) => normRua(nomeRef(s)).replace(/^(r|av|al|tv|estr|e
 const MEDIDA = new Map<string, string>();     // terreno → poligonal já medida nesta sessão (ou em curso)
 export async function atualizarFrentes(id: string): Promise<Medicao | null> {
   if (!GEO_BASE) return null;
-  const med = await medirEGravar(id);
+  const med = await buscando(id, 'frentes', medirEGravar(id));
   if (med?.frentes.length) window.dispatchEvent(new CustomEvent('frentes-medidas', { detail: id }));
   return med;
 }

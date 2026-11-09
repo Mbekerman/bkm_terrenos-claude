@@ -79,7 +79,7 @@ Todas essas chaves são **públicas por natureza** (a chave publicável do Supab
 | Segredo do cliente OAuth do Google | painel do Supabase (Auth › Google) | **não** | login |
 | Chave `service_role` do Supabase | painel do Supabase; Secret Manager do projeto `bkm-monitor` (coletor) | **não** | coletor do monitor de mercado; nunca no front |
 | Credenciais do Órulo | Secret Manager do projeto do monitor | **não** | coletor |
-| `IPTU_CPF`, `IPTU_SENHA` (Senha Web da Prefeitura de SP, do Moises) | Secret Manager do `bkm-terrenos` (segredos `iptu-cpf` e `iptu-senha`), expostos só ao serviço `terrenos-iptu` | **não** | emitir a notificação de lançamento do IPTU |
+| `IPTU_CPF`, `IPTU_SENHA` (Senha Web da Prefeitura de SP, do Moises) | Secret Manager do `bkm-terrenos` (segredos `iptu-cpf`, com o CPF ou o CNPJ só em números, e `iptu-senha`; criados pela tela do Secret Manager, não pelo terminal), expostos só ao serviço `terrenos-iptu` | **não** | emitir a notificação de lançamento do IPTU |
 | `IPTU_URL` | variável dos serviços `terrenos-web` e `terrenos-web-dev` | sim | o Caddy repassar `/iptu` ao serviço do IPTU |
 | `SUPABASE_URL`, `SUPABASE_KEY` do `terrenos-iptu` | variáveis do serviço do IPTU | sim (chave publicável) | conferir o login e gravar com o token de quem pediu |
 
@@ -87,7 +87,7 @@ Nunca coloque segredo no repositório nem nas variáveis `SUPABASE_*`/`GOOGLE_*`
 
 ## Serviço do IPTU (`terrenos-iptu`)
 
-Serviço à parte no Cloud Run (`services/iptu/Dockerfile`, imagem do Playwright com Chromium), porque o Caddy não roda navegador. Um só para dev e produção (o banco é o mesmo). Configuração sugerida: região `southamerica-east1`, 1 GiB de memória, 1 CPU, 0 a 1 instância (a fila é em memória), concorrência 8, tempo limite 300 s, acesso público (a autenticação é o login do Supabase, conferido pelo próprio serviço). Os serviços web recebem `IPTU_URL=https://terrenos-iptu-....run.app`. Comandos em `services/iptu/README.md`.
+Serviço à parte no Cloud Run (`services/iptu/Dockerfile`, imagem do Playwright com Chromium), porque o Caddy não roda navegador. Um só para dev e produção (o banco é o mesmo). Configuração sugerida: região `southamerica-east1`, 1 GiB de memória, 1 CPU, 0 a 1 instância (a fila é em memória), concorrência 8, tempo limite 300 s, CPU sempre alocada (`--no-cpu-throttling`, para a fila em segundo plano andar depois da resposta), acesso público (a autenticação é o login do Supabase, conferido pelo próprio serviço). Os serviços web recebem `IPTU_URL=https://terrenos-iptu-....run.app`. Comandos em `services/iptu/README.md`.
 
 ## Banco
 
@@ -109,7 +109,7 @@ Ver o passo a passo em [testes-banco.md](testes-banco.md).
 
 | Workflow | Quando roda | O que faz |
 | --- | --- | --- |
-| `ci.yml` | todo push e PR | typecheck + build do front; migrations + testes de SQL num Postgres 16 com PostGIS; sintaxe do script do protótipo |
+| `ci.yml` | só no PR para `develop` ou `main` (e à mão), e só se o PR mexe em `apps/web`, `supabase`, `services`, `tools`, `docs/prototipo.html` ou nos workflows; cancela a execução antiga do mesmo PR | numa máquina só (job `ci`, 15 min no máximo), cada passo só quando a parte dele mudou: typecheck + build do front; testes do serviço do IPTU; migrations + testes de SQL num Postgres 16 com PostGIS; sintaxe do script do protótipo |
 | `banco.yml` | `workflow_dispatch` ou push com `[aplicar-banco]` na mensagem | cria o banco de produção do zero (ver acima) |
 | `vendor.yml` | manual | baixa Leaflet e JSZip e publica no branch `libs-prototipo`, para testar o protótipo sem CDN |
 

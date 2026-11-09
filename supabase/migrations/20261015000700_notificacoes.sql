@@ -349,11 +349,15 @@ language plpgsql security definer set search_path = ''
 as $$
 declare r record; n int; total int := 0;
 begin
+  -- terrenos excluídos há mais de 180 dias são apagados de vez (pedido do Moises, 9/nov/2026)
+  total := total + app.purgar_terrenos_excluidos(p_hoje);
+
   -- lembretes com antecedência (inclui "vence hoje" com 0 dias)
   for r in select l.id as lembrete_id, l.origem_tabela, l.origem_id, l.dias_antes, coalesce(l.destinatario_id, x.responsavel) as dest, x.*
            from app.lembretes l cross join lateral app._item_lembrete(l.origem_tabela, l.origem_id) x
            where x.data is not null and x.data >= p_hoje and x.data - l.dias_antes <= p_hoje
-             and l.enviado_para is distinct from x.data loop
+             and l.enviado_para is distinct from x.data
+             and not app.terreno_excluido(x.terreno_id) loop
     perform app._notificar(r.empresa_id, r.dest, r.tipo,
       r.titulo || case when r.data = p_hoje then ': hoje' when r.data = p_hoje + 1 then ': amanhã'
                        else ': em ' || (r.data - p_hoje) || ' dias (' || to_char(r.data, 'DD/MM') || ')' end,
@@ -371,7 +375,8 @@ begin
 
   -- tarefa atrasada: uma vez, no primeiro dia de atraso (ou quando a rotina vir)
   for r in select * from fluxo.tarefas k where k.concluida_em is null and k.arquivada_em is null and k.prazo < p_hoje and k.responsavel_id is not null and not k.modelo
-             and not exists (select 1 from fluxo.listas l where l.id = k.lista_id and l.tipo = 'pausa') loop
+             and not exists (select 1 from fluxo.listas l where l.id = k.lista_id and l.tipo = 'pausa')
+             and not app.terreno_excluido(app.terreno_da_tarefa(k.id)) loop
     perform app._notificar(r.empresa_id, r.responsavel_id, 'tarefa_atrasada', 'Tarefa atrasada: ' || r.titulo, app.terreno_da_tarefa(r.id), 'tarefas', r.id, r.prazo, null);
     get diagnostics n = row_count; total := total + n;
   end loop;
@@ -382,6 +387,7 @@ begin
            join app.subetapas_modelo s on s.empresa_id = p.empresa_id and s.fase = p.fase and s.codigo = p.subetapa_atual
            join app.terrenos t on t.id = p.terreno_id
            where p.status = 'ativo' and s.prazo_dias is not null and p.subetapa_desde::date + s.prazo_dias < p_hoje
+             and t.excluido_em is null
              -- negociação do terreno dividida em partes: o aviso vem de cada parte
              and not exists (select 1 from app.processos c where c.principal_id = p.id and c.status in ('ativo','stand_by')) loop
     perform app._notificar(r.empresa_id, r.responsavel_id, 'subetapa_prazo',

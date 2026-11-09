@@ -64,8 +64,11 @@ function tabela(itens, y0, y1, colunas, reserva = {}) {
   const vals = itens.filter((i) => i.y > y1 + 2 && i.y <= y1 + 22 && (numero(i.t) != null || data(i.t)));
   const out = Object.fromEntries(colunas.map(([k]) => [k, null]));
   for (const v of vals) {
-    const col = [...rots].reverse().find((r) => r.x <= v.x + 4);
-    if (!col) continue;
+    const i = rots.findLastIndex((r) => r.x <= v.x + 4);
+    if (i < 0) continue;
+    const col = rots[i];
+    // a última coluna não vai até a borda: o que estiver bem à direita dela é outro quadro
+    if (i === rots.length - 1 && v.x > col.x + 110) continue;
     if (out[col.chave] != null) throw new ErroLeitura(`Dois valores na coluna ${col.chave}`);
     out[col.chave] = v.t;
   }
@@ -85,7 +88,16 @@ export function lerItens(itensBrutos) {
   // Cabeçalho: cadastro, exercício e número da notificação, logo abaixo dos rótulos.
   const rCad = acharRotulo(it, /^CADASTRO DO IMOVEL$/);
   if (!rCad) throw new ErroLeitura('Cabeçalho "Cadastro do imóvel" não encontrado: o PDF não é a notificação de lançamento.');
-  const cab = tabela(it, rCad.y - 1, rCad.y + 1, [['cadastro', /^CADASTRO DO IMOVEL$/], ['exercicio', /^EXERCICIO$/], ['nl', /^NL$/]]);
+  // cada valor fica logo abaixo do seu rótulo (até 30 pt abaixo e 30 pt de lado), com o formato dele
+  const abaixo = (rot, re) => {
+    if (!rot) return null;
+    const v = it.filter((i) => i.y > rot.y + 2 && i.y < rot.y + 30 && Math.abs(i.x - rot.x) < 30 && re.test(i.t));
+    if (v.length > 1) throw new ErroLeitura(`Dois valores para ${rot.t} no cabeçalho`);
+    return v[0]?.t ?? null;
+  };
+  const naLinha = (re) => it.find((i) => Math.abs(i.y - rCad.y) <= 2 && re.test(sem(i.t)));
+  const cab = { exercicio: abaixo(naLinha(/^EXERCICIO$/), /^\d{4}$/), nl: abaixo(naLinha(/^NL$/), /^\d{1,3}$/) };
+  if (!cab.exercicio) throw new ErroLeitura('Exercício não encontrado no cabeçalho do PDF.');
   const sqlTxt = it.find((i) => i.y > rCad.y && i.y < rCad.y + 30 && /^\d{3}\.\d{3}\.\d{4}-\d$/.test(i.t))?.t ?? null;
 
   // Dados cadastrais: rótulo à esquerda, valor à direita na mesma linha.
@@ -153,7 +165,7 @@ export function lerItens(itensBrutos) {
   const imp = (o) => ({ base_calculo: nb(o, 'base'), aliquota: nb(o, 'aliquota'), desconto_acrescimo: nb(o, 'desconto'), imposto_calculado: nb(o, 'calculado'), fator_especial: nb(o, 'especial'), deducoes_acrescimos: nb(o, 'deducoes'), imposto_a_pagar: nb(o, 'a_pagar') });
   const out = {
     versao: 1,
-    sql: sqlTxt ?? cab.cadastro,
+    sql: sqlTxt,
     exercicio: Number.isFinite(exercicio) ? exercicio : null,
     notificacao: cab.nl ?? null,
     terreno: { area_incorporada_m2: numero(esq(/^AREA INCORPORADA/)), area_nao_incorporada_m2: numero(esq(/^AREA NAO INCORPORADA/)), area_total_m2: numero(esq(/^AREA TOTAL/)), testada_m: numero(esq(/^TESTADA/)) },

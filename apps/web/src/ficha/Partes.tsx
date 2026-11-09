@@ -14,6 +14,7 @@ import { digitos, GEO_BASE, loteDoSql } from '../novo/geosampa';
 import { consultarLote, consultarTerreno, useConsultaGeo } from '../novo/consulta';
 import type { Ficha, R } from './dados';
 import { lerNum, num, Quadro } from './edicao';
+import { buscando } from '../lib/buscando';
 import { useNavigate } from 'react-router-dom';
 import LotesGeo from '../novo/LotesGeo';
 import type { LoteSql } from '../novo/geosampa';
@@ -27,6 +28,7 @@ import { pedirOferta } from './Comercial';
 const SIT_IPTU: Record<string, string> = { nao_informada: 'Não informada', tributado: 'Tributado', isento: 'Isento' };
 const brl = (v: number | null | undefined, d = 0) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: d, maximumFractionDigits: d }));
 const CRIS = Array.from({ length: 18 }, (_, i) => `${i + 1}º CRI`);
+const NO_EXCLUIDO = 'O administrador pode restaurar ou deletar esse terreno em Configurações › Terrenos excluídos.';
 const soma = (v: number[]) => v.reduce((s, x) => s + x, 0);
 /** máscara da inscrição da cidade (0 = dígito) */
 const mascarar = (s: string, m: string) => { const d = digitos(s); let o = '', i = 0; for (const c of m) { if (i >= d.length) break; o += c === '0' ? d[i++] : c; } return o; };
@@ -206,7 +208,9 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
     if (doc && doc.length !== 11 && doc.length !== 14) { toast('O CPF tem 11 dígitos (o CNPJ, 14).', true); return; }
     if (tel && (tel.length < 10 || tel.length > 11)) { toast('Telefone com DDD: 10 ou 11 dígitos.', true); return; }
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('E-mail inválido.', true); return; }
+    /* do proprietário só o nome e a participação são obrigatórios; telefone, e-mail e CPF não (pedido do Moises, 9/nov/2026) */
     const pct = nv.papel === 'proprietario' && nv.pct.trim() ? lerNum(nv.pct) : null;
+    if (nv.papel === 'proprietario' && pct == null) { toast('Informe a participação do proprietário.', true); document.getElementById('pp-p')?.focus(); return; }
     if (pct != null && !(pct > 0 && pct <= 100)) { toast('A participação vai de 0 a 100%.', true); return; }
     const dp = { nome_razao_social: nome, tipo_pessoa: doc.length === 14 ? 'PJ' : 'PF', telefone: tel || null, email: email || null, cpf_cnpj: doc || null };
     setGrav(true);
@@ -249,7 +253,7 @@ function JanelaPessoas({ f, pa, ps, fechar }: { f: Ficha; pa: R; ps: R[]; fechar
             <div className="field pp-nome"><label htmlFor="pp-n">Nome</label><input id="pp-n" required autoComplete="off" value={nv.nome} onChange={(e) => setNv({ ...nv, nome: e.target.value })} /></div>
             <div className="field"><label htmlFor="pp-r">Relação</label><select id="pp-r" value={nv.papel} onChange={(e) => setNv({ ...nv, papel: e.target.value, pct: e.target.value === 'proprietario' ? nv.pct : '' })}>
               {Object.entries(RELACAO).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
-            <div className="field"><label htmlFor="pp-p">% de participação</label><Adorno t="pct"><input id="pp-p" inputMode="decimal" data-fmt="pct" disabled={!prop} value={nv.pct} onChange={(e) => setNv({ ...nv, pct: e.target.value })} /></Adorno></div>
+            <div className="field"><label htmlFor="pp-p">% de participação</label><Adorno t="pct"><input id="pp-p" inputMode="decimal" data-fmt="pct" disabled={!prop} required={prop} value={nv.pct} onChange={(e) => setNv({ ...nv, pct: e.target.value })} /></Adorno></div>
             <div className="field"><label htmlFor="pp-t">Telefone</label><input id="pp-t" inputMode="tel" data-fmt="tel" placeholder="(11) 98765-4321" value={nv.tel} onChange={(e) => setNv({ ...nv, tel: e.target.value })} /></div>
             <div className="field"><label htmlFor="pp-e">E-mail</label><input id="pp-e" type="email" placeholder="nome@email.com" value={nv.email} onChange={(e) => setNv({ ...nv, email: e.target.value })} /></div>
             <div className="field"><label htmlFor="pp-c">CPF</label><input id="pp-c" inputMode="numeric" data-fmt="doc" placeholder="000.000.000-00" value={nv.doc} onChange={(e) => setNv({ ...nv, doc: e.target.value })} /></div>
@@ -442,7 +446,8 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         .eq('municipio_id', base?.municipio_id ?? f.t.municipio_id);
     const { data } = await q;
     const x = ((data ?? []) as R[]).find((r) => tipo === 's' || !r.cartorio || !cri || r.cartorio === cri);
-    return x?.terrenos ?? null;
+    /* sem o terreno na resposta: está num terreno excluído (a leitura esconde), que ainda segura o número */
+    return x ? x.terrenos ?? { excluido: true } : null;
   }
   const P = L.partes, base = L.base, rot = base?.rotulo ?? 'Inscrição', sp = base?.codigo === 'geosampa';
   const crisSel = f.t.cartorio && !CRIS.includes(f.t.cartorio) ? [f.t.cartorio, ...CRIS] : CRIS;
@@ -610,6 +615,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     if (!digitos(n)) { toast('Informe o número da matrícula.', true); return; }
     if (L.mats.some((m) => m.numero_norm === digitos(n) && (!m.cartorio || !cri || m.cartorio === cri))) { toast(`A matrícula ${n} já está no terreno.`, true); return; }
     const ou = await outroTerreno('m', digitos(n), cri);
+    if (ou?.excluido) { toast(`A matrícula ${n} está num terreno excluído. ${NO_EXCLUIDO}`, true); return; }
     if (ou) { setDup({ oque: `A matrícula ${n}`, codigo: ou.codigo, nome: ou.nome }); return; }
     const { error } = await supabase.from('matriculas').insert({ empresa_id: empresa!.id, terreno_id: f.id, numero: n, cartorio: cri, area_registrada_m2: lerNum(mat.area) });
     if (error) { toast(error.message, true); return; }
@@ -626,6 +632,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     if (base && d.length !== ndig) { toast(`${rot} incompleto: são ${ndig} dígitos.`, true); return; }
     if (L.insc.some((i) => i.inscricao_norm === d)) { toast(`O ${rot} ${sql} já está no terreno.`, true); return; }
     const ou = await outroTerreno('s', d, null);
+    if (ou?.excluido) { toast(`O ${rot} ${sql} está num terreno excluído. ${NO_EXCLUIDO}`, true); return; }
     if (ou) { setDup({ oque: `O ${rot} ${sql}`, codigo: ou.codigo, nome: ou.nome }); return; }
     setGrav(true);
     try {
@@ -937,8 +944,56 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
 
 /* ---------- janela da etiqueta ---------- */
 type OpsEtq = { parte: (k: string, pid: string | null, mp?: string | null) => Promise<void>; duplicar: (k: string) => Promise<void>; percentual: (tipo: Tp, c: R, v: number | null) => Promise<boolean>; tirar: (k: string) => void; apagar: (k: string) => void };
+/** Lançar ou atualizar o IPTU de um SQL à mão: só fora de São Paulo (pedido do Moises, 9/nov/2026), onde não há a busca na
+ * Prefeitura. Cada lançamento é uma revisão nova em app.inscricao_valores; só vale o exercício mais recente. */
+export function FormIptu({ f, x, vv, onFeito }: { f: Ficha; x: R; vv: R | undefined; onFeito?: () => void }) {
+  const { empresa } = useSessao();
+  const toast = useToast(), recarregar = useRecarregar(f);
+  const IPTU0 = { ex: String(vv?.exercicio ?? new Date().getFullYear()), sit: 'tributado', parc: '10' };
+  const kI = `${f.id}:iptu:${x.id}`;
+  const [iptu, setIptu] = useState<Record<string, string>>(() => comRasc(kI, IPTU0));
+  const iref = useRef<HTMLFormElement>(null);
+  const temI = ['vt', 'vc', 'iptu', 'mensal', 'fonte'].some((c) => (iptu[c] ?? '').trim() !== '');
+  useGuardarRasc(kI, iptu, temI);
+  async function lancar(ev: FormEvent) {
+    ev.preventDefault();
+    const ex = parseInt(iptu.ex, 10);
+    if (vv && ex < vv.exercicio) { toast(`Já há IPTU de ${vv.exercicio}: só vale o exercício mais recente.`, true); return; }
+    const { error } = await supabase.from('inscricao_valores').insert({
+      empresa_id: empresa!.id, inscricao_id: x.id, exercicio: ex, valor_venal_terreno: lerNum(iptu.vt), valor_venal_construcao: lerNum(iptu.vc),
+      situacao_iptu: iptu.sit, iptu_valor_anual: iptu.sit === 'isento' ? null : lerNum(iptu.iptu), iptu_parcelas: iptu.parc ? parseInt(iptu.parc, 10) : null,
+      iptu_mensal_informado: iptu.sit === 'isento' ? null : lerNum(iptu.mensal), fonte: iptu.fonte?.trim() || null,
+    });
+    if (error) { toast(error.message, true); return; }
+    apagarRasc(kI);
+    setIptu({ ex: String(ex), sit: 'tributado', parc: '10' });
+    recarregar();
+    onFeito?.();
+  }
+  const ip = (k2: string, l: string, extra: Record<string, unknown> = {}) => (
+    <div className="field" key={k2} style={extra.style as any}><label htmlFor={`v-${x.id}-${k2}`}>{l.replace(' (R$)', '')}</label>{(() => {
+      const r = / \(R\$\)/.test(l), i = <input id={`v-${x.id}-${k2}`} inputMode="decimal" data-fmt={r ? 'moeda' : (extra.attrs as any)?.inputMode === 'numeric' ? 'none' : undefined} value={iptu[k2] ?? ''} onChange={(e) => setIptu({ ...iptu, [k2]: e.target.value })} {...(extra.attrs as any)} />;
+      return r ? <Adorno t="moeda">{i}</Adorno> : i; })()}</div>
+  );
+  return (
+    <>
+          <form className="inline-form" ref={iref} style={{ border: 0, paddingTop: 4 }} onSubmit={lancar}>
+            {ip('ex', 'Exercício', { style: { flex: '0 1 96px' }, attrs: { inputMode: 'numeric', required: true } })}
+            {ip('vt', 'Venal terreno (R$)')}{ip('vc', 'Venal construção (R$)')}
+            <div className="field"><label htmlFor={`v-${x.id}-sit`}>Situação do IPTU</label><select id={`v-${x.id}-sit`} value={iptu.sit} onChange={(e) => setIptu({ ...iptu, sit: e.target.value })}>{Object.entries(SIT_IPTU).map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select></div>
+            {ip('iptu', 'IPTU anual (R$)')}{ip('parc', 'Parcelas', { style: { flex: '0 1 86px' }, attrs: { inputMode: 'numeric' } })}
+            {ip('mensal', 'IPTU mensal informado (R$)', { attrs: { placeholder: 'se a fonte trouxer' } })}
+            <div className="field grow"><label htmlFor={`v-${x.id}-fonte`}>Fonte</label><input id={`v-${x.id}-fonte`} required placeholder="Carnê, certidão de dados cadastrais..." value={iptu.fonte ?? ''} onChange={(e) => setIptu({ ...iptu, fonte: e.target.value })} /></div>
+            <button className="btn sm"><Ic n="add" s={16} />{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</button>
+            <LimparRasc chave={kI} mostrar={temI} limpar={() => setIptu(IPTU0)} />
+          </form>
+          <div className="hint">Só vale o exercício mais recente: lançar o ano novo substitui o anterior.</div>
+    </>
+  );
+}
+
 function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fechar: () => void; ops: OpsEtq }) {
-  const { edita, empresa } = useSessao();
+  const { edita } = useSessao();
   const toast = useToast(), recarregar = useRecarregar(f);
   const [tipo, id, cid] = k.split(':') as [Tp, string, string | undefined];
   const x = lotesDe(L, tipo).find((l) => l.id === id);
@@ -951,12 +1006,6 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
   useEffect(() => { setPct(Object.fromEntries(cs.map((y) => [y.id, y.percentual != null ? num(+y.percentual, +y.percentual % 1 ? 2 : 0) : '']))); }, [pctSig]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [v, setV] = useState<Record<string, string>>({});
   const [busc, setBusc] = useState(false);
-  const IPTU0 = { ex: String(new Date().getFullYear()), sit: 'tributado', parc: '10' };
-  const kI = `${f.id}:iptu:${id}`;
-  const [iptu, setIptu] = useState<Record<string, string>>(() => comRasc(kI, IPTU0));
-  const iref = useRef<HTMLFormElement>(null);
-  const temI = ['vt', 'vc', 'iptu', 'mensal', 'fonte'].some((c) => (iptu[c] ?? '').trim() !== '');
-  useGuardarRasc(kI, iptu, temI);
   useEffect(() => {
     if (!x) return;
     setV(tipo === 'm' ? { numero: x.numero, cartorio: x.cartorio ?? '', area_registrada_m2: x.area_registrada_m2 != null ? num(x.area_registrada_m2, 2) : '', data_certidao: x.data_certidao ?? '' }
@@ -1053,28 +1102,9 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
   const venal = vv ? (vv.valor_venal_imovel ?? (vv.valor_venal_terreno != null && vv.valor_venal_construcao != null ? +vv.valor_venal_terreno + +vv.valor_venal_construcao : vv.valor_venal_terreno)) : null;
   async function buscar() {
     setBusc(true);
-    try { const ok = await consultarLote(x!.id, x!.inscricao); toast(ok ? 'GeoSampa consultado.' : 'O GeoSampa não achou o lote deste SQL.', !ok); recarregar(); }
+    try { const ok = await buscando(f.id, 'geosampa', consultarLote(x!.id, x!.inscricao)); toast(ok ? 'GeoSampa consultado.' : 'O GeoSampa não achou o lote deste SQL.', !ok); recarregar(); }
     catch (e: any) { toast(e?.message ?? String(e), true); } finally { setBusc(false); }
   }
-  async function lancar(ev: FormEvent) {
-    ev.preventDefault();
-    const ex = parseInt(iptu.ex, 10);
-    if (vv && ex < vv.exercicio) { toast(`Já há IPTU de ${vv.exercicio}: só vale o exercício mais recente.`, true); return; }
-    const { error } = await supabase.from('inscricao_valores').insert({
-      empresa_id: empresa!.id, inscricao_id: x!.id, exercicio: ex, valor_venal_terreno: lerNum(iptu.vt), valor_venal_construcao: lerNum(iptu.vc),
-      situacao_iptu: iptu.sit, iptu_valor_anual: iptu.sit === 'isento' ? null : lerNum(iptu.iptu), iptu_parcelas: iptu.parc ? parseInt(iptu.parc, 10) : null,
-      iptu_mensal_informado: iptu.sit === 'isento' ? null : lerNum(iptu.mensal), fonte: iptu.fonte?.trim() || null,
-    });
-    if (error) { toast(error.message, true); return; }
-    apagarRasc(kI);
-    setIptu({ ex: String(ex), sit: 'tributado', parc: '10' });
-    recarregar();
-  }
-  const ip = (k2: string, l: string, extra: Record<string, unknown> = {}) => (
-    <div className="field" key={k2} style={extra.style as any}><label htmlFor={`v-${k2}`}>{l.replace(' (R$)', '')}</label>{(() => {
-      const r = / \(R\$\)/.test(l), i = <input id={`v-${k2}`} inputMode="decimal" data-fmt={r ? 'moeda' : (extra.attrs as any)?.inputMode === 'numeric' ? 'none' : undefined} value={iptu[k2] ?? ''} onChange={(e) => setIptu({ ...iptu, [k2]: e.target.value })} {...(extra.attrs as any)} />;
-      return r ? <Adorno t="moeda">{i}</Adorno> : i; })()}</div>
-  );
   return (
     <Dialogo titulo={`${rot} ${x.inscricao}`} sub={x.endereco_prefeitura ?? undefined} onFechar={fechar} rodape={rodape}>
       <div className="pt2-g">
@@ -1103,21 +1133,8 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
             <td className="muted vv-f">{vv.fonte || '—'}</td></tr>
         </tbody></table></div>
       ) : <div className="muted">Sem IPTU lançado.</div>}
-      {edita && (
-        <details className="details"><summary>{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</summary>
-          <form className="inline-form" ref={iref} style={{ border: 0, paddingTop: 4 }} onSubmit={lancar}>
-            {ip('ex', 'Exercício', { style: { flex: '0 1 96px' }, attrs: { inputMode: 'numeric', required: true } })}
-            {ip('vt', 'Venal terreno (R$)')}{ip('vc', 'Venal construção (R$)')}
-            <div className="field"><label htmlFor="v-sit">Situação do IPTU</label><select id="v-sit" value={iptu.sit} onChange={(e) => setIptu({ ...iptu, sit: e.target.value })}>{Object.entries(SIT_IPTU).map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select></div>
-            {ip('iptu', 'IPTU anual (R$)')}{ip('parc', 'Parcelas', { style: { flex: '0 1 86px' }, attrs: { inputMode: 'numeric' } })}
-            {ip('mensal', 'IPTU mensal informado (R$)', { attrs: { placeholder: 'se a fonte trouxer' } })}
-            <div className="field grow"><label htmlFor="v-fonte">Fonte</label><input id="v-fonte" required placeholder="Carnê, certidão de dados cadastrais..." value={iptu.fonte ?? ''} onChange={(e) => setIptu({ ...iptu, fonte: e.target.value })} /></div>
-            <button className="btn sm"><Ic n="add" s={16} />{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</button>
-            <LimparRasc chave={kI} mostrar={temI} limpar={() => setIptu(IPTU0)} />
-          </form>
-          <div className="hint">Só vale o exercício mais recente: lançar o ano novo substitui o anterior.</div>
-        </details>
-      )}
+      {edita && !sp && <details className="details"><summary>{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</summary><FormIptu f={f} x={x} vv={vv} /></details>}
+      {sp && <div className="hint">Em São Paulo, o valor venal e o IPTU vêm sozinhos da Prefeitura e não se digitam (seção IPTU da aba Terreno).</div>}
     </Dialogo>
   );
 }

@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import SemAcesso from './pages/SemAcesso';
 import Setup from './pages/Setup';
 import Mapa from './pages/Mapa';
+import TerrenosExcluidos from './pages/TerrenosExcluidos';
 import FichaPagina from './pages/FichaPagina';
 import Funil from './pages/Funil';
 
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="fases/*" element={<Navigate to="/funil" replace />} />
         <Route path="terrenos/novo" element={<Mapa />} />
         <Route path="terrenos/:codigo/*" element={<FichaPagina />} />
+        <Route path="configuracoes/excluidos" element={<TerrenosExcluidos />} />
         <Route path="*" element={<Navigate to="/mapa" replace />} />
       </Route>
     </Routes>
