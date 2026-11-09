@@ -11,7 +11,8 @@ export interface Pino { id: string; nome: string; lat: number; lng: number; poly
 export interface Ganchos {
   pino(id: string): void;
   vazio(lat: number, lng: number): void;
-  menu(x: number, y: number, lat: number, lng: number): void;
+  /** clique direito; `terreno` = o pino ou a poligonal de um terreno cadastrado estava sob o mouse */
+  menu(x: number, y: number, lat: number, lng: number, terreno?: string): void;
   duplo(lat: number, lng: number, alvo: EventTarget | null): void;
   fecharMenu(): void;
   streetView(on: boolean): void;
@@ -65,6 +66,8 @@ export class Motor {
   mapa: any;
   private info: any;
   private pinos: any[] = [];
+  private ps: Pino[] = [];
+  private rt: any[] = [];
   private eu: any[] = [];
   private achado: any = null;
   private proj: any = null;
@@ -83,12 +86,16 @@ export class Motor {
     this.proj = new google.maps.OverlayView();
     this.proj.onAdd = () => {}; this.proj.draw = () => {}; this.proj.onRemove = () => {};
     this.proj.setMap(M);
-    /* clique direito no contêiner: o menu "Novo terreno aqui" */
+    /* clique direito no contêiner: o menu "Novo terreno aqui" / "Traçar rota até aqui"; sobre o pino ou dentro da poligonal
+       de um terreno, avisa qual (aí não há "Novo terreno aqui"; pedido do Moises, 9/nov/2026) */
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       const r = el.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
       const ll = this.proj.getProjection()?.fromContainerPixelToLatLng(new google.maps.Point(x, y));
-      if (ll) g.menu(x, y, ll.lat(), ll.lng());
+      if (!ll) return;
+      const noPino = (e.target as HTMLElement | null)?.closest?.('[data-terreno]') as HTMLElement | null;
+      const t = noPino?.dataset.terreno ?? this.ps.find((p) => p.poly && dentro(ll.lat(), ll.lng(), p.poly))?.id;
+      g.menu(x, y, ll.lat(), ll.lng(), t);
     });
     M.addListener('dragstart', g.fecharMenu); M.addListener('zoom_changed', g.fecharMenu);
     M.addListener('dragstart', () => g.movendo(true)); M.addListener('zoom_changed', () => g.movendo(true));
@@ -113,11 +120,12 @@ export class Motor {
   desenhar(ps: Pino[], sel: string | null) {
     this.pinos.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null)));
     this.pinos = [];
-
+    this.ps = ps;
     const { AdvancedMarkerElement } = gLib.marker, { google } = window;
     for (const t of ps) {
       const d = document.createElement('div');
       d.className = 'pin g' + (sel === t.id ? ' sel' : '');
+      d.dataset.terreno = t.id;
       d.innerHTML = `<span class="pin-b" style="background:${t.cor}"><b class="pin-d" style="background:${t.fg}"></b></span>`;
       const mk = new AdvancedMarkerElement({ map: this.mapa, position: gLL(t.lat, t.lng), content: d, title: t.nome, gmpClickable: !this.modo, zIndex: sel === t.id ? 10 : 1 });
       mk.addEventListener('gmp-click', () => this.g.pino(t.id));
@@ -365,13 +373,49 @@ export class Motor {
     const p = this.proj.getProjection()?.fromLatLngToContainerPixel(new window.google.maps.LatLng(lat, lng));
     return p ? { x: p.x as number, y: p.y as number } : null;
   }
+  /** rota (Traçar rota até aqui): o destino aparece logo; a linha e a origem quando a rota chega */
+  rotaLimpar() { this.rt.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.rt = []; }
+  rota(d: { lat: number; lng: number }, o?: { lat: number; lng: number } | null, path?: { lat: number; lng: number }[] | null, pe?: boolean) {
+    const { google } = window;
+    this.rotaLimpar();
+    const mk = (p: { lat: number; lng: number }, cls: string, titulo: string) => {
+      const el = document.createElement('div'); el.className = cls;
+      return new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(p.lat, p.lng), content: el, title: titulo, gmpClickable: false, zIndex: 950 });
+    };
+    if (path?.length) {
+      /* a pé, pontilhada, como no Google Maps; os outros modos, linha cheia com contorno */
+      if (pe) this.rt.push(new google.maps.Polyline({ map: this.mapa, path, strokeOpacity: 0, clickable: false, zIndex: 40,
+        icons: [{ icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#0b57d0', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 1.5, scale: 4.5 }, offset: '0', repeat: '13px' }] }));
+      else {
+        this.rt.push(new google.maps.Polyline({ map: this.mapa, path, strokeColor: '#0a3f9c', strokeWeight: 8, strokeOpacity: 0.9, clickable: false, zIndex: 39 }));
+        this.rt.push(new google.maps.Polyline({ map: this.mapa, path, strokeColor: '#1a73e8', strokeWeight: 5, strokeOpacity: 1, clickable: false, zIndex: 40 }));
+      }
+    }
+    if (o) this.rt.push(mk(o, 'rt-o', 'Origem'));
+    this.rt.push(mk(d, 'rt-d', 'Destino'));
+    if (path?.length) {
+      const b = new google.maps.LatLngBounds();
+      path.forEach((p) => b.extend(p));
+      this.mapa.fitBounds(b, { top: 80, left: 400, right: 80, bottom: 60 });
+    }
+  }
   destruir() {
+    this.rotaLimpar();
     if (this.pinEd) this.pinEd.map = null;
     this.rasc.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.merc.forEach((m) => (m.map = null)); if (this.mercDest) this.mercDest.map = null; this.pinos.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.el.innerHTML = ''; }
 }
 
 /* gestos num ponto: arrastar move; clique direito ou dois cliques (mouse) abrem o menu; segurar (toque) também.
    O clique direito só vale com mouse: no Android o toque longo também dispara contextmenu, com o dedo ainda na tela. */
+/** ponto dentro da poligonal (raio cruzando as arestas) */
+function dentro(lat: number, lng: number, poly: [number, number][]) {
+  let d = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [ai, bi] = poly[i], [aj, bj] = poly[j];
+    if ((bi > lng) !== (bj > lng) && lat < ((aj - ai) * (lng - bi)) / (bj - bi) + ai) d = !d;
+  }
+  return d;
+}
 export const TOQUE = () => matchMedia('(pointer: coarse)').matches;
 export function vGestos(el: HTMLElement, i: number, gp: GestosPonto) {
   el.classList.add('v-ponto');
