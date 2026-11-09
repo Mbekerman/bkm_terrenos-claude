@@ -103,7 +103,8 @@ apps/web/
 | --- | --- |
 | `dados.ts` | `carregarFicha(empresa, codigo)`: tenta `app.ficha_dados` (uma chamada) e, se a função não existir no banco, cai nos pedidos separados (`semFuncao`, `dados.ts:105`). Monta o objeto `Ficha` (topo, linha do tempo, contagens, completude). A completude tem 11 itens; "Visita técnica" só entra com `INFRA_PORTADA = true`, a ligar quando a aba Infraestrutura for portada. Constantes de rótulo (`FONTE_AREA`, `ZONA`, `TEMP`, `TP_N`). |
 | `Ficha.tsx` | Topo (código, nome, fase · etapa · subetapa, temperatura), linha do tempo, barra de abas em "roleta" com inércia e ⋮, Visão geral (mini-mapa e Resumo), alerta do que falta. `useFicha` e `usePreCarregarFicha` (`Ficha.tsx:338`, `:345`). |
-| `Gaveta.tsx` | A ficha na gaveta da direita da página Mapa (`/mapa/A123/ficha`), com largura arrastável. |
+| `Gaveta.tsx` | A ficha na gaveta da direita da página Mapa (`/mapa/A123/ficha`), com largura arrastável; lembra aba, rolagem e quadros abertos por terreno (`lembrar.ts`). |
+| `lembrar.ts` | `lerPos`/`guardarPos`: onde a pessoa parou na gaveta de cada terreno, em `localStorage`, nos 50 terrenos mais recentes. |
 | `edicao.tsx` | Edição no lugar: `SECOES` (campos de cada quadro), `useSalvar` (fila de gravações por `app.salvar_terreno`), `useVivo`/`Vivo`/`CampoVivo`, `Quadro` (abre e fecha pela seta), `CamposEndereco`, `pedirCampo`/`focar`/`acender` (levar a um campo e acendê-lo). |
 | `Terreno.tsx` | Aba Terreno: identificação, localização, áreas (cinco fontes e a adotada). |
 | `Partes.tsx` | Partes, Matrículas e SQLs (1.192 linhas): etiquetas arrastáveis, percentual por etiqueta, consulta do GeoSampa por SQL, "Escolher no mapa", proprietários por parte, refazer a poligonal pela soma dos lotes. |
@@ -329,7 +330,7 @@ Peças, em `ficha/edicao.tsx`:
 
 ### Quadros que abrem e fecham, e "ir ao campo"
 
-- `Quadro` (`edicao.tsx:423`): o quadro da aba nasce fechado, menos o primeiro; a escolha vale na sessão, por aba (`QD`, em memória). `abrirQuadro` e `abrirQuadroJa` abrem por código (o log, o aviso do que falta).
+- `Quadro` (`edicao.tsx:434`): o quadro da aba nasce fechado, menos o primeiro; a escolha vale na sessão, por aba (`QD`, em memória). Na gaveta do Mapa, os quadros vêm de uma loja por terreno (`LojaQdCtx`, criada pela gaveta a partir de `lembrar.ts`) e ficam guardados no navegador. `abrirQuadro` e `abrirQuadroJa` abrem por código (o log, o aviso do que falta).
 - `pedirCampo({ sec, campo })` dispara o evento `ficha-campo`; a aba que tem a seção atende (`usePedido`), abre o quadro, rola até o campo "na altura dos olhos" (abaixo das abas e do título preso) e acende (`acender`, uma piscada verde-limão de 2,7 s).
 
 ---
@@ -455,7 +456,8 @@ Tudo em `localStorage` (vale entre sessões, por navegador), salvo onde está di
 | `bkm-terrenos-mapa-filtro-conc` | filtro da concorrência; expira | `Mapa.tsx:55` |
 | `bkm-terrenos-mapa-visto` | última vez na página Mapa; passados 30 min fora, camada e filtro da concorrência se apagam | `Mapa.tsx:55` |
 | `bkm-terrenos-concorrencia-fixa` | card do empreendimento fixado pelo olhinho | `Concorrencia.tsx:204` |
-| `bkm-terrenos-ficha-gaveta` | largura da gaveta da ficha no Mapa | `Gaveta.tsx:10` |
+| `bkm-terrenos-ficha-gaveta` | largura da gaveta da ficha no Mapa | `Gaveta.tsx:12` |
+| `bkm-terrenos-gaveta-pos` | por terreno (código), onde a pessoa parou na gaveta: aba, rolagem e quadros abertos por aba; só os 50 mais recentes | `lembrar.ts:5` |
 | `bkm-terrenos-painel` | painel lateral da ficha: aberto, aba (Ações, Tarefas, Logs), filtro de usuários e período dos logs | `Painel.tsx:19` |
 | `bkm-terrenos-entorno-concorrencia` | raio (1, 2, 3 km) e situações do quadro Concorrência no entorno | `Entorno.tsx:310` |
 | `bkm-terrenos-rasc:<terreno>:<formulário>` | rascunho de formulário não registrado | `Rascunho.tsx:114` |
