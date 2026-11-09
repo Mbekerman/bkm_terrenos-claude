@@ -6,7 +6,7 @@
 
 Guardar o que o terreno **é**: nome, endereço, quem são os donos (partes), as matrículas e os SQLs de cada um e as áreas. Os dados comerciais (valor, oferta, proposta) ficam na aba Comercial.
 
-A aba tem, nesta ordem, os quadros: **Identificação**, **Endereço e localização**, **Parâmetros urbanísticos** (com os quadros Índices urbanísticos, Restrições e entorno e Histórico de uso; ver [07](07-ficha-parametros.md)), **Partes**, **Matrículas e SQLs** (com o quadro de cada parte) **Áreas e dimensões** e **IPTU**. Cada quadro abre e fecha pela seta do título. Todos os campos se editam no lugar (ver [04](04-ficha-visao-geral.md#editar-no-lugar)).
+A aba tem, nesta ordem, os quadros: **Identificação**, **Endereço e localização**, **Parâmetros urbanísticos** (com os quadros Índices urbanísticos, Restrições e entorno e Histórico de uso; ver [07](07-ficha-parametros.md)), **Partes**, **Matrículas e SQLs** (com o quadro de cada parte), **Áreas e dimensões** e **IPTU**. Cada quadro abre e fecha pela seta do título. Todos os campos se editam no lugar (ver [04](04-ficha-visao-geral.md#editar-no-lugar)).
 
 ## Identificação
 
