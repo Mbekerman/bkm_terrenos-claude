@@ -8,7 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
-- **Barra de abas da ficha**: com o mouse em cima, o cursor é o dedinho (antes, a mão aberta); a mão fechada só aparece enquanto o botão do mouse está apertado, para arrastar a barra. (#PR)
+- **Barra de abas da ficha**: com o mouse em cima, o cursor é o dedinho (antes, a mão aberta); a mão fechada só aparece enquanto o botão do mouse está apertado, para arrastar a barra. (#249)
 - **Busca da barra de cima** procura de fato por matrícula, SQL e endereço (rua, número, CEP), com ou sem pontuação e sem ligar para acento; digitada fora do Mapa, leva ao Mapa com o texto. (#247)
 - **Completude da ficha** chega a 100%: a "Visita técnica" saiu da conta enquanto a aba Infraestrutura não existe no sistema real. (#247)
 
