@@ -1,6 +1,6 @@
 # 03. Novo terreno
 
-**Disponível.** Botão **"Novo terreno"** no menu lateral (endereço `/terrenos/novo`), ou clique direito no mapa › **"Novo terreno aqui"**, ou dois cliques no vazio do mapa. Leitura e Básico não cadastram.
+**Disponível.** Botão **"Novo terreno"** no menu lateral (endereço `/terrenos/novo`), ou clique direito no mapa › **"Novo terreno aqui"** (não aparece sobre um terreno já cadastrado), ou dois cliques no vazio do mapa. Leitura e Básico não cadastram.
 
 ## Para que serve
 
