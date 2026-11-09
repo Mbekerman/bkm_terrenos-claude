@@ -82,6 +82,7 @@ apps/web/
 | --- | --- |
 | `Moldura.tsx` | Barra superior (logo, selo do ambiente, busca, sino, perfil; na largura toda, com o logo alinhado ao menu e o perfil à mesma margem da direita, regras no fim de `app.css`), menu lateral recolhível, barra inferior do celular, FAB "Novo terreno" e as janelas globais (`NovoTerreno`, `TrocarEndereco`). Passa a busca da barra às telas pelo `Outlet context` (`ContextoMoldura`); digitar fora do Mapa leva a `/mapa`. Quem filtra é `bate()` em `mapa/dados.ts`: código, nome, endereço, bairro, zona, município, corretor, matrículas e SQLs (estes também só pelos dígitos). Tem também `Ic` e `Bi` (ícones), `SeloAmbiente`, `Logo`, `Perfil` e `Sino`. |
 | `ui.tsx` | `Dialogo` (janela modal), `ToastProvider`/`useToast` (aviso de 3,2 s), `Carregando`, `Erro`, `Marca`, `Icon`. Tem sobras de outubro sem uso (`ChipStatus`, `ChipDoc`, `Avatar`). |
+| `MenuTerreno.tsx` | Menu ⋮ do terreno (Excluir; Deletar de vez só para o administrador), só para diretor e administrador; na gaveta (`ficha/Gaveta.tsx`) e no cabeçalho da página da ficha (`ficha/Ficha.tsx`); pronto para a linha da futura seção Terrenos. Exporta `DialogoDeletar` (aviso e nome digitado), usado também em `pages/TerrenosExcluidos.tsx`. |
 | `Desfazer.tsx` | Ctrl+Z / Ctrl+Y globais (ver [seção 7](#7-edição-na-ficha)). |
 | `Rascunho.tsx` | Aviso de formulário não registrado e rascunho guardado no navegador (ver [seção 7](#7-edição-na-ficha)). |
 
@@ -95,6 +96,7 @@ apps/web/
 | `Mapa.tsx` | Página Mapa (1.049 linhas): lista, legenda em árvore, pinos, busca de endereço, desenho e edição da poligonal, régua, camadas por setor, concorrência, gaveta da ficha, filtros. Também atende `/terrenos/novo`. |
 | `FichaPagina.tsx` | Ficha em página própria (`/terrenos/A123/<aba>`); código inexistente volta ao mapa com aviso; links antigos viram a aba nova. |
 | `Funil.tsx` | Funil em três níveis (fases, etapas, subetapas) com arrastar. |
+| `TerrenosExcluidos.tsx` | `/configuracoes/excluidos`, só administrador (pelo menu do avatar): lista de `terrenos_excluidos` com Restaurar e Deletar de vez. Vira seção de Configurações quando ela for portada. |
 | `EmPorte.tsx` | Aviso "tela sendo portada" (sem uso no momento). |
 
 ### `src/ficha/` — ficha do terreno
@@ -169,6 +171,7 @@ As rotas ficam em `src/App.tsx`. Todas moram dentro da `Moldura` (barra e menu).
 | `/funil` | Funil, nível das fases | |
 | `/funil/<fase>` | Etapas da fase | Ex.: `/funil/novos_negocios` (o código da fase, de `fases_modelo.codigo`). |
 | `/funil/<fase>/<etapa>` | Subetapas da etapa | |
+| `/configuracoes/excluidos` | Terrenos excluídos | Só administrador; os outros voltam ao Mapa. |
 | `/fases/*` | redireciona para `/funil` | Perde o resto do caminho (ver armadilhas). |
 | qualquer outro | redireciona para `/mapa` | |
 

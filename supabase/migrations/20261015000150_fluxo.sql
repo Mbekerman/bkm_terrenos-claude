@@ -1700,7 +1700,7 @@ create or replace function fluxo.tg_aprovadores()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare v_tarefa uuid := coalesce(new.tarefa_id, old.tarefa_id);
 begin
-  if auth.uid() is null then return coalesce(new, old); end if;
+  if auth.uid() is null or coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return coalesce(new, old); end if;
   if not ((tg_op <> 'INSERT' and old.papel = 'aprovador') or (tg_op <> 'DELETE' and new.papel = 'aprovador')) then
     return coalesce(new, old);
   end if;
@@ -2175,7 +2175,7 @@ begin
   v_tarefa := case when tg_table_name = 'checklist_itens' then fluxo.tarefa_do_checklist((r->>'checklist_id')::uuid) else (r->>'tarefa_id')::uuid end;
   v_chave := r->>'chave'; v_campo := (r->>'campo_id')::uuid;
   if tg_op = 'DELETE' then
-    if coalesce(old.regra_branco, 'livre') <> 'livre' and auth.uid() is not null and not fluxo.configura_tarefa(v_tarefa) then
+    if coalesce(old.regra_branco, 'livre') <> 'livre' and auth.uid() is not null and not coalesce(current_setting('app.apagando_terreno', true), '') = '1' and not fluxo.configura_tarefa(v_tarefa) then
       raise exception 'Este item tem regra para concluir: só o diretor, o administrador e quem criou a tarefa o tiram' using errcode = '42501';
     end if;
     return old;
@@ -2879,6 +2879,8 @@ create trigger t_valida before insert or update on fluxo.automacoes for each row
 create or replace function fluxo.tg_automacao_apagar()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
+  -- deletar o terreno (app._apagar_terreno) leva as regras do quadro dele
+  if coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return old; end if;
   if exists (select 1 from fluxo.automacao_execucoes where automacao_id = old.id) then
     raise exception 'A regra já rodou: desligue em vez de apagar' using errcode = 'P0001';
   end if;

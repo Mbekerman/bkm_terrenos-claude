@@ -85,12 +85,13 @@ async function carregar(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: st
   for (let i = 0; i < ds.length; i += 200) {
     const { data, error } = await supabase.from('inscricoes_municipais').select('inscricao_norm,terrenos(codigo)').eq('empresa_id', empresa).in('inscricao_norm', ds.slice(i, i + 200)).abortSignal(AbortSignal.timeout(20_000));
     if (error) throw new Error('BANCO');
-    (Array.isArray(data) ? data : []).forEach((r: any) => { if (r.terrenos?.codigo && r.terrenos.codigo !== proprio) outro.set(r.inscricao_norm, r.terrenos.codigo); });
+    /* sem o terreno na resposta: está num terreno excluído (a leitura esconde), que ainda segura o SQL */
+    (Array.isArray(data) ? data : []).forEach((r: any) => { if (!r.terrenos) outro.set(r.inscricao_norm, ''); else if (r.terrenos.codigo && r.terrenos.codigo !== proprio) outro.set(r.inscricao_norm, r.terrenos.codigo); });
   }
   const lotes: Lote[] = ativos.map((f) => {
     const p = f.properties, an = geoAneis(f.geometry)[0], sql: string | null = p.nr_contribuinte || null, d = digitos(sql || '');
     const condo = !!(p.cd_condominio && p.cd_condominio !== '00'), via = !!(p.tx_tipo_lote && p.tx_tipo_lote !== 'FISCAL'), ou = sql ? outro.get(d) : undefined, jaNa = ja.has(d);
-    const trava = via ? 'Via de acesso: não tem SQL' : condo ? `Condomínio ${p.cd_condominio}: os SQLs das unidades não vêm no GeoSampa` : !sql ? 'Sem SQL no cadastro' : ou ? `Já está no ${ou}` : null;
+    const trava = via ? 'Via de acesso: não tem SQL' : condo ? `Condomínio ${p.cd_condominio}: os SQLs das unidades não vêm no GeoSampa` : !sql ? 'Sem SQL no cadastro' : ou === '' ? 'Está num terreno excluído' : ou ? `Já está no ${ou}` : null;
     const fr = ter ? fracao(an, ter) : 0;
     return { an, sql, p, condo, via, trava, fr, rot: rotulo(an), sel: (jaNa && !trava) || (!trava && fr >= LG_MIN), area: p.qt_area_terreno ?? null, end: endDe(p) };
   });

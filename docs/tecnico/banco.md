@@ -72,6 +72,7 @@ Os arquivos rodam em ordem alfabética (é o que o `run.sh` e o `banco.yml` faze
 | `20261015001400_jornada.sql` (270) | Jornada do terreno | `jornada_itens`, `jornada_regras` | `jornada_processo`, `salvar_item_jornada`, `_jornada_pendencias` |
 | `20261015001500_estudos_massa.sql` (411) | estudos de massa e viabilidade presa ao estudo | `estudos_massa`, `estudo_massa_tipologias` | `solicitar_estudo_massa`, `salvar_estudo_massa`, `vincular_massa` |
 | `20261015001600_reunioes_agenda.sql` (324) | fila do Google Agenda para reuniões; ficha numa chamada só | `reuniao_agenda` | `agenda_confirmar` (servidor), `decidir_resumo_ia`, `ficha_dados` |
+| `20261015001700_exclusao_terreno.sql` | excluir (180 dias) e deletar terreno; políticas de leitura de `terrenos`, `processos` e `notificacoes` trocadas | `terrenos_apagados` | `excluir_terreno`, `restaurar_terreno`, `terrenos_excluidos`, `deletar_terreno`, `_apagar_terreno`, `purgar_terrenos_excluidos` |
 
 **Por que a ordem importa.** Uma migration só pode usar o que as anteriores criaram. Duas consequências que já apareceram:
 
@@ -222,6 +223,14 @@ Para o responsável pela [avaliação de segurança](seguranca.md) conferir. Nad
 **O que o front grava direto** (sem RPC): o terreno na criação, os cadastros que descrevem o imóvel (matrículas, inscrições, etiquetas das partes, confrontações, pessoas do terreno, corretores do terreno e da parte, infraestrutura, viabilidades técnicas), ofertas e as partes cobertas por elas, atividades, reuniões e participantes, diligências, pessoas, corretores, pontos de interesse, visões salvas, lembretes, a concorrência manual e quase tudo do cartão de tarefa. A lista exata é a tabela de grants acima.
 
 **Concorrência entre duas pessoas na mesma ficha.** `app.salvar_terreno(id, versao, dados)` recusa com `PT409` se a versão mudou desde que a tela carregou (regra 11). A coluna `versao` sobe sozinha pelo trigger `tg_atualizado_em` (`20261015000100_base.sql:189-201`). Só as chaves enviadas em `dados` mudam; colunas de controle (`id`, `empresa_id`, `codigo`, `versao`, `criado_*`, `atualizado_*`, `situacao_cadastral`, `arquivado_em`, `motivo_arquivamento`) são recusadas.
+
+## Terreno excluído e deletado (9/nov/2026)
+
+Pedido do Moises. **Excluir** (diretor ou administrador, `app.excluir_terreno`) só marca `terrenos.excluido_em`/`excluido_por`. A política `ver` de `app.terrenos` passou a exigir `excluido_em is null`, então o terreno some de toda leitura do app: `v_terrenos` e as demais views (são `security_invoker`), `ficha_dados`, `terrenos_sobrepostos`, `buscar_duplicados`. As tabelas que o front lê pela empresa inteira, `processos` (funil, mapa, filtros) e `notificacoes` (sino), escondem as linhas do excluído com `terreno_id not in (select app.terrenos_ocultos())`; as demais filhas são lidas por `terreno_id`, que o front não acha mais. `app.ve_terreno` devolve falso para o excluído, o que esconde os cartões do `fluxo`. A rotina diária não avisa nada de terreno excluído (`app.terreno_excluido`) e apaga de vez os excluídos há 180 dias (`purgar_terrenos_excluidos`). O trigger `t_excluido` recusa qualquer update no terreno excluído que não seja restaurar. Matrículas e SQLs do excluído continuam nos índices únicos: o front avisa "está num terreno excluído".
+
+**Deletar** (`app.deletar_terreno`, só administrador, com o nome digitado) e a limpeza dos 180 dias usam `app._apagar_terreno` (ver [funcoes.md](funcoes.md#funções-só-do-servidor-e-do-próprio-banco)). Os logs do terreno saem junto. Fica uma linha em `app.terrenos_apagados` (código, nome, quem, quando; só o administrador lê) com as pendências de fora do banco em `pendencias` (`storage`: caminhos em `documento_versoes`; `drive`: a pasta do terreno, quando existir), e `limpo_em` quando não há nada a apagar fora. O app não apaga arquivo do storage (não há política de delete, de propósito); a função do servidor que fizer isso, junto com o Drive, chama `app.limpeza_feita`.
+
+Travas que deixam passar com `app.apagando_terreno = '1'` (só `_apagar_terreno` liga, dentro da transação): `tg_inscricao_historico`, `tg_analise_substituida`, `tg_matricula_leva_sqls`, `tg_inscricao_area`, `fluxo.tg_automacao_apagar`, `fluxo.tg_tarefa_item`, `fluxo.tg_aprovadores`. O teste final de `regras.sql` apaga todos os terrenos criados pelos outros testes, para pegar chave ou trava nova que impeça deletar.
 
 ## Auditoria e histórico
 
