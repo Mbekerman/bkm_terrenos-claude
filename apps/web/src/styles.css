@@ -2184,6 +2184,10 @@ body.vb-aberto { overflow: hidden }
 .lz-sem{padding:4px 0}
 .lz-cam{border-top:1px solid var(--linha);padding-top:10px;margin-top:4px}
 .lz-cam .geo-toca{margin:0}
+.lz-naotoca{margin-top:12px}
+.lz-pan{margin-top:16px}
+.lz-pan .geo-toca{margin-top:12px}
+.lz-lotes{margin-top:16px;border-top:1px solid var(--linha);padding-top:4px}
 @media (max-width:600px){.lz-lote{padding:10px 12px}}
 .lz-exc{padding:8px 0}
 .lz-fontes{margin-top:12px}
@@ -4446,6 +4450,7 @@ body.fab-min .fab .fab-t { max-width: 0; opacity: 0 }
 /* ===== Ficha em abas (decisão do Moisés, 3/nov/2026): botões das seções sempre visíveis no topo, como a janela do cartão de tarefa ===== */
 .fi-head h1 { margin: 2px 0 0 }
 .fi-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 8px; color: var(--m-on-surface-var, #444746); font-size: 14px; line-height: 20px }
+.fi-meta:first-child { margin-top: 0 }
 .fi-meta .fi-sep { color: var(--texto-suave) } .fi-meta .chip { margin: 0 }
 .fi-meta .fi-temp { display: inline-flex; align-items: center; gap: 6px }
 .fi-meta .fi-temp .temp { margin: 0 }
@@ -5035,7 +5040,6 @@ html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; 
 
 /* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
-.scrim.rasc-av { z-index: 70 }
 
 /* Frentes do terreno, em Áreas e dimensões (pedido do Moises, 8/nov/2026) */
 .fr-l { list-style: none; margin: 2px 0 0; padding: 0; max-width: 560px }
@@ -5066,3 +5070,9 @@ html[data-tema="escuro"] .mk-av.fora { background: #333537; color: #c4c7c5 }
 html[data-tema="escuro"] .reu-ed:hover { background: #282a2c }
 .reu-st { display: inline-flex; align-items: center; gap: 4px }
 .reu-st .iconbtn { margin: -6px -8px -6px 0 }
+/* gaveta da ficha sem repetir o cabeçalho (pedido do Moisés, 9/nov/2026): o nome da fase em cima da linha do tempo; fase ·
+   etapa · subetapa só onde a linha do tempo some; a temperatura no cabeçalho da gaveta, ao lado do ícone "Abrir página" */
+.tl-fase { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--m-on-var, #444746); margin: 0 0 8px }
+@media (min-width: 768px) { .tgav .fi-so-cel { display: none !important } }
+.tgav-temp { flex: none } .tgav-temp .temp { margin: 0 }
+@media (max-width: 520px) { .tgav-temp .tl { display: none } }
