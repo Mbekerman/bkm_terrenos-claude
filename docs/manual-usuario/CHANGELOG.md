@@ -8,7 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
-- **Rascunho dos formulários**: sair de um formulário de inclusão sem registrar (matrícula, SQL, IPTU, pessoa da parte, oferta, proposta, reunião, zonas) não mostra mais o aviso "Você não registrou …"; o que foi digitado continua guardado no navegador e volta ao reabrir. (#PR)
+- **Rascunho dos formulários**: sair de um formulário de inclusão sem registrar (matrícula, SQL, IPTU, pessoa da parte, oferta, proposta, reunião, zonas) não mostra mais o aviso "Você não registrou …"; o que foi digitado continua guardado no navegador e volta ao reabrir. (#250)
 - **Busca da barra de cima** procura de fato por matrícula, SQL e endereço (rua, número, CEP), com ou sem pontuação e sem ligar para acento; digitada fora do Mapa, leva ao Mapa com o texto. (#247)
 - **Completude da ficha** chega a 100%: a "Visita técnica" saiu da conta enquanto a aba Infraestrutura não existe no sistema real. (#247)
 
