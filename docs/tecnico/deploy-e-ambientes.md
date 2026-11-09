@@ -73,7 +73,7 @@ Todas essas chaves são **públicas por natureza** (a chave publicável do Supab
 | Nome | Onde mora | Público? | Para quê |
 | --- | --- | --- | --- |
 | `SUPABASE_URL`, `SUPABASE_KEY` (publicável, `sb_publishable_...`) | variáveis do serviço Cloud Run | sim | o front falar com o banco |
-| `GOOGLE_MAPS_KEY` | variável do serviço Cloud Run | sim, restrita a 2 domínios e 7 APIs | mapa, Places, Routes, Elevation, Geocoding |
+| `GOOGLE_MAPS_KEY` | variável do serviço Cloud Run | sim, restrita a 2 domínios e 8 APIs | mapa, Places, Routes, Elevation, Geocoding, Maps Static |
 | `AMBIENTE` | variável do serviço (só no dev) | sim | selo do ambiente |
 | `SUPABASE_DB_URL` | segredo do GitHub Actions | **não** (senha do banco) | `banco.yml` aplicar o esquema |
 | Segredo do cliente OAuth do Google | painel do Supabase (Auth › Google) | **não** | login |

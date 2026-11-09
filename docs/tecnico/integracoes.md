@@ -16,6 +16,7 @@ Retrato de **8 de novembro de 2026**. "React" é o sistema real (`apps/web`); "p
 | Geocoding | endereço a partir do ponto (Novo terreno, troca de endereço) | sim | sim | `GOOGLE_MAPS_KEY` |
 | Elevation | cotas fora de São Paulo (relevo, topográfico) | não | sim | `GOOGLE_MAPS_KEY` |
 | Street View | ver a rua | sim | sim | `GOOGLE_MAPS_KEY` |
+| Maps Static API | imagem de satélite por baixo do topográfico fora de São Paulo (sem ela, Esri) | não | sim | `GOOGLE_MAPS_KEY` |
 | People API | foto do Google da pessoa logada | sim | não | token OAuth da própria pessoa |
 | Google OAuth (login) | entrar com a conta @bkm.com.br | sim | não | app OAuth "Interno" no GCP, configurado no Supabase |
 | GeoSampa (Prefeitura de SP) | lote pelo SQL, camadas urbanísticas, mapa de lotes | sim | sim | nenhuma (repasse do Caddy `/geosampa`) |
@@ -36,6 +37,7 @@ As variáveis do serviço Cloud Run e o caminho do deploy estão em [deploy-e-am
 - **Onde fica:** variável `GOOGLE_MAPS_KEY` do serviço Cloud Run. **Nunca** vai para o repositório. O Caddy a injeta na meta `gmaps-key` da página (template `{% env "GOOGLE_MAPS_KEY" %}`, em `apps/web/index.html` e no `docs/prototipo.html` gerado). No `npm run dev`, `VITE_GMAPS_KEY` do `.env.local`.
 - **Como o código lê:** `apps/web/src/lib/config.ts` (`GMAPS_KEY`, só aceita o formato `AIza…` com 20+ caracteres; senão fica vazia) e `tools/prototipo/proto_gmap.js:8` (`GKEY`).
 - **Por que ela aparece no navegador:** o Maps JS exige a chave na página. A proteção é a **restrição no Cloud Console**: por domínio (HTTP referrer: os dois endereços `*.run.app` e, para desenvolvimento local, `localhost`) e por API (só as APIs desta lista). Sem a restrição, qualquer um copia a chave e gasta na conta da BKM.
+- **Qual chave:** a "BKM Terrenos Maps" (restrita por site e por API; desde 9/nov/2026 com 8 APIs, a Maps Static incluída). Conferido em 9/nov/2026: a chave servida em produção, em desenvolvimento e no protótipo é a mesma, recusada vinda de outro site. A "Maps Platform API Key", criada sozinha pelo Google ao ativar o Maps, não é usada por nada do sistema e pode ser excluída.
 - **Pendente:** separar em chave de navegador + chave de servidor (CLAUDE.md, Decisões em aberto). Hoje não há chamada de servidor ao Google.
 
 **Quando quebra** (o mapa diz "O Google recusou a chave do mapa (domínio ou API não liberados)"): o Maps JS chamou `gm_authFailure` (`mapa/google.ts`). Causas, em ordem de probabilidade: o domínio não está na restrição da chave (endereço novo, `localhost`); a API usada não está liberada na chave ou não está ativada no projeto; faturamento suspenso no GCP; chave apagada ou trocada sem atualizar a variável do Cloud Run. Confira no Cloud Console › APIs e serviços › Credenciais e no console do navegador (a mensagem do Google diz o motivo, por exemplo `RefererNotAllowedMapError` ou `ApiNotActivatedMapError`).
