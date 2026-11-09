@@ -5076,3 +5076,10 @@ html[data-tema="escuro"] .reu-ed:hover { background: #282a2c }
 @media (min-width: 768px) { .tgav .fi-so-cel { display: none !important } }
 .tgav-temp { flex: none } .tgav-temp .temp { margin: 0 }
 @media (max-width: 520px) { .tgav-temp .tl { display: none } }
+
+/* Parâmetros urbanísticos na aba Terreno (9/nov/2026): um quadro com três quadros dentro (Índices, Restrições, Histórico de uso) */
+.qd-filhos { display: flex; flex-direction: column; gap: 12px; padding: 16px var(--q-px, 24px) }
+.qd-filhos > .muted { padding: 8px 0 }
+:root:not(#_) .qd-filhos > section.sec.sec.sec { margin: 0 !important; box-shadow: none !important; border: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 12px !important; background: var(--m-card, #fff) !important }
+:root[data-tema="escuro"]:not(#_) .qd-filhos > section.sec.sec.sec { border-color: #2d2f31 !important }
+@media (max-width: 599px) { .qd-filhos { padding: 12px 8px } }

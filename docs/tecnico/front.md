@@ -109,7 +109,7 @@ apps/web/
 | `Terreno.tsx` | Aba Terreno: identificação, localização, áreas (cinco fontes e a adotada). |
 | `Partes.tsx` | Partes, Matrículas e SQLs (1.192 linhas): etiquetas arrastáveis, percentual por etiqueta, consulta do GeoSampa por SQL, "Escolher no mapa", proprietários por parte, refazer a poligonal pela soma dos lotes. |
 | `Comercial.tsx` | Aba Comercial: negociação, condições pedidas, partes da oferta, ofertas, corretores, propostas e reuniões (registrar e editar, participantes por @, link digitado; sem Google Agenda). |
-| `Parametros.tsx` | Aba Parâmetros: panorama do terreno (parâmetros de todos os lotes unidos por " / ", camadas somadas e o "não toca" uma vez só), zonas por lote (em "Ver lote por lote"), potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
+| `Parametros.tsx` | Seção Parâmetros urbanísticos da aba Terreno (`SecParametros`, quadro `param` com os quadros `indices`, `rest` e `histuso` dentro, em `.qd-filhos`; desde 9/nov/2026): panorama do terreno (parâmetros de todos os lotes unidos por " / ", camadas somadas e o "não toca" uma vez só), zonas por lote (em "Ver lote por lote"), potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
 | `Entorno.tsx` + `entorno.ts` | Aba Entorno: pontos de interesse (busca no Google, rota a pé, excluir/restaurar), renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
 | `Painel.tsx` | Painel lateral: quadro de avanço no topo e as abas Ações, Tarefas e Logs (sem olhinho nem lixeira). |
 | `Avanco.tsx` | Quadro de avanço: subetapa, prazo, pendências, Avançar / Pedir aprovação / Concluir, Stand By / Perdido / Descartado, aprovar e recusar. Só por RPC. |
@@ -163,7 +163,7 @@ As rotas ficam em `src/App.tsx`. Todas moram dentro da `Moldura` (barra e menu).
 | `/mapa/A123/ficha` | Mapa com a ficha na gaveta da direita | A aba da gaveta **não** vai para o endereço (fica só na gaveta, como no protótipo). |
 | `/terrenos/novo` | Mapa com a janela do Novo terreno aberta | Fechar a janela volta para `/mapa`. |
 | `/terrenos/A123` | Ficha, aba Visão geral | O código é aceito em minúsculas (vira maiúsculas). |
-| `/terrenos/A123/<aba>` | Ficha na aba | Abas: `geral`, `terreno`, `comercial`, `parametros`, `massa`, `viabilidade`, `infra`, `entorno`, `jornada`, `documentos`. Links antigos (`cadastro`, `negociacao`, `urbanismo`, `fases`, `viabilidades`) viram a aba nova (`Ficha.tsx`, `ANTIGA`). |
+| `/terrenos/A123/<aba>` | Ficha na aba | Abas: `geral`, `terreno`, `comercial`, `massa`, `viabilidade`, `infra`, `entorno`, `jornada`, `documentos`. Links antigos (`cadastro`, `negociacao`, `urbanismo`, `parametros`, `fases`, `viabilidades`) viram a aba nova (`Ficha.tsx`, `ANTIGA`). |
 | `/funil` | Funil, nível das fases | |
 | `/funil/<fase>` | Etapas da fase | Ex.: `/funil/novos_negocios` (o código da fase, de `fases_modelo.codigo`). |
 | `/funil/<fase>/<etapa>` | Subetapas da etapa | |
@@ -274,7 +274,7 @@ A chave começa por um nome curto e depois o que a identifica. Invalidar pelo no
 | `['ficha-pessoas', ...]` | proprietários e contatos | `ficha/Partes.tsx` |
 | `['ficha-logs', ...]`, `['ficha-tarefas', terreno]` | painel lateral | `ficha/Painel.tsx` |
 | `['ficha-listas', empresa]` | equipe e eixos para os seletores (5 min) | `ficha/edicao.tsx` |
-| `['parametros', ...]`, `['entorno', ...]` | abas Parâmetros e Entorno | `ficha/Parametros.tsx`, `ficha/Entorno.tsx` |
+| `['parametros', ...]`, `['entorno', ...]` | seção Parâmetros urbanísticos (aba Terreno) e aba Entorno | `ficha/Parametros.tsx`, `ficha/Entorno.tsx` |
 | `['funil', empresa]` | quadro do funil | `pages/Funil.tsx` |
 | `['filtros', empresa]`, `['visoes', ...]` | dados dos filtros e visões salvas | `filtros/Filtros.tsx` |
 | `['avisos', usuário, empresa]` | sino (recarrega a cada 60 s e pelo Realtime) | `components/Moldura.tsx` |

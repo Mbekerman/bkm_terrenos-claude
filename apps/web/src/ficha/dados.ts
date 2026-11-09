@@ -203,7 +203,7 @@ export function completude(f: Ficha): { pct: number; faltam: Falta[] } {
     [f.qMat > 0, 'Matrícula', 'terreno', 'lotes', 'em-n'],
     [f.qInsc > 0, 'Inscrição e IPTU', 'terreno', 'lotes', 'es-sql'],
     [f.temProprietario, 'Proprietário', 'terreno', 'partes-cad', 'pp-ed'],
-    [!!f.zonas, 'Zoneamento', 'parametros', 'analise', 'an-l'],
+    [!!f.zonas, 'Zoneamento', 'terreno', 'analise', 'an-l'],
     /* Visita técnica fica de fora enquanto a aba Infraestrutura não existe no sistema real (só no protótipo):
        contá-la deixava a ficha presa abaixo de 100% sem ter onde preencher. Volta com o porte da aba (INFRA_PORTADA). */
     ...(INFRA_PORTADA ? [[f.infraNV === 0, 'Visita técnica', 'infra'] as [boolean, ...Falta]] : []),

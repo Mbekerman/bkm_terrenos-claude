@@ -12,6 +12,7 @@ import { reais as brl, m2 } from '../lib/format';
 import { Adorno, metros } from '../lib/mascara';
 import { ehSP, type Ficha, type R } from './dados';
 import PartesLotes from './Partes';
+import SecParametros from './Parametros';
 import {
   CampoVivo, fmtCampo, lerNum, num, OPT, Quadro, SECOES, useListas, useSalvar, useVivo, valoresDe,
   type VivoProps, abrirQuadro, focar, tomarPedido,
@@ -282,6 +283,7 @@ export default function AbaTerreno({ f }: { f: Ficha }) {
     <div className="stack">
       <SecGenerica f={f} id="ident" primeiro />
       <SecGenerica f={f} id="loc" />
+      <SecParametros f={f} />
       <PartesLotes f={f} />
       <SecAreas f={f} />
     </div>

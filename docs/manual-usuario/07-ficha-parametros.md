@@ -1,14 +1,14 @@
-# 07. Ficha: aba Parâmetros
+# 07. Ficha: Parâmetros urbanísticos (aba Terreno)
 
-**Disponível.** Ficha › aba **Parâmetros** (endereço `/terrenos/A123/parametros`).
+**Disponível.** Ficha › aba **Terreno** › seção **Parâmetros urbanísticos**, logo depois de Endereço e localização. Até 9/nov/2026 era uma aba própria; o endereço antigo `/terrenos/A123/parametros` agora abre a aba Terreno.
 
 ## Para que serve
 
 Mostrar o que a lei deixa construir no terreno (zoneamento e parâmetros urbanísticos) e o que pode atrapalhar (restrições ambientais, patrimônio, riscos, uso anterior do terreno). É a base para o estudo de massa e a viabilidade.
 
-Três quadros: **Parâmetros urbanísticos**, **Restrições e entorno** e **Histórico de uso**.
+A seção abre e fecha pela seta do título (nasce fechada) e tem três quadros dentro, cada um com a própria seta: **Índices urbanísticos** (aberto ao abrir a seção), **Restrições e entorno** e **Histórico de uso**. A seta "Ver os parâmetros urbanísticos" do Zoneamento, na Visão geral, abre a seção já em Índices urbanísticos.
 
-## Parâmetros urbanísticos
+## Índices urbanísticos
 
 ### Como os dados chegam
 
@@ -21,9 +21,9 @@ Três quadros: **Parâmetros urbanísticos**, **Restrições e entorno** e **His
 ### O que você vê
 
 - **Zonas da área**: as zonas do terreno, com a área de cada uma.
-- **Potencial construtivo** de **Mercado**, **HIS** e **HMP**, lado a lado: a soma de (área da zona × CA máximo da zona para aquele tipo). Ao lado do potencial aparece o **CA máx.**, o maior CA máximo entre as zonas que admitem aquele tipo. O sistema **nunca** mostra um "CA médio".
+- **Potencial construtivo** de **Mercado**, **HIS** e **HMP**, lado a lado: a soma de (área da zona × CA máximo da zona para aquele tipo). O CA máximo não aparece ao lado do potencial: está logo abaixo, no panorama e em cada zona. O sistema **nunca** mostra um "CA médio". Abaixo, **Sem outorga (CA básico)**: o potencial pelo CA básico.
 - **Panorama do terreno**: os mesmos parâmetros do quadro de cada zona, para o terreno inteiro. Quando os lotes ou as zonas têm valores diferentes, aparecem todos, separados por barra ("4 / 2"), com "varia por zona ou lote" embaixo; parar o mouse sobre o quadrinho mostra de qual zona é cada valor. Logo abaixo, **"Demais parâmetros e restrições"** do terreno inteiro: o que toca algum dos lotes consultados na prefeitura, junto. No fim, **uma vez só**, a lista do que **nenhum** lote toca ("Nenhum dos 2 lotes toca: ZEIS 1, Eixo de estruturação..."). O que toca só um lote aparece no relatório daquele lote.
-- **"Ver lote por lote"** (seta para abrir, começa fechado): por lote, um quadro por zona com: CA mínimo, CA básico, CA máximo de cada tipo (ou **"Não admitido"** quando a zona não aceita o tipo), taxa de ocupação, gabarito (altura ou "Sem limite"), recuo de frente, recuos laterais e de fundo, cota-parte máxima, unidades por lote, permeabilidade mínima, lote mínimo, frente mínima e outorga onerosa (Gratuita, "Paga acima do básico" ou Dispensado).
+- **"Ver lote por lote"** (seta para abrir, começa fechado): por lote, um quadro por zona com: CA máximo de cada tipo (ou **"Não admitido"** quando a zona não aceita o tipo), taxa de ocupação, gabarito (altura ou "Sem limite"), recuo de frente, recuos laterais e de fundo, cota-parte máxima, unidades por lote (quando a lei fixa) e permeabilidade mínima. CA básico, CA mínimo, lote mínimo, frente mínima e outorga onerosa saíram dos índices (pedido do Moises, 9/nov/2026).
 - **"Regras e fontes"**: o texto das regras da zona e de onde veio cada número.
 - Dentro de cada lote, **"Demais parâmetros e restrições"**: só o que toca aquele lote na última consulta (Conpresp, tombamento, ZEIS, mananciais, macrozona, operação urbana...). A lista do que não toca saiu do lote e fica no panorama.
 - O selo **"A validar"** quando algum parâmetro do catálogo ainda não foi conferido ("Há parâmetros a validar no catálogo").
@@ -45,12 +45,12 @@ Os parâmetros vêm de um catálogo da lei, por zona e tipo de empreendimento, m
 O preenchimento automático não é definitivo. Se uma consulta prévia, operação urbana, certidão ou projeto aprovado disser outra coisa:
 
 1. No quadro da zona daquele lote, clique em **"Alterar valores"**.
-2. Mude qualquer parâmetro. **Cada valor grava ao sair do campo. Vazio segue o catálogo.**
+2. Mude CA básico, CA máximo, taxa de ocupação, recuos, cota-parte, unidades, permeabilidade ou gabarito (CA mínimo, lote e frente mínimos e outorga não se alteram mais aqui). **Cada valor grava ao sair do campo. Vazio segue o catálogo.**
 3. A **"Fonte da alteração (opcional)"** registra de onde veio ("Consulta prévia, operação urbana, certidão, projeto aprovado...").
 
 A célula alterada mostra **"valores alterados no lote"** e o valor do catálogo ao lado. Esses campos entram no Ctrl+Z.
 
-**Regras de valor:** CA, cota-parte, unidades, lote e frente são números maiores que zero (ou vazio); taxa de ocupação vai de 0 a 1; permeabilidade de 0 a 100%; recuo não pode ser negativo; gabarito "Limitado" exige a altura.
+**Regras de valor:** CA, cota-parte e unidades são números maiores que zero (ou vazio); taxa de ocupação vai de 0 a 1; permeabilidade de 0 a 100%; recuo não pode ser negativo; gabarito "Limitado" exige a altura.
 
 ## Restrições e entorno
 
@@ -70,7 +70,7 @@ Temas:
 
 Cada linha diz sim, não, a distância, "Nada cadastrado no terreno nem a até 30 m" ou "Não respondeu" (quando a fonte falhou).
 
-**Fora de São Paulo:** "Não disponível nesta cidade. O que a prefeitura traz está em cada lote, acima."
+**Fora de São Paulo:** "Não disponível nesta cidade. O que a prefeitura traz está em cada lote, acima" (em Índices urbanísticos).
 
 ## Histórico de uso
 
@@ -79,7 +79,7 @@ Cada linha diz sim, não, a distância, "Nada cadastrado no terreno nem a até 3
 - **Automático**: o cadastro de áreas contaminadas (prefeitura e Cetesb).
 - **Pesquisa do histórico**: campo de texto livre para o que a equipe apurou.
 
-## O que não é possível na aba Parâmetros
+## O que não é possível em Parâmetros urbanísticos
 
 - Escolher um "tipo de empreendimento" do terreno: o sistema mostra Mercado, HIS e HMP sempre lado a lado, de propósito.
 - Largura de via e rodovias: ficaram de fora por decisão.

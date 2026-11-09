@@ -29,7 +29,7 @@ Quando o texto fala de "clicar", no celular vale "tocar". A primeira versão do 
 | 04 | [Ficha do terreno: topo, abas e Visão geral](04-ficha-visao-geral.md) | Como a ficha é organizada, completude, gaveta, Visão geral, mini-mapa. |
 | 05 | [Ficha: aba Terreno](05-ficha-terreno.md) | Identificação, endereço, partes, matrículas e SQLs (etiquetas), áreas. |
 | 06 | [Ficha: aba Comercial](06-ficha-comercial.md) | Negociação, condições pedidas, partes, ofertas, corretores, propostas, reuniões, temperatura. |
-| 07 | [Ficha: aba Parâmetros](07-ficha-parametros.md) | Zonas por lote, potencial construtivo, restrições, histórico de uso. |
+| 07 | [Ficha: Parâmetros urbanísticos (aba Terreno)](07-ficha-parametros.md) | Zonas por lote, potencial construtivo, restrições, histórico de uso. |
 | 08 | [Ficha: aba Entorno](08-ficha-entorno.md) | Pontos de interesse, renda e perfil da população, concorrência no entorno. |
 | 09 | [Quadro de avanço e painel (Ações, Tarefas, Logs)](09-avanco-e-logs.md) | Avançar etapa, aprovações, Stand By, Perdido, Descartado, Comprado, histórico. |
 | 10 | [Funil](10-funil.md) | Quadro de fases, etapas e subetapas; arrastar para mover. |
