@@ -8,6 +8,8 @@ endereço do sistema (o Caddy repassa para cá pela variável `IPTU_URL`).
 - `GET /iptu/saude` → `{ ok, credencial }`
 - `POST /iptu/consultar` `{ inscricao_id, exercicio? }` com `Authorization: Bearer <token do Supabase>` → grava e devolve `{ valor, novo }`
 - `POST /iptu/notificacao` `{ inscricao_id, exercicio }` → o PDF (não grava)
+- `POST /iptu/fila` `{ inscricao_ids }` → 202, consulta em segundo plano, um por vez (até 60)
+- `POST /iptu/situacao` `{ inscricao_ids }` → `{ id: { estado: na_fila|consultando|ok|erro, error? } }`
 
 Só quem edita, só SQL de São Paulo de um terreno da empresa (a RLS decide), 40 consultas por
 pessoa por hora, uma emissão por vez. Captcha não é resolvido. Ver `docs/tecnico/integracoes.md` §10b.
@@ -42,7 +44,7 @@ for s in iptu-cpf iptu-senha; do gcloud secrets add-iam-policy-binding $s --memb
 git clone -b develop https://github.com/Mbekerman/bkm_terrenos-claude && cd bkm_terrenos-claude
 ENVS=$(gcloud run services describe terrenos-web-dev --region southamerica-east1 --format=json | python3 -c "import json,sys;e={x['name']:x.get('value','') for x in json.load(sys.stdin)['spec']['template']['spec']['containers'][0].get('env',[])};print('SUPABASE_URL=%s,SUPABASE_KEY=%s'%(e['SUPABASE_URL'],e['SUPABASE_KEY']))")
 gcloud run deploy terrenos-iptu --source services/iptu --region southamerica-east1 \
-  --memory 1Gi --cpu 1 --min-instances 0 --max-instances 1 --concurrency 8 --timeout 300 \
+  --memory 1Gi --cpu 1 --no-cpu-throttling --min-instances 0 --max-instances 1 --concurrency 8 --timeout 300 \
   --allow-unauthenticated --set-env-vars "$ENVS" \
   --set-secrets IPTU_CPF=iptu-cpf:latest,IPTU_SENHA=iptu-senha:latest
 
@@ -58,4 +60,5 @@ curl -s $URL/iptu/saude   # {"ok":true,"credencial":true}
 
 `--max-instances 1`: a fila é em memória e a Prefeitura recebe um pedido por vez.
 Atualizar o código depois: repetir o `gcloud run deploy` (os segredos e variáveis ficam).
+`--no-cpu-throttling`: a fila (`/fila`) consulta depois de responder; sem CPU alocada fora dos pedidos, ela para. No serviço criado antes da fila (9/nov/2026), acrescentar `--no-cpu-throttling` ao `gcloud run deploy --source` (a opção fica gravada).
 Trocar a senha: na tela do Secret Manager, abrir `iptu-senha` › Nova versão (desativando as anteriores) e repetir o `gcloud run deploy`.

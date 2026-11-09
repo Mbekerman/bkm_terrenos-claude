@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { GEO_BASE, digitos, geoAneis, geoAreaAnel, geoNoAnel, geoWfs, geoWkt, latLngUtm, utmLatLng } from './geosampa';
 import type { P } from './geo';
 import { medirFrentes } from './frentesCalc';
+import { filaIptu } from '../lib/iptu';
 import { classificarFrentes, frentesSemSaida } from './viasCalc';
 
 /** [camada ("camada@raio" = a mesma com outro raio), geometria, raio em metros (0 = só o que toca), atributos guardados (todos se vazio)] */
@@ -177,6 +178,8 @@ const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** depois do cadastro: cada SQL (com uma nova tentativa) e depois a poligonal; avisa no fim */
 export async function consultarTerreno(terrenoId: string, poly: P[] | null, ins: { id: string; sql: string }[], aviso: (m: string, erro?: boolean) => void) {
+  /* o IPTU de cada SQL vem da Prefeitura em segundo plano, pelo serviço do IPTU (pedido do Moises, 9/nov/2026) */
+  if (GEO_BASE && ins.length) void filaIptu(ins.map((i) => i.id));
   if (!GEO_BASE || A || !ins.length) return;
   mudar({ terreno: terrenoId, feitos: 0, total: ins.length });
   let falhas = 0, areaOk = true;

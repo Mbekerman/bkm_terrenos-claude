@@ -118,7 +118,7 @@ Para uma matrícula: número, cartório, área registrada, as partes deste lote 
 Para um SQL, também:
 
 - **GeoSampa**: **"Buscar no GeoSampa"** (ou "Buscar de novo") traz do GeoSampa o lote, a área cadastral, as zonas e as restrições. Só funciona na versão publicada. Se o GeoSampa não achar o lote, aparece "O GeoSampa não achou o lote deste SQL."
-- **Valor venal e IPTU**: **"Lançar IPTU"** (ou "Atualizar IPTU") com Exercício, Venal terreno, Venal construção, Situação (Tributado ou Isento), IPTU anual, Parcelas e Fonte ("Carnê, certidão de dados cadastrais...").
+- **Valor venal e IPTU**: em São Paulo vem sozinho da Prefeitura (ver IPTU, abaixo) e não se digita. Fora de São Paulo, **"Lançar IPTU"** (ou "Atualizar IPTU") com Exercício, Venal terreno, Venal construção, Situação (Tributado ou Isento), IPTU anual, Parcelas e Fonte ("Carnê, certidão de dados cadastrais...").
 
 **Regra do IPTU:** só vale o exercício mais recente. Lançar o ano novo substitui o anterior (o anterior fica no histórico); lançar um ano mais antigo é recusado.
 
@@ -176,13 +176,20 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 
 ## IPTU
 
-Logo abaixo de Áreas e dimensões, já aberto, como Parâmetros urbanísticos. Em cima, o **Panorama do terreno**, a soma de todos os SQLs: valor venal do terreno, da construção e total, **IPTU anual**, **IPTU mensal** (anual ÷ 12, a média do mês, não a parcela), impostos predial e territorial, área do terreno e área construída da Prefeitura, e, juntos, separados por " / ", o valor do m² do terreno, o uso, o padrão e o vencimento da 1ª prestação; diz também quantos SQLs ainda não têm IPTU. Em **Ver SQL por SQL**, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.
+Logo abaixo de Áreas e dimensões, já aberto, como Parâmetros urbanísticos. Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
 
-- **Buscar na Prefeitura** (só São Paulo, só quem edita): no título do quadro ("Buscar todos na Prefeitura" com mais de um SQL) ou em cada linha ("Buscar"). O sistema emite a notificação de lançamento do IPTU (a "2ª via") no site da Prefeitura e grava o venal e o IPTU do exercício. Cada SQL leva até um minuto; os SQLs vão um de cada vez. Se a Prefeitura não tiver a notificação do ano ainda, vem a do ano anterior.
+- três caixas, como as de Áreas e dimensões: **valor venal do terreno**, **da construção** e **total** (lado a lado quando cabem);
+- embaixo, em duplas: **área total do terreno** e **área construída** (da Prefeitura), **imposto predial** e **imposto territorial**, valor do m² do terreno e padrão da construção, uso e vencimento da 1ª prestação (quando há mais de um valor, separados por " / ");
+- por último, em destaque: **IPTU anual** e **IPTU mensal** (anual ÷ 10, as 10 prestações da Prefeitura).
+
+O título do panorama diz o exercício e quantos SQLs ainda não têm IPTU. Em **Ver SQL por SQL**, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.
+
+- **Em São Paulo o IPTU vem sozinho**: ao cadastrar o terreno, ao incluir um SQL (digitado, pelo mapa de lotes ou em Selecionar lotes) e ao abrir a ficha de um SQL que ainda não tem o IPTU da Prefeitura, o sistema emite a notificação de lançamento (a "2ª via") no site da Prefeitura e grava o venal e o IPTU do exercício. Isso corre por trás: dá para continuar cadastrando. Enquanto não chega, a seção IPTU fica apagada, com um brilho passando e "Buscando o IPTU na Prefeitura: N de M SQLs". Cada SQL leva até um minuto, um de cada vez. Se a Prefeitura não tiver a notificação do ano ainda, vem a do ano anterior. Em São Paulo o valor venal e o IPTU **não se digitam**.
+- Se a busca de um SQL falha, o motivo aparece na coluna Fonte do SQL por SQL. **Buscar de novo** (no título do quadro, ou "Buscar" em cada linha; só quem edita) tenta outra vez.
 - **Detalhe** (na linha trazida da Prefeitura): número da notificação, área do terreno, testada, área construída, uso, padrão, ano da construção, valor do m² do terreno e da construção, fatores, alíquota, descontos, impostos predial e territorial, total do ano e vencimento da 1ª prestação.
 - **PDF** (na mesma linha): emite a notificação e baixa o PDF, mesmo antes de o valor ter sido trazido (aí vale o exercício do ano corrente).
 - Buscar de novo no mesmo ano com os mesmos valores não muda nada; com valores diferentes, vira uma correção (a anterior fica no histórico).
-- **Fora de São Paulo**, o IPTU continua sendo lançado à mão na janela de cada SQL (Matrículas e SQLs).
+- **Fora de São Paulo** não há busca: o IPTU se lança à mão em **Lançar** (ou **Atualizar**) na linha do SQL, em Ver SQL por SQL, ou na janela do SQL (Matrículas e SQLs).
 - O que pode dar errado: a Prefeitura pedir captcha ("Tente mais tarde"), recusar a senha do sistema, não ter notificação para o SQL, ou o site estar fora. A mensagem aparece embaixo da tela.
 
 ## O que não é possível na aba Terreno
