@@ -5039,7 +5039,6 @@ html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; 
 
 /* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
-.scrim.rasc-av { z-index: 70 }
 
 /* Frentes do terreno, em Áreas e dimensões (pedido do Moises, 8/nov/2026) */
 .fr-l { list-style: none; margin: 2px 0 0; padding: 0; max-width: 560px }

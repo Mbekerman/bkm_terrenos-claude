@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useRascunho, mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
+import { mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -104,7 +104,7 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
     const L = d.lz.filter((r) => r.tipo === k), na = L.filter((r) => r.parametro_id && r.permitido === false).map((r) => r.sigla), sem = L.filter((r) => r.permitido !== false && r.ca_maximo == null).map((r) => r.sigla);
     const v = R?.[`potencial_${k}_m2`], caMax = Math.max(...L.filter((r) => r.permitido !== false).map((r) => Number(r.ca_maximo ?? -1)));
     return <div className="kv" key={k}><dt>Potencial {TIPO_N[k]}</dt><dd>{v != null ? <b>{m2(v)}</b> : <span className="ni">{na.length ? 'Não admitido em ' + [...new Set(na)].join(', ') : sem.length ? 'Falta o CA de ' + [...new Set(sem)].join(', ') : 'Não calculado'}</span>}
-      {caMax > 0 ? <span className="muted"> · maior CA {num(caMax, 3)}</span> : null}</dd></div>;
+      {caMax > 0 ? <span className="muted"> · CA máx. {num(caMax, 3)}</span> : null}</dd></div>;
   };
   const somaLotes = d.ins.reduce((s, i) => s + Number(i.area_cadastral_m2 || 0), 0), sobra = f.area && somaLotes && f.area - somaLotes > 1 ? f.area - somaLotes : null;
   const fontes = [...new Map(d.lz.filter((r) => r.parametro_id).map((r) => [r.parametro_id, d.cat.get(r.parametro_id)] as [unknown, R | undefined]).filter((x) => x[1])).values()] as R[];
@@ -296,7 +296,6 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
   const fref = useRef<HTMLFormElement | null>(null);
   const sujoZ = !!fonte.trim() || zs.some((z) => mudou(z, { sigla: '', area: '', macro: '' }));
   useGuardarRasc(kZ, { lote, fonte, zs }, sujoZ);
-  const { aviso } = useRascunho(fref, sujoZ, 'as zonas', fechar);
   const mz = (i: number, k: string, v: string) => setZs((o) => o.map((z, j) => (j === i ? { ...z, [k]: v } : z)));
   const salvar = async (ev: FormEvent) => {
     ev.preventDefault();
@@ -330,7 +329,6 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
         </div>
       ))}
       <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kZ} mostrar={sujoZ} limpar={() => { setFonte(''); setZs(ZS0()); }} /><button type="button" className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar zonas</button></div>
-      {aviso}
     </form>
   );
 }

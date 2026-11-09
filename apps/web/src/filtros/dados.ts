@@ -56,7 +56,7 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
   const zs = (z: unknown) => (Array.isArray(z) ? z : z ? String(z).split(/\s*\/\s*/) : []).filter(Boolean) as string[];
   const ters: TerFx[] = vs.map((x) => {
     const r = tr[x.id] ?? {};
-    const fic = { logradouro: x.logradouro, numero: x.numero, bairro: x.bairro, zona: x.zona, lat: r.latitude, area: x.area_adotada_m2, testada: r.testada_principal_m,
+    const fic = { logradouro: x.logradouro, numero: x.numero, bairro: x.bairro, municipio: x.municipio, uf: x.uf, zona: x.zona, lat: r.latitude, area: x.area_adotada_m2, testada: r.testada_principal_m,
       ocupacao: r.situacao_ocupacao, qMat: qM[x.id] ?? 0, qInsc: qI[x.id] ?? 0, temProprietario: (qP[x.id] ?? 0) > 0, zonas: zs(x.zonas_siglas).join(' / ') || null,
       infraNV: qNV[x.id] ?? 0, valorPedido: x.valor_pedido, temp: x.temperatura } as unknown as Ficha;
     return {
