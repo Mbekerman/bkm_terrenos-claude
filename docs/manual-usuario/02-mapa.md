@@ -69,6 +69,8 @@ A legenda mostra os terrenos em árvore: **Terrenos › fases › etapas › sub
 
 O que você apagou fica guardado no navegador e vale na próxima vez.
 
+**Cores pensadas para o satélite.** Backlog é **amarelo-claro**, Obras é **lavanda**, Entregue é **verde-menta** e Descartado é **cinza-claro**; nesses quatro, o ponto do pino e o código na lista ficam escuros. As outras fases, Stand By e Perdido mantêm as cores de antes. Os tons claros existem porque o cinza e o azul-marinho sumiam sobre a imagem de satélite, e o pino cinza se confundia com os lugares do Google.
+
 ### Concorrência
 
 Embaixo dos terrenos, o item **Concorrência** liga e desliga a camada de empreendimentos de outras empresas (ver abaixo). A seta ao lado abre:
