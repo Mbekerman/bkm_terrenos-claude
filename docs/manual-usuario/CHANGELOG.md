@@ -8,6 +8,8 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 9/nov/2026
 
+- **Logs só com as ações de quem usa** (painel da ficha): as atualizações que o sistema faz por consequência (consulta do GeoSampa, zona fiscal do SQL, frentes e testada) ficam recolhidas dentro da ação, em "N atualizações automáticas"; o número da aba conta só as ações; vários SQLs incluídos de uma vez viram uma linha só. (#249)
+
 - **Busca da barra de cima** procura de fato por matrícula, SQL e endereço (rua, número, CEP), com ou sem pontuação e sem ligar para acento; digitada fora do Mapa, leva ao Mapa com o texto. (#247)
 - **Completude da ficha** chega a 100%: a "Visita técnica" saiu da conta enquanto a aba Infraestrutura não existe no sistema real. (#247)
 

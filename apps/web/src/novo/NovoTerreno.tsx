@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase, mensagemErro } from '../lib/supabase';
+import { automatico, supabase, mensagemErro } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Bi, Ic } from '../components/Moldura';
@@ -152,7 +152,7 @@ export default function NovoTerreno() {
         /* as outras ruas em volta viram confrontações de frente */
         const outras = fr.filter((x, i) => i !== pri || normRua(x.logradouro) !== normRua(f0?.logradouro || ''));
         if (outras.length) {
-          const r = await supabase.from('confrontacoes').insert(outras.map((x, i) => ({ empresa_id: empresa!.id, terreno_id: t.id, ordem: i + 1, tipo: 'frente', comprimento_m: x.m ? +x.m.toFixed(2) : null, confrontante: x.logradouro + (x.numero ? ', ' + x.numero : ''), fonte: 'Localização da poligonal' })));
+          const r = await automatico(supabase.from('confrontacoes').insert(outras.map((x, i) => ({ empresa_id: empresa!.id, terreno_id: t.id, ordem: i + 1, tipo: 'frente', comprimento_m: x.m ? +x.m.toFixed(2) : null, confrontante: x.logradouro + (x.numero ? ', ' + x.numero : ''), fonte: 'Localização da poligonal' }))));
           if (r.error) console.warn('confrontações', r.error);
         }
         /* os SQLs incluídos entram no terreno sem parte, como no mapa de lotes da prefeitura */
