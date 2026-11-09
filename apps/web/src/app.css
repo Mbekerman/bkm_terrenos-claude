@@ -365,10 +365,13 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .iptu-venal .area .av { font-size: 17px; line-height: 22px; overflow-wrap: anywhere }
 .iptu-pares { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px }
 .iptu-pares .area .av { font-size: 18px }
-.iptu-dest .area { background: #d3e3fd }
+.iptu-dest .area, .iptu-venal .area.iptu-tot { background: #d3e3fd }
+.iptu-venal .area.iptu-tot :is(.al, .av) { color: #041e49 }
+.iptu-venal .area.iptu-tot .av { font-weight: 500 }
 .iptu-dest .area .al { color: #041e49 }
 .iptu-dest .area .av { font-size: 24px; line-height: 30px; font-weight: 400; color: #041e49 }
-:root[data-tema="escuro"] .iptu-dest .area { background: #004a77 }
+:root[data-tema="escuro"] :is(.iptu-dest .area, .iptu-venal .area.iptu-tot) { background: #004a77 }
+:root[data-tema="escuro"] .iptu-venal .area.iptu-tot :is(.al, .av) { color: #c2e7ff }
 :root[data-tema="escuro"] .iptu-dest .area :is(.al, .av) { color: #c2e7ff }
 .iptu-erro { color: #b3261e }
 .iptu-corpo { position: relative }

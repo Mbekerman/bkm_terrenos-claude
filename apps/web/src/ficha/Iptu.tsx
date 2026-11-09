@@ -84,7 +84,7 @@ function Panorama({ linhas }: { linhas: { x: R; v: R | undefined }[] }) {
   return (
     <div className="iptu-pan">
       <div className="geo-st">Panorama do terreno<span className="faint"> · {linhas.length} SQL{linhas.length > 1 ? 's' : ''}{ex !== '—' ? ` · exercício ${ex}` : ''}{pv ? ` · valores de ${pv}` : ''}{sem > 0 ? ` · ${sem} sem IPTU` : ''}</span></div>
-      <div className="areas iptu-venal">{venais.map((c) => cel(c))}</div>
+      <div className="areas iptu-venal">{venais.map((c, i) => cel(c, i === 2 ? ' iptu-tot' : ''))}</div>
       {pares.length > 0 && <div className="iptu-pares">{pares.flatMap((p) => p.map((c) => cel(c, ' iptu-k')))}</div>}
       {pn && pn !== pv ? <div className="hint">Áreas da Prefeitura de {pn}.</div> : null}
       <div className="iptu-pares iptu-dest">{cel(['IPTU anual', brl(anual, 2)], ' iptu-k')}{cel(['IPTU mensal (anual ÷ 10)', brl(mensal, 2)], ' iptu-k')}</div>

@@ -180,7 +180,7 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 
 Logo abaixo de Áreas e dimensões. Nasce fechado, como os outros quadros da aba (abre pela seta do título). Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
 
-- três caixas, como as de Áreas e dimensões: **valor venal do terreno**, **da construção** e **total** (três por linha, também na gaveta da ficha);
+- três caixas, como as de Áreas e dimensões: **valor venal do terreno**, **da construção** e **total**, este em destaque (três por linha, também na gaveta da ficha);
 - embaixo, em dupla: **área total do terreno** e **área construída** (da Prefeitura);
 - por último, em destaque: **IPTU anual** e **IPTU mensal** (anual ÷ 10, as 10 prestações da Prefeitura).
 
