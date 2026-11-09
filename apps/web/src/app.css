@@ -359,13 +359,20 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 /* Seção IPTU (pedido do Moises, 9/nov/2026): venais em caixas como as de Áreas, lado a lado quando cabem; o resto em duplas;
  * IPTU anual e mensal por último, em destaque; enquanto a Prefeitura não respondeu, a seção toda carrega */
 .iptu-pan { margin-top: 4px }
-.fi-aba .areas.iptu-venal, .areas.iptu-venal { grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); margin-bottom: 12px }
+.fi-aba .areas.iptu-venal, .areas.iptu-venal { grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 8px; margin-bottom: 12px }
+.iptu-venal .area { padding: 10px 12px; min-width: 0 }
+.iptu-venal .area .al { min-height: 0 }
+.iptu-venal .area .av { font-size: 17px; line-height: 22px; overflow-wrap: anywhere }
 .iptu-pares { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px }
 .iptu-pares .area .av { font-size: 18px }
 .iptu-dest .area { background: #d3e3fd }
+.iptu-venal .area.iptu-tot .al { color: #1f1f1f; font-weight: 500 }
+.iptu-venal .area.iptu-tot .av { font-weight: 600; color: #0b57d0 }
 .iptu-dest .area .al { color: #041e49 }
 .iptu-dest .area .av { font-size: 24px; line-height: 30px; font-weight: 400; color: #041e49 }
 :root[data-tema="escuro"] .iptu-dest .area { background: #004a77 }
+:root[data-tema="escuro"] .iptu-venal .area.iptu-tot .al { color: #e3e3e3 }
+:root[data-tema="escuro"] .iptu-venal .area.iptu-tot .av { color: #a8c7fa }
 :root[data-tema="escuro"] .iptu-dest .area :is(.al, .av) { color: #c2e7ff }
 .iptu-erro { color: #b3261e }
 .iptu-corpo { position: relative }
