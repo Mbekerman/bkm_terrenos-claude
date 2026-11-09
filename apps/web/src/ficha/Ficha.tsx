@@ -45,7 +45,7 @@ function faseAtual(f: F): { k: string; p: ProcF | null } | null {
 }
 
 /** linha do tempo do topo: na entrada, as etapas da negociação; depois, as fases */
-function LinhaTopo({ f }: { f: F }) {
+function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
   const a = faseAtual(f), ent = f.fases.find((x) => x.entrada);
   const ck = <Ic n="check" s={14} />;
   if (!a || a.k === ent?.k) {
@@ -58,7 +58,7 @@ function LinhaTopo({ f }: { f: F }) {
     };
     const sub = n.sub ? ets[idx]?.subs.find((s) => s.k === n.sub)?.nome : null;
     return (
-      <nav className="tl-topo" aria-label="Etapas da negociação"><ol className="stepper">
+      <nav className="tl-topo" aria-label="Etapas da negociação">{rotulo && ent && <div className="tl-fase">{ent.nome}</div>}<ol className="stepper">
         {ets.map((s, i) => {
           const st = i < idx || fim ? 'done' : i === idx ? 'cur' : 'fut', em = i <= idx ? entrou(s.k) : null;
           return (
@@ -88,6 +88,14 @@ function LinhaTopo({ f }: { f: F }) {
       })}
     </ol></nav>
   );
+}
+
+/** a temperatura do topo (na gaveta, vai para o cabeçalho dela) */
+export function TempTopo({ f }: { f: F }) {
+  const { edita } = useSessao();
+  if (!f.negId) return null;
+  return f.negStatus === 'ativo' ? <Temperatura f={f} pode={edita} />
+    : f.temp ? <>{TEMP[f.temp]}</> : <span className="faint">Temperatura não avaliada</span>;
 }
 
 /** fase, etapa e subetapa do topo; fora de andamento, a situação no lugar da etapa */
@@ -389,16 +397,21 @@ function Faltam({ c, irAba, alerta }: { c: ReturnType<typeof completude>; irAba:
   );
 }
 
-/** a ficha (página ou gaveta): o voltar só na página; na gaveta (`naGaveta`) o código e o nome saem do topo, porque o
- *  cabeçalho da gaveta já os mostra (pedido do Moisés, 9/nov/2026) */
+/** a ficha (página ou gaveta): o voltar só na página. Na gaveta (`naGaveta`; pedidos do Moisés, 9/nov/2026) o topo não
+ *  repete o cabeçalho dela: código, nome e temperatura ficam lá; fase · etapa · subetapa sai porque a linha do tempo já
+ *  marca a etapa e a subetapa (com o nome da fase em cima dela), e só volta onde a linha do tempo some (abaixo de 768 px) */
 export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   f: F; aba: string; irAba: (k: string) => void; voltar?: { rotulo: string; ir: () => void };
   abrirMapa: (lat: number, lng: number, z: number) => void; naGaveta?: boolean;
 }) {
-  const { edita } = useSessao();
   const [pn] = usePN();
   const c = completude(f);
-  const meta: ReactNode[] = [...faseTxt(f), `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`];
+  const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
+  const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;
+  /* na gaveta, fase · etapa · subetapa só no celular (fi-so-cel); a situação fora de andamento (Stand By...) fica sempre */
+  const meta: [ReactNode, string?][] = naGaveta
+    ? [...ft.map((x, i): [ReactNode, string?] => [x, situ && i === 1 ? undefined : 'fi-so-cel']), [cad]]
+    : [...ft.map((x): [ReactNode] => [x]), [cad]];
   const corpo = aba === 'geral' ? <VisaoGeral f={f} irAba={irAba} abrirMapa={abrirMapa} />
     : aba === 'terreno' ? <AbaTerreno key={f.id} f={f} />
     : aba === 'comercial' ? <AbaComercial key={f.id} f={f} cor={corPino(f)[0]} />
@@ -407,18 +420,19 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
     <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main">
-      <LinhaTopo f={f} />
+      <LinhaTopo f={f} rotulo={naGaveta} />
       {voltar && <button className="back" onClick={voltar.ir}><Ic n="back" s={20} />{voltar.rotulo}</button>}
       <div className="dhead fi-head">
         <div style={{ minWidth: 0 }}>
           {!naGaveta && <><div className="eyebrow"><span className="num">{f.codigo}</span></div>
           <h1>{f.nome}</h1></>}
           <div className="fi-meta">
-            {meta.map((x, i) => <span key={i} style={{ display: 'contents' }}>{i > 0 && <span className="fi-sep">·</span>}<span>{x}</span></span>)}
-            {f.negId && <><span className="fi-sep">·</span><span className="fi-temp">
-              {f.negStatus === 'ativo' ? <Temperatura f={f} pode={edita} />
-                : f.temp ? <>{TEMP[f.temp]}</> : <span className="faint">Temperatura não avaliada</span>}
-            </span></>}
+            {meta.map(([x, cl], i) => {
+              /* o "·" some junto quando tudo antes dele está escondido */
+              const sepCel = !cl && meta.slice(0, i).every((m) => m[1]);
+              return <span key={i} className={cl} style={{ display: 'contents' }}>{i > 0 && <span className={`fi-sep${sepCel ? ' fi-so-cel' : ''}`}>·</span>}<span>{x}</span></span>;
+            })}
+            {f.negId && !naGaveta && <><span className="fi-sep">·</span><span className="fi-temp"><TempTopo f={f} /></span></>}
           </div>
         </div>
         <Resp r={f.resp} />

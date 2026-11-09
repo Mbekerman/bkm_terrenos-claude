@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Ic } from '../components/Moldura';
 import { Carregando, Erro } from '../components/ui';
-import Ficha, { useFicha } from './Ficha';
+import Ficha, { TempTopo, useFicha } from './Ficha';
 
 // Gaveta da ficha na página Mapa (/mapa/A123/ficha; proto_tabela.js › pgFicha com UI.gav, tgavPosMapa): à direita, sobre o
 // mapa, do fim da lista mais 240 px até a borda (entre 600 e 900 px); X ou Esc fecham; "Abrir página" leva à ficha própria.
@@ -75,7 +75,8 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
       <div className="tgav-redim" role="separator" aria-orientation="vertical" aria-label="Largura da ficha" tabIndex={0}
         title="Arraste para mudar a largura da ficha (dois cliques voltam ao padrão)" onPointerDown={arrastar} onDoubleClick={() => guardar(null)} onKeyDown={tecla} />
       <div className="tgav-h"><span className="num">{codigo}</span><span className="tgav-n">{f?.nome ?? ''}</span>
-        <button className="btn text sm" title="Abrir a ficha na página dela" onClick={() => abrirPagina(aba)}>Abrir página</button>
+        {f && <span className="fi-temp tgav-temp"><TempTopo f={f} /></span>}
+        <button className="iconbtn" aria-label="Abrir página" title="Abrir página" onClick={() => abrirPagina(aba)}><Ic n="tela" s={20} /></button>
         <button className="iconbtn" aria-label="Fechar a ficha" title="Fechar (Esc)" onClick={fechar}><Ic n="close" s={22} /></button>
       </div>
       <div className="tgav-b" ref={corpo}>

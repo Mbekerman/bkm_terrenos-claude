@@ -46,7 +46,7 @@ No computador, clicar no **pino**, na **poligonal** ou na **lupa** da linha abre
 - **"Abrir página"** leva à ficha em tela própria;
 - a largura da gaveta se arrasta pela borda esquerda (mínimo 640 px, nunca sobre a lista); dois cliques na borda voltam ao padrão; o sistema lembra a largura.
 
-A gaveta tem tudo que a ficha tem e se edita igual. Ver [04](04-ficha-visao-geral.md).
+A gaveta tem tudo que a ficha tem e se edita igual; o código, o nome e a temperatura ficam no cabeçalho dela, e o ícone ao lado ("Abrir página") leva à ficha em tela própria. Ver [04](04-ficha-visao-geral.md).
 
 ## Legenda
 
