@@ -376,6 +376,7 @@ Peças, em `ficha/edicao.tsx`:
 - No React, a **cor do quadrado é a faixa de R$/m²** (10 faixas, `MK_FX`) e o **desenho dentro é a situação** (estrela, guindaste, prédio; `MK_GLIFO`), desde o PR "concorrência pelo R$/m²" de 5/nov. O CLAUDE.md ainda descreve as cores pela situação (ver incoerências no fim).
 - **Tabela completa** do empreendimento: ao vivo, pela RPC `public.im_tabela_empreendimento` do mesmo projeto Supabase (`Concorrencia.tsx:247`). Essa função mora no repositório do monitor (`Mbekerman/bkm-monitor-mercado`), não neste.
 - O card fecha 1 s depois de o mouse sair; o olhinho o fixa (`bkm-terrenos-concorrencia-fixa`).
+- O empreendimento aberto fica destacado (`mkDest`, marcador próprio `motor.destaque`) depois que o card fecha, até um clique fora do quadrado e do card (no ouvinte de clique fora do `Mapa.tsx`); com o card fixado e aberto, fica.
 
 ---
 

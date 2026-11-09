@@ -135,7 +135,7 @@ Abre ao clicar ou ao parar o mouse sobre ele por 0,75 s; fecha 1 s depois que o 
 - o **resumo do empreendimento**: as unidades agrupadas em tipologias parecidas (mesmos dormitórios, vagas e programa social), cada uma com Total, Estoque, R$/m² e VSO;
 - **"Ver tabela completa"**: uma janela com a incorporadora, CNPJ, endereço, torres, link do Órulo e **todas as unidades** (torre, andar, número, dormitórios, vagas, área, situação, preço, R$/m², primeiro preço), com os filtros **Todas**, **À venda** e **Vendidas**.
 
-O card fecha sozinho 1 s depois que o mouse sai dele, quando o mapa se move, no X, no Esc ou num clique fora. O **olhinho** ao lado do X o deixa fixo. O empreendimento aberto fica destacado (quadrado maior, preto, com anel azul) até você abrir outro ou sair do mapa.
+O card fecha sozinho 1 s depois que o mouse sai dele, quando o mapa se move, no X, no Esc ou num clique fora. O **olhinho** ao lado do X o deixa fixo. O empreendimento aberto fica destacado (quadrado maior, preto, com anel azul) depois que o card fecha; qualquer clique fora dele, no mapa ou em outra parte da tela, tira o destaque e o quadrado volta à cor dele. Com o card fixado no olhinho, o destaque fica enquanto o card estiver aberto.
 
 ### Filtro da concorrência
 

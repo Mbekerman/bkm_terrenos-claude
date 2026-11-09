@@ -580,8 +580,8 @@ export default function Mapa() {
   /* clique fora fecha o que está aberto no mapa (pedido do Moisés, 5/nov/2026; proto_mercado.js › FORA0): a legenda (menos fixada), a escala
      da renda/densidade, a busca, o quadro do lugar do Google e o card da concorrência (menos fixado); o menu dos três pontinhos já fecha
      sozinho. É o clique, não o arraste. Dentro do mapa, o quadro do lugar e o card já fecham pelo clique no mapa. */
-  const foraR = useRef({ leg, lgFixa, rdLeg, busAberta, mkBox, abrirBusca });
-  foraR.current = { leg, lgFixa, rdLeg, busAberta, mkBox, abrirBusca };
+  const foraR = useRef({ leg, lgFixa, rdLeg, busAberta, mkBox, mkDest, abrirBusca });
+  foraR.current = { leg, lgFixa, rdLeg, busAberta, mkBox, mkDest, abrirBusca };
   useEffect(() => {
     let p0: { x: number; y: number; t: Element } | null = null;
     const baixo = (ev: PointerEvent) => { p0 = { x: ev.clientX, y: ev.clientY, t: ev.target as Element }; };
@@ -592,6 +592,9 @@ export default function Mapa() {
       if (r.leg && !r.lgFixa && !a.closest('.mp-legenda')) setLeg(false);
       if (r.rdLeg && !a.closest('.rd-leg')) setRdLeg(false);
       if (r.busAberta && !a.closest('.mp-busca')) r.abrirBusca(false);
+      /* o empreendimento aberto (preto com anel azul) volta à cor dele em qualquer clique fora do quadrado e do card, no mapa ou
+         fora dele (pedido do Moisés, 9/nov/2026); com o card fixado no olhinho ainda aberto, o destaque fica com ele */
+      if (r.mkDest && !a.closest('.mk-dest,#mk-box') && !(r.mkBox && mkFixa())) setMkDest(null);
       if (a.closest('#mapa')) return;
       if (!a.closest('.gm-style-iw,.gm-style-iw-c')) motor.current?.lugarFechar();
       if (r.mkBox && !mkFixa() && !a.closest('#mk-box')) setMkBox(null);
