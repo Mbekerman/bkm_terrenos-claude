@@ -129,12 +129,14 @@ export function useSalvar(f: Ficha) {
       // o valor de antes, para o Ctrl+Z (components/Desfazer.tsx)
       const ks = Object.keys(dados);
       const { data: antes } = await supabase.from('terrenos').select(ks.join(',')).eq('id', g.id).maybeSingle();
-      if (!(await gravarTerreno(g.id, g.versao, dados, qc, toast))) return false;
+      /* o que a ficha mostra desses campos: se o banco ainda tem isso, a gravação não pisa em ninguém */
+      const visto = Object.fromEntries(ks.map((k) => [k, (g.t as R)[k] ?? null]));
+      if (!(await gravarTerreno(g.id, g.versao, dados, visto, qc, toast))) return false;
       toast('Salvo.');
       if (antes && ks.some((k) => JSON.stringify((antes as R)[k] ?? null) !== JSON.stringify(dados[k] ?? null))) {
         const volta = Object.fromEntries(ks.map((k) => [k, (antes as R)[k] ?? null]));
-        const fila = (d: R) => { const q = FILA.then(() => gravarTerreno(g.id, g.versao, d, qc, toast)); FILA = q.catch(() => false); return q; };
-        empilhar({ rotulo: rotuloCampos(ks), fazer: () => fila(volta), refazer: () => fila(dados) });
+        const fila = (d: R, esperado: R) => { const q = FILA.then(() => gravarTerreno(g.id, g.versao, d, esperado, qc, toast)); FILA = q.catch(() => false); return q; };
+        empilhar({ rotulo: rotuloCampos(ks), fazer: () => fila(volta, dados), refazer: () => fila(dados, volta) });
       }
       return true;
     });
@@ -142,10 +144,25 @@ export function useSalvar(f: Ficha) {
     return p;
   };
 }
-async function gravarTerreno(id: string, versao: number, dados: R, qc: ReturnType<typeof useQueryClient>, toast: (m: string, e?: boolean) => void) {
-  const ver = Math.max(versao, VER.get(id) ?? 0);
-  const { data, error } = await supabase.rpc('salvar_terreno', { p_terreno: id, p_versao: ver, p_dados: dados });
-  if (error) { toast(error.message); if (error.code === '40001') { VER.delete(id); qc.invalidateQueries({ queryKey: ['ficha'] }); } return false; }
+/* versão antiga: PT409 (HTTP 409). Antes era 40001, que o PostgREST repete sozinho por minutos (a ficha travava e o
+   erro nunca chegava aqui; 9/nov/2026); o 40001 continua aceito até o banco trocar. O terreno mudou desde que a ficha carregou. Muitas vezes quem mudou foi o próprio sistema, em
+   outro campo (a consulta do GeoSampa grava o cartório e as áreas logo depois do cadastro; 9/nov/2026, a Zona escolhida
+   foi recusada assim e o campo continuou mostrando "Leste"). Se os campos desta gravação estão no banco como a ficha
+   os mostra (`visto`), ninguém mexeu neles: grava de novo na versão atual. Se mudaram, recusa, como antes. */
+const conflito = (e: { code?: string } | null) => e?.code === 'PT409' || e?.code === '40001';
+async function gravarTerreno(id: string, versao: number, dados: R, visto: R, qc: ReturnType<typeof useQueryClient>, toast: (m: string, e?: boolean) => void) {
+  let ver = Math.max(versao, VER.get(id) ?? 0);
+  let { data, error } = await supabase.rpc('salvar_terreno', { p_terreno: id, p_versao: ver, p_dados: dados });
+  if (conflito(error)) {
+    const ks = Object.keys(dados);
+    const { data: agora } = await supabase.from('terrenos').select(['versao', ...ks].join(',')).eq('id', id).maybeSingle();
+    const a = agora as R | null;
+    if (a && ks.every((k) => JSON.stringify(a[k] ?? null) === JSON.stringify(visto[k] ?? null))) {
+      ver = Number(a.versao);
+      ({ data, error } = await supabase.rpc('salvar_terreno', { p_terreno: id, p_versao: ver, p_dados: dados }));
+    }
+  }
+  if (error) { toast(error.message, true); if (conflito(error)) { VER.delete(id); qc.invalidateQueries({ queryKey: ['ficha'] }); } return false; }
   if (typeof data === 'number') VER.set(id, data);
   qc.invalidateQueries({ queryKey: ['ficha'] });
   qc.invalidateQueries({ queryKey: ['mapa'] });
@@ -186,7 +203,9 @@ export function useVivo(ini: string, gravar: (v: string) => Promise<boolean | vo
     base.current = x;
     let ok: boolean | void = false;
     try { ok = await gravar(x); } catch { ok = false; }
-    if (ok === false) { base.current = antes; if (!foco.current) set(antes); }
+    /* não gravou: o campo volta ao valor gravado; numa lista (grava ao escolher, com o foco ainda nela) também, senão
+       ela continua mostrando a opção recusada como se valesse */
+    if (ok === false) { base.current = antes; if (!foco.current || opt.imediato) set(antes); }
   };
   const props: VivoProps = {
     value: v, 'data-vivo': '',
