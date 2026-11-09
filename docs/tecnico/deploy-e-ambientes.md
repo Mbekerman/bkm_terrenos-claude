@@ -109,7 +109,7 @@ Ver o passo a passo em [testes-banco.md](testes-banco.md).
 
 | Workflow | Quando roda | O que faz |
 | --- | --- | --- |
-| `ci.yml` | todo push e PR | typecheck + build do front; migrations + testes de SQL num Postgres 16 com PostGIS; sintaxe do script do protótipo |
+| `ci.yml` | só no PR para `develop` ou `main` (e à mão), e só se o PR mexe em `apps/web`, `supabase`, `services`, `tools`, `docs/prototipo.html` ou nos workflows; cancela a execução antiga do mesmo PR | numa máquina só (job `ci`, 15 min no máximo), cada passo só quando a parte dele mudou: typecheck + build do front; testes do serviço do IPTU; migrations + testes de SQL num Postgres 16 com PostGIS; sintaxe do script do protótipo |
 | `banco.yml` | `workflow_dispatch` ou push com `[aplicar-banco]` na mensagem | cria o banco de produção do zero (ver acima) |
 | `vendor.yml` | manual | baixa Leaflet e JSZip e publica no branch `libs-prototipo`, para testar o protótipo sem CDN |
 

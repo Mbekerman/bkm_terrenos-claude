@@ -83,7 +83,7 @@ O que o `build.py` faz, em ordem (`tools/prototipo/build.py`, 44 linhas):
 Regras:
 
 - **Nunca edite `docs/prototipo.html` à mão.** Edite as fontes e rode o `build.py`; commite as fontes **e** o HTML gerado (o Cloud Run serve o arquivo do repositório).
-- O CI (`.github/workflows/ci.yml`, job `prototipo`) só confere que o script final do `docs/prototipo.html` compila (`new Function(...)`). Não roda os roteiros Playwright.
+- O CI (`.github/workflows/ci.yml`, passo "Protótipo" do job `ci`) só confere que o script final do `docs/prototipo.html` compila (`new Function(...)`). Não roda os roteiros Playwright.
 
 ## 6. Roteiros de teste (Playwright)
 
