@@ -21,7 +21,7 @@ Três quadros: **Parâmetros urbanísticos**, **Restrições e entorno** e **His
 ### O que você vê
 
 - **Zonas da área**: as zonas do terreno, com a área de cada uma.
-- **Potencial construtivo** de **Mercado**, **HIS** e **HMP**, lado a lado: a soma de (área da zona × CA máximo da zona para aquele tipo). O sistema **nunca** mostra um "CA médio".
+- **Potencial construtivo** de **Mercado**, **HIS** e **HMP**, lado a lado: a soma de (área da zona × CA máximo da zona para aquele tipo). Ao lado do potencial aparece o **CA máx.**, o maior CA máximo entre as zonas que admitem aquele tipo. O sistema **nunca** mostra um "CA médio".
 - **Por lote, um quadro por zona** com: CA mínimo, CA básico, CA máximo de cada tipo (ou **"Não admitido"** quando a zona não aceita o tipo), taxa de ocupação, gabarito (altura ou "Sem limite"), recuo de frente, recuos laterais e de fundo, cota-parte máxima, unidades por lote, permeabilidade mínima, lote mínimo, frente mínima e outorga onerosa (Gratuita, "Paga acima do básico" ou Dispensado).
 - **"Regras e fontes"**: o texto das regras da zona e de onde veio cada número.
 - **"O que toca o lote"** / **"Demais parâmetros e restrições"**: as outras camadas da última consulta do lote (Conpresp, tombamento, ZEIS, mananciais, macrozona, operação urbana...).
