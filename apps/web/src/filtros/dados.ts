@@ -4,7 +4,7 @@
    mínimo ou máximo deixa de fora quem não tem o dado, salvo "Incluir sem informação". */
 import { supabase } from '../lib/supabase';
 import { FORMA, ORIGEM, data as fd, milhoes } from '../lib/format';
-import { completude, TEMP, type Ficha } from '../ficha/dados';
+import { completude, proprietariosCompletos, TEMP, type Ficha } from '../ficha/dados';
 
 type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -20,7 +20,7 @@ export interface TerFx {
 export interface DadosFx { fases: FaseFx[]; ters: TerFx[]; corretores: [string, string][]; pessoas: [string, string][] }
 
 export async function carregarFx(emp: string): Promise<DadosFx> {
-  const [v, t, p, f, e, s, mat, ins, pes, inf, itI, cor] = await Promise.all([
+  const [v, t, p, f, e, s, mat, ins, pes, inf, itI, cor, pts] = await Promise.all([
     supabase.from('v_terrenos').select('id,uf,municipio,zona,bairro,logradouro,numero,temperatura,valor_pedido,area_adotada_m2,proposta_ativa_valor,vgv,corretor_ids,forma_pagamento_pedida,origem_cadastro,zonas_siglas,responsavel_id,data_identificacao').eq('empresa_id', emp),
     supabase.from('terrenos').select('id,latitude,testada_principal_m,situacao_ocupacao').eq('empresa_id', emp),
     supabase.from('processos').select('terreno_id,fase,etapa_atual,subetapa_atual,status,data_inicio').eq('empresa_id', emp).is('parte_id', null).order('data_inicio'),
@@ -29,12 +29,13 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
     supabase.from('subetapas_modelo').select('fase,etapa,codigo,nome,ordem,ativo').eq('empresa_id', emp).order('ordem'),
     supabase.from('matriculas').select('terreno_id').eq('empresa_id', emp),
     supabase.from('inscricoes_municipais').select('terreno_id').eq('empresa_id', emp),
-    supabase.from('terreno_pessoas').select('terreno_id').eq('empresa_id', emp).eq('papel', 'proprietario'),
+    supabase.from('terreno_pessoas').select('terreno_id,parte_id,percentual_participacao').eq('empresa_id', emp).eq('papel', 'proprietario'),
     supabase.from('v_terreno_infraestrutura').select('terreno_id,item,disponibilidade'),
     supabase.from('itens_infraestrutura').select('codigo,viabilidade_tecnica'),
     supabase.from('corretores').select('id,pessoas(nome_razao_social)').eq('empresa_id', emp),
+    supabase.from('terreno_partes').select('id,terreno_id').eq('empresa_id', emp).eq('ativa', true),
   ]);
-  for (const r of [v, t, p, f, e, s, mat, ins, pes, inf, itI, cor]) if (r.error) throw r.error;
+  for (const r of [v, t, p, f, e, s, mat, ins, pes, inf, itI, cor, pts]) if (r.error) throw r.error;
   const fases: FaseFx[] = (f.data as R[]).map((x) => ({
     k: x.codigo, nome: x.nome, ativo: x.ativo !== false,
     etapas: (e.data as R[]).filter((y) => y.fase === x.codigo).map((y) => ({
@@ -43,7 +44,9 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
     })),
   }));
   const quantos = (rs: R[]) => { const m: Record<string, number> = {}; for (const r of rs) m[r.terreno_id] = (m[r.terreno_id] ?? 0) + 1; return m; };
-  const qM = quantos(mat.data as R[]), qI = quantos(ins.data as R[]), qP = quantos(pes.data as R[]);
+  const qM = quantos(mat.data as R[]), qI = quantos(ins.data as R[]);
+  const grupo = (rs: R[]) => { const m: Record<string, R[]> = {}; for (const r of rs) (m[r.terreno_id] ??= []).push(r); return m; };
+  const donosT = grupo(pes.data as R[]), partesT = grupo(pts.data as R[]);
   const visita = new Set((itI.data as R[]).filter((i) => !i.viabilidade_tecnica).map((i) => i.codigo));
   const qNV = quantos((inf.data as R[]).filter((i) => visita.has(i.item) && i.disponibilidade === 'nao_verificado'));
   const tr = Object.fromEntries((t.data as R[]).map((x) => [x.id, x]));
@@ -57,7 +60,7 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
   const ters: TerFx[] = vs.map((x) => {
     const r = tr[x.id] ?? {};
     const fic = { logradouro: x.logradouro, numero: x.numero, bairro: x.bairro, municipio: x.municipio, uf: x.uf, zona: x.zona, lat: r.latitude, area: x.area_adotada_m2, testada: r.testada_principal_m,
-      ocupacao: r.situacao_ocupacao, qMat: qM[x.id] ?? 0, qInsc: qI[x.id] ?? 0, temProprietario: (qP[x.id] ?? 0) > 0, zonas: zs(x.zonas_siglas).join(' / ') || null,
+      ocupacao: r.situacao_ocupacao, qMat: qM[x.id] ?? 0, qInsc: qI[x.id] ?? 0, temProprietario: proprietariosCompletos((partesT[x.id] ?? []).map((y) => y.id), donosT[x.id] ?? []), zonas: zs(x.zonas_siglas).join(' / ') || null,
       infraNV: qNV[x.id] ?? 0, valorPedido: x.valor_pedido, temp: x.temperatura } as unknown as Ficha;
     return {
       id: x.id, uf: x.uf, cidade: x.municipio, zona: x.zona, bairro: x.bairro, temp: x.temperatura, pedido: x.valor_pedido == null ? null : +x.valor_pedido,

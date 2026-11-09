@@ -313,6 +313,7 @@ begin
     'q_mat', (select count(*) from app.matriculas where terreno_id = v.id),
     'q_insc', (select count(*) from app.inscricoes_municipais where terreno_id = v.id),
     'q_prop', (select count(*) from app.terreno_pessoas where terreno_id = v.id and papel = 'proprietario'),
+    'prop_ok', app.proprietarios_completos(v.id),
     'infra_nv', (select count(*) from app.v_terreno_infraestrutura i join app.itens_infraestrutura it on it.codigo = i.item
                   where i.terreno_id = v.id and not coalesce(it.viabilidade_tecnica, false) and i.disponibilidade = 'nao_verificado'),
     'q_propostas', case when neg is null then 0 else (select count(*) from app.propostas where processo_id = neg) end,

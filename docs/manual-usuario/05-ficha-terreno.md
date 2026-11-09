@@ -67,7 +67,7 @@ O lápis abre a janela **"Editar pessoas da parte"**: o formulário em cima e a 
 
 Do proprietário, só o **nome** e a **participação** são obrigatórios; o resto pode ficar em branco e completar depois, sem contar como pendência da ficha.
 
-**Dica:** cadastre também o procurador e o contato do dia a dia, não só os donos. Quem é proprietário conta para o item "Proprietário" da completude.
+**Dica:** cadastre também o procurador e o contato do dia a dia, não só os donos. O item "Proprietário" da completude só sai da lista do que falta quando **cada parte** tem proprietários somando **100%** de participação; enquanto alguma parte estiver abaixo disso, ele continua em "Falta preencher".
 
 ### Excluir uma parte (lixeira)
 
