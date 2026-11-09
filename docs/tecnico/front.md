@@ -526,7 +526,7 @@ npm run preview             # serve o dist
 ```
 
 - Em 8/nov/2026, `npm install` e `npm run typecheck` passam limpos.
-- O CI (`.github/workflows/ci.yml`, job `web`) roda `npm install`, `typecheck` e `build` com URL e chave falsas. **Não há teste automático do React** (nem unitário, nem Playwright): os roteiros Playwright são do protótipo. Confira a tela no ambiente de desenvolvimento.
+- O CI (`.github/workflows/ci.yml`, passo "Front" do job `ci`, só quando o PR mexe em `apps/web`) roda `npm install`, `typecheck` e `build` com URL e chave falsas. **Não há teste automático do React** (nem unitário, nem Playwright): os roteiros Playwright são do protótipo. Confira a tela no ambiente de desenvolvimento.
 - Para o login funcionar no `npm run dev`, o endereço `http://localhost:5173` precisa estar nas "Redirect URLs" do Supabase Auth (a conferir no projeto).
 - O que **não funciona** no `npm run dev` (só na versão publicada pelo Caddy):
   - GeoSampa e mapa de lotes: `GEO_BASE` é `null` em `localhost` (`geosampa.ts:7-11`);
