@@ -11,6 +11,7 @@ import { carregarGoogle, googleRecusado } from '../mapa/google';
 import GavetaFicha from '../ficha/Gaveta';
 import { usePreCarregarFicha } from '../ficha/Ficha';
 import { MenuPonto } from '../mapa/MenuPonto';
+import { QuadroRota, type DestinoRota } from '../mapa/Rota';
 import { Motor, vista, reguaA, reguaArea, reguaM, reguaTotal, type Base, type GestosPonto, type Pino } from '../mapa/motor';
 import { desenhoAtendido, poligonal, useNovo } from '../novo/estado';
 import { useConsultaGeo } from '../novo/consulta';
@@ -119,7 +120,9 @@ export default function Mapa() {
   useEffect(() => { lgAgendar(); return () => clearTimeout(lgT.current); }, [lgAgendar]);
   const [selId, setSelId] = useState<string | null>(null);
   const [largura, setLargura] = useState(larguraGuardada);
-  const [menu, setMenu] = useState<{ x: number; y: number; lat: number; lng: number } | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; lat: number; lng: number; terreno?: string } | null>(null);
+  /* Traçar rota até aqui (pedido do Moises, 9/nov/2026) */
+  const [rota, setRota] = useState<DestinoRota | null>(null);
   const [cheia, setCheia] = useState(false);
   const [sv, setSv] = useState(false);
   const [semMapa, setSemMapa] = useState<string | null>(null);
@@ -442,7 +445,8 @@ export default function Mapa() {
         pino: (id) => ganchos.current.pino(id),
         vazio: (a, b) => ganchos.current.vazio(a, b),
         duplo: (a, b, c) => ganchos.current.duplo(a, b, c),
-        menu: (x, y, lat, lng) => { if (edita && !desR.current && !rgR.current) setMenu({ x, y, lat, lng }); },
+        /* o menu vale para todos (a rota também para Leitura); "Novo terreno aqui" só para quem edita e fora de um terreno */
+        menu: (x, y, lat, lng, terreno) => { if (!desR.current && !rgR.current) setMenu({ x, y, lat, lng, terreno }); },
         clique: (a, b) => ganchos.current.clique(a, b),
         editar: (id) => ganchos.current.editar(id),
         passar: (id) => ganchos.current.passar(id),
@@ -749,6 +753,7 @@ export default function Mapa() {
     const k = (ev: KeyboardEvent) => {
       if (ev.key !== 'Escape' || ev.defaultPrevented) return;
       if (menu) { setMenu(null); ev.preventDefault(); return; }
+      if (rota) { setRota(null); ev.preventDefault(); return; }
       if (setor != null) { setSetor(null); ev.preventDefault(); return; }
       if (mkBox) { setMkBox(null); ev.preventDefault(); return; }
       if (motor.current?.svFechar()) { ev.preventDefault(); return; }
@@ -759,7 +764,7 @@ export default function Mapa() {
     document.addEventListener('keydown', k);
     document.addEventListener('pointerdown', fora, true);
     return () => { document.removeEventListener('keydown', k); document.removeEventListener('pointerdown', fora, true); };
-  }, [menu, telaCheia, setor, mkBox]);
+  }, [menu, rota, telaCheia, setor, mkBox]);
 
   /* minha localização */
   function eu() {
@@ -866,7 +871,7 @@ export default function Mapa() {
       </aside>
       <div className="mp-redim" role="separator" aria-orientation="vertical" aria-label="Largura da lista de terrenos" aria-valuemin={MP_LMIN} aria-valuemax={mpLmax()} aria-valuenow={largura}
         tabIndex={0} title="Arraste para mudar a largura da lista (dois cliques voltam ao padrão)" onPointerDown={arrastar} onDoubleClick={() => guardarL(mpLpad())} onKeyDown={teclaL} />
-      <section className={`mapa-area${sv ? ' sv-on' : ''}`} aria-label="Mapa dos terrenos" ref={areaEl}>
+      <section className={`mapa-area${sv ? ' sv-on' : ''}${rota ? ' rota-on' : ''}`} aria-label="Mapa dos terrenos" ref={areaEl}>
         <div id="mapa" className="mapa" ref={mapaEl}>{semMapa && <div className="mapa-erro">{semMapa}</div>}</div>
         <div className="mp-barra">
           <form className={`mp-busca${busAberta ? '' : ' fechada'}`} role="search" onSubmit={(ev) => { ev.preventDefault(); clearTimeout(buscaT.current); rodarBusca(busEnd, true); }}
@@ -975,11 +980,22 @@ export default function Mapa() {
             </div>
           );
         })()}
-        {menu && (
-          <div className="mp-ctx" role="menu" style={{ left: Math.max(8, Math.min((areaEl.current?.clientWidth ?? 0) - 228, menu.x)), top: Math.max(8, Math.min((areaEl.current?.clientHeight ?? 0) - 64, menu.y)) }}>
-            <button role="menuitem" autoFocus onClick={() => { const m = menu; setMenu(null); desComecar([m.lat, m.lng]); }}><Ic n="add" s={18} />Novo terreno aqui</button>
-          </div>
-        )}
+        {menu && (() => {
+          /* sobre o pino ou a poligonal de um terreno: sem "Novo terreno aqui", e a rota vai até o ponto do terreno */
+          const t = menu.terreno ? todos.find((x) => x.id === menu.terreno) : null;
+          const novo = edita && !menu.terreno, alt = (t ? 32 : 0) + (novo ? 96 : 52);
+          return (
+            <div className="mp-ctx" role="menu" style={{ left: Math.max(8, Math.min((areaEl.current?.clientWidth ?? 0) - 228, menu.x)), top: Math.max(8, Math.min((areaEl.current?.clientHeight ?? 0) - alt - 12, menu.y)) }}>
+              {t && <div className="v-t">{t.codigo} · {t.nome}</div>}
+              {novo && <button role="menuitem" autoFocus onClick={() => { const m = menu; setMenu(null); setRota(null); desComecar([m.lat, m.lng]); }}><Ic n="add" s={18} />Novo terreno aqui</button>}
+              <button role="menuitem" autoFocus={!novo} onClick={() => {
+                const m = menu; setMenu(null); setMkBox(null); setSetor(null); motor.current?.lugarFechar();
+                setRota(t && t.lat != null && t.lng != null ? { lat: t.lat, lng: t.lng, nome: `${t.codigo} · ${t.nome}` } : { lat: m.lat, lng: m.lng });
+              }}><Ic n="rota" s={18} />Traçar rota até aqui</button>
+            </div>
+          );
+        })()}
+        {rota && !des && !rg && <QuadroRota motor={motor.current} destino={rota} fechar={() => setRota(null)} />}
       </section>
       {met && <Metodologia camada={met} fechar={() => setMet(null)} />}
       {mfAberto && mkOk && <FiltroConc f={mf} mudar={setMf} fechar={() => setMfAberto(false)} aviso={(m) => toast(m)} />}

@@ -172,8 +172,26 @@ Comércios, escolas e hospitais do próprio Google ficam sempre visíveis no map
 
 - **Clique direito** em qualquer ponto do mapa › **"Novo terreno aqui"**: começa o desenho da poligonal com o primeiro ponto ali.
 - **Dois cliques** no vazio do mapa fazem o mesmo.
+- Sobre o pino ou dentro da poligonal de um terreno já cadastrado, o clique direito **não** mostra "Novo terreno aqui": o menu traz o código e o nome do terreno e só "Traçar rota até aqui".
 
-O passo a passo do cadastro está em [03. Novo terreno](03-novo-terreno.md). Leitura não tem esse menu.
+O passo a passo do cadastro está em [03. Novo terreno](03-novo-terreno.md). Leitura e Básico não têm "Novo terreno aqui" (só a rota).
+
+## Traçar rota até um ponto
+
+**Para que serve:** saber quanto tempo se leva de um endereço ou lugar até o terreno (ou até qualquer ponto do mapa), de carro, moto, a pé, de bicicleta ou de transporte público.
+
+1. **Clique direito** no ponto do mapa (ou no pino ou na poligonal de um terreno) › **"Traçar rota até aqui"**. Abre o quadro **"Rota até …"** no canto de cima à esquerda do mapa, e o destino aparece como um pino vermelho. No terreno, o destino é o pino do terreno.
+2. No campo **"Saindo de"**, digite um endereço ou o nome de um lugar (loja, estação, prédio) e escolha na lista, ou escolha **"Minha localização"** (o navegador pede permissão).
+3. A rota aparece no mapa (a pé, pontilhada), com o tempo e a distância. O mapa se ajusta para mostrar a rota inteira, e os quadrados da concorrência ficam apagados enquanto a rota está aberta.
+4. Troque a forma de condução nos botões **Carro, Moto, A pé, Bicicleta e Transporte**: a rota se refaz na hora. O sistema lembra a última escolha.
+5. **"Abrir no Google Maps"** abre a mesma rota no Google Maps, com o trânsito e as alternativas de lá.
+6. Feche no **X** ou com **Esc**; a rota sai do mapa.
+
+Bom saber:
+- Carro e moto **não contam o trânsito** do momento (o quadro avisa). Para o trânsito, use "Abrir no Google Maps".
+- A rota de **moto** é do Google, que ainda a trata como teste: confira o trajeto.
+- **Transporte público** mostra as linhas usadas (ônibus, metrô, trem), saindo agora. Só funciona onde a cidade publica os horários no Google (São Paulo, sim); fora disso aparece "O Google não tem rota de transporte público entre esses dois pontos".
+- Por ora só no computador (no celular, o toque longo no mapa ainda não abre o menu).
 
 ## Editar a poligonal de um terreno
 
