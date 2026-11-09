@@ -35,6 +35,8 @@ Da esquerda para a direita:
 - **Sino** de avisos.
 - **Avatar** (sua foto).
 
+A barra ocupa a largura toda da tela, em qualquer tamanho de monitor: o logo fica alinhado com o menu lateral e o avatar fica no canto direito, com a mesma margem do logo.
+
 ### Busca de cima
 
 O campo filtra a **lista de terrenos da página Mapa** (e os pinos) pelo código, nome, endereço (rua, número e CEP), bairro, zona, município, corretor, **número da matrícula** e **SQL / inscrição**. Digitado em outra página, ele leva ao Mapa já com o texto.

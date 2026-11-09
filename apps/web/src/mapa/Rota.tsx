@@ -55,7 +55,28 @@ async function ponto(a: Achado): Promise<Origem> {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-export function QuadroRota({ motor, destino, fechar }: { motor: Motor | null; destino: DestinoRota; fechar: () => void }) {
+/** ponto escolhido no mapa para a saída: com nome (terreno, concorrente), com o lugar do Google, ou só o ponto (o nome vem do endereço) */
+export type PontoMapa = PontoRota & { nome?: string; placeId?: string };
+
+/* nome do ponto clicado: o do lugar do Google, senão o endereço do Geocoding, senão "Ponto no mapa" */
+async function nomeDoPonto(p: PontoMapa): Promise<string> {
+  if (p.nome) return p.nome;
+  if (p.placeId) {
+    try { const pl = new gLib.places.Place({ id: p.placeId }); await pl.fetchFields({ fields: ['displayName'] }); if (pl.displayName) return pl.displayName; }
+    catch (e) { console.warn('Nome do lugar', e); }
+  }
+  try {
+    const { results } = await new window.google.maps.Geocoder().geocode({ location: { lat: p.lat, lng: p.lng }, language: 'pt-BR', region: 'br' });
+    const r = results?.find((x: { types?: string[] }) => x.types?.some((t) => t === 'street_address' || t === 'premise' || t === 'route')) ?? results?.[0];
+    if (r?.formatted_address) return String(r.formatted_address).replace(/, Brasil$/, '').replace(/, \d{5}-\d{3}$/, '');
+  } catch (e) { console.warn('Endereço do ponto', e); }
+  return 'Ponto no mapa';
+}
+
+/* "Traçar rota até aqui": a saída também se escolhe clicando no mapa (pedido do Moises, 9/nov/2026): num ponto qualquer,
+   num lugar do Google, noutro terreno ou num concorrente. Enquanto a escolha está ligada (ao abrir, até escolher a saída,
+   ou pelo botão da mira), o clique no mapa vira a saída em vez de abrir a ficha, o card ou o quadro do lugar. */
+export function QuadroRota({ motor, destino, fechar, pegar }: { motor: Motor | null; destino: DestinoRota; fechar: () => void; pegar: (fn: ((p: PontoMapa) => void) | null) => void }) {
   const [q, setQ] = useState('');
   const [sug, setSug] = useState<Achado[] | null>(null);
   const [lista, setLista] = useState(false);
@@ -64,6 +85,19 @@ export function QuadroRota({ motor, destino, fechar }: { motor: Motor | null; de
   const [res, setRes] = useState<Rota | null>(null);
   const [msg, setMsg] = useState<{ t: string; erro?: boolean } | null>(null);
   const [calc, setCalc] = useState(false);
+  const [noMapa, setNoMapa] = useState(true);
+  /* a página entrega aqui o clique no mapa enquanto a escolha está ligada */
+  useEffect(() => {
+    if (!noMapa) { pegar(null); return; }
+    pegar((p) => {
+      setNoMapa(false); setLista(false); setSug(null);
+      const prov = p.nome || 'Ponto no mapa';
+      setQ(prov); atual.current = prov; inp.current?.blur();
+      setOrigem({ lat: p.lat, lng: p.lng, nome: prov });
+      if (!p.nome) nomeDoPonto(p).then((n) => { if (atual.current === prov) { setQ(n); atual.current = n; setOrigem((o) => (o && o.lat === p.lat && o.lng === p.lng ? { ...o, nome: n } : o)); } });
+    });
+    return () => pegar(null);
+  }, [noMapa, pegar]);
   const inp = useRef<HTMLInputElement>(null), bT = useRef<ReturnType<typeof setTimeout>>(), atual = useRef('');
 
   /* o destino aparece no mapa já ao abrir; a rota sai ao fechar */
@@ -75,20 +109,22 @@ export function QuadroRota({ motor, destino, fechar }: { motor: Motor | null; de
     if (!origem || !motor) return;
     let vivo = true;
     setCalc(true); setMsg(null);
-    calcularRota(origem, destino, modo).then((r) => {
+    const o = origem;
+    calcularRota(o, destino, modo).then((r) => {
       if (!vivo) return;
-      setRes(r); motor.rota(destino, origem, r.path, modo === 'WALK');
+      setRes(r); motor.rota(destino, o, r.path, modo === 'WALK');
     }).catch((e) => {
       if (!vivo) return;
       console.warn('Rota', e);
-      setRes(null); motor.rota(destino, origem);
+      setRes(null); motor.rota(destino, o);
       const de = MODOS.find((x) => x.k === modo)!.de;
       setMsg(e instanceof SemRota
         ? { t: `O Google não tem rota ${de} entre esses dois pontos.`, erro: true }
         : { t: 'Não foi possível calcular a rota agora. Tente de novo em instantes.', erro: true });
     }).finally(() => { if (vivo) setCalc(false); });
     return () => { vivo = false; };
-  }, [origem, modo, motor, destino]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [origem?.lat, origem?.lng, modo, motor, destino]);
 
   function buscar(v: string) {
     setQ(v); atual.current = v; clearTimeout(bT.current); setLista(true);
@@ -98,7 +134,7 @@ export function QuadroRota({ motor, destino, fechar }: { motor: Motor | null; de
       catch (e) { console.warn(e); if (atual.current === v) setSug([]); }
     }, 250);
   }
-  function escolher(o: Origem) { setOrigem(o); setQ(o.nome); atual.current = o.nome; setSug(null); setLista(false); inp.current?.blur(); }
+  function escolher(o: Origem) { setNoMapa(false); setOrigem(o); setQ(o.nome); atual.current = o.nome; setSug(null); setLista(false); inp.current?.blur(); }
   function escolherAchado(a: Achado) {
     setQ(a.nome); atual.current = a.nome; setSug(null); setLista(false); inp.current?.blur();
     ponto(a).then(escolher).catch((e) => { console.warn(e); setMsg({ t: 'Não foi possível localizar esse lugar. Tente outro.', erro: true }); });
@@ -133,15 +169,19 @@ export function QuadroRota({ motor, destino, fechar }: { motor: Motor | null; de
         <input ref={inp} type="search" placeholder="Saindo de: endereço ou lugar" aria-label="Origem da rota: endereço ou lugar" autoComplete="off" value={q}
           onChange={(e) => buscar(e.target.value)} onFocus={() => setLista(true)} onBlur={() => setTimeout(() => setLista(false), 150)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (sug?.[0]) escolherAchado(sug[0]); } }} />
+        <button type="button" className={`mp-rt-mira${noMapa ? ' on' : ''}`} aria-pressed={noMapa} title={noMapa ? 'Escolhendo no mapa: clique num ponto, lugar, terreno ou concorrente' : 'Escolher a saída no mapa'}
+          aria-label="Escolher a saída no mapa" onMouseDown={(e) => e.preventDefault()} onClick={() => setNoMapa((v) => !v)}><Ic n="eu" s={18} /></button>
         {lista && (
           <div className="mp-res" role="listbox">
             <button type="button" role="option" aria-selected={false} onMouseDown={(e) => e.preventDefault()} onClick={eu}><Ic n="eu" s={18} /><span>Minha localização</span></button>
+            {noMapa && !sug && <div className="hint">Ou clique no mapa: num endereço, num lugar, noutro terreno ou num concorrente.</div>}
             {sug && (sug.length ? sug.map((x, i) => (
               <button key={i} type="button" role="option" aria-selected={false} onMouseDown={(e) => e.preventDefault()} onClick={() => escolherAchado(x)}><Bi n="mapa" s={18} /><span className="mp-rt-s"><span>{x.nome}</span>{x.end && <span className="muted">{x.end}</span>}</span></button>
             )) : <div className="hint">Nada encontrado.</div>)}
           </div>
         )}
       </div>
+      {noMapa && !lista && <div className="mp-rt-dica">Ou clique no mapa: num endereço, num lugar, noutro terreno ou num concorrente.</div>}
       {(calc || res || msg) && (
         <div className="mp-rt-r" aria-live="polite">
           {calc ? <span className="muted">Calculando a rota {md.de}…</span>
