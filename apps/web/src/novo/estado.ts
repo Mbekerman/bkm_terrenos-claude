@@ -25,8 +25,9 @@ export interface Nv {
 /** mapa de lotes da prefeitura: depois da poligonal (nv) ou pela janela Incluir por SQL (sql, com as quadras dos SQLs) */
 /** modo 'ficha': reaberto pelo "Escolher no mapa" da aba Terreno, com o terreno já cadastrado */
 export interface LotesFicha { codigo: string; nome: string; poly: P[]; sqls: string[]; fechar: () => void; incluir: (marcados: LoteSql[], quadras: string[]) => void }
-export interface Lotes { modo: 'nv' | 'sql' | 'ficha'; quadras?: string[]; ficha?: LotesFicha }
-interface Estado { aberto: boolean; kmz: ItemKml[] | null; nv: Nv | null; sql: LoteSql[] | null; lotes: Lotes | null; desenho: { p0?: P; n: number } | null; erro?: string }
+/** sjc: São José dos Campos, lotes pelo GeoSanja (lotesSjc.ts); ics: as inscrições digitadas, cujas quadras abrem no modo 'sql' */
+export interface Lotes { modo: 'nv' | 'sql' | 'ficha'; quadras?: string[]; ics?: string[]; sjc?: boolean; ficha?: LotesFicha }
+interface Estado { aberto: boolean; kmz: ItemKml[] | null; nv: Nv | null; sql: LoteSql[] | null; sqlSjc?: boolean; lotes: Lotes | null; desenho: { p0?: P; n: number } | null; erro?: string }
 
 let E: Estado = { aberto: false, kmz: null, nv: null, sql: null, lotes: null, desenho: null };
 const ouvintes = new Set<() => void>();
@@ -37,8 +38,8 @@ export const novoEstado = () => E;
 export const abrirNovo = () => mudar({ aberto: true, nv: null, kmz: null, sql: null, lotes: null });
 export const fecharNovo = () => mudar({ aberto: false, nv: null, kmz: null, sql: null, lotes: null });
 export const voltarPasso1 = () => mudar({ aberto: true, nv: null, kmz: null, sql: null, lotes: null });
-/** "Incluir por SQL" (São Paulo): a lista dos lotes digitados; null fora dessa tela */
-export const listaSql = (sql: LoteSql[] | null) => mudar({ sql });
+/** "Incluir por SQL" (São Paulo) ou "Incluir por inscrição" (São José dos Campos, sjc): a lista dos lotes digitados; null fora dessa tela */
+export const listaSql = (sql: LoteSql[] | null, sjc?: boolean) => mudar(sjc === undefined ? { sql } : { sql, sqlSjc: sjc });
 export const abrirLotes = (lotes: Lotes | null) => mudar({ lotes });
 export const escolherKmz = (kmz: ItemKml[] | null) => mudar({ aberto: true, kmz, nv: null });
 /** pede à página Mapa que entre no modo de desenho (com o primeiro ponto, se veio do clique direito) */

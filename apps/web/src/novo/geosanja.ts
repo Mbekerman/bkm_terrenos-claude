@@ -60,7 +60,7 @@ export async function gsjToken(novo = false) {
   return TOKEN;
 }
 /** a inscrição no formato do site (00.0000.0000.0000) */
-const icFmt = (s: string) => { const d = digitos(s); return d.length === 14 ? `${d.slice(0, 2)}.${d.slice(2, 6)}.${d.slice(6, 10)}.${d.slice(10)}` : s.trim(); };
+export const icFmt = (s: string) => { const d = digitos(s); return d.length === 14 ? `${d.slice(0, 2)}.${d.slice(2, 6)}.${d.slice(6, 10)}.${d.slice(10)}` : s.trim(); };
 /** poligonal do lote (GeoJSON em graus), ou null quando a inscrição não existe no GeoSanja */
 export async function gsjLote(ic: string): Promise<any | null> {
   const ped = (tk: string) => fetch(GSJ_BASE + 'localizar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },

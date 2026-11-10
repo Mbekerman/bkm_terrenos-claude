@@ -26,6 +26,8 @@ A aba tem, nesta ordem, os quadros: **Identificação**, **Endereço e localiza�
 
 **Por que:** o endereço precisa bater com o lugar do terreno no mapa e com os lotes da prefeitura. Digitado à mão, ele se descola do desenho.
 
+**Planta do loteamento (São José dos Campos):** o botão **"Planta do loteamento"**, no título deste quadro, acha no GeoSanja a planta do loteamento aprovado onde o terreno está e baixa a imagem (JPG, a folha inteira). Quando mais de uma folha cobre o terreno, aparece a lista para escolher. Leva de 10 a 20 segundos. É a planta **da aprovação**, não o cadastro de hoje: lotes juntados ou desmembrados depois não aparecem nela. O arquivo só é baixado; ainda não fica guardado em Documentos.
+
 Depois de salvar uma poligonal nova, se a rua do terreno não encosta mais nela, aparece a pergunta **"Trocar o endereço?"**:
 
 - **"Manter o endereço"**: fica como estava.
@@ -82,7 +84,7 @@ O quadro tem duas metades:
 - **Matrículas**: digite o **Nº da matrícula**, confira o **Cartório** (já vem preenchido) e a **Área registrada**, e clique em **Incluir**. Vira uma etiqueta **amarela**.
 - **SQLs** (ou o nome da inscrição na sua cidade): digite e clique em **Incluir**, ou use **"Escolher no mapa"**. Vira uma etiqueta **roxa**.
 
-**Em São José dos Campos**, a inscrição imobiliária é consultada sozinha no **GeoSanja** assim que é incluída: vêm a poligonal do lote, a zona com a área no lote, a macrozona e as restrições (centralidade, setor, riscos, parques, linha de transmissão...), e a poligonal do terreno é refeita pela soma dos lotes, como em São Paulo. A janela da etiqueta tem **"Buscar no GeoSanja"** (ou **"Buscar de novo"**). O GeoSanja **não traz** área cadastral, endereço e número, testada, valor venal, IPTU nem cartório: esses você digita (na janela da etiqueta e na aba Terreno).
+**Em São José dos Campos**, a inscrição imobiliária é consultada sozinha no **GeoSanja** assim que é incluída: vêm a poligonal do lote, a zona com a área no lote, a macrozona e as restrições (centralidade, setor, riscos, parques, linha de transmissão...), e a poligonal do terreno é refeita pela soma dos lotes, como em São Paulo. A janela da etiqueta tem **"Buscar no GeoSanja"** (ou **"Buscar de novo"**). O GeoSanja **não traz** área cadastral, endereço e número, testada, valor venal, IPTU nem cartório: esses você digita (na janela da etiqueta e na aba Terreno). **"Escolher no mapa"** também existe em São José: abre o mapa de lotes do GeoSanja das quadras da poligonal (ver [03](03-novo-terreno.md#lotes-da-prefeitura-são-paulo-e-são-josé-dos-campos)); as marcadas entram sem parte e as desmarcadas das quadras abertas saem.
 
 Cada etiqueta mostra o número e um **x**. Em tela estreita, as duas metades ficam uma sobre a outra e cada uma recolhe pela seta.
 

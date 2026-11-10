@@ -6,6 +6,9 @@
 // entra com 10 m² ou mais de lote dentro dela. Os marcados refazem a poligonal pela soma dos lotes e entram no terreno sem
 // parte. Pela janela Incluir por SQL ("Escolher no mapa"), abre as quadras dos SQLs e os marcados voltam para a lista.
 // Condomínio, via de acesso e SQL que já está em outro terreno aparecem mas não se marcam.
+// Em São José dos Campos (L.sjc; pedido do Moises, 10/nov/2026) os lotes vêm do GeoSanja, quadra por quadra pela varredura de
+// lotesSjc.ts, com o satélite do Google (com os nomes das ruas) por baixo, porque o GeoSanja não dá o nome da rua; o clique fora dos
+// lotes pergunta ao GeoSanja o lote daquele ponto e o acrescenta, marcado. Não vêm área cadastral, endereço nem número de porta.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui';
@@ -13,12 +16,16 @@ import { Ic } from '../components/Moldura';
 import { areaPoly, lotesUniao, m2, type P } from './geo';
 import { digitos, geoAneis, geoAreaAnel, geoNoAnel, geoTit, geoWfs, geoWkt, latLngUtm, nomeVia, utmLatLng, type LoteSql } from './geosampa';
 import { abrirLotes, atualizarNv, listaSql, novoEstado, poligonal, type Lotes } from './estado';
+import { gsjNoPonto, quadraDe, quadrasSjc } from './lotesSjc';
+import { gsjLote } from './geosanja';
+import { GMAPS_KEY } from '../lib/config';
 
 const LG_MIN = 0.2; // fração do lote dentro da poligonal para vir marcado
 type An = number[][];
-interface Lote { an: An; sql: string | null; p: any; condo: boolean; via: boolean; trava: string | null; fr: number; rot: { x: number; y: number; r: number }; sel: boolean; area: number | null; end: string }
+interface Lote { an: An; sql: string | null; p: any; condo: boolean; via: boolean; trava: string | null; fr: number; rot: { x: number; y: number; r: number }; sel: boolean; area: number | null; end: string; q: string; rf: string; rn: string }
 interface Via { n: string; x: number; y: number; ang: number; len: number }
-interface Dados { ter: An | null; lotes: Lote[]; quadras: string[]; bb: number[]; vias: Via[] }
+/** fundo: a imagem do Maps Static e a matriz que leva o pixel dela às coordenadas do desenho (x, -y em UTM) */
+interface Dados { ter: An | null; lotes: Lote[]; quadras: string[]; bb: number[]; vias: Via[]; sjc?: boolean; fundo?: { href: string; m: number[] } }
 
 /* ---------- geometria (UTM 23S, metros) ---------- */
 const lgBB = (an: An) => { const xs = an.map((p) => p[0]), ys = an.map((p) => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
@@ -60,6 +67,49 @@ const caminho = (an: An) => 'M' + an.slice(0, -1).map((p) => `${p[0].toFixed(2)}
 const polyLl = (an: An): P[] => an.slice(0, -1).map((p) => utmLatLng(p[0], p[1]).map((v) => +v.toFixed(7)) as P);
 const endDe = (p: any) => (p.nm_logradouro_completo ? geoTit(p.nm_logradouro_completo) + (p.cd_numero_porta && p.cd_numero_porta !== '0' ? ', ' + p.cd_numero_porta : '') : '');
 
+/** inscrições (só dígitos) que já estão em outro terreno da empresa: código do terreno, ou '' quando ele está excluído */
+async function emOutro(ds: string[], empresa: string, proprio?: string) {
+  const outro = new Map<string, string>();
+  for (let i = 0; i < ds.length; i += 200) {
+    const { data, error } = await supabase.from('inscricoes_municipais').select('inscricao_norm,terrenos(codigo)').eq('empresa_id', empresa).in('inscricao_norm', ds.slice(i, i + 200)).abortSignal(AbortSignal.timeout(20_000));
+    if (error) throw new Error('BANCO');
+    /* sem o terreno na resposta: está num terreno excluído (a leitura esconde), que ainda segura a inscrição */
+    (Array.isArray(data) ? data : []).forEach((r: any) => { if (!r.terrenos) outro.set(r.inscricao_norm, ''); else if (r.terrenos.codigo && r.terrenos.codigo !== proprio) outro.set(r.inscricao_norm, r.terrenos.codigo); });
+  }
+  return outro;
+}
+const travaOutro = (ou: string | undefined) => (ou === '' ? 'Está num terreno excluído' : ou ? `Já está no ${ou}` : null);
+/** um lote do GeoSanja no formato do mapa: "L 0011" e, na inscrição de unidade, o final dela */
+function loteSjc(ic: string, an: An, ter: An | null, ou: string | undefined, jaNa: boolean, sel?: boolean): Lote {
+  const trava = travaOutro(ou), fr = ter ? fracao(an, ter) : 0, un = ic.slice(13);
+  return { an, sql: ic, p: { ic }, condo: false, via: false, trava, fr, rot: rotulo(an), sel: sel ?? ((jaNa && !trava) || (!trava && fr >= LG_MIN)), area: null, end: '', q: quadraDe(ic),
+    rf: `L ${ic.slice(8, 12)}`, rn: un && un !== '0000' ? `U ${un}` : '' };
+}
+/** o satélite do Google (híbrido, com os nomes das ruas) que cobre o quadro, e a matriz do pixel para o desenho */
+function fundoGoogle(bb: number[]): Dados['fundo'] {
+  if (!GMAPS_KEY) return undefined;
+  const merc = (la: number, lo: number, z: number) => { const s = 256 * 2 ** z, y = Math.log(Math.tan(Math.PI / 4 + (la * Math.PI) / 360)); return [((lo + 180) / 360) * s, ((1 - y / Math.PI) / 2) * s]; };
+  const desm = (x: number, y: number, z: number) => { const s = 256 * 2 ** z; return [(Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / s))) * 180) / Math.PI, (x / s) * 360 - 180]; };
+  const c = utmLatLng((bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2), a = utmLatLng(bb[0] - 30, bb[1] - 30), b = utmLatLng(bb[2] + 30, bb[3] + 30);
+  let z = 20;
+  while (z > 12) { const p = merc(a[0], a[1], z), q = merc(b[0], b[1], z); if (Math.abs(q[0] - p[0]) < 620 && Math.abs(q[1] - p[1]) < 620) break; z--; }
+  /* a imagem tem 1280 px (640 em escala 2): cada canto levado ao UTM dá a matriz afim do pixel para o desenho */
+  const m0 = merc(c[0], c[1], z), canto = (px: number, py: number) => { const [la, lo] = desm(m0[0] + (px - 640) / 2, m0[1] + (py - 640) / 2, z), [x, y] = latLngUtm(la, lo); return [x, -y]; };
+  const o = canto(0, 0), u = canto(1280, 0), v = canto(0, 1280);
+  return { href: `https://maps.googleapis.com/maps/api/staticmap?center=${c[0].toFixed(7)},${c[1].toFixed(7)}&zoom=${z}&size=640x640&scale=2&maptype=hybrid&key=${GMAPS_KEY}`,
+    m: [(u[0] - o[0]) / 1280, (u[1] - o[1]) / 1280, (v[0] - o[0]) / 1280, (v[1] - o[1]) / 1280, o[0], o[1]] };
+}
+async function carregarSjc(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: string, proprio: string | undefined, andamento: (n: number) => void): Promise<Dados> {
+  let ter: An | null = null;
+  if (L.modo !== 'sql') { ter = ter0!.map(([la, ln]) => latLngUtm(la, ln)); ter.push(ter[0]); }
+  const r = await quadrasSjc(ter ? { ter, andamento } : { ics: L.ics || [], andamento });
+  const outro = await emOutro(r.lotes.map((l) => digitos(l.ic)), empresa, proprio);
+  const lotes = r.lotes.map((l) => loteSjc(l.ic, l.an, ter, outro.get(digitos(l.ic)), ja.has(digitos(l.ic))));
+  if (!lotes.length) throw new Error('Nenhum lote do cadastro nessas quadras no GeoSanja.');
+  const bb = lgBB(lotes.flatMap((l) => l.an).concat(ter || []));
+  return { ter, lotes, quadras: r.quadras, bb, vias: [], sjc: true, fundo: fundoGoogle(bb) };
+}
+
 /* ---------- consulta ---------- */
 async function carregar(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: string, proprio?: string): Promise<Dados> {
   let ter: An | null = null, qs: string[];
@@ -81,19 +131,14 @@ async function carregar(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: st
   const ativos = fs.filter((f) => f.geometry && f.properties.tx_situ_lote !== 'INATIVO');
   /* SQL que já está em outro terreno não se marca (o índice único da empresa recusaria) */
   const ds = [...new Set(ativos.map((f) => digitos(f.properties.nr_contribuinte || '')).filter((d) => d.length === 11))];
-  const outro = new Map<string, string>();
-  for (let i = 0; i < ds.length; i += 200) {
-    const { data, error } = await supabase.from('inscricoes_municipais').select('inscricao_norm,terrenos(codigo)').eq('empresa_id', empresa).in('inscricao_norm', ds.slice(i, i + 200)).abortSignal(AbortSignal.timeout(20_000));
-    if (error) throw new Error('BANCO');
-    /* sem o terreno na resposta: está num terreno excluído (a leitura esconde), que ainda segura o SQL */
-    (Array.isArray(data) ? data : []).forEach((r: any) => { if (!r.terrenos) outro.set(r.inscricao_norm, ''); else if (r.terrenos.codigo && r.terrenos.codigo !== proprio) outro.set(r.inscricao_norm, r.terrenos.codigo); });
-  }
+  const outro = await emOutro(ds, empresa, proprio);
   const lotes: Lote[] = ativos.map((f) => {
     const p = f.properties, an = geoAneis(f.geometry)[0], sql: string | null = p.nr_contribuinte || null, d = digitos(sql || '');
     const condo = !!(p.cd_condominio && p.cd_condominio !== '00'), via = !!(p.tx_tipo_lote && p.tx_tipo_lote !== 'FISCAL'), ou = sql ? outro.get(d) : undefined, jaNa = ja.has(d);
-    const trava = via ? 'Via de acesso: não tem SQL' : condo ? `Condomínio ${p.cd_condominio}: os SQLs das unidades não vêm no GeoSampa` : !sql ? 'Sem SQL no cadastro' : ou === '' ? 'Está num terreno excluído' : ou ? `Já está no ${ou}` : null;
+    const trava = via ? 'Via de acesso: não tem SQL' : condo ? `Condomínio ${p.cd_condominio}: os SQLs das unidades não vêm no GeoSampa` : !sql ? 'Sem SQL no cadastro' : travaOutro(ou);
     const fr = ter ? fracao(an, ter) : 0;
-    return { an, sql, p, condo, via, trava, fr, rot: rotulo(an), sel: (jaNa && !trava) || (!trava && fr >= LG_MIN), area: p.qt_area_terreno ?? null, end: endDe(p) };
+    const rf = via ? '' : condo ? `CD ${p.cd_condominio}` : `F ${p.cd_lote}`, rn = p.cd_numero_porta && p.cd_numero_porta !== '0' && !via ? `N. ${p.cd_numero_porta}` : '';
+    return { an, sql, p, condo, via, trava, fr, rot: rotulo(an), sel: (jaNa && !trava) || (!trava && fr >= LG_MIN), area: p.qt_area_terreno ?? null, end: endDe(p), q: p.cd_setor_fiscal + '.' + p.cd_quadra_fiscal, rf, rn };
   });
   if (!lotes.length) throw new Error('Nenhum lote ativo nessas quadras no GeoSampa.');
   const bb = lgBB(lotes.flatMap((l) => l.an).concat(ter || []));
@@ -110,6 +155,9 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
   const [d, setD] = useState<Dados | null>(null);
   const [, setVer] = useState(0);
   const [tent, setTent] = useState(0);
+  const [achados, setAchados] = useState(0);
+  const [buscaPt, setBuscaPt] = useState(false);
+  const sjc = !!L.sjc, nomeB = sjc ? 'GeoSanja' : 'GeoSampa';
   const vb = useRef<number[] | null>(null), vb0 = useRef<number[] | null>(null);
   const svgR = useRef<SVGSVGElement>(null), boxR = useRef<HTMLDivElement>(null), tipR = useRef<HTMLDivElement>(null);
   const voltar = () => (L.ficha ? L.ficha.fechar() : abrirLotes(null));
@@ -118,9 +166,11 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
     let vivo = true;
     setFase('carregando'); vb.current = null; vb0.current = null;
     const ja = new Set(L.ficha ? L.ficha.sqls : (L.modo === 'sql' ? st.sql || [] : nv?.sqls || []).map((x) => digitos(x.sql)));
-    carregar(L, L.ficha ? L.ficha.poly : L.modo === 'nv' ? nv?.polyDesenho || nv?.poly || null : null, ja, empresa, L.ficha?.codigo)
+    const ter0 = L.ficha ? L.ficha.poly : L.modo === 'nv' ? nv?.polyDesenho || nv?.poly || null : null;
+    setAchados(0);
+    (sjc ? carregarSjc(L, ter0, ja, empresa, L.ficha?.codigo, (n) => vivo && setAchados(n)) : carregar(L, ter0, ja, empresa, L.ficha?.codigo))
       .then((r) => { if (vivo) { setD(r); setFase('mapa'); } })
-      .catch((e) => { console.warn(e); if (vivo) { setErro(/poligonal não ocupa|Nenhum lote/.test(e?.message) ? e.message : e?.message === 'BANCO' ? 'O banco do sistema está demorando para responder. Tente de novo em instantes.' : 'O GeoSampa não respondeu. Tente de novo em instantes.'); setFase('erro'); } });
+      .catch((e) => { console.warn(e); if (vivo) { setErro(/poligonal não ocupa|Nenhum lote|não achou o lote/.test(e?.message) ? e.message : e?.message === 'BANCO' ? 'O banco do sistema está demorando para responder. Tente de novo em instantes.' : `O ${nomeB} não respondeu. Tente de novo em instantes.`); setFase('erro'); } });
     return () => { vivo = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tent]);
@@ -159,17 +209,18 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
       if (e.pointerType !== 'mouse') return;
       const el = (e.target as Element).closest?.('[data-lg]'); if (!el) { tip.hidden = true; return; }
       const l = d.lotes[+(el as HTMLElement).dataset.lg!], r = box.getBoundingClientRect();
-      tip.innerHTML = dica(l, !!d.ter); tip.hidden = false;
+      tip.innerHTML = dica(l, !!d.ter, !!d.sjc); tip.hidden = false;
       const tx = Math.min(e.clientX - r.left + 14, r.width - tip.offsetWidth - 6), ty = e.clientY - r.top + 16 + tip.offsetHeight > r.height ? e.clientY - r.top - tip.offsetHeight - 10 : e.clientY - r.top + 16;
       tip.style.left = Math.max(6, tx) + 'px'; tip.style.top = Math.max(6, ty) + 'px';
     };
     const fim = (e: PointerEvent) => {
       if (!arr) return; arr = null; if (moveu || e.type === 'pointercancel') return;
-      const el = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('[data-lg]'); if (!el) return;
+      const el = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('[data-lg]');
+      if (!el) { if (d.sjc) acrescentar(pt(svg, e)); return; }
       const l = d.lotes[+(el as HTMLElement).dataset.lg!];
       if (l.trava) { toast(l.trava, true); return; }
       l.sel = !l.sel; setVer((v) => v + 1);
-      tip.innerHTML = dica(l, !!d.ter);
+      tip.innerHTML = dica(l, !!d.ter, !!d.sjc);
     };
     const sai = (e: PointerEvent) => { if (e.pointerType === 'mouse' && !arr) tip.hidden = true; };
     svg.addEventListener('wheel', roda, { passive: false }); svg.addEventListener('pointerdown', baixo); svg.addEventListener('pointermove', move);
@@ -181,10 +232,30 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fase, d]);
 
+  /* São José: o clique fora dos lotes pergunta ao GeoSanja o lote daquele ponto e o acrescenta, marcado */
+  async function acrescentar([x, y]: number[]) {
+    if (!d || buscaPt) return;
+    setBuscaPt(true);
+    try {
+      const [la, ln] = utmLatLng(x, -y), ic = await gsjNoPonto(la, ln);
+      if (!ic) { toast('Nenhum lote do cadastro neste ponto (rua ou área sem lote).', true); return; }
+      const ja = d.lotes.find((l) => l.sql === ic);
+      if (ja) { if (ja.trava) toast(ja.trava, true); else { ja.sel = true; setVer((v) => v + 1); } return; }
+      const g = await gsjLote(ic);
+      if (!g) { toast(`O GeoSanja não trouxe o desenho do lote ${ic}.`, true); return; }
+      const an = geoAneis(g)[0].map(([lo, lt]: number[]) => latLngUtm(lt, lo) as number[]);
+      if (an[0][0] !== an[an.length - 1][0] || an[0][1] !== an[an.length - 1][1]) an.push(an[0]);
+      const ou = (await emOutro([digitos(ic)], empresa, L.ficha?.codigo)).get(digitos(ic)), l = loteSjc(ic, an, d.ter, ou, false, ou === undefined);
+      d.lotes.push(l); setVer((v) => v + 1);
+      if (l.trava) toast(l.trava, true);
+    } catch (e: any) { toast(e?.message === 'BANCO' ? 'O banco do sistema está demorando para responder.' : 'O GeoSanja não respondeu. Tente de novo.', true); }
+    finally { setBuscaPt(false); }
+  }
+
   function incluir() {
     if (!d) return;
     const marc = d.lotes.filter((l) => l.sel && !l.trava && l.sql);
-    const novos: LoteSql[] = marc.map((l) => ({ sql: l.sql!, area: l.area, end: l.end || '', cib: l.p.cd_cib || null, poly: polyLl(l.an), q: l.p.cd_setor_fiscal + '.' + l.p.cd_quadra_fiscal }));
+    const novos: LoteSql[] = marc.map((l) => ({ sql: l.sql!, area: l.area, end: l.end || '', cib: l.p.cd_cib || null, poly: polyLl(l.an), q: l.q }));
     /* pela ficha: os marcados entram e os desmarcados saem (Partes.tsx) */
     if (L.ficha) { L.ficha.incluir(novos, d.quadras); return; }
     /* pelo SQL: os marcados voltam para a lista (os de outras quadras ficam como estavam) */
@@ -199,24 +270,26 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
     if (u) toast(`Poligonal pela soma dos ${marc.length} lote${marc.length > 1 ? 's' : ''}: ${m2(areaPoly(u))}.`);
   }
 
-  const nomeCab = L.ficha ? L.ficha.nome : L.modo === 'sql' ? 'pelo SQL' : nv?.nome || '';
+  const nomeCab = L.ficha ? L.ficha.nome : L.modo === 'sql' ? `pel${sjc ? 'a inscrição' : 'o SQL'}` : nv?.nome || '';
   const cab = (
     <div className="dh"><div><h2>Lotes da prefeitura</h2><div className="faint">{L.ficha ? L.ficha.codigo : 'Novo terreno'}{nomeCab ? ` · ${nomeCab}` : ''}{d?.quadras ? ` · quadra${d.quadras.length > 1 ? 's' : ''} ${d.quadras.map((k) => k.replace('.', '-')).join(', ')}` : ''}</div></div>
       <button className="iconbtn" aria-label="Fechar" onClick={voltar}><Ic n="close" s={22} /></button></div>
   );
-  if (fase === 'carregando') return <>{cab}<div className="lg-msg"><Ic n="layers" s={20} />Buscando os lotes das quadras no GeoSampa...</div></>;
+  if (fase === 'carregando') return <>{cab}<div className="lg-msg"><Ic n="layers" s={20} />{sjc ? `Montando as quadras pelo GeoSanja, lote a lote${achados ? `: ${achados} lote${achados > 1 ? 's' : ''} até agora` : ''}...` : 'Buscando os lotes das quadras no GeoSampa...'}</div></>;
   if (fase === 'erro' || !d) return <>{cab}<div className="banner warn"><Ic n="warn" /><div>{erro}</div></div>
     <div className="df"><button className="btn text" onClick={voltar}>{L.modo === 'nv' ? 'Seguir sem lotes' : 'Voltar'}</button><button className="btn" onClick={() => setTent((t) => t + 1)}>Tentar de novo</button></div></>;
 
   const [x0, y0, x1, y1] = d.bb, mg = 12;
   if (!vb.current) { vb.current = [x0 - mg, -y1 - mg, x1 - x0 + 2 * mg, y1 - y0 + 2 * mg]; vb0.current = vb.current.slice(); }
-  const sel = d.lotes.filter((l) => l.sel && !l.trava), area = sel.reduce((s, l) => s + (l.area || 0), 0);
-  const rot = (l: Lote) => { const f = l.via ? '' : l.condo ? `CD ${l.p.cd_condominio}` : `F ${l.p.cd_lote}`, n = l.p.cd_numero_porta && l.p.cd_numero_porta !== '0' && !l.via ? `N. ${l.p.cd_numero_porta}` : ''; return { f, n }; };
+  /* em São José não há área cadastral: a soma é a do desenho dos lotes */
+  const sel = d.lotes.filter((l) => l.sel && !l.trava), area = sel.reduce((s, l) => s + (d.sjc ? geoAreaAnel(l.an) : l.area || 0), 0);
+  const rot = (l: Lote) => ({ f: l.rf, n: l.rn });
   return <>
     {cab}
     <div className="lg-corpo"><div className="lg-mapa" ref={boxR}>
-      <svg className="lg-svg" ref={svgR} viewBox={vb.current.join(' ')} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa de lotes das quadras">
+      <svg className={`lg-svg${d.fundo ? ' lg-sat' : ''}`} ref={svgR} viewBox={vb.current.join(' ')} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa de lotes das quadras">
         <rect x={x0 - 2000} y={-y1 - 2000} width={x1 - x0 + 4000} height={y1 - y0 + 4000} className="lg-fundo" />
+        {d.fundo && <image href={d.fundo.href} width={1280} height={1280} transform={`matrix(${d.fundo.m.join(' ')})`} preserveAspectRatio="none" style={{ pointerEvents: 'none' }} />}
         <g>{d.lotes.map((l, i) => <path key={i} d={caminho(l.an)} data-lg={i} className={`lg-l${l.sel && !l.trava ? ' sel' : ''}${l.trava ? ' x' : ''}`} />)}</g>
         {d.ter && <path d={caminho(d.ter)} className="lg-ter" />}
         <g className="lg-vias">{d.vias.map((v) => <text key={v.n} data-x={v.x.toFixed(1)} data-y={(-v.y).toFixed(1)} data-g={(-v.ang).toFixed(1)}>{v.n}</text>)}</g>
@@ -228,16 +301,19 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
         <button className="iconbtn sm" aria-label="Enquadrar" title="Enquadrar" onClick={() => porVb(vb0.current!.slice())}><Ic n="layers" s={16} /></button></div>
       <div className="lg-leg"><span><i className="lg-sw sel" />Marcado</span><span><i className="lg-sw" />Lote</span><span><i className="lg-sw x" />Não se marca</span>{d.ter && <span><i className="lg-sw ter" />Poligonal</span>}</div>
     </div>
-      <div className="lg-lado"><div className="lg-tot"><b>{sel.length} lote{sel.length === 1 ? '' : 's'} marcado{sel.length === 1 ? '' : 's'}</b>{area ? <span className="muted"> · {m2(area)} de área cadastral</span> : null}</div>
-        <div className="hint" style={{ margin: '4px 0 8px' }}><span className="lg-mouse">Clique no lote para marcar ou desmarcar. Pare o mouse em cima para ver o SQL. A roda aproxima e mostra os números dos lotes pequenos.</span></div>
-        <div className="lg-lista">{sel.length ? sel.map((l) => <div key={l.sql || l.p.cd_lote} className="lg-it"><span className="num">{l.sql}</span><span className="faint">{l.end || ''}{l.area ? ` · ${m2(l.area)}` : ''}</span></div>) : <div className="muted">Nenhum lote marcado.</div>}</div></div></div>
+      <div className="lg-lado"><div className="lg-tot"><b>{sel.length} lote{sel.length === 1 ? '' : 's'} marcado{sel.length === 1 ? '' : 's'}</b>{area ? <span className="muted"> · {m2(area)} de {d.sjc ? 'área pelo desenho' : 'área cadastral'}</span> : null}</div>
+        <div className="hint" style={{ margin: '4px 0 8px' }}><span className="lg-mouse">{d.sjc ? <>Clique no lote para marcar ou desmarcar; clique fora dos lotes para acrescentar o lote daquele ponto{buscaPt ? ' (buscando...)' : ''}. Pare o mouse em cima para ver a inscrição. A roda aproxima.</>
+          : 'Clique no lote para marcar ou desmarcar. Pare o mouse em cima para ver o SQL. A roda aproxima e mostra os números dos lotes pequenos.'}</span></div>
+        <div className="lg-lista">{sel.length ? sel.map((l) => <div key={l.sql || l.p.cd_lote} className="lg-it"><span className="num">{l.sql}</span><span className="faint">{l.end || ''}{d.sjc ? `${m2(geoAreaAnel(l.an))} pelo desenho` : l.area ? ` · ${m2(l.area)}` : ''}</span></div>) : <div className="muted">Nenhum lote marcado.</div>}</div></div></div>
     <div className="df"><button className="btn text" onClick={voltar}>{L.ficha ? 'Cancelar' : L.modo === 'nv' ? 'Agora não' : 'Voltar'}</button>
       <button className="btn primary" disabled={L.modo === 'sql' && !sel.length} onClick={incluir}>{L.modo !== 'nv' ? `Usar ${sel.length} lote${sel.length === 1 ? '' : 's'}` : sel.length ? `Usar ${sel.length} lote${sel.length > 1 ? 's' : ''}` : 'Seguir sem lotes'}</button></div>
   </>;
 }
 
-function dica(l: Lote, comTer: boolean) {
+function dica(l: Lote, comTer: boolean, sjc = false) {
   const e = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+  if (sjc) return `<b class="num">Inscrição ${e(l.sql || '')}</b><div>${m2(geoAreaAnel(l.an))} pelo desenho</div>${l.rn ? '<div>Inscrição de unidade: o lote pode ser um condomínio</div>' : ''}`
+    + (l.trava ? `<div class="lg-tip-x">${e(l.trava)}</div>` : `<div class="faint">${comTer ? `${Math.round(l.fr * 100)}% dentro da poligonal · ` : ''}${l.sel ? 'marcado' : 'clique para marcar'}</div>`);
   return `<b class="num">${l.sql ? 'SQL ' + e(l.sql) : l.via ? 'Via de acesso' : l.condo ? 'Condomínio ' + e(l.p.cd_condominio) : 'Sem SQL'}</b>${l.end ? `<div>${e(l.end)}</div>` : ''}${l.area ? `<div>${m2(l.area)} de terreno</div>` : ''}`
     + (l.trava ? `<div class="lg-tip-x">${e(l.trava)}</div>` : `<div class="faint">${comTer ? `${Math.round(l.fr * 100)}% dentro da poligonal · ` : ''}${l.sel ? 'marcado' : 'clique para marcar'}</div>`);
 }
