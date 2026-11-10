@@ -8,8 +8,14 @@ import { mkMarcaHtml, mkTitulo, type Emp } from './mercado';
 // o React desenha a página e entrega os dados; o motor mexe só dentro do contêiner do mapa.
 
 export interface Pino { id: string; nome: string; lat: number; lng: number; poly: [number, number][] | null; cor: string; fg: string; codigo?: string }
-/** de longe (zoom até este), a etiqueta do terreno cresce um pouco (pedido do Moises, 10/nov/2026) */
-const ZOOM_LONGE = 14;
+/** tamanho da etiqueta do terreno pelo zoom (pedidos do Moises, 10/nov/2026): 13 px de perto, 15 px no zoom 14, que é o máximo,
+ *  e daí para longe diminui 20% a cada nível, como os ícones do Google, até 8 px */
+const ZOOM_MAX = 14;
+function fonteEtiqueta(z: number) {
+  if (z > ZOOM_MAX + 0.5) return 13;
+  if (z >= ZOOM_MAX) return 15;
+  return Math.max(8, Math.round(15 * Math.pow(0.8, ZOOM_MAX - z) * 10) / 10);
+}
 export interface Ganchos {
   pino(id: string): void;
   vazio(lat: number, lng: number): void;
@@ -115,8 +121,8 @@ export class Motor {
       }
       g.duplo(e.latLng.lat(), e.latLng.lng(), alvo);
     });
-    const zoomClasse = () => el.classList.toggle('z-longe', (M.getZoom() ?? 99) <= ZOOM_LONGE);
-    zoomClasse(); M.addListener('zoom_changed', zoomClasse);
+    const zoomFonte = () => el.style.setProperty('--et-fs', fonteEtiqueta(M.getZoom() ?? 99) + 'px');
+    zoomFonte(); M.addListener('zoom_changed', zoomFonte);
     M.addListener('idle', () => { const c = M.getCenter(); guardarVista({ c: { lat: c.lat(), lng: c.lng() }, z: M.getZoom() }); g.movendo(false); });
     /* Street View: fecha no nosso X ou no Esc; o fechar do Google fica escondido para não haver dois */
     const sv = M.getStreetView();
