@@ -33,7 +33,7 @@ Logo abaixo, o que vale para a oferta inteira:
 
 | Campo | Observação |
 |---|---|
-| **Corretor** | Quem trouxe a oferta, ou "Sem corretor / direto". |
+| **Corretor** | Quem trouxe a oferta, ou "Sem corretor / direto". Digite parte do nome, do apelido ou da imobiliária para filtrar, ou clique na seta para ver todos em ordem alfabética. |
 | **Aceita permuta** | E o texto "Como o vendedor encara a permuta e em que condições". |
 | **Pagamento** | "Observação sobre a forma de pagamento" (entrada, parcelas, torna, condição suspensiva). |
 

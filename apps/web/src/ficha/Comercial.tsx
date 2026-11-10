@@ -111,7 +111,7 @@ export function JanelaOferta({ f, fechar }: { f: Ficha; corretores?: R[]; partes
     <Dialogo titulo="Registrar oferta" onFechar={fechar} rodape={<><LimparRasc chave={kOf} mostrar={temOf} limpar={() => setV(OF0)} /><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
       <form id="f-of" onSubmit={enviar}><div className="fields">
         <div className="field full"><label htmlFor="o-c">Corretor</label><EscolherCorretor id="o-c" value={v.cid} onChange={(x) => setV((o) => ({ ...o, cid: x }))} /></div>
-        <div className="field full"><label htmlFor="o-o">Observação sobre a oferta</label><textarea id="o-o" rows={4} value={v.obs} onChange={(e) => setV((o) => ({ ...o, obs: e.target.value }))} /></div>
+        <div className="field full"><label htmlFor="o-o">Observação sobre a oferta</label><textarea id="o-o" rows={4} placeholder="Impressões sobre o corretor, firmeza da proposta..." value={v.obs} onChange={(e) => setV((o) => ({ ...o, obs: e.target.value }))} /></div>
       </div></form>
     </Dialogo>
   );
@@ -459,7 +459,7 @@ function CardOferta({ f, c, o, fechar }: { f: Ficha; c: Com; o: R; fechar: () =>
         </div>
 
         <div className="field"><label htmlFor="of-obs">Observações</label>{ed
-          ? <Vivo ini={o.observacoes ?? ''} gravar={(v) => ((o.observacoes ?? '') === v.trim() ? true : gravar({ observacoes: v.trim() || null }))}>{(p) => <textarea id="of-obs" rows={4} placeholder="Não informado" {...p} />}</Vivo>
+          ? <Vivo ini={o.observacoes ?? ''} gravar={(v) => ((o.observacoes ?? '') === v.trim() ? true : gravar({ observacoes: v.trim() || null }))}>{(p) => <textarea id="of-obs" rows={4} placeholder="Impressões sobre o corretor, firmeza da proposta..." {...p} />}</Vivo>
           : <span style={{ whiteSpace: 'pre-wrap' }}>{o.observacoes || '—'}</span>}</div>
       </div>
     </Dialogo>

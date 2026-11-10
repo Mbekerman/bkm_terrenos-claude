@@ -5265,3 +5265,16 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 #sec-ofertas .of-obs:last-child { border-bottom: 0 }
 #sec-ofertas .of-obs-h { font-size: 13px; color: var(--texto-suave, #444746); display: flex; align-items: center; gap: 8px }
 #sec-ofertas .of-obs-t { white-space: pre-wrap; margin-top: 4px }
+
+/* Corretor por busca (pedido do Moises, 10/nov/2026): campo com busca aproximada e a seta que abre todos */
+.cor-cb { position: relative; display: flex; align-items: center }
+.cor-cb input { flex: 1 1 auto; min-width: 0; padding-right: 40px !important; text-overflow: ellipsis }
+.cor-seta { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--m-on-surface-var, #444746); display: inline-flex; align-items: center; justify-content: center; cursor: pointer }
+.cor-seta:hover { background: rgba(31,31,31,.08) }
+.cor-seta svg { transform: rotate(90deg); transition: transform .15s }
+.cor-cb.ab .cor-seta svg { transform: rotate(-90deg) }
+.cor-pop { min-width: 240px }
+.cor-pop .mn-i.atual .mn-n { font-weight: 500 }
+.cor-pop .mn-i.cor-novo { color: var(--m-primary, #0b57d0); border-top: 1px solid var(--m-outline-var, #e3e3e3) }
+.cor-pop .mn-a { margin-left: auto; color: var(--m-on-surface-var, #444746); font-size: 13px }
+.nv-rasc { margin: 0 0 16px; align-items: center; gap: 12px }
