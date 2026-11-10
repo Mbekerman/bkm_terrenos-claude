@@ -25,24 +25,23 @@ Mostra o que o vendedor pede, na **oferta de referência** (a primeira, até alg
 
 **O valor pedido é sempre o de cada parte.** O total não se digita: os blocos do alto são o resumo das partes.
 
-- **Valor pedido**: com uma parte só, é o valor dela; com duas ou mais, a **soma das partes**.
-- **Por m²**: o valor pedido ÷ a área das partes que já têm valor (com uma parte só, a área adotada do terreno).
-- **Partes com valor** (só com duas ou mais partes): quantas já têm valor, por exemplo "2 de 3".
+- **Valor total** (com uma parte só, **Valor pedido**): a soma dos valores das partes.
+- **Por m²**: o valor total ÷ a área **só das partes que já têm valor** (com uma parte só, a área adotada do terreno). Enquanto falta alguma parte, embaixo aparece "sobre N m² com valor".
 
-Logo abaixo, o que vale para a oferta inteira:
+O número diminui de tamanho quando não cabe no bloco, até valores de R$ 999 milhões. Em tela estreita (celular), os dois blocos ficam um embaixo do outro.
 
-| Campo | Observação |
-|---|---|
-| **Corretor** | Quem trouxe a oferta, ou "Sem corretor / direto". Digite parte do nome, do apelido ou da imobiliária para filtrar, ou clique na seta para ver todos em ordem alfabética. |
-| **Aceita permuta** | E o texto "Como o vendedor encara a permuta e em que condições". |
-| **Pagamento** | "Observação sobre a forma de pagamento" (entrada, parcelas, torna, condição suspensiva). |
+Com duas ou mais partes, se alguma ainda não tem valor, aparece logo abaixo dos blocos o aviso amarelo **"Falta o valor pedido de Vendedor 3."** (ou "das partes …" quando são várias).
 
-Por último, uma linha por parte (ver [05](05-ficha-terreno.md#partes)), com:
+O corretor fica em cada oferta (ver Ofertas recebidas); Aceita permuta e Pagamento saíram deste quadro.
+
+Embaixo, uma linha por parte (ver [05](05-ficha-terreno.md#partes)), com:
 
 - as **matrículas da parte**, em etiquetas amarelas com a mini pizza do percentual (os SQLs não aparecem na linha). A etiqueta não se tira daqui; o clique abre a janela da matrícula, com a área registrada, o percentual da parte, a área da parte nela e os SQLs (ou inscrições) que estão dentro dela, cada um com a área do lote, o % da parte e a área da parte;
 - a **área da parte** (pelos SQLs; sem eles, pelas matrículas). Com uma parte só, é a área adotada do terreno. Logo abaixo, em cinza claro, o zoneamento dos SQLs da parte;
 - o **valor pedido** e o **valor por m²**, que se calculam um pelo outro (digite um e o outro muda). Aceita "12 mi" e precisa ser maior que zero;
-- a **condição de pagamento**: Dinheiro, Permuta física, Permuta financeira, Permuta geral ou Permuta com torna.
+- a **condição de pagamento**: Dinheiro, Permuta física, Permuta financeira, Permuta geral ou Permuta com torna;
+- **Informações gerais**, no fim de cada parte: um texto livre para o que aquele vendedor pediu (permuta, entrada, prazos). Vale para a parte naquela oferta: outra oferta tem o seu próprio texto, porque as partes podem mudar de uma oferta para outra. Não é o texto da oferta (as impressões sobre o corretor e a firmeza ficam no card da oferta). Grava ao sair do campo.
+No celular, a área e o valor por m² ficam lado a lado, e o valor pedido e a condição de pagamento ocupam a linha inteira.
 
 Com duas ou mais partes, embaixo vem o **Total**, com "(faltam N)" enquanto alguma parte não tem valor.
 

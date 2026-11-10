@@ -52,6 +52,8 @@ create table app.oferta_partes (
   valor_pedido numeric(14,2) check (valor_pedido > 0),
   -- forma de pagamento pedida por esta parte (nula = a da oferta)
   forma_pagamento text check (forma_pagamento in ('dinheiro','permuta_fisica','permuta_financeira','permuta_geral','permuta_com_torna')),
+  -- informações gerais do que esta parte pediu nesta oferta (a composição das partes muda de oferta para oferta)
+  observacoes  text,
   primary key (oferta_id, parte_id)
 );
 create index on app.oferta_partes (parte_id);
