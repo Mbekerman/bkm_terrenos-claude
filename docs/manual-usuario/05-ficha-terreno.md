@@ -22,7 +22,7 @@ A aba tem, nesta ordem, os quadros: **Identificação**, **Endereço e localiza�
 
 ## Endereço e localização
 
-**Regra:** **CEP, logradouro, bairro e município não se digitam na ficha.** Eles vêm da posição da poligonal no mapa. Para mudar, use o lápis **"Editar no mapa"** (no título deste quadro ou ao lado do endereço no Resumo). Ele abre a página Mapa com a poligonal em edição.
+**Regra:** **CEP, logradouro, bairro e município não se digitam na ficha.** Eles vêm da posição da poligonal no mapa. O CEP aparece no formato 00.000-000. Para mudar, use o lápis **"Editar no mapa"** (no título deste quadro ou ao lado do endereço no Resumo). Ele abre a página Mapa com a poligonal em edição.
 
 **Por que:** o endereço precisa bater com o lugar do terreno no mapa e com os lotes da prefeitura. Digitado à mão, ele se descola do desenho.
 
