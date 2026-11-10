@@ -4538,13 +4538,25 @@ html[data-tema="escuro"] .fi-abas button[aria-selected="true"] { color: #a8c7fa;
 html[data-tema="escuro"] .fi-abas .tkm-n { background: rgba(149,153,160,0.14); color: #c1d9ff }
 /* subabas de Estudos Técnicos (pedido do Moises, 10/nov/2026): chips de filtro abaixo da barra, o ativo no contêiner
    secundário; sem caber, a linha rola de lado */
-.fi-subabas { display: flex; gap: 8px; padding: 12px 0 0; overflow-x: auto; scrollbar-width: none }
+.fi-chips-w { display: flex; align-items: center; gap: 4px; padding: 12px 0 0; min-width: 0 }
+.fi-chips-w .adv-mais { flex: none }
+.fi-chips-w .iconbtn { color: var(--m-on-surface-var, #444746) }
+.fi-chips-w .iconbtn:hover { background: rgba(68,71,70,.08) }
+html[data-tema="escuro"] .fi-chips-w .iconbtn { color: #c4c7c5 }
+.fi-subabas { flex: 1 1 auto; min-width: 0; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none }
 .fi-subabas::-webkit-scrollbar { display: none }
 .fi-subabas button { flex: none; display: inline-flex; align-items: center; height: 32px; padding: 0 16px; border: 1px solid var(--m-outline, #c4c7c5); border-radius: 8px; background: transparent; font: inherit; font-size: 14px; font-weight: 500; color: var(--m-on-surface-var, #444746); white-space: nowrap; cursor: pointer }
 .fi-subabas button:hover { background: rgba(68,71,70,.08) }
 .fi-subabas button[aria-selected="true"] { background: #c2e7ff; border-color: transparent; color: #001d35 }
 .fi-subabas button:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
-.fi-subabas + .fi-aba > .bl-c { padding-top: 16px }
+.fi-chips-w + .fi-aba > .bl-c, .fi-chips-w + .fi-chips-w + .fi-aba > .bl-c { padding-top: 16px }
+/* subabas de Estudos Técnicos com as seções da subaba embaixo: a segunda fileira um pouco menor */
+.fi-chips-w.sub { padding-top: 8px }
+.fi-chips-w.sub .fi-subabas button { height: 28px; padding: 0 12px; font-size: 13px }
+/* seções em chips (pedido do Moises, 10/nov/2026): só o quadro do chip escolhido aparece, aberto e sem a seta */
+:root:not(#_) section.sec.qd-chip[hidden] { display: none !important }
+.qd-tit { display: block; min-width: 0; overflow-wrap: anywhere }
+.qd-tit .h-n { margin-left: 6px }
 html[data-tema="escuro"] .fi-subabas button { border-color: #8e918f; color: #c4c7c5 }
 html[data-tema="escuro"] .fi-subabas button[aria-selected="true"] { background: #004a77; border-color: transparent; color: #c2e7ff }
 .adv-menu .fi-mais-g { padding: 10px 16px 4px; font-size: 12px; font-weight: 500; color: var(--m-on-surface-var, #444746) }

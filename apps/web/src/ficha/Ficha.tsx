@@ -25,6 +25,8 @@ import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao
 import { useToast } from '../components/ui';
 import MenuTerreno from '../components/MenuTerreno';
 import { useNavigate } from 'react-router-dom';
+import { useRoleta } from '../components/Roleta';
+import { BarraChips, SecoesChips } from './Chips';
 
 // Ficha do terreno, porte de tools/prototipo/proto.js › pgFicha (topo, abas, fiAbasCaber), proto_fases.js › linhaTopo,
 // proto_funil.js › linhaEtapas e proto_mod.js › abaGeral (Visão geral: Localização e Resumo). Mesma marcação e classes do
@@ -184,98 +186,7 @@ const SVG_DOTS = <svg className="ic" width="20" height="20" viewBox="0 0 24 24" 
 function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void }) {
   const barra = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState(false);
-  const [sobra, setSobra] = useState(false); // há abas fora da vista
-  const anim = useRef(0);
-  /* a aba ativa entra na vista (com as vizinhas) ao trocar de aba */
-  useLayoutEffect(() => {
-    const b = barra.current, a = b?.querySelector<HTMLElement>(`button[data-t="${grupo(aba)}"]`);
-    if (!b || !a) return;
-    const ant = a.previousElementSibling as HTMLElement | null, prox = a.nextElementSibling as HTMLElement | null;
-    const L = b.clientWidth, x0 = a.offsetLeft - (b.firstElementChild as HTMLElement).offsetLeft, aw = a.offsetWidth;
-    let e = ant ? x0 - ant.offsetWidth * 0.6 : 0, d = prox ? x0 + aw + prox.offsetWidth * 0.6 : b.scrollWidth;
-    if (d - e > L) { e = x0 - (L - aw) / 2; d = e + L; } // não cabem as vizinhas: a ativa no meio
-    let alvo = b.scrollLeft;
-    if (e < alvo) alvo = e; else if (d > alvo + L) alvo = d - L;
-    if (alvo !== b.scrollLeft) { cancelAnimationFrame(anim.current); b.scrollTo({ left: alvo, behavior: 'smooth' }); }
-  }, [aba]);
-  useEffect(() => {
-    const b = barra.current;
-    if (!b) return;
-    const medir = () => setSobra(b.scrollWidth > b.clientWidth + 1);
-    medir();
-    const ro = window.ResizeObserver ? new ResizeObserver(medir) : null;
-    ro?.observe(b);
-    /* inércia: a velocidade (px/ms) cai a cada quadro até parar; bater na ponta para */
-    const rodar = (v: number) => {
-      cancelAnimationFrame(anim.current);
-      let t0 = performance.now();
-      const passo = (t: number) => {
-        const dt = Math.min(32, t - t0); t0 = t;
-        const antes = b.scrollLeft;
-        b.scrollLeft = antes + v * dt;
-        v *= Math.pow(0.9965, dt); // atrito: perde ~30% da velocidade a cada 100 ms
-        if (Math.abs(v) > 0.02 && b.scrollLeft !== antes) anim.current = requestAnimationFrame(passo);
-      };
-      anim.current = requestAnimationFrame(passo);
-    };
-    /* Shift + roda do mouse: cada dente empurra a roleta, que segue com inércia (o trackpad já tem a dele) */
-    const roda = (ev: WheelEvent) => {
-      if (b.scrollWidth <= b.clientWidth + 1) return;
-      if (ev.shiftKey) {
-        const d = (ev.deltaY || ev.deltaX) * (ev.deltaMode === 1 ? 40 : 1);
-        if (!d) return;
-        ev.preventDefault();
-        rodar(Math.max(-6, Math.min(6, d / 60)));
-      }
-    };
-    /* mouse arrastado (no toque, a rolagem do navegador já desliza com inércia) */
-    let px: number | null = null, sx = 0, arrastou = false, id = -1, ult: [number, number][] = [];
-    const baixo = (ev: PointerEvent) => {
-      if (ev.pointerType !== 'mouse' || ev.button !== 0) return;
-      cancelAnimationFrame(anim.current);
-      px = ev.clientX; sx = b.scrollLeft; arrastou = false; id = ev.pointerId; ult = [[performance.now(), b.scrollLeft]];
-      if (b.scrollWidth > b.clientWidth + 1) { // mão fechada só com o botão apertado, mesmo se soltar fora da barra
-        b.classList.add('segurando');
-        window.addEventListener('pointerup', () => b.classList.remove('segurando'), { once: true });
-      }
-    };
-    const move = (ev: PointerEvent) => {
-      if (px == null || ev.pointerId !== id) return;
-      const dx = ev.clientX - px;
-      if (!arrastou) {
-        if (Math.abs(dx) < 6 || b.scrollWidth <= b.clientWidth + 1) return;
-        arrastou = true;
-        try { b.setPointerCapture(id); } catch { /* sem captura */ }
-        b.classList.add('arrastando');
-      }
-      ev.preventDefault();
-      b.scrollLeft = sx - dx;
-      ult.push([performance.now(), b.scrollLeft]); if (ult.length > 6) ult.shift();
-    };
-    const cima = (ev: PointerEvent) => {
-      if (ev.pointerId !== id || px == null) return;
-      px = null;
-      if (!arrastou) return;
-      b.classList.remove('arrastando');
-      const z = ult[ult.length - 1], a0 = ult.find((u) => z[0] - u[0] < 100) ?? ult[0], dt = z[0] - a0[0];
-      if (dt > 0 && performance.now() - z[0] < 60) rodar(Math.max(-8, Math.min(8, (z[1] - a0[1]) / dt)));
-    };
-    const clique = (ev: MouseEvent) => { if (arrastou) { ev.preventDefault(); ev.stopPropagation(); arrastou = false; } };
-    const parar = () => cancelAnimationFrame(anim.current); // o dedo na barra segura a roleta
-    b.addEventListener('wheel', roda, { passive: false });
-    b.addEventListener('pointerdown', baixo);
-    b.addEventListener('pointermove', move);
-    b.addEventListener('pointerup', cima);
-    b.addEventListener('pointercancel', cima);
-    b.addEventListener('touchstart', parar, { passive: true });
-    b.addEventListener('click', clique, true);
-    return () => {
-      ro?.disconnect(); cancelAnimationFrame(anim.current);
-      b.removeEventListener('wheel', roda); b.removeEventListener('pointerdown', baixo); b.removeEventListener('pointermove', move);
-      b.removeEventListener('pointerup', cima); b.removeEventListener('pointercancel', cima); b.removeEventListener('touchstart', parar);
-      b.removeEventListener('click', clique, true);
-    };
-  }, []);
+  const sobra = useRoleta(barra, grupo(aba)); // há abas fora da vista
   useEffect(() => {
     if (!menu) return;
     const fecha = (ev: PointerEvent) => { if (!(ev.target as HTMLElement).closest?.('.fi-mais')) setMenu(false); };
@@ -544,12 +455,10 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
         <div className="adv-main"><Avancos f={f} irAba={irAba} /></div>
       </div>
       <Abas f={f} aba={aba} irAba={irAba} />
-      {grupo(aba) === 'estudos' && (
-        <div className="fi-subabas" role="tablist" aria-label="Estudos Técnicos">
-          {ESTUDOS.map(([k, l]) => <button key={k} role="tab" aria-selected={k === aba} aria-controls={`bl-${k}`} onClick={() => k !== aba && irAba(k)}>{l}</button>)}
-        </div>
-      )}
-      <section key={aba} className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
+      {grupo(aba) === 'estudos' && <BarraChips itens={ESTUDOS} ativo={aba} ir={irAba} rotulo="Estudos Técnicos" />}
+      <SecoesChips key={aba} aba={aba} rotulo={ABAS.find((x) => x[0] === aba)?.[1] ?? aba} sub={grupo(aba) === 'estudos'}>
+        <section className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
+      </SecoesChips>
       {aba !== 'entorno' && f.lat != null && <EntornoAuto f={f} />}
       <CartorioAuto f={f} />
       <PopEstudo f={f} />

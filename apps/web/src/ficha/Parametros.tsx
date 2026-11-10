@@ -84,22 +84,20 @@ function useParam(f: Ficha) {
 }
 type D = NonNullable<ReturnType<typeof useParam>['data']>;
 
-/** a seção da aba Terreno: um quadro que abre e fecha, com os três quadros dentro */
+/** a seção da aba Terreno: Índices urbanísticos, Restrições e entorno e Histórico de uso, cada um com o seu chip (o quadro
+    Parâmetros urbanísticos, que os juntava, saiu com as seções em chips; pedido do Moises, 10/nov/2026) */
 export default function SecParametros({ f }: { f: Ficha }) {
   const q = useParam(f);
-  return (
-    <Quadro aba="terreno" id="param" titulo="Parâmetros urbanísticos">
-      <div className="qd-filhos">
-        {q.isLoading ? <div className="muted">Carregando…</div>
-          : q.error || !q.data ? <div className="muted">Não foi possível carregar os parâmetros: {String((q.error as any)?.message ?? q.error)}</div>
-          : <>
-            <SecAnalise f={f} d={q.data} />
-            <SecRestricoes f={f} d={q.data} />
-            <SecHistUso f={f} d={q.data} />
-          </>}
-      </div>
+  if (q.isLoading || q.error || !q.data) return (
+    <Quadro aba="terreno" id="indices" primeiro chip="Índices urbanísticos" titulo="Índices urbanísticos">
+      <div className="sec-b"><div className="muted">{q.isLoading ? 'Carregando…' : `Não foi possível carregar os parâmetros: ${String((q.error as any)?.message ?? q.error)}`}</div></div>
     </Quadro>
   );
+  return <>
+    <SecAnalise f={f} d={q.data} />
+    <SecRestricoes f={f} d={q.data} />
+    <SecHistUso f={f} d={q.data} />
+  </>;
 }
 
 /* ---------- Índices urbanísticos ---------- */
@@ -124,7 +122,7 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
   const fontes = [...new Map(d.lz.filter((r) => r.parametro_id && (!um || r.tipo === 'mercado')).map((r) => [r.parametro_id, d.cat.get(r.parametro_id)] as [unknown, R | undefined]).filter((x) => x[1])).values()] as R[];
   const sig = new Map(d.lz.map((r) => [r.zoneamento_id, r.sigla]));
   return (
-    <Quadro aba="terreno" id="indices" primeiro titulo={<>Índices urbanísticos<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} aberto={reg || undefined}
+    <Quadro aba="terreno" id="indices" primeiro chip="Índices urbanísticos" titulo={<>Índices urbanísticos<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} aberto={reg || undefined}
       acoes={edita && !reg ? <button className="btn sm zn-reg" aria-label="Registrar zonas" title="Registrar zonas" onClick={() => setReg(true)}><Ic n="add" s={16} /><span className="oc-m">Registrar zonas</span></button> : null}>
       <div className="sec-b">
         {reg ? <FormZonas f={f} d={d} sjc={sjc} fechar={() => setReg(false)} /> : null}
@@ -501,7 +499,7 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
     return cel(<>{vals.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className={`chip ${o.info ? '' : grav}`}>{v}</span></span>)}{ct ? <> {verCt}</> : null}</>);
   };
   return (
-    <Quadro aba="terreno" id="rest" titulo={<>Restrições e entorno<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} acoes={acoes}>
+    <Quadro aba="terreno" id="rest" chip="Restrições e entorno" titulo={<>Restrições e entorno<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} acoes={acoes}>
       <div className="sec-b">
         <div className="hint rs-fonte">{r ? orig : f.poly ? 'Sem consulta ao GeoSampa: consulte pela poligonal ou inclua os SQLs em Terreno › Matrículas e SQLs.' : 'Desenhe a poligonal do terreno para consultar.'}</div>
         {REST_GRUPOS.map(([g, itens]) => <div className="rs-g" key={g}><div className="rs-gt">{g}</div>{itens.map(linha)}</div>)}

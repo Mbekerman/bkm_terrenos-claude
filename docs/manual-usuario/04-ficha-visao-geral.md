@@ -82,9 +82,17 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viab
 
 Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos Técnicos, o da parte, como `/terrenos/A123/entorno`), então dá para mandar o link direto para uma aba.
 
-## Quadros que abrem e fecham
+## Seções em botões
 
-Em todas as abas menos a Visão geral, o conteúdo fica em **quadros** que abrem e fecham pela **seta do título**. O primeiro quadro da aba nasce aberto; os outros, fechados. O sistema lembra o que você abriu durante a sessão, por aba. Editar um campo, abrir um formulário ou chegar a um item pelo log ou pelo aviso abre o quadro dele.
+<a id="quadros-que-abrem-e-fecham"></a>
+
+Em todas as abas menos a Visão geral, cada **seção** (Identificação, Endereço e localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra.
+
+Em Estudos Técnicos ficam duas fileiras: em cima as quatro partes, embaixo, menores, as seções da parte aberta (em Entorno, por exemplo: Pontos de interesse, Renda e população, Perfil da população e Concorrência).
+
+**Para ver os botões que não cabem**, a barra gira como uma roleta, igual à barra das abas: segure o botão do mouse e arraste para o lado; solte com força e ela continua girando e vai freando. Também funciona com Shift + roda do mouse, o deslize de lado do trackpad e, no celular, o dedo. Arrastar não troca de seção; só o clique troca. Quando **mais de um botão** fica de fora, aparecem os **três pontinhos (⋮)** no fim da barra, com a lista de todas as seções e a atual marcada.
+
+Se você trocar de seção com a página rolada para baixo, ela volta para o começo da seção.
 
 O título do quadro aberto fica preso logo abaixo das abas enquanto você rola o conteúdo dele.
 

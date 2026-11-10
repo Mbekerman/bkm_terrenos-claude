@@ -380,7 +380,7 @@ function SecOfertas({ f, c, registrar }: { f: Ficha; c: Com; registrar: () => vo
   }
   const aberta = os.find((o) => o.id === card);
   return (
-    <Quadro aba="comercial" id="ofertas" titulo={<>Ofertas recebidas{os.length ? <> <span className="h-n">{os.length}</span></> : null}</>}
+    <Quadro aba="comercial" id="ofertas" chip="Ofertas" titulo={<>Ofertas recebidas{os.length ? <> <span className="h-n">{os.length}</span></> : null}</>}
       acoes={edita ? <button className="btn sm" onClick={registrar}><Ic n="add" s={16} />Registrar oferta</button> : undefined}>
       <div className="sec-b">{os.length ? (
         <div className="tblwrap"><table className="mini-tbl"><thead><tr><th>Oferta</th><th>Situação</th><th>Data</th><th className="r">Área cadastral</th><th>Corretor</th><th /><th /></tr></thead><tbody>
@@ -753,7 +753,7 @@ function SecReunioes({ f, c }: { f: Ficha; c: Com }) {
       <button className="btn primary" disabled={grav}>{ed ? 'Salvar' : 'Registrar reunião'}</button></div></form>
   );
   return (
-    <Quadro aba="comercial" id="reunioes" titulo={<>Reuniões{ms.length ? <> <span className="h-n">{ms.length}</span></> : null}</>}
+    <Quadro aba="comercial" id="reunioes" chip="Reuniões" titulo={<>Reuniões{ms.length ? <> <span className="h-n">{ms.length}</span></> : null}</>}
       acoes={<span className="sec-acoes">{ativa && edita && !form && <button className="btn primary sm" onClick={abrir}><Ic n="add" s={16} />Registrar reunião</button>}</span>}>
       <div className="sec-b">
         {form && !ed && formulario}

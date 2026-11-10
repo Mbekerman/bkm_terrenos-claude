@@ -173,7 +173,7 @@ function SecPontos({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="entorno" id="ent" primeiro titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
+    <Quadro aba="entorno" id="ent" primeiro chip="Pontos de interesse" titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
       <div className="sec-b">{corpo}</div>
     </Quadro>
   );
@@ -230,7 +230,7 @@ function SecRenda({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Rai
     </>;
   }
   return (
-    <Quadro aba="entorno" id="rd" titulo="Renda e população do entorno">
+    <Quadro aba="entorno" id="rd" chip="Renda e população" titulo="Renda e população do entorno">
       <Raios f={f} raio={raio} setRaio={setRaio} />
       <div className="sec-b">{corpo}</div>
       {met && <Metodologia camada="renda" fechar={() => setMet(false)} />}
@@ -290,7 +290,7 @@ function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Ra
     }
   }
   return (
-    <Quadro aba="entorno" id="pf" titulo="Perfil da população do entorno">
+    <Quadro aba="entorno" id="pf" chip="Perfil da população" titulo="Perfil da população do entorno">
       <Raios f={f} raio={raio} setRaio={setRaio} />
       <div className="sec-b">{corpo}</div>
       {met && <Dialogo titulo="Perfil da população: os dados" onFechar={() => setMet(false)} rodape={<button type="button" className="btn primary" onClick={() => setMet(false)}>Fechar</button>}>
@@ -375,7 +375,7 @@ function SecConcorrencia({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="entorno" id="mk" titulo="Concorrência no entorno">
+    <Quadro aba="entorno" id="mk" chip="Concorrência" titulo="Concorrência no entorno">
       <div className="sec-b mk-sec">{corpo}</div>
     </Quadro>
   );

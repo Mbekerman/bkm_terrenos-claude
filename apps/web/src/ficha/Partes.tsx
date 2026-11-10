@@ -375,7 +375,7 @@ function SecPartes({ f, L }: { f: Ficha; L: Lotes }) {
     recarregar();
   }
   return (
-    <Quadro aba="terreno" id="partes-cad" titulo={<>Partes <span className="h-n">{P.length}</span></>}>
+    <Quadro aba="terreno" id="partes-cad" chip="Partes" titulo={<>Partes <span className="h-n">{P.length}</span></>}>
       <div className="sec-b">
         {edita && (
           <div className="pt2-qtd"><label htmlFor="pt2-n">Quantas partes vendem?</label>
@@ -964,7 +964,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const confE = conf ? achar(conf) : null;
   return (
     <div ref={sec} style={{ display: 'contents' }}>
-      <Quadro aba="terreno" id="lotes" titulo={`Matrículas e ${rot}s`} acoes={andamento ?? undefined}>
+      <Quadro aba="terreno" id="lotes" titulo={`Matrículas e ${rot === "Inscrição" ? "Inscrições" : rot + "s"}`} acoes={andamento ?? undefined}>
         <div className="sec-b">
           <div className="etq-top" ref={topo}>
             <div className={`etq-col${recolhido('m') ? ' fechado' : ''}`}>
