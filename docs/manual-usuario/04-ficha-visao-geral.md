@@ -14,7 +14,7 @@ A ficha reúne tudo sobre um terreno: onde fica, de quem é, quanto pedem, o que
 
 De cima para baixo:
 
-1. **Linha do tempo** das etapas (ou das fases, depois da compra), com a data de entrada em cada uma.
+1. **Linha do tempo** das etapas (ou das fases, depois da compra), com a data de entrada em cada uma. Quando a ficha fica estreita (na gaveta do mapa, por exemplo), a linha encolhe em vez de cortar os nomes: primeiro as fases concluídas ficam só com o ✓, depois as futuras ficam só com o número (menos a próxima) e, no limite, só a fase atual mantém o nome. Pare o mouse num ✓ ou num número para ver o nome.
 2. **Topo**: código, nome, **fase · etapa · subetapa**, "Cadastrado em", **temperatura**, **responsável** e **"Ficha N% completa"**.
 3. **Barra das abas**, que fica presa no alto ao rolar.
 4. O conteúdo da **aba** escolhida.
