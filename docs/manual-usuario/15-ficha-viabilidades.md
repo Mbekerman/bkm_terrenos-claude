@@ -1,4 +1,4 @@
-# Ficha: aba Viabilidades
+# Ficha: Estudos de viabilidade
 
 ## Para que serve
 
@@ -8,11 +8,11 @@ O estudo está chegando ao sistema em partes. **Hoje:** a lista de estudos, o Re
 
 ## Onde fica
 
-Ficha do terreno › aba **Viabilidades** (`/terrenos/A123/viabilidade`). Um estudo aberto tem endereço próprio, pela ordem em que foi criado no terreno: `/terrenos/A123/viabilidade/2` abre o segundo estudo. O link enviado a um colega abre direto nele.
+Ficha do terreno › **Estudos Técnicos** › **Estudos de viabilidade** (`/terrenos/A123/viabilidade`). Um estudo aberto tem endereço próprio, pela ordem em que foi criado no terreno: `/terrenos/A123/viabilidade/2` abre o segundo estudo. O link enviado a um colega abre direto nele.
 
 ## Resumo da viabilidade
 
-O primeiro quadro da aba.
+O primeiro quadro da parte.
 
 | O que aparece | De onde vem |
 |---|---|

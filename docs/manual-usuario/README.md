@@ -35,8 +35,9 @@ Quando o texto fala de "clicar", no celular vale "tocar". A primeira versão do 
 | 10 | [Funil](10-funil.md) | Quadro de fases, etapas e subetapas; arrastar para mover. |
 | 11 | [Filtros e visões salvas](11-filtros-e-visoes.md) | Filtrar terrenos no Mapa e no Funil, salvar visões. |
 | 12 | [Ainda não disponível](12-ainda-nao-disponivel.md) | O que existe só no protótipo e o que está planejado. |
-| 14 | [Ficha: aba Viabilidades](14-ficha-viabilidades.md) | Estudo de viabilidade: lista, estudo válido, Resumo da viabilidade, tipologias. |
 | 13 | [Perguntas frequentes e problemas](13-perguntas-frequentes.md) | Respostas curtas para as dúvidas mais comuns e o que fazer quando algo não funciona. |
+| 14 | [Ficha: aba Estudos de massa](14-ficha-estudos-de-massa.md) | Pedir o estudo ao arquiteto, tipologias, áreas, índices, estudo válido, criar a viabilidade. |
+| 15 | [Ficha: Estudos de viabilidade](15-ficha-viabilidades.md) | Estudo de viabilidade: lista, estudo válido, Resumo da viabilidade, tipologias. |
 | — | [Registro de mudanças](CHANGELOG.md) | O que mudou para o usuário, por data. |
 | — | [Roteiros de vídeo de onboarding](onboarding/README.md) | Três roteiros para novos usuários. |
 

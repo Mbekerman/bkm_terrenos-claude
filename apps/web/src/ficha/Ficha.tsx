@@ -15,6 +15,7 @@ import AbaEntorno, { EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
 import AbaInfra from '../topo/Topografico';
 import AbaViabilidade, { PopEstudo } from '../viab/Viabilidade';
+import AbaMassa from './Massa';
 import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
 import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
@@ -28,11 +29,24 @@ import { useNavigate } from 'react-router-dom';
 // vieram depois, e o quadro de avanço com o painel de Logs (Painel.tsx, Avanco.tsx) na quarta entrega. As abas fora da primeira versão ficam
 // com o aviso.
 
-export const ABAS: [string, string][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'],
-  ['massa', 'Estudos de massa'], ['viabilidade', 'Viabilidades'], ['infra', 'Infraestrutura'], ['entorno', 'Entorno'], ['jornada', 'Jornada'], ['documentos', 'Documentos']];
+/** os itens da barra de abas; Estudos Técnicos junta, nesta ordem, Estudos de massa, Estudos de viabilidade, Entorno e
+    Avaliação de infraestrutura, que viram as subabas dela (pedido do Moises, 10/nov/2026). O endereço continua o da
+    subaba (`/terrenos/A123/entorno`), e `/terrenos/A123/estudos` abre a última subaba vista na sessão. */
+export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['viabilidade', 'Estudos de viabilidade'], ['entorno', 'Entorno'], ['infra', 'Avaliação de infraestrutura']];
+export const BARRA: [string, string, [string, string][]?][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'],
+  ['estudos', 'Estudos Técnicos', ESTUDOS], ['jornada', 'Jornada'], ['documentos', 'Documentos']];
+/** as abas de conteúdo, na ordem (cada subaba é uma aba própria no endereço) */
+export const ABAS: [string, string][] = BARRA.flatMap(([k, l, s]) => s ?? [[k, l] as [string, string]]);
+/** o item da barra de uma aba (a subaba dá o grupo) */
+const grupo = (k: string) => BARRA.find(([g, , s]) => g === k || s?.some((x) => x[0] === k))?.[0] ?? k;
+const SUB_LEMBRA = 'bkm-terrenos-ficha-estudos';
+const subVista = () => { try { const v = sessionStorage.getItem(SUB_LEMBRA); return ESTUDOS.some((x) => x[0] === v) ? v! : ESTUDOS[0][0]; } catch { return ESTUDOS[0][0]; } };
 /** links antigos caem na aba nova (CLAUDE.md, ficha em abas); Parâmetros virou seção da aba Terreno (9/nov/2026) */
 const ANTIGA: Record<string, string> = { cadastro: 'terreno', negociacao: 'comercial', urbanismo: 'terreno', parametros: 'terreno', fases: 'jornada', viabilidades: 'viabilidade' };
-export const abaN = (k: string | undefined | null) => { const a = ANTIGA[k ?? ''] ?? k ?? 'geral'; return ABAS.some((x) => x[0] === a) ? a : 'geral'; };
+export const abaN = (k: string | undefined | null) => {
+  if (k === 'estudos') return subVista();
+  const a = ANTIGA[k ?? ''] ?? k ?? 'geral'; return ABAS.some((x) => x[0] === a) ? a : 'geral';
+};
 const PROXIMAS = new Set<string>();
 
 const num = (v: number | null | undefined, d = 0) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d }));
@@ -49,8 +63,28 @@ function faseAtual(f: F): { k: string; p: ProcF | null } | null {
   return { k, p: f.procs.filter((p) => p.fase === k).slice(-1)[0] ?? null };
 }
 
+/** encolhe a linha do tempo quando os nomes não cabem (opção A do Moises, 10/nov/2026): 0 = todos os nomes; 1 = as
+ *  concluídas só com o ✓; 2 = também as futuras só com o número, menos a próxima; 3 = só a atual com nome (cortada
+ *  com reticências se nem assim couber). Mede de novo a cada mudança de largura (gaveta arrastada, painel recolhido) */
+function useEncolher(dep: unknown) {
+  const ref = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const nav = ref.current, ol = nav?.querySelector('ol');
+    if (!nav || !ol) return;
+    const medir = () => {
+      for (let n = 0; n <= 3; n++) { nav.dataset.nivel = String(n); if (ol.scrollWidth <= ol.clientWidth + 1) break; }
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, [dep]);
+  return ref;
+}
+
 /** linha do tempo do topo: na entrada, as etapas da negociação; depois, as fases */
 function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
+  const ref = useEncolher(f);
   const a = faseAtual(f), ent = f.fases.find((x) => x.entrada);
   const ck = <Ic n="check" s={14} />;
   if (!a || a.k === ent?.k) {
@@ -63,13 +97,13 @@ function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
     };
     const sub = n.sub ? ets[idx]?.subs.find((s) => s.k === n.sub)?.nome : null;
     return (
-      <nav className="tl-topo" aria-label="Etapas da negociação">{rotulo && ent && <div className="tl-fase">{ent.nome}</div>}<ol className="stepper">
+      <nav ref={ref} className="tl-topo" aria-label="Etapas da negociação">{rotulo && ent && <div className="tl-fase">{ent.nome}</div>}<ol className="stepper">
         {ets.map((s, i) => {
           const st = i < idx || fim ? 'done' : i === idx ? 'cur' : 'fut', em = i <= idx ? entrou(s.k) : null;
           return (
-            <li key={s.k} className={`step ${st}`} aria-current={i === idx && !fim ? 'step' : undefined}>
+            <li key={s.k} className={`step ${st}${i === idx + 1 && !fim ? ' prox' : ''}`} title={s.nome} aria-current={i === idx && !fim ? 'step' : undefined}>
               <span className="dot">{st === 'done' ? ck : i + 1}</span>
-              <span className="sl-w"><span className="sl" title={s.nome}>{s.nome}</span>{em && <span className="sd">{st === 'cur' && sub ? sub + ' · ' : ''}{fd(em)}</span>}</span>
+              <span className="sl-w"><span className="sl">{s.nome}</span>{em && <span className="sd">{st === 'cur' && sub ? sub + ' · ' : ''}{fd(em)}</span>}</span>
             </li>
           );
         })}
@@ -78,16 +112,20 @@ function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
     );
   }
   const teve = (k: string) => f.procs.some((p) => p.fase === k);
+  const lista = f.fases.filter((x) => x.ativo || teve(x.k)).map((x) => {
+    const p = f.procs.filter((q) => q.fase === x.k).slice(-1)[0], fim = p?.status === 'concluido', cur = x.k === a.k && !fim;
+    return { x, p, fim, cur, st: fim ? 'done' : cur || aberto(p) ? 'cur' : 'fut' };
+  });
+  /* a próxima: a primeira futura depois da última aberta */
+  const ultCur = lista.map((l) => l.st).lastIndexOf('cur'), prox = lista.findIndex((l, i) => i > ultCur && l.st === 'fut');
   return (
-    <nav className="tl-topo" aria-label="Fases do terreno"><ol className="stepper">
-      {f.fases.filter((x) => x.ativo || teve(x.k)).map((x, i) => {
-        const p = f.procs.filter((q) => q.fase === x.k).slice(-1)[0], fim = p?.status === 'concluido', cur = x.k === a.k && !fim;
-        const st = fim ? 'done' : cur || aberto(p) ? 'cur' : 'fut';
+    <nav ref={ref} className="tl-topo" aria-label="Fases do terreno"><ol className="stepper">
+      {lista.map(({ x, p, fim, cur, st }, i) => {
         const sd = !p ? '' : cur || aberto(p) ? f.etapasPorFase[x.k]?.find((e) => e.k === p.etapa)?.nome ?? '' : fim ? fd(p.encerrado) : '';
         return (
-          <li key={x.k} className={`step ${st}`} aria-current={cur ? 'step' : undefined}>
+          <li key={x.k} className={`step ${st}${i === prox ? ' prox' : ''}`} title={sd ? `${x.nome} · ${sd}` : x.nome} aria-current={cur ? 'step' : undefined}>
             <span className="dot">{st === 'done' ? ck : i + 1}</span>
-            <span className="sl-w"><span className="sl" title={x.nome}>{x.nome}</span>{sd && <span className="sd" title={sd}>{sd}</span>}</span>
+            <span className="sl-w"><span className="sl">{x.nome}</span>{sd && <span className="sd">{sd}</span>}</span>
           </li>
         );
       })}
@@ -133,7 +171,6 @@ function Resp({ r }: { r: F['resp'] }) {
 }
 
 const SVG_DOTS = <svg className="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01" /></svg>;
-const seta = (d: number) => <svg className="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d={d < 0 ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'} /></svg>;
 
 /** barra das abas contínua, como uma roleta (pedido do Moisés, 6/nov/2026): todas as abas numa faixa que rola de lado, com as
     das pontas cortadas pela borda; o dedo, o mouse arrastado (mãozinha), Shift + roda (ou Ctrl + Shift + roda) e o deslize de
@@ -146,7 +183,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
   const anim = useRef(0);
   /* a aba ativa entra na vista (com as vizinhas) ao trocar de aba */
   useLayoutEffect(() => {
-    const b = barra.current, a = b?.querySelector<HTMLElement>(`button[data-t="${aba}"]`);
+    const b = barra.current, a = b?.querySelector<HTMLElement>(`button[data-t="${grupo(aba)}"]`);
     if (!b || !a) return;
     const ant = a.previousElementSibling as HTMLElement | null, prox = a.nextElementSibling as HTMLElement | null;
     const L = b.clientWidth, x0 = a.offsetLeft - (b.firstElementChild as HTMLElement).offsetLeft, aw = a.offsetWidth;
@@ -242,7 +279,9 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
     document.addEventListener('keydown', esc, true);
     return () => { document.removeEventListener('pointerdown', fecha, true); document.removeEventListener('keydown', esc, true); };
   }, [menu]);
-  const ia = ABAS.findIndex(([k]) => k === aba), ant = ABAS[ia - 1], prox = ABAS[ia + 1];
+  const g = grupo(aba);
+  useEffect(() => { if (ESTUDOS.some((x) => x[0] === aba)) try { sessionStorage.setItem(SUB_LEMBRA, aba); } catch { /* sem sessão */ } }, [aba]);
+  const irG = (k: string) => { if (k === 'estudos') { if (g !== 'estudos') irAba(subVista()); } else if (k !== aba) irAba(k); };
   /* sem número nas abas: rolado o topo para fora da vista, o que falta aparece num botão de alerta na barra das abas,
      sempre visível (pedido do Moisés, 6/nov/2026) */
   const c = completude(f);
@@ -265,8 +304,8 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
   return (
     <div className="fi-abas-w">
       <div className={`fi-abas roleta${sobra ? ' desliza' : ''}`} role="tablist" aria-label="Seções do terreno" ref={barra}>
-        {ABAS.map(([k, l]) => (
-          <button key={k} role="tab" data-t={k} aria-selected={k === aba} aria-controls={`bl-${k}`} onClick={() => irAba(k)}>{l}</button>
+        {BARRA.map(([k, l]) => (
+          <button key={k} role="tab" data-t={k} aria-selected={k === g} aria-controls={`bl-${k === g ? aba : k}`} onClick={() => irG(k)}>{l}</button>
         ))}
       </div>
       <div className="fi-fim">
@@ -274,11 +313,11 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
         <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`} hidden={!sobra}>
           <button className="iconbtn adv-mb" aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações" title="Mais ações" onClick={() => setMenu(!menu)}>{SVG_DOTS}</button>
           <div className="adv-menu" role="menu">
-            {ABAS.map(([k, l]) => <button key={k} role="menuitemradio" aria-checked={k === aba} className={k === aba ? 'atual' : undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{l}</button>)}
+            {BARRA.map(([k, l, s]) => s
+              ? [<div key={k} className="fi-mais-g">{l}</div>, ...s.map(([sk, sl]) => <button key={sk} role="menuitemradio" aria-checked={sk === aba} className={`fi-mais-sub${sk === aba ? ' atual' : ''}`} onClick={() => { setMenu(false); if (sk !== aba) irAba(sk); }}>{sl}</button>)]
+              : <button key={k} role="menuitemradio" aria-checked={k === aba} className={k === aba ? 'atual' : undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{l}</button>)}
           </div>
         </div>
-        <button className="iconbtn fi-ant" aria-label="Seção anterior" disabled={!ant} title={ant ? `Anterior: ${ant[1]}` : 'Primeira seção'} onClick={() => ant && irAba(ant[0])}>{seta(-1)}</button>
-        <button className="iconbtn fi-prox" aria-label="Próxima seção" disabled={!prox} title={prox ? `Próxima: ${prox[1]}` : 'Última seção'} onClick={() => prox && irAba(prox[0])}>{seta(1)}</button>
       </div>
     </div>
   );
@@ -464,6 +503,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
     : aba === 'entorno' ? <AbaEntorno key={f.id} f={f} />
     : aba === 'infra' ? <AbaInfra key={f.id} f={f} />
     : aba === 'viabilidade' ? <AbaViabilidade key={f.id} f={f} />
+    : aba === 'massa' ? <AbaMassa key={f.id} f={f} irAba={irAba} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
     <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main">
@@ -493,6 +533,11 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
         <div className="adv-main"><Avancos f={f} irAba={irAba} /></div>
       </div>
       <Abas f={f} aba={aba} irAba={irAba} />
+      {grupo(aba) === 'estudos' && (
+        <div className="fi-subabas" role="tablist" aria-label="Estudos Técnicos">
+          {ESTUDOS.map(([k, l]) => <button key={k} role="tab" aria-selected={k === aba} aria-controls={`bl-${k}`} onClick={() => k !== aba && irAba(k)}>{l}</button>)}
+        </div>
+      )}
       <section key={aba} className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
       {aba !== 'entorno' && f.lat != null && <EntornoAuto f={f} />}
       <CartorioAuto f={f} />
