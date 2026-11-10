@@ -440,3 +440,8 @@ html[data-tema="escuro"] .etq-conta { background: #a8c7fa; color: #062e6f }
 .ptcom-mats .etq { height: 28px; font-size: 13px; cursor: pointer }
 .ptcom-mats .etq-n { cursor: pointer; padding-right: 10px }
 .ptm-dlg { display: flex; flex-direction: column; gap: 12px }
+
+/* bolha de empreendimentos agrupados (até o zoom 13): círculo na cor da faixa, com contorno branco, tamanho pelas unidades */
+.mk.g.mk-grp { cursor: pointer }
+.mk-grp-b { display: grid; place-items: center; box-sizing: border-box; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 1px 4px rgba(0,0,0,.35) }
+.mk-grp-b svg { display: block }

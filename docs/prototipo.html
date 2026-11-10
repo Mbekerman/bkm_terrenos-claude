@@ -13143,9 +13143,9 @@ const MK_SIT={breve_lancamento:['Breve lançamento','#ffdf99','#7a5900'],lancame
 const mkSitK=e=>MK_SIT[e?.sit]?e.sit:'nao_informado',mkOff=()=>UI.mkOff||(UI.mkOff=[]);
 /* faixas do R$/m² médio das unidades à venda (soma dos preços ÷ soma das áreas), cada uma com a sua cor; a situação vai no
    desenho dentro do quadrado (pedido do Moisés, 5/nov/2026). O limite de baixo entra na faixa. */
-const MK_FX=[[7000,'Abaixo de 7 mil','#5e4fa2'],[8000,'7 a 8 mil','#3288bd'],[9000,'8 a 9 mil','#66c2a5'],[10000,'9 a 10 mil','#abdda4'],[11000,'10 a 11 mil','#e6f598'],
-  [13000,'11 a 13 mil','#fee08b'],[15000,'13 a 15 mil','#fdae61'],[18000,'15 a 18 mil','#f46d43'],[25000,'18 a 25 mil','#d53e4f'],[Infinity,'Acima de 25 mil','#9e0142']];
-const MK_FX_SEM=['Sem preço','#bdc1c6'];
+const MK_FX=[[7000,'Abaixo de 7 mil','#a59ec4'],[8000,'7 a 8 mil','#90b8d1'],[9000,'8 a 9 mil','#aed4c8'],[10000,'9 a 10 mil','#d2e7cf'],[11000,'10 a 11 mil','#e9efce'],
+  [13000,'11 a 13 mil','#eee5cc'],[15000,'13 a 15 mil','#e8d0b9'],[18000,'15 a 18 mil','#e2b6a8'],[25000,'18 a 25 mil','#da9ba2'],[Infinity,'Acima de 25 mil','#cc6690']];
+const MK_FX_SEM=['Sem preço','#d3d6d8'];
 const mkFxK=e=>{const v=e?.preco!=null&&e.area>0?e.preco/e.area:null;if(v==null)return 'fx';return 'f'+MK_FX.findIndex(f=>v<f[0])};
 const mkFxInfo=k=>k==='fx'?MK_FX_SEM:MK_FX[+k.slice(1)].slice(1);
 /* o desenho de cada situação: lançamento estrela, em obras guindaste, pronto prédio (breve lançamento e usado, se vierem,

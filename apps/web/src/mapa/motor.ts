@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { gLib } from './google';
 import { aneis, desenhaLadrilho, type Camada } from './setores';
-import { mkMarcaHtml, mkTitulo, type Emp } from './mercado';
+import { MK_GRUPO_ZOOM, mkAgrupar, mkGrupoHtml, mkGrupoTam, mkGrupoTitulo, mkMarcaHtml, mkTitulo, type Emp } from './mercado';
 
 // Motor do mapa do Google, portado de tools/prototipo/proto_gmap.js (G_initMapa, G_desenhaPins, gPinsSel, gEnquadrar,
 // G_eu, G_focar, svFechar, lugarAbrir, gStreetView) e proto_novo.js (mpBuscar, achadoPin). Imperativo, como lá:
@@ -130,7 +130,7 @@ export class Motor {
     });
     const zoomFonte = () => el.style.setProperty('--et-fs', fonteEtiqueta(M.getZoom() ?? 99) + 'px');
     zoomFonte(); M.addListener('zoom_changed', zoomFonte);
-    M.addListener('idle', () => { const c = M.getCenter(); guardarVista({ c: { lat: c.lat(), lng: c.lng() }, z: M.getZoom() }); g.movendo(false); });
+    M.addListener('idle', () => { this.mercZoom(); const c = M.getCenter(); guardarVista({ c: { lat: c.lat(), lng: c.lng() }, z: M.getZoom() }); g.movendo(false); });
     /* Street View: fecha no nosso X ou no Esc; o fechar do Google fica escondido para não haver dois */
     const sv = M.getStreetView();
     sv.setOptions({ enableCloseButton: false, fullscreenControl: false });
@@ -378,17 +378,43 @@ export class Motor {
   private merc: any[] = [];
   private mercDest: any = null;
   private mercUlt: [Emp[], (id: string) => void] | null = null;
+  private mercZ: number | null = null;
   mercado(lista: Emp[], abrir: (id: string) => void) {
     this.mercUlt = [lista, abrir];
     this.merc.forEach((m) => (m.map = null));
-    const { AdvancedMarkerElement } = gLib.marker;
-    this.merc = lista.map((e) => {
+    const { AdvancedMarkerElement } = gLib.marker, z = this.mapa.getZoom() ?? 99;
+    this.mercZ = z;
+    /* até o zoom 13, os próximos de mesma situação e faixa viram uma bolha (mkAgrupar); dali em diante, um quadrado por empreendimento */
+    const grupos = z <= MK_GRUPO_ZOOM ? mkAgrupar(lista, z) : lista.map((e) => ({ emps: [e] }) as { emps: Emp[] } & Partial<ReturnType<typeof mkAgrupar>[number]>);
+    this.merc = grupos.map((g) => {
       const d = document.createElement('div');
-      d.className = 'mk g'; d.innerHTML = mkMarcaHtml(e);
-      const m = new AdvancedMarkerElement({ map: this.mapa, position: gLL(e.lat, e.lng), content: d, title: mkTitulo(e), gmpClickable: !this.modo });
-      m.addEventListener('gmp-click', () => abrir(e.id));
+      if (g.emps.length === 1) {
+        const e = g.emps[0];
+        d.className = 'mk g'; d.innerHTML = mkMarcaHtml(e);
+        const m = new AdvancedMarkerElement({ map: this.mapa, position: gLL(e.lat, e.lng), content: d, title: mkTitulo(e), gmpClickable: !this.modo });
+        m.addEventListener('gmp-click', () => abrir(e.id));
+        return m;
+      }
+      const gp = g as ReturnType<typeof mkAgrupar>[number], t = mkGrupoTam(gp.unidades);
+      d.className = 'mk g mk-grp'; d.style.width = d.style.height = t + 'px'; d.innerHTML = mkGrupoHtml(gp);
+      /* os maiores por baixo, para não esconderem os pequenos */
+      const m = new AdvancedMarkerElement({ map: this.mapa, position: gLL(gp.lat, gp.lng), content: d, title: mkGrupoTitulo(gp), gmpClickable: !this.modo, zIndex: -gp.unidades });
+      m.addEventListener('gmp-click', () => this.abrirGrupo(gp.emps));
       return m;
     });
+  }
+  /** clique na bolha: aproxima até enquadrar os empreendimentos dela (no zoom 14 ou mais eles já aparecem separados) */
+  private abrirGrupo(emps: Emp[]) {
+    const { google } = window, M = this.mapa, b = new google.maps.LatLngBounds();
+    emps.forEach((e) => b.extend(gLL(e.lat, e.lng)));
+    M.fitBounds(b, 80);
+    google.maps.event.addListenerOnce(M, 'idle', () => { const z = M.getZoom() ?? 0; if (z <= MK_GRUPO_ZOOM) M.setZoom(MK_GRUPO_ZOOM + 1); else if (z > 17) M.setZoom(17); });
+  }
+  /** refaz as bolhas quando o zoom muda (até o 13 elas mudam a cada nível; do 14 em diante nada muda) */
+  private mercZoom() {
+    const z = this.mapa.getZoom() ?? 99, a = this.mercZ;
+    if (!this.mercUlt || a == null || z === a || (a > MK_GRUPO_ZOOM && z > MK_GRUPO_ZOOM)) return;
+    this.mercado(...this.mercUlt);
   }
   destaque(e: Emp | null, abrir: (id: string) => void) {
     if (this.mercDest) this.mercDest.map = null;
