@@ -6,7 +6,7 @@
 
 Guardar o que o terreno **é**: nome, endereço, quem são os donos (partes), as matrículas e os SQLs de cada um e as áreas. Os dados comerciais (valor, oferta, proposta) ficam na aba Comercial.
 
-A aba tem, nesta ordem, as seções: **Identificação**, **Endereço e localização**, **Índices urbanísticos**, **Restrições e entorno** e **Histórico de uso** (os parâmetros urbanísticos; ver [07](07-ficha-parametros.md)), **Partes**, **Matrículas e SQLs** (com o quadro de cada parte), **Áreas e dimensões** e **IPTU**. Cada seção é um botão na barra logo abaixo das abas, e aparece uma de cada vez (ver [04](04-ficha-visao-geral.md#quadros-que-abrem-e-fecham)). Todos os campos se editam no lugar (ver [04](04-ficha-visao-geral.md#editar-no-lugar)).
+A aba tem, nesta ordem, as seções: **Identificação**, **Endereço e localização**, **Índices urbanísticos** (ver [07](07-ficha-parametros.md)), **Partes**, **Matrículas e Lotes** (as matrículas e os SQLs ou inscrições, com o quadro de cada parte; até 10/nov/2026, Matrículas e SQLs), **Áreas e dimensões** e **IPTU**. Cada seção é um botão na barra logo abaixo das abas, e aparece uma de cada vez (ver [04](04-ficha-visao-geral.md#quadros-que-abrem-e-fecham)). Todos os campos se editam no lugar (ver [04](04-ficha-visao-geral.md#editar-no-lugar)).
 
 ## Identificação
 
@@ -75,7 +75,7 @@ Do proprietário, só o **nome** e a **participação** são obrigatórios; o re
 
 A lixeira exclui a parte. As matrículas e SQLs dela voltam a ficar soltos.
 
-## Matrículas e SQLs
+## Matrículas e Lotes
 
 **Para que serve:** ligar o terreno aos documentos (matrícula no cartório) e aos lotes da prefeitura (SQL ou inscrição), e dizer de qual parte é cada um.
 
@@ -94,7 +94,7 @@ Embaixo vem **um quadro por parte**, numa grade, com a seta que abre e fecha a l
 
 **Arraste** a etiqueta da área de cima para o quadro da parte, ou de uma parte para outra.
 
-**Várias de uma vez** (no computador): clique num espaço vazio da seção e arraste o mouse; um retângulo azul aparece e as etiquetas que ele toca ficam **selecionadas** (contorno azul). Para somar etiquetas à seleção, segure **Ctrl** (⌘ no Mac) ou **Shift** e clique nelas, ou desenhe outro retângulo com a tecla apertada. Durante o retângulo, a roda do mouse rola a tela normalmente: o retângulo continua preso ao ponto onde você clicou e vai até onde o ponteiro está, sem perder o que já pegou (perto da borda de cima ou de baixo, a tela também rola sozinha). Depois arraste **qualquer uma das selecionadas**: vão todas juntas, com o número delas no canto da etiqueta que você leva. As regras abaixo valem para cada uma; as que não puderem entrar ficam onde estavam, e o aviso diz quantas foram e por quê. Matrículas e SQLs podem ir no mesmo grupo: as matrículas entram primeiro, e os SQLs vão para dentro delas quando a parte fica com uma matrícula só. **Ctrl+Z** desfaz o grupo inteiro de uma vez. Clique no vazio ou **Esc** limpa a seleção.
+**Várias de uma vez** (no computador): clique num espaço vazio da seção e arraste o mouse; um retângulo azul aparece e as etiquetas que ele toca ficam **selecionadas** (contorno azul). Para somar etiquetas à seleção, segure **Ctrl** (⌘ no Mac) ou **Shift** e clique nelas, ou desenhe outro retângulo com a tecla apertada. Durante o retângulo, a roda do mouse rola a tela normalmente: o retângulo continua preso ao ponto onde você clicou e vai até onde o ponteiro está, sem perder o que já pegou (perto da borda de cima ou de baixo, a tela também rola sozinha). Depois arraste **qualquer uma das selecionadas**: vão todas juntas, com o número delas no canto da etiqueta que você leva. As regras abaixo valem para cada uma; as que não puderem entrar ficam onde estavam, e o aviso diz quantas foram e por quê. Matrículas e Lotes podem ir no mesmo grupo: as matrículas entram primeiro, e os SQLs vão para dentro delas quando a parte fica com uma matrícula só. **Ctrl+Z** desfaz o grupo inteiro de uma vez. Clique no vazio ou **Esc** limpa a seleção.
 
 **Regras:**
 
@@ -200,7 +200,7 @@ O título do panorama diz o exercício e quantos SQLs ainda não têm IPTU. Em *
 - **Detalhe** (na linha trazida da Prefeitura): número da notificação, área do terreno, testada, área construída, uso, padrão, ano da construção, valor do m² do terreno e da construção, fatores, alíquota, descontos, impostos predial e territorial, total do ano e vencimento da 1ª prestação.
 - **PDF** (na mesma linha): emite a notificação e baixa o PDF, mesmo antes de o valor ter sido trazido (aí vale o exercício do ano corrente).
 - Buscar de novo no mesmo ano com os mesmos valores não muda nada; com valores diferentes, vira uma correção (a anterior fica no histórico).
-- **Fora de São Paulo** não há busca: o valor venal e o IPTU se digitam em **Lançar** (ou **Atualizar**) na linha de cada inscrição, na lista "Ver inscrição por inscrição", que já vem aberta, ou na janela da inscrição (Matrículas e SQLs), onde o formulário já vem aberto enquanto não há IPTU lançado.
+- **Fora de São Paulo** não há busca: o valor venal e o IPTU se digitam em **Lançar** (ou **Atualizar**) na linha de cada inscrição, na lista "Ver inscrição por inscrição", que já vem aberta, ou na janela da inscrição (Matrículas e Lotes), onde o formulário já vem aberto enquanto não há IPTU lançado.
 - O que pode dar errado: a Prefeitura pedir captcha ("Tente mais tarde"), recusar a senha do sistema, não ter notificação para o SQL, ou o site estar fora. A mensagem aparece embaixo da tela.
 
 ## O que não é possível na aba Terreno

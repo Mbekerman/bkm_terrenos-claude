@@ -16,6 +16,7 @@ import Painel, { Avancos, Historico, usePN } from './Painel';
 import AbaMercado, { EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
 import AbaInfra from '../topo/Topografico';
+import { AbaRestricoes, AbaHistUso } from './Parametros';
 import AbaViabilidade, { PopEstudo } from '../viab/Viabilidade';
 import AbaMassa from './Massa';
 import AbaJornada from './Jornada';
@@ -34,10 +35,10 @@ import { BarraChips, SecoesChips } from './Chips';
 // vieram depois, e o quadro de avanço com o painel de Logs (Painel.tsx, Avanco.tsx) na quarta entrega. As abas fora da primeira versão ficam
 // com o aviso.
 
-/** os itens da barra de abas; Estudos Técnicos junta, nesta ordem, Estudos de massa, Estudos de viabilidade e Avaliação de
-    infraestrutura, que viram as subabas dela (pedido do Moises, 10/nov/2026). O endereço continua o da subaba
+/** os itens da barra de abas; Estudos Técnicos junta, nesta ordem, Estudos de massa, Estudos de viabilidade, Avaliação de
+    infraestrutura, Restrições e entorno e Histórico de uso (os dois últimos vindos da aba Terreno), que viram as subabas dela (pedido do Moises, 10/nov/2026). O endereço continua o da subaba
     (`/terrenos/A123/infra`), e `/terrenos/A123/estudos` abre a última subaba vista na sessão. */
-export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['viabilidade', 'Estudos de viabilidade'], ['infra', 'Avaliação de infraestrutura']];
+export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['viabilidade', 'Estudos de viabilidade'], ['infra', 'Avaliação de infraestrutura'], ['restricoes', 'Restrições e entorno'], ['historico-uso', 'Histórico de uso']];
 /** Mercado e Demografia: pontos de interesse, renda, perfil da população e concorrência; o Entorno saiu (pedido do Moises,
     10/nov/2026), e o link antigo `/entorno` cai aqui */
 export const BARRA: [string, string, [string, string][]?][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'],
@@ -423,6 +424,8 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
     : aba === 'comercial' ? <AbaComercial key={f.id} f={f} cor={corPino(f)[0]} />
     : aba === 'mercado' ? <AbaMercado key={f.id} f={f} />
     : aba === 'infra' ? <AbaInfra key={f.id} f={f} />
+    : aba === 'restricoes' ? <AbaRestricoes key={f.id} f={f} />
+    : aba === 'historico-uso' ? <AbaHistUso key={f.id} f={f} />
     : aba === 'viabilidade' ? <AbaViabilidade key={f.id} f={f} />
     : aba === 'massa' ? <AbaMassa key={f.id} f={f} irAba={irAba} />
     : aba === 'jornada' ? <AbaJornada key={f.id} f={f} />

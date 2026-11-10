@@ -964,7 +964,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const confE = conf ? achar(conf) : null;
   return (
     <div ref={sec} style={{ display: 'contents' }}>
-      <Quadro aba="terreno" id="lotes" titulo={`Matrículas e ${rot === "Inscrição" ? "Inscrições" : rot + "s"}`} acoes={andamento ?? undefined}>
+      <Quadro aba="terreno" id="lotes" titulo="Matrículas e Lotes" acoes={andamento ?? undefined}>
         <div className="sec-b">
           <div className="etq-top" ref={topo}>
             <div className={`etq-col${recolhido('m') ? ' fechado' : ''}`}>

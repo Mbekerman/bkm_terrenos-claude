@@ -1,12 +1,12 @@
-# 07. Ficha: Parâmetros urbanísticos (aba Terreno)
+# 07. Ficha: Parâmetros urbanísticos, restrições e histórico de uso
 
-**Disponível.** Ficha › aba **Terreno** › seções **Índices urbanísticos**, **Restrições e entorno** e **Histórico de uso**, logo depois de Endereço e localização. Até 9/nov/2026 era uma aba própria; o endereço antigo `/terrenos/A123/parametros` agora abre a aba Terreno.
+**Disponível.** Ficha › aba **Terreno** › **Índices urbanísticos**, logo depois de Endereço e localização, e Ficha › **Estudos Técnicos** › **Restrições e entorno** e **Histórico de uso** (endereços `/terrenos/A123/restricoes` e `/terrenos/A123/historico-uso`). Até 9/nov/2026 era uma aba própria; o endereço antigo `/terrenos/A123/parametros` agora abre a aba Terreno.
 
 ## Para que serve
 
 Mostrar o que a lei deixa construir no terreno (zoneamento e parâmetros urbanísticos) e o que pode atrapalhar (restrições ambientais, patrimônio, riscos, uso anterior do terreno). É a base para o estudo de massa e a viabilidade.
 
-São três seções da aba Terreno, cada uma com o seu botão na barra logo abaixo das abas: **Índices urbanísticos**, **Restrições e entorno** e **Histórico de uso** (desde 10/nov/2026 não há mais o quadro Parâmetros urbanísticos que as juntava). A seta "Ver os parâmetros urbanísticos" do Zoneamento, na Visão geral, abre Índices urbanísticos.
+São três seções: **Índices urbanísticos**, um botão da aba Terreno, e **Restrições e entorno** e **Histórico de uso**, duas partes de Estudos Técnicos (desde 10/nov/2026 não há mais o quadro Parâmetros urbanísticos que as juntava). A seta "Ver os parâmetros urbanísticos" do Zoneamento, na Visão geral, abre Índices urbanísticos.
 
 ## Índices urbanísticos
 
