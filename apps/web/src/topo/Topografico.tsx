@@ -115,7 +115,7 @@ function JanelaTopo({ f, sp, fechar }: { f: Ficha; sp: boolean; fechar: () => vo
   const S = R?.resumo;
   const rodape = em ? null : S
     ? <><button className="btn text" onClick={gerar}>Gerar de novo</button><button className="btn" onClick={() => baixar('zip')}>DXF + imagem (.zip)</button><button className="btn primary" onClick={() => baixar('pdf')}>PDF</button></>
-    : sp ? <button className="btn" onClick={fechar}>Fechar</button>
+    : sp && !GEO_BASE ? <button className="btn" onClick={fechar}>Fechar</button>
     : <button className="btn primary" onClick={gerar}>{erro ? 'Tentar de novo' : 'Gerar topográfico'}</button>;
   return (
     <Dialogo titulo="Topográfico preliminar" sub={f.nome} onFechar={() => { if (!em) fechar(); }} rodape={rodape}>
@@ -130,18 +130,28 @@ function JanelaTopo({ f, sp, fechar }: { f: Ficha; sp: boolean; fechar: () => vo
           <img className="topo-previa" src={R.previa} alt="Prévia do topográfico" />
           <dl className="kvl topo-kv">
             <div className="kv"><dt>Contorno</dt><dd>{S.contorno}</dd></div>
+            <div className="kv"><dt>Área levantada</dt><dd>{S.levantado}</dd></div>
             <div className="kv"><dt>Cotas no terreno</dt><dd>{num(S.min, 1)} a {num(S.max, 1)} m · desnível {num(S.max - S.min, 1)} m{S.dec != null ? ` · declividade média ${num(S.dec, 1)}%` : ''}</dd></div>
             <div className="kv"><dt>Fonte das cotas</dt><dd>{S.cotas}</dd></div>
             <div className="kv"><dt>Curvas</dt><dd>{S.curvas}</dd></div>
-            <div className="kv"><dt>Folha</dt><dd>{S.papel} · escala 1:{num(S.escala)}</dd></div>
+            <div className="kv"><dt>Folha</dt><dd>{S.papel} · escala 1:{num(S.escala)}{S.papel !== 'A3' ? ' (para plotter)' : ''}</dd></div>
             <div className="kv"><dt>Imagem</dt><dd>{S.imagem}</dd></div>
             {S.erros.length ? <div className="kv"><dt>Não responderam</dt><dd>{S.erros.join(', ')}</dd></div> : null}
           </dl>
-          <div className="hint">Os pontos do Google não são guardados: o DXF leva só as curvas, com a cota. O ZIP traz o DXF, a imagem referenciada e o PDF; no AutoCAD, Salvar como DWG. Os arquivos não ficam guardados no sistema enquanto a aba Documentos não existe: baixe-os agora.</div>
+          <div className="hint">{/^Google/.test(S.cotas) ? 'Os pontos do Google não são guardados: o DXF leva só as curvas, com a cota. ' : 'O DXF leva as curvas e a malha de pontos cotados do laser. '}O ZIP traz o DXF, a imagem referenciada e o PDF; no AutoCAD, Salvar como DWG. Os arquivos não ficam guardados no sistema enquanto a aba Documentos não existe: baixe-os agora.</div>
         </>
       ) : null}
       {!em && !S && !erro ? (
-        sp ? <div className="hint">Em São Paulo as cotas vêm sempre do laser de 2020 da prefeitura, nunca do Google. Essa parte entra numa próxima entrega.</div>
+        sp ? <>
+          <ul className="topo-plano">
+            <li>Contorno pelos lotes da prefeitura quando todos os SQLs têm o lote no GeoSampa; senão, a poligonal desenhada.</li>
+            <li>Com SQL, levantamento até {TOPO_FOLGA} m em volta do contorno. Sem SQL, a quadra inteira (o quarteirão entre as ruas) que a poligonal ocupa, mais os {TOPO_FOLGA} m, com todos os lotes numerados pelo SQL; a folha cresce (A2, A1 ou A0) para manter a escala do terreno.</li>
+            <li>Cotas do laser de 2020 da Prefeitura de São Paulo (erro típico de 0,1 a 0,2 m na forma do terreno), com curvas de 1 em 1 m e mestra de 5 em 5 m. Se a prefeitura não responder, tente de novo: em São Paulo o Google não é usado.</li>
+            <li>Por trás, a imagem de satélite do Google com os nomes das ruas (se o Google falhar, a ortofoto 2023/2024 da prefeitura), e do GeoSampa as calçadas com a largura, os eixos com a largura da via, as quadras, os lotes, os córregos e os melhoramentos viários.</li>
+            <li>Sai um PDF e um ZIP com o DXF (com a malha de pontos cotados), a imagem e o PDF.</li>
+          </ul>
+          {!GEO_BASE ? <div className="hint">O laser e o GeoSampa só respondem na versão publicada.</div> : null}
+        </>
           : <ul className="topo-plano">
             <li>Contorno pelos lotes da prefeitura quando todas as inscrições têm o lote (São José dos Campos, pelo GeoSanja); senão, a poligonal desenhada.</li>
             <li>Levantamento até {TOPO_FOLGA} m em volta do contorno.</li>
