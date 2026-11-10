@@ -1528,6 +1528,10 @@ create table fluxo.objeto_tipos (
   campo_objeto    regproc    -- (objeto uuid, chave text) -> jsonb {titulo, tipo, valor, editavel, cartao}; nulo = chave desconhecida
 );
 grant select on fluxo.objeto_tipos to authenticated;
+-- Registro dos tipos de objeto, sem empresa: todo usuário logado lê, ninguém escreve pela API.
+-- RLS ligada para o Security Advisor do Supabase (rls_disabled_in_public, 10/nov/2026).
+alter table fluxo.objeto_tipos enable row level security;
+create policy objeto_tipos_ler on fluxo.objeto_tipos for select to authenticated using (true);
 
 create or replace function fluxo.ve_objeto(p_tipo text, p_id uuid, p_user uuid default auth.uid())
 returns boolean language plpgsql stable security definer set search_path = '' as $$
