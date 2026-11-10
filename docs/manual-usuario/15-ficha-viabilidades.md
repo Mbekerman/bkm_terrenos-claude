@@ -4,7 +4,7 @@
 
 Montar o **estudo de viabilidade estática** do terreno: quantas unidades cabem, por quanto se vendem, quanto custam o terreno, a obra e as despesas, e quanto sobra (lucro e margem). Um terreno pode ter vários estudos; um deles é o **válido**, o que vale para a negociação. É dele que saem as **Unidades** e o **VGV** do Resumo da Visão geral e o filtro "VGV estimado".
 
-O estudo está chegando ao sistema em partes. **Hoje:** a lista de estudos, o Resumo da viabilidade e, no estudo, os indicadores e a seção **Tipologias**. As outras seções (Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE) e os modelos de estudo chegam nas próximas entregas (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
+O estudo está chegando ao sistema em partes. **Hoje:** a lista de estudos, o Resumo da viabilidade e, no estudo, os indicadores e as seções **Tipologias**, **Terreno**, **Comercial**, **Obras** e **Gerais**. Financeiras, Taxas, DRE e os modelos de estudo chegam nas próximas entregas (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
 
 ## Onde fica
 
@@ -65,6 +65,37 @@ Uma linha por tipo de unidade:
 - O estudo novo já vem com a "Tipologia 1" para preencher.
 - A linha **Total** soma a área privativa, as unidades, a permuta e a comissão, e mostra o preço médio, o preço médio por m² e o VGV.
 
+### Terreno
+
+O custo do terreno no estudo.
+
+| Campo | Observação |
+|---|---|
+| **Permuta física** e **Comissão em unidades** | Só leitura: vêm das unidades em permuta e em comissão das Tipologias, pelo preço delas. |
+| **Permuta financeira** | Percentual do VGV líquido que vai ao dono do terreno. |
+| **Dedução do VGV** | Percentual tirado do VGV antes de calcular a permuta financeira. |
+| **Mínimo garantido** | Valor mínimo da permuta financeira: vale o maior entre ele e o percentual. |
+| **Deduzir do VGV** | Caixas para tirar ITBI, registro e Produto Caixa da base da permuta financeira. |
+| **Valor da permuta financeira** | Só leitura, já com o mínimo garantido quando ele vale. |
+| **Pagamento em dinheiro** e **Comissão em dinheiro** | O que se paga pelo terreno e a comissão, em reais. |
+
+### Comercial
+
+Despesas de venda (corretagem, marketing, stand...). Cada linha tem a **base**: % do VGV, verba total, verba por unidade (pelas unidades vendidas, sem permuta e comissão) ou verba mensal, com a coluna **Meses**. "% do VGV" é sempre sobre o VGV vendido.
+
+### Obras
+
+Em quadros, todos fechados ao abrir a seção (a seta do título abre cada um; o título mostra o total e o % do VGV):
+
+- **Custo de obra incidente**, com **Custo de obra típico** (a linha "Custo de obra raso", R$/m² × área; a área pode ser a privativa das Tipologias ou a construída, que aí se digita) e **Custo de obra atípico** (itens fora do padrão).
+- **Não incidente**, **Projetos** e **Pós-obra**.
+
+Cada linha escolhe o item na lista da empresa (digite para buscar), a base (% do VGV, % de uma camada de cima ou verba) e o valor. **Adicionar …** no fim do quadro cria a linha; o **X** a tira.
+
+### Gerais
+
+Despesas gerais em quatro quadros, como em Obras: **Terreno**, **Incorporação**, **CEF** e **Administrativo e financeiro**, com as bases % do VGV, % da obra total, % do lucro líquido ou verba.
+
 ## Quem pode
 
 - **Analista, gestor e diretor**: criam, editam, duplicam, apagam e marcam o válido.
@@ -73,7 +104,7 @@ Uma linha por tipo de unidade:
 
 ## O que não é possível hoje
 
-- As seções Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE do estudo (a janela mostra que entram na próxima entrega).
+- As seções Financeiras, Taxas e DRE do estudo (a janela mostra que entram na próxima entrega).
 - Escolher um modelo ao criar o estudo e "Salvar como modelo". Sem escolha, o estudo nasce com o modelo padrão da empresa, se houver.
 - Ligar o estudo a um estudo de massa.
 - Configurações › Viabilidade (lista de itens, margem mínima, modelos da empresa).
