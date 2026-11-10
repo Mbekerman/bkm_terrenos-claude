@@ -136,7 +136,8 @@ apps/web/
 | Arquivo | Papel |
 | --- | --- |
 | `estado.ts` | Store pequeno (`useSyncExternalStore`) do cadastro, lido pela janela e pela página Mapa: poligonal, sobreposição, local, frentes, SQLs, mapa de lotes. |
-| `NovoTerreno.tsx` | A janela do cadastro: passo 1 (desenhar, KMZ/KML, por SQL), sobreposição e o que fazer, passo 2 (nome de referência), gravação. |
+| `NovoTerreno.tsx` | A janela do cadastro: passo 1 (desenhar, KMZ/KML, por SQL), passo 2 (nome de referência, origem e corretor da oferta) e a gravação, que chama `app.conflitos_cadastro` e, com imóvel repetido, abre a janela `Sobreposicao` (Não cadastrar ou cadastrar: oferta no existente ou terreno novo ligado, conforme o caso, quem é o responsável e se a tratativa venceu). |
+| `CompararLotes.tsx` | "Comparar os lotes" de dois cadastros sobrepostos: as quadras da prefeitura (GeoSampa ou GeoSanja, por `carregar`/`carregarSjc` do `LotesGeo`) duas vezes lado a lado, com os lotes em comum e os só de cada lado. Usado na janela da sobreposição e na faixa da ficha (`ficha/Tratativa.tsx`). |
 | `LotesGeo.tsx` | Mapa de lotes da prefeitura (São Paulo), desenhado em SVG a partir do WFS do GeoSampa. Três modos: `nv` (cadastro), `sql` (janela por SQL), `ficha` (Escolher no mapa). |
 | `geosampa.ts` | Base do GeoSampa (`GEO_BASE`), `geoWfs` com prazo de 30 s, conversão UTM 23S ↔ lat/lng, máscara do SQL, `loteDoSql`. |
 | `consulta.ts` | Consulta completa do GeoSampa em cada SQL e pela poligonal; grava por `app.registrar_consulta_lote` e `app.registrar_consulta_area`; andamento "N de M". |

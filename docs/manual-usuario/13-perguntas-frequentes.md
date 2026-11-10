@@ -20,7 +20,7 @@ Clique fora de qualquer campo e aperte Ctrl+Z (⌘Z no Mac). Ctrl+Y refaz. Vale 
 Pelo lápis "Editar no mapa": ajuste a poligonal e, se a rua mudou, aceite "Trocar o endereço?". Só número, complemento, zona, cartório e referência se digitam. Ver [05](05-ficha-terreno.md#endereço-e-localização).
 
 **Por que o terreno está em Backlog?**
-Porque ainda não tem oferta. Registre uma oferta na aba Comercial: ela abre a negociação. Ver [06](06-ficha-comercial.md#ofertas-recebidas).
+Porque a negociação ainda não foi aberta (o cadastro registra a primeira oferta, mas não abre a negociação). Registre uma oferta na aba Comercial: ela abre a negociação. Ver [06](06-ficha-comercial.md#ofertas).
 
 **Não consigo dar temperatura.**
 A temperatura é do terreno e vale mesmo sem oferta. Se as barras estão apagadas e não respondem, seu acesso é só de consulta.
