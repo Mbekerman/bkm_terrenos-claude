@@ -1052,7 +1052,12 @@ begin
             or exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true and (i->>'bloqueio_gestor')::boolean)) then
       raise exception 'Você não pode forçar este avanço' using errcode = '42501';
     end if;
-    if coalesce(trim(p_comentario), '') = '' then raise exception 'Justifique o avanço forçado' using errcode = '22023'; end if;
+    -- a justificativa é opcional (pedido do Moises, 10/nov/2026): o avanço fica marcado como forçado no histórico;
+    -- só o item que o administrador marcou "Avança com justificativa" na Jornada ainda a exige
+    if coalesce(trim(p_comentario), '') = '' and exists (select 1 from jsonb_array_elements(pend) i
+         where (i->>'ok')::boolean is not true and coalesce((i->>'justifica')::boolean, false)) then
+      raise exception 'Justifique: a Jornada pede justificativa para passar sem este item' using errcode = '22023';
+    end if;
     v_forcado := true;
   end if;
 
@@ -1163,7 +1168,7 @@ end $$;
 
 -- Arrastar no quadro de etapas. Para frente, passa por cada etapa com as
 -- regras de mover_etapa (se uma falhar, nada muda; aprovação só na última).
--- Para trás, exige motivo e vai para o histórico como "retorno".
+-- Para trás, com o motivo opcional, vai para o histórico como "retorno".
 create or replace function app.mover_para_etapa(p_processo uuid, p_etapa text, p_forcar boolean default false, p_comentario text default null)
 returns jsonb
 language plpgsql security definer set search_path = ''
@@ -1186,7 +1191,6 @@ begin
       end if;
     end loop;
   elsif alvo < atual then
-    if coalesce(trim(p_comentario), '') = '' then raise exception 'Informe o motivo para voltar de etapa' using errcode = '22023'; end if;
     if exists (select 1 from app.aprovacoes where processo_id = p.id and status = 'pendente') then
       raise exception 'Há um pedido de aprovação em aberto: aguarde a decisão ou cancele o pedido' using errcode = '22023';
     end if;
@@ -1233,27 +1237,24 @@ begin
     raise exception 'Status inválido nesta fase' using errcode = '22023';
   end if;
   v_entrada := p.fase = app._fase_entrada(p.empresa_id);
+  -- os campos do encerramento são todos opcionais (pedido do Moises, 10/nov/2026): o que vier é conferido,
+  -- o que faltar se completa depois na faixa da ficha (app.editar_encerramento)
   if p_status in ('perdido','descartado') then
-    select * into mo from app.motivos_encerramento where empresa_id = p.empresa_id and status = p_status and codigo = p_motivo and ativo;
-    if not found then raise exception 'Escolha o motivo na lista' using errcode = '22023'; end if;
-    if p_status = 'perdido' and coalesce(trim(p_detalhe), '') = '' then raise exception 'Conte o que aconteceu (relato)' using errcode = '22023'; end if;
-    if mo.exige_texto and coalesce(trim(p_detalhe), '') = '' then raise exception 'Descreva o motivo' using errcode = '22023'; end if;
-  elsif p_motivo is not null then
+    if nullif(trim(p_motivo), '') is not null then
+      select * into mo from app.motivos_encerramento where empresa_id = p.empresa_id and status = p_status and codigo = p_motivo and ativo;
+      if not found then raise exception 'Escolha o motivo na lista' using errcode = '22023'; end if;
+    end if;
+  elsif nullif(trim(p_motivo), '') is not null then
     raise exception 'Motivo só para Perdido e Descartado' using errcode = '22023';
   end if;
   if p_status = 'concluido' then
     select codigo into ultima from app.etapas_modelo where empresa_id = p.empresa_id and fase = p.fase order by ordem desc limit 1;
     if p.etapa_atual <> ultima then raise exception 'A fase se conclui na última etapa' using errcode = '22023'; end if;
-    if v_entrada and p.parte_id is null and (coalesce(trim(p_detalhe), '') = '' or coalesce(trim(p_pontos_sucesso), '') = '') then
-      raise exception 'Escreva o relato e os pontos de sucesso da compra' using errcode = '22023';
-    end if;
-    if coalesce(trim(p_detalhe), '') = '' then raise exception 'Escreva o relato da conclusão' using errcode = '22023'; end if;
   elsif p_pontos_sucesso is not null then
     raise exception 'Pontos de sucesso só na conclusão' using errcode = '22023';
   end if;
   if p_status = 'stand_by' then
-    if p_retomar_em is null or p_retomar_em <= current_date then raise exception 'Informe uma data futura para retomar' using errcode = '22023'; end if;
-    if coalesce(trim(p_detalhe), '') = '' then raise exception 'Justifique o stand by' using errcode = '22023'; end if;
+    if p_retomar_em is not null and p_retomar_em <= current_date then raise exception 'A data para retomar precisa ser futura' using errcode = '22023'; end if;
   elsif p_retomar_em is not null then
     raise exception 'Data de retomada só para Stand By' using errcode = '22023';
   end if;
@@ -1261,7 +1262,7 @@ begin
     raise exception 'Arquivar ou manter as tarefas só em Perdido e Descartado' using errcode = '22023';
   end if;
   return app._passagem(p.id, 'status', p_status, p_forcar, p_comentario,
-    jsonb_strip_nulls(jsonb_build_object('motivo', p_motivo, 'detalhe', nullif(trim(p_detalhe), ''),
+    jsonb_strip_nulls(jsonb_build_object('motivo', nullif(trim(p_motivo), ''), 'detalhe', nullif(trim(p_detalhe), ''),
                                          'pontos_sucesso', nullif(trim(p_pontos_sucesso), ''), 'retomar_em', p_retomar_em,
                                          'tarefas', p_tarefas)));
 end $$;
@@ -1296,6 +1297,45 @@ begin
     perform app._abrir_negociacoes_partes(p.id);
   else
     perform app._sincronizar_principal(p.principal_id);
+  end if;
+end $$;
+
+-- Completar depois o que ficou em branco ao encerrar (pedido do Moises, 10/nov/2026): motivo, relato,
+-- pontos de sucesso e data de retomar, na faixa de Stand By, Perdido, Descartado ou Concluído da ficha.
+-- Só as chaves enviadas mudam; texto vazio apaga. A auditoria do processo guarda o antes e o depois.
+create or replace function app.editar_encerramento(p_processo uuid, p_dados jsonb)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare p app.processos; v_motivo text; v_retomar date;
+begin
+  select * into p from app.processos where id = p_processo for update;
+  if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(p.empresa_id);
+  if p.status = 'ativo' then raise exception 'A fase está ativa: não há encerramento para editar' using errcode = '22023'; end if;
+  perform app._chaves_permitidas(p_dados, array['motivo','detalhe','pontos_sucesso','retomar_em']);
+  if p_dados ? 'motivo' then
+    if p.status not in ('perdido','descartado') then raise exception 'Motivo só para Perdido e Descartado' using errcode = '22023'; end if;
+    v_motivo := nullif(trim(p_dados->>'motivo'), '');
+    if v_motivo is not null and not exists (select 1 from app.motivos_encerramento
+        where empresa_id = p.empresa_id and status = p.status and codigo = v_motivo and (ativo or codigo = p.motivo_encerramento)) then
+      raise exception 'Escolha o motivo na lista' using errcode = '22023';
+    end if;
+  end if;
+  if p_dados ? 'pontos_sucesso' and p.status <> 'concluido' then raise exception 'Pontos de sucesso só na conclusão' using errcode = '22023'; end if;
+  if p_dados ? 'retomar_em' then
+    if p.status <> 'stand_by' then raise exception 'Data de retomada só para Stand By' using errcode = '22023'; end if;
+    v_retomar := nullif(p_dados->>'retomar_em', '')::date;
+    if v_retomar is not null and v_retomar <= current_date then raise exception 'A data para retomar precisa ser futura' using errcode = '22023'; end if;
+  end if;
+  update app.processos set
+    motivo_encerramento  = case when p_dados ? 'motivo' then v_motivo else motivo_encerramento end,
+    detalhe_encerramento = case when p_dados ? 'detalhe' then nullif(trim(p_dados->>'detalhe'), '') else detalhe_encerramento end,
+    pontos_sucesso       = case when p_dados ? 'pontos_sucesso' then nullif(trim(p_dados->>'pontos_sucesso'), '') else pontos_sucesso end,
+    retomar_em           = case when p_dados ? 'retomar_em' then v_retomar else retomar_em end
+  where id = p.id;
+  if p.status = 'stand_by' and p_dados ? 'retomar_em' then
+    perform app._lembretes_padrao(p.empresa_id, 'processos', p.id, 'stand_by_retomar');
   end if;
 end $$;
 
@@ -1574,8 +1614,10 @@ begin
     raise exception 'Esta parte já foi comprada' using errcode = '22023';
   end if;
   perform app._parte_pode_sair(tp);
+  perform set_config('app.sem_espelho', '1', true);   -- só as etiquetas desta parte saem; as cópias das outras ficam
   delete from app.inscricao_partes where parte_id = tp.id;
   delete from app.matricula_partes where parte_id = tp.id;
+  perform set_config('app.sem_espelho', '', true);
   update app.terreno_partes set ativa = false, removida_em = now(), motivo_remocao = trim(p_motivo) where id = tp.id;
   for v_principal in select distinct principal_id from app.processos where parte_id = tp.id and principal_id is not null loop
     perform app._sincronizar_principal(v_principal);
@@ -1610,8 +1652,10 @@ begin
      or exists (select 1 from app.proposta_partes where parte_id = tp.id) then
     raise exception 'A parte % já tem histórico: tire-a do terreno com um motivo', tp.nome using errcode = '22023';
   end if;
+  perform set_config('app.sem_espelho', '1', true);   -- só as etiquetas desta parte saem; as cópias das outras ficam
   delete from app.inscricao_partes where parte_id = tp.id;
   delete from app.matricula_partes where parte_id = tp.id;
+  perform set_config('app.sem_espelho', '', true);
   delete from app.terreno_pessoas where parte_id = tp.id;
   delete from app.terreno_partes where id = tp.id;
 end $$;
@@ -1631,7 +1675,7 @@ begin
      where processo_id = c.id and status = 'pendente';
     update app.processos set status = p_status,
            motivo_encerramento  = p_dados->>'motivo',
-           detalhe_encerramento = 'Com a negociação do terreno: ' || (p_dados->>'detalhe'),
+           detalhe_encerramento = 'Com a negociação do terreno' || coalesce(': ' || (p_dados->>'detalhe'), ''),
            retomar_em           = (p_dados->>'retomar_em')::date,
            data_encerramento    = now()
      where id = c.id;
@@ -1655,11 +1699,19 @@ from (
   from app.matricula_partes c join app.matriculas m on m.id = c.matricula_id
   window w as (partition by c.matricula_id)
   union all
+  -- o SQL nas cópias da mesma matrícula conta uma vez (pedido do Moises, 10/nov/2026): a divisão é entre as matrículas
+  -- em que ele está (e as cópias soltas), e cada linha leva a fração do grupo dela
   select 'inscricao', c.id, c.empresa_id, c.terreno_id, c.parte_id, c.inscricao_id, c.percentual, c.matricula_parte_id,
-         i.area_cadastral_m2,
-         sum(c.percentual) over w, count(*) filter (where c.percentual is null) over w, count(*) over w
+         i.area_cadastral_m2, g.soma_informada, g.sem_percentual, g.copias
   from app.inscricao_partes c join app.inscricoes_municipais i on i.id = c.inscricao_id
-  window w as (partition by c.inscricao_id)
+  left join app.matricula_partes mp on mp.id = c.matricula_parte_id
+  join (
+    select inscricao_id, grupo, sum(percentual) over w as soma_informada, count(*) filter (where percentual is null) over w as sem_percentual, count(*) over w as copias
+    from (select x.inscricao_id, coalesce(y.matricula_id, x.id) as grupo, max(x.percentual) as percentual
+            from app.inscricao_partes x left join app.matricula_partes y on y.id = x.matricula_parte_id
+           group by x.inscricao_id, coalesce(y.matricula_id, x.id)) gg
+    window w as (partition by inscricao_id)
+  ) g on g.inscricao_id = c.inscricao_id and g.grupo = coalesce(mp.matricula_id, c.id)
 ) x;
 grant select on app.v_etiquetas to authenticated;
 
@@ -3042,7 +3094,7 @@ grant execute on function
   app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.checar_passagem(uuid, text, text),
   app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text), app.mover_subetapa(uuid, text, boolean, text),
-  app.encerrar_processo(uuid, text, text, text, date, text, boolean, text, text), app.retomar_processo(uuid),
+  app.encerrar_processo(uuid, text, text, text, date, text, boolean, text, text), app.retomar_processo(uuid), app.editar_encerramento(uuid, jsonb),
   app.decidir_aprovacao(uuid, boolean, text), app.cancelar_aprovacao(uuid),
   app.abrir_fase(uuid, text, boolean, text), app.fases_do_terreno(uuid),
   app.salvar_fase(uuid, text, jsonb), app.apagar_fase(uuid, text),
