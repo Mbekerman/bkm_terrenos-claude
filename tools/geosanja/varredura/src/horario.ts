@@ -1,4 +1,4 @@
-/** Janela da varredura: 22:00 até 07:00 em America/Sao_Paulo. O job para na margem, antes das 07:00. */
+/** Janela da varredura em America/Sao_Paulo. Padrão 19:00 até 09:00; o processo para na margem, antes das 09:00. */
 
 export const FUSO = 'America/Sao_Paulo';
 
@@ -34,16 +34,27 @@ function diaSeguinte(p: Partes) {
   return { ano: t.getUTCFullYear(), mes: t.getUTCMonth() + 1, dia: t.getUTCDate() };
 }
 
+export const INICIO_HORA_PADRAO = 19;
+export const FIM_HORA_PADRAO = 9;
+
+/** A hora de fim cai no dia seguinte quando a janela atravessa a meia-noite (19 → 9). */
+export function dentroDaJanela(hora: number, inicio: number, fim: number) {
+  if (inicio === fim) return false;
+  if (inicio < fim) return hora >= inicio && hora < fim;
+  return hora >= inicio || hora < fim;
+}
+
 /**
- * Instante em que o job tem de estar parado (07:00 no fuso, menos a margem).
- * null de dia, quando VARREDURA_FORA_DA_JANELA não está ligado: um disparo às 15h não varre até a manhã seguinte.
- * De madrugada (já passou da 22h, ou ainda não deu 7h) devolve o limite desta noite.
+ * Instante em que o processo tem de estar parado (hora de fim no fuso, menos a margem).
+ * null fora da janela, quando VARREDURA_FORA_DA_JANELA não está ligado.
+ * Com a margem padrão de 5 min e fim às 9, para às 08:55.
  */
-export function prazoDaNoite(agora: Date, o: { margemMin: number; foraDaJanela: boolean }): Date | null {
+export function prazoDaNoite(agora: Date, o: { margemMin: number; foraDaJanela: boolean; inicioHora?: number; fimHora?: number }): Date | null {
+  const inicio = o.inicioHora ?? INICIO_HORA_PADRAO;
+  const fim = o.fimHora ?? FIM_HORA_PADRAO;
   const p = partesNoFuso(agora);
-  const dentro = p.hora >= 22 || p.hora < 7;
-  if (!dentro && !o.foraDaJanela) return null;
-  const dia = p.hora < 7 ? p : diaSeguinte(p);
-  const sete = instanteNoFuso(dia.ano, dia.mes, dia.dia, 7, 0);
-  return new Date(sete.getTime() - o.margemMin * 60_000);
+  if (!dentroDaJanela(p.hora, inicio, fim) && !o.foraDaJanela) return null;
+  const dia = p.hora < fim ? p : diaSeguinte(p);
+  const limite = instanteNoFuso(dia.ano, dia.mes, dia.dia, fim, 0);
+  return new Date(limite.getTime() - o.margemMin * 60_000);
 }

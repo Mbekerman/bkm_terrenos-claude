@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Sobe o Cloud Run Job da varredura de São José e o Scheduler das 22h.
+# Sobe o Cloud Run Job da varredura de São José e o Scheduler.
+# A varredura que está no ar roda na VPS da Hetzner (cron às 19:00 America/Sao_Paulo).
+# Este job e o Scheduler ficam pausados; não retome o Scheduler sem combinar.
 # Rodar na máquina de quem está logado no gcloud como usuário (a org não entrega chave de service account).
 # Não cola segredo em argumento: os dois segredos se criam na tela do Secret Manager.
 # Uso, na raiz do repositório:
@@ -47,16 +49,16 @@ gcloud builds submit --config=tools/geosanja/varredura/cloudbuild.yaml .
 IMG="southamerica-east1-docker.pkg.dev/$PROJ/$REPO/$JOB:latest"
 
 gcloud run jobs deploy "$JOB" --image="$IMG" --region="$REG" \
-  --tasks=1 --parallelism=1 --max-retries=0 --task-timeout=33000 \
+  --tasks=1 --parallelism=1 --max-retries=0 --task-timeout=51000 \
   --memory=512Mi --cpu=1 --service-account="$SA" \
   --set-secrets="SUPABASE_URL=varredura-supabase-url:latest,SUPABASE_SERVICE_ROLE_KEY=varredura-supabase-service-role:latest" \
-  --set-env-vars="VARREDURA_EMPRESA_ID=${VARREDURA_EMPRESA_ID},VARREDURA_SETORES=/app/setores-3549904-2022.json,GEOSANJA_BASE=https://geo.sjc.sp.gov.br/v1/"
+  --set-env-vars="VARREDURA_EMPRESA_ID=${VARREDURA_EMPRESA_ID},VARREDURA_SETORES=/app/setores-3549904-2022.json,GEOSANJA_BASE=https://geo.sjc.sp.gov.br/v1/,VARREDURA_INICIO_HORA=19,VARREDURA_FIM_HORA=9"
 
 gcloud run jobs add-iam-policy-binding "$JOB" --region="$REG" --member="serviceAccount:$SA" --role=roles/run.invoker >/dev/null
 
 URI="https://run.googleapis.com/v2/projects/$PROJ/locations/$REG/jobs/$JOB:run"
 SCHED_ARGS=(
-  --location="$REG" --schedule="0 22 * * *" --time-zone="America/Sao_Paulo"
+  --location="$REG" --schedule="0 19 * * *" --time-zone="America/Sao_Paulo"
   --uri="$URI" --http-method=POST
   --oauth-service-account-email="$SA"
   --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
@@ -68,9 +70,8 @@ else
 fi
 
 echo
-echo "Job: $JOB ($REG). Timeout 9h10, para sozinho às 06:55 (America/Sao_Paulo)."
-echo "Agenda: todo dia 22:00. Pausar:  gcloud scheduler jobs pause $SCHED --location=$REG"
-echo "Retomar: gcloud scheduler jobs resume $SCHED --location=$REG"
-echo "Agora, se ainda não deu 7h:  gcloud run jobs execute $JOB --region=$REG"
-echo "De dia, até a próxima 7h:     gcloud run jobs execute $JOB --region=$REG --update-env-vars=VARREDURA_FORA_DA_JANELA=1"
+echo "Job: $JOB ($REG), pausado. A varredura no ar é o cron das 19:00 na VPS."
+echo "Timeout 14h10, para sozinho às 08:55 (America/Sao_Paulo). Agenda do Scheduler, se religar: 19:00."
+echo "Pausar:  gcloud scheduler jobs pause $SCHED --location=$REG"
+echo "Não retome o Scheduler enquanto a VPS estiver no cron."
 echo "Progresso: select * from app.varredura_sjc_relatorio('$VARREDURA_EMPRESA_ID');"

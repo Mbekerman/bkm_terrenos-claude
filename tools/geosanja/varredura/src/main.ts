@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { criarBanco } from './banco.ts';
 import { carregarSetores, celulasUrbanas } from './celulas.ts';
 import { ClienteGeoSanja } from './cliente.ts';
-import { prazoDaNoite } from './horario.ts';
+import { FIM_HORA_PADRAO, INICIO_HORA_PADRAO, prazoDaNoite } from './horario.ts';
 import { rodarNoite } from './noite.ts';
 
 function num(nome: string, padrao: number) {
@@ -11,6 +11,12 @@ function num(nome: string, padrao: number) {
   if (v == null || v === '') return padrao;
   const n = Number(v);
   if (!Number.isFinite(n)) throw new Error(`Variável ${nome} inválida`);
+  return n;
+}
+
+function hora(nome: string, padrao: number) {
+  const n = num(nome, padrao);
+  if (!Number.isInteger(n) || n < 0 || n > 23) throw new Error(`${nome} tem de ser uma hora inteira de 0 a 23`);
   return n;
 }
 
@@ -36,12 +42,15 @@ async function main() {
   if (min < 1000) throw new Error('VARREDURA_INTERVALO_MIN_MS não pode ser menor que 1000.');
   if (max < min) throw new Error('VARREDURA_INTERVALO_MAX_MS é menor que o mínimo.');
   const margem = num('VARREDURA_MARGEM_MIN', 5);
+  const inicio = hora('VARREDURA_INICIO_HORA', INICIO_HORA_PADRAO);
+  const fim = hora('VARREDURA_FIM_HORA', FIM_HORA_PADRAO);
+  if (inicio === fim) throw new Error('VARREDURA_INICIO_HORA e VARREDURA_FIM_HORA não podem ser a mesma hora.');
   const fora = process.env.VARREDURA_FORA_DA_JANELA === '1';
-  const limite = prazoDaNoite(new Date(), { margemMin: margem, foraDaJanela: fora });
+  const limite = prazoDaNoite(new Date(), { margemMin: margem, foraDaJanela: fora, inicioHora: inicio, fimHora: fim });
   if (!limite || limite.getTime() <= Date.now()) {
     console.log(limite
-      ? 'O limite das 07:00 já passou. Nada a fazer.'
-      : 'Fora da janela (22h–7h, America/Sao_Paulo). De dia, VARREDURA_FORA_DA_JANELA=1 varre até a próxima 07:00.');
+      ? `O limite das ${fim}h já passou. Nada a fazer.`
+      : `Fora da janela (${inicio}h–${fim}h, America/Sao_Paulo). Fora dela, VARREDURA_FORA_DA_JANELA=1 varre até a próxima ${fim}h.`);
     return 0;
   }
   const banco = criarBanco(url, chave, empresa, process.env.VARREDURA_BASE || 'geosanja');
