@@ -10,6 +10,7 @@ import { data as fd } from '../lib/format';
 import { lerNum, Quadro } from '../ficha/edicao';
 import type { Ficha } from '../ficha/dados';
 import { brl, calcular, mi, nf, normTip, VB_RESTRITO, VB_SECAO, vin, type Calc, type Tip, type Viab } from './calc';
+import { SecLinhas, SecObra, SecTerreno, vbQPadrao, type Ctx } from './Secoes';
 import { carregarEstudo, erroTxt, useDespesas, useEstudos, useRecarregar, type ResumoViab } from './dados';
 
 // Aba Viabilidades da ficha e o popup do estudo de viabilidade estática (porte de tools/prototipo/proto_viab.js ›
@@ -21,7 +22,7 @@ type Sec = 'tip' | 'terreno' | 'comercial' | 'obra' | 'despesas' | 'financeiro' 
 const VB_ORDEM: Sec[] = ['tip', 'terreno', 'comercial', 'obra', 'despesas', 'financeiro', 'taxas', 'res'];
 const VB_ROT: Record<Sec, string> = { tip: 'Tipologias', terreno: 'Terreno', comercial: 'Comercial', obra: 'Obras', despesas: 'Gerais', taxas: 'Taxas', financeiro: 'Financeiras', res: 'DRE' };
 /** seções já portadas; as outras mostram que entram na próxima entrega */
-const PRONTAS = new Set<Sec>(['tip']);
+const PRONTAS = new Set<Sec>(['tip', 'terreno', 'comercial', 'obra', 'despesas']);
 
 /* ---------- o estudo aberto no popup (um por vez, de qualquer lugar da ficha) ---------- */
 let aberto: string | null = null;
@@ -202,6 +203,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
   const D = useDespesas(empresa?.id);
   const [v, setV] = useState<Viab | null>(null);
   const [aba, setAba] = useState<Sec>('tip');
+  const [fechados, setFechados] = useState<Set<string>>(vbQPadrao);
   const [apagar, setApagar] = useState(false);
   const sc = useRef<HTMLDivElement>(null);
   const atual = useRef<Viab | null>(null);
@@ -265,6 +267,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
   );
 
   const irSec = (k: Sec) => {
+    if (k === 'obra' && ab !== 'obra') setFechados(vbQPadrao());
     setAba(k);
     requestAnimationFrame(() => {
       const s = sc.current, fx = s?.querySelector<HTMLElement>('.vb-fixo');
@@ -273,6 +276,10 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
     });
   };
 
+  const ctx: Ctx | null = v && c ? {
+    v, c, desp, ro, dir, empresa: empresa!.id, setV, gravar, fechados,
+    alternar: (k) => setFechados((o) => { const n = new Set(o); if (n.has(k)) n.delete(k); else n.add(k); return n; }),
+  } : null;
   const corpo = !v || !c ? <div className="empty muted">Carregando…</div> : (
     <>
       <div className="vb-fixo">
@@ -294,8 +301,11 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
             setTimeout(() => { const i = document.querySelector<HTMLInputElement>(`[data-tp="${t.id}"] .vb-nome input`); i?.focus(); i?.select(); }, 30);
           });
         }}><Ic n="add" s={16} />Adicionar tipologia</button> : null}>
-        {PRONTAS.has(ab) && ab === 'tip' ? <Tipologias v={v} c={c} ro={ro} setV={setV} gravar={gravar} toast={toast} />
-          : <div className="empty muted">Esta seção do estudo está sendo portada do protótipo e entra na próxima entrega.</div>}
+        {!PRONTAS.has(ab) ? <div className="empty muted">Esta seção do estudo está sendo portada do protótipo e entra na próxima entrega.</div>
+          : ab === 'tip' ? <Tipologias v={v} c={c} ro={ro} setV={setV} gravar={gravar} toast={toast} />
+          : ab === 'terreno' ? <SecTerreno x={ctx!} />
+          : ab === 'obra' ? <SecObra x={ctx!} />
+          : <SecLinhas x={ctx!} sec={ab} />}
       </Secao>
     </>
   );
