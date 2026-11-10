@@ -134,6 +134,10 @@ Abre ao clicar ou ao parar o mouse sobre ele por 0,75 s; fecha 1 s depois que o 
 
 **No mapa:** cada empreendimento é um quadrado na cor da faixa de **R$/m²** (média das unidades à venda: soma dos preços ÷ soma das áreas), com um desenho da situação dentro: **estrela** no lançamento, **guindaste** em obras, **prédio** no pronto.
 
+As cores são suaves (tons pastel, do lilás nos preços mais baixos ao rosa nos mais altos, passando por azul, verde, creme e salmão), para os terrenos da BKM continuarem sendo o que mais chama a atenção.
+
+**Bolhas (de longe):** até o zoom 13 (de mais ou menos a cidade inteira até uns 20 km de largura na tela), empreendimentos próximos que têm **a mesma situação e a mesma faixa de R$/m²** viram uma bolha redonda, na cor da faixa e com o desenho da situação. O tamanho da bolha cresce com a soma das unidades. Parando o mouse sobre ela aparece, por exemplo, "Lançamento · R$/m² 11 a 13 mil · 8 empreendimentos · 1.640 unidades". O clique na bolha aproxima o mapa até mostrar os empreendimentos dela separados. Do zoom 14 para perto, cada empreendimento aparece sozinho, com o seu quadrado. Quem está sozinho na região continua como quadrado em qualquer zoom.
+
 **Card do empreendimento** (clique no quadrado):
 
 - R$/m² médio das unidades à venda, com o **Enquadramento social** (Sim, Não ou Não informado) logo abaixo;

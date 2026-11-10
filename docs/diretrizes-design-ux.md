@@ -301,6 +301,10 @@ Referência: o Google Maps atual. Código: `apps/web/src/pages/Mapa.tsx` e `apps
 - **Camadas coloridas** (renda, densidade): faixas fixas (nunca quantis), legenda das cores no canto de cima, fechada como uma
   escala numa linha e aberta como lista; setor sem dado fica sem cor, nunca zero. Ao ligar uma camada, o mapa passa para a
   visão Mapa.
+- **Camadas de pontos de terceiros** (concorrência): cores pastel, mais claras e menos saturadas que as dos nossos itens, para
+  os terrenos da BKM continuarem sendo o que mais se destaca sobre o satélite; o desenho dentro do quadrado diz a situação.
+  De longe (até o zoom 13), só se juntam pontos com a mesma categoria (situação e faixa), numa bolha redonda do tamanho do
+  volume (unidades), sem número escrito: o número fica na dica; o clique aproxima até separar.
 - Quadro de um lugar do Google: nome, nota e até 3 avaliações, com "Ver todas no Google Maps"; fecha no X, no clique no mapa ou
   no Esc; com o mouse, fecha 1 s depois que o mouse sai.
 - **Tela cheia** do mapa cobre a página e, onde o navegador deixa, esconde as barras dele; Esc sai.

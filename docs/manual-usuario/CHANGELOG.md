@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
+- **Concorrência mais suave e agrupada de longe** (Mapa): os quadrados da concorrência passam a tons pastel, na mesma ordem de faixas de R$/m². Até o zoom 13, empreendimentos próximos com a mesma situação e a mesma faixa viram uma bolha do tamanho das unidades; a dica mostra quantos empreendimentos e unidades, e o clique aproxima. Ver [Mapa](02-mapa.md#concorrência-empreendimentos-de-outras-empresas). (#305)
 - **Área total na proposta** (aba Comercial, Nova proposta): ao marcar as partes da proposta, aparece embaixo a soma das áreas delas, quantas partes de quantas e o valor por m². Ver [Comercial](06-ficha-comercial.md). (#303)
 - **Produção atualizada** (endereço de produção): o protótipo de produção passa a ser o mesmo do ambiente de desenvolvimento. O sistema real continua só no ambiente de desenvolvimento até ser ligado em produção. (#301)
 - **Arrastar o mapa enquanto arrasta um ponto** (página Mapa e mini-mapa da ficha): segurando um ponto ou pino com o botão esquerdo, aperte e segure a roda do mouse para arrastar o mapa; soltando a roda, volta a mover o ponto. Ver [Mapa](02-mapa.md#editar-a-poligonal-de-um-terreno). (#300)
