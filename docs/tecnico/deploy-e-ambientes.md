@@ -10,7 +10,7 @@
 | `AMBIENTE` | `dev` (selo "Desenvolvimento" e `[DEV]` no título, com "PR #N · dia hora") | vazio |
 | `SUPABASE_URL` / `SUPABASE_KEY` | o projeto BKM_Desenvolvimento_Imobiliario | **vazias** até o primeiro uso: a raiz `/` cai no protótipo |
 | `GOOGLE_MAPS_KEY` | chave "BKM Terrenos Maps" do projeto GCP `bkm-terrenos` | a mesma |
-| O que serve hoje (8/nov) | o sistema React em `/` e o protótipo em `/prototipo` | só o protótipo (último merge na `main`: PR #192, 4/nov) |
+| O que serve hoje (10/nov) | o sistema React em `/` e o protótipo em `/prototipo` | o protótipo em `/` e `/prototipo`; o código é o mesmo da `develop` desde a promoção de 10/nov, mas sem `SUPABASE_URL` o React mostra só a tela de configuração |
 
 Os dois rodam **o mesmo código e a mesma imagem**; só as variáveis do serviço mudam.
 
@@ -120,6 +120,15 @@ bash supabase/tests/run.sh                    # precisa de postgresql-16 e postg
 cd apps/web && npm install && npm run typecheck && npm run build
 python3 tools/prototipo/build.py              # se mexeu no protótipo
 ```
+
+## Ligar o sistema real em produção
+
+Não é automático: a promoção para a `main` só troca a imagem. Para o `terrenos-web` servir o sistema React:
+
+1. Decidir antes como fica o banco. Hoje dev e produção usam o mesmo projeto Supabase, então o que se testa no dev mexe nos dados de produção. O plano (4/nov) é, na véspera do primeiro uso, apagar e recriar `app` e `fluxo` limpos e criar um banco de desenvolvimento à parte; a partir daí, toda mudança no banco é migration nova.
+2. No console do Cloud Run, serviço `terrenos-web`: `SUPABASE_URL`, `SUPABASE_KEY` (publicável) e `IPTU_URL`, iguais às do `terrenos-web-dev` se o banco for o mesmo. `AMBIENTE` fica vazio.
+3. No Supabase, Authentication › URL Configuration: incluir o endereço de produção nas Redirect URLs, senão o login do Google volta para o dev ou falha.
+4. Conferir o login com um usuário que não seja administrador.
 
 ## Voltar uma versão
 
