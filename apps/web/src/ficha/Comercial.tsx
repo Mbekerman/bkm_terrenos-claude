@@ -43,7 +43,7 @@ export function useComercial(f: Ficha) {
     queryFn: async (): Promise<Com> => {
       const neg = f.negId, nada = Promise.resolve({ data: null, error: null });
       const [of, ng, pr, tc, co, pp, ru, pt] = await Promise.all([
-        supabase.from('ofertas').select('id,numero,vigente,criado_por,data_oferta,valor_pedido,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,observacoes,validade,status,corretor_id,criado_em,oferta_partes(parte_id,valor_pedido,forma_pagamento,observacoes)')
+        supabase.from('ofertas').select('id,numero,vigente,criado_por,data_oferta,valor_pedido,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,validade,status,corretor_id,criado_em,oferta_partes(parte_id,valor_pedido,forma_pagamento,observacoes)')
           .eq('terreno_id', f.id).order('data_oferta').order('criado_em'),
         neg ? supabase.from('negociacoes').select('oferta_referencia_id').eq('processo_id', neg).maybeSingle() : nada,
         neg ? supabase.from('processos').select('id,status,etapa_atual,subetapa_atual,subetapa_desde,motivo_encerramento,detalhe_encerramento').eq('id', neg).maybeSingle() : nada,
@@ -225,8 +225,8 @@ function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar, gravarOb
   const op = o && !um ? (o.oferta_partes ?? []).find((x: R) => x.parte_id === pa.id) : null;
   const valor: number | null = !o ? null : um ? o.valor_pedido : op?.valor_pedido ?? null;
   const forma: string | null = !o ? null : um ? o.forma_pagamento_pedida : op?.forma_pagamento ?? o.forma_pagamento_pedida ?? null;
-  // informações gerais desta parte nesta oferta (com uma parte só, o texto da própria oferta)
-  const obs: string = (!o ? '' : um ? o.observacoes : op?.observacoes) ?? '';
+  // informações gerais da pedida desta parte nesta oferta; o texto da oferta (corretor, firmeza) é outro campo, no card da oferta
+  const obs: string = (o ? (o.oferta_partes ?? []).find((x: R) => x.parte_id === pa.id)?.observacoes : null) ?? '';
   const [vv, setVv] = useState(numTxt(valor));
   const [vm, setVm] = useState(valor != null && area ? numTxt(Math.round(valor / area)) : '');
   useEffect(() => { setVv(numTxt(valor)); setVm(valor != null && area ? numTxt(Math.round(valor / area)) : ''); }, [valor, area]);
@@ -320,12 +320,10 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
   async function gravarObs(pa: R, v: string | null) {
     if (!o) return false;
     let error;
-    if (um) ({ error } = await supabase.from('ofertas').update({ observacoes: v }).eq('id', o.id));
-    else {
-      const op = (o.oferta_partes ?? []).find((x: R) => x.parte_id === pa.id);
-      if (!v && op && op.valor_pedido == null && op.forma_pagamento == null) ({ error } = await supabase.from('oferta_partes').delete().eq('oferta_id', o.id).eq('parte_id', pa.id));
-      else ({ error } = await supabase.from('oferta_partes').upsert({ oferta_id: o.id, parte_id: pa.id, empresa_id: empresa!.id, observacoes: v }));
-    }
+    /* sempre na linha da parte na oferta, também com uma parte só (o texto da oferta é outro dado) */
+    const op = (o.oferta_partes ?? []).find((x: R) => x.parte_id === pa.id);
+    if (!v && op && op.valor_pedido == null && op.forma_pagamento == null) ({ error } = await supabase.from('oferta_partes').delete().eq('oferta_id', o.id).eq('parte_id', pa.id));
+    else ({ error } = await supabase.from('oferta_partes').upsert({ oferta_id: o.id, parte_id: pa.id, empresa_id: empresa!.id, observacoes: v }));
     if (error) { toast(error.message, true); return false; }
     recarregar();
     return true;
