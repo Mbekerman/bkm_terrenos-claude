@@ -31,7 +31,7 @@ No alto da lista ficam o total (**"N terrenos · m²"**, com **"N sem localizaç
 
 ### Como o terreno aparece no mapa
 
-Cada terreno aparece como uma **etiqueta com o código** (A112), na cor da fase, da etapa ou da subetapa, com contorno branco e preto e um **ponto embaixo** que marca o lugar exato. O formato é diferente dos pinos redondos do Google, para o terreno se destacar logo de cara. Com o mapa mais afastado (zoom de cidade ou bairro), a etiqueta fica um pouco maior. O terreno selecionado ganha um anel azul em volta da etiqueta e o ponto fica azul.
+Cada terreno aparece como uma **etiqueta com o código** (A112), na cor da fase, da etapa ou da subetapa, com contorno branco e preto e um **ponto embaixo** que marca o lugar exato. O formato é diferente dos pinos redondos do Google, para o terreno se destacar logo de cara. A etiqueta fica um pouco maior com o mapa na escala de bairro, que é o tamanho máximo dela; afastando mais, ela diminui junto com os ícones do Google. O terreno selecionado ganha um anel azul em volta da etiqueta e o ponto fica azul.
 
 ### Selecionar um terreno
 
