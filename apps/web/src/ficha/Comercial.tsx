@@ -214,9 +214,10 @@ function JanelaMat({ L, x, c, rot, fechar }: { L: Lotes; x: R; c: R; rot: string
   );
 }
 
-function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar }: {
+function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar, gravarObs }: {
   o: R | null; pa: R; um: boolean; primeiro: boolean; area: number | null; zonas: string; nomeDet: ReactNode;
   mudar: (pa: R, valor: number | null, forma: string | null) => Promise<void>;
+  gravarObs: (pa: R, v: string | null) => Promise<boolean>;
 }) {
   const { edita } = useSessao();
   const op = o && !um ? (o.oferta_partes ?? []).find((x: R) => x.parte_id === pa.id) : null;
@@ -243,6 +244,11 @@ function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar }: {
       <div className="ptcom-c field">{L('Condição de pagamento')}{ro ? <span>{forma ? FORMA[forma] : '—'}</span>
         : <select value={forma ?? ''} aria-label={`Condição de pagamento de ${pa.nome}`} onChange={(e) => mudar(pa, valor, e.target.value || null)}>
           <option value="">Não informada</option>{Object.entries(FORMA).map(([k, x]) => <option key={k} value={k}>{x}</option>)}</select>}</div>
+      {/* informações gerais da parte, no lugar de Aceita permuta e Pagamento da oferta (pedido do Moises, 10/nov/2026) */}
+      <div className="ptcom-c field ptcom-obs"><span className="lbl-f">Informações gerais</span>{!edita ? <span>{pa.observacoes || '—'}</span>
+        : <Vivo ini={pa.observacoes ?? ''} gravar={(v) => ((pa.observacoes ?? '') === v.trim() ? true : gravarObs(pa, v.trim() || null))}>
+          {(p) => <textarea {...p} rows={2} placeholder="Permuta, forma de pagamento, prazos, o que mais o vendedor pediu" aria-label={`Informações gerais de ${pa.nome}`} />}
+        </Vivo>}</div>
     </div>
   );
 }
@@ -272,32 +278,10 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
   const L = useLotes(f).data;
   const qc = useQueryClient();
   const o = c.ref, ed = edita && !!o;
-  const cp = c.corretores.find((x) => x.id === c.tcor.find((t) => t.principal)?.corretor_id);
   /* "Valor pedido" do que falta na ficha: o valor da primeira parte; sem oferta, a janela de registrar oferta */
   usePedido(['cond'], () => {
     if (ed) { abrirQuadroJa('comercial', 'cond'); focar('c-valor'); } else if (edita) { registrar(); focar(c.partes.filter((p) => p.ativa !== false).length > 1 ? 'o-v-0' : 'o-v'); }
   });
-  async function gravar(d: R) {
-    if (!o) return false;
-    const { error } = await supabase.from('ofertas').update(d).eq('id', o.id);
-    if (error) { toast(error.message, true); return false; }
-    /* corretor novo na oferta passa a constar no terreno (o primeiro vira principal), como no registro da oferta */
-    if (d.corretor_id && !c.tcor.some((t) => t.corretor_id === d.corretor_id)) {
-      const r = await supabase.from('terreno_corretores').upsert({ terreno_id: f.id, corretor_id: d.corretor_id, empresa_id: f.t.empresa_id, principal: !c.tcor.some((t) => t.principal) }, { ignoreDuplicates: true });
-      if (r.error) toast(r.error.message, true);
-    }
-    recarregar();
-    toast('Salvo.');
-    return true;
-  }
-  const inp = (k: string, col: string, ini: string, extra: R = {}) => (
-    <Vivo ini={ini} gravar={(v) => gravar({ [col]: v.trim() || null })}>{(p) => <input className="inl-x" id={`c-${k}`} placeholder="Não informado" {...extra} {...p} />}</Vivo>
-  );
-  const sel = (k: string, col: string, ini: string, opts: [string, string][], vazio: string) => (
-    <Vivo ini={ini} imediato gravar={(v) => gravar({ [col]: v || null })}>{(p) =>
-      <select className="inl-x" id={`c-${k}`} {...p}><option value="">{vazio}</option>{opts.map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select>}</Vivo>
-  );
-  const kv = (k: string, val: ReactNode, campo: () => ReactNode) => <div className="kv"><dt>{k}</dt><dd>{ed ? campo() : val}</dd></div>;
   const acoes = !o ? (edita ? <div className="sec-acoes"><button className="btn sm" onClick={registrar}><Ic n="add" s={16} />Registrar oferta</button></div> : undefined)
     : <span className="faint" style={{ fontSize: 12, marginLeft: 'auto' }}>oferta de {fd(o.data_oferta)}</span>;
 
@@ -326,6 +310,12 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
     recarregar();
     qc.invalidateQueries({ queryKey: ['ficha-lotes', f.id] });
   }
+  async function gravarObs(pa: R, v: string | null) {
+    const { error } = await supabase.from('terreno_partes').update({ observacoes: v }).eq('id', pa.id);
+    if (error) { toast(error.message, true); return false; }
+    qc.invalidateQueries({ queryKey: ['ficha-lotes', f.id] });
+    return true;
+  }
   const vs = P.map((pa) => valorDe(pa.id));
   const vT = vs.some((v) => v != null) ? vs.reduce<number>((s, v) => s + (+(v ?? 0)), 0) : null;
   const aCom = P.filter((_, i) => vs[i] != null).reduce((s, pa) => s + (areaDe(pa.id) || 0), 0);
@@ -346,15 +336,9 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
         </div></div>
         {!um && nCom < P.length && antigo == null && <div className="cond-aviso"><Ic n="warn" s={16} />Falta o valor pedido {P.length - nCom === 1 ? 'de' : 'das partes'} {lista(P.filter((_, i) => vs[i] == null).map((x) => x.nome))}.</div>}
         {antigo != null && <div className="cond-aviso">O valor de {brl(antigo)} foi registrado para o terreno inteiro. Informe o valor de cada parte abaixo; o total passa a ser a soma delas.</div>}
-        <dl className={`kvl${ed ? ' kvl-ed vivo' : ''}`}>
-          {kv('Corretor', cp ? <span>{cp.nome}<span className="kv-2">{cp.imobiliaria}</span></span> : ni('—'),
-            () => sel('cid', 'corretor_id', o.corretor_id ?? '', c.corretores.filter((x) => x.ativo !== false || x.id === o.corretor_id).map((x) => [x.id, `${x.nome}${x.imobiliaria ? ' · ' + x.imobiliaria : ''}`]), 'Sem corretor'))}
-          {kv('Aceita permuta', o.aceita_permuta || ni(), () => inp('aceita', 'aceita_permuta', o.aceita_permuta ?? '', { placeholder: 'Como o vendedor encara a permuta e em que condições' }))}
-          {kv('Pagamento', o.observacao_pagamento || ni(), () => inp('obs', 'observacao_pagamento', o.observacao_pagamento ?? '', { placeholder: 'Observação sobre a forma de pagamento' }))}
-        </dl>
         {L && <div className="ptcom cond-pt">
           <div className="ptcom-r ptcom-th"><span>{um ? 'Parte' : 'Por parte'}</span><span>{um ? 'Área adotada' : 'Área da parte'}</span><span>Valor pedido</span><span>Valor por m²</span><span>Condição de pagamento</span></div>
-          {P.map((pa, i) => <LinhaParte key={pa.id} o={o} pa={pa} um={um} primeiro={i === 0} area={areaDe(pa.id)} zonas={zonasDe(pa.id)} nomeDet={<MatsParte L={L} pid={pa.id} rot={rot} />} mudar={mudar} />)}
+          {P.map((pa, i) => <LinhaParte key={pa.id} o={o} pa={pa} um={um} primeiro={i === 0} area={areaDe(pa.id)} zonas={zonasDe(pa.id)} nomeDet={<MatsParte L={L} pid={pa.id} rot={rot} />} mudar={mudar} gravarObs={gravarObs} />)}
           {!um && (
             <div className="ptcom-r ptcom-tot"><div className="ptcom-p"><b>Total</b></div><div className="ptcom-c">{Lb('Área da parte')}<span>{aT ? m2(Math.round(aT * 100) / 100) : '—'}</span></div>
               <div className="ptcom-c">{Lb('Valor pedido')}<span>{vT != null ? <>{brl(vT)}{nCom < P.length ? <> <span className="faint">(faltam {P.length - nCom})</span></> : null}</> : '—'}</span></div>

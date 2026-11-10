@@ -4650,6 +4650,9 @@ html[data-tema="escuro"] .vt-obs { color: #c4c7c5; background: transparent !impo
 .cond-aviso .ic { flex: none; margin-top: 1px }
 .cond-sub { font-size: 12px; color: #444746; margin-top: 2px }
 .cond-pt { margin-top: 16px }
+.ptcom-obs { grid-column: 1 / -1 }
+.ptcom-obs textarea { width: 100%; min-height: 56px; resize: vertical; font: inherit; box-sizing: border-box }
+.ptcom-obs > span:not(.lbl-f) { white-space: pre-wrap }
 @container (max-width: 400px) { .cond-res { grid-template-columns: minmax(0, 1fr) } }
 html[data-tema="escuro"] .cond-b { background: #1e1f20 } html[data-tema="escuro"] .cond-b .lbl, html[data-tema="escuro"] .cond-sub { color: #c4c7c5 }
 .ptcom-p { min-width: 0 } .ptcom-p b { font-weight: 500 } .ptcom-p .faint { font-size: 13px }
