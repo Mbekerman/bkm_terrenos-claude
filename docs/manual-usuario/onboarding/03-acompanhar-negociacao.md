@@ -9,7 +9,7 @@
 | 1 | 0:00 | Ficha do terreno, aba **Comercial**. Mostrar "Terreno sem negociação" no painel. | "Este terreno ainda não tem negociação: está em Backlog. A negociação abre com a primeira oferta." |
 | 2 | 0:15 | Clicar em **"Registrar oferta"**; preencher corretor, valor ("12 mi"), forma de pagamento, validade; **Registrar**. | "Registre a oferta: quem trouxe, quanto pedem, como querem receber. Pode digitar 12 mi." |
 | 3 | 0:45 | Mostrar o aviso "A negociação foi aberta" e o quadro de avanço com a primeira etapa. | "Pronto: a negociação abriu na primeira etapa de Novos Negócios." |
-| 4 | 1:00 | Condições pedidas: mudar a forma de pagamento e o texto de Pagamento. | "As condições pedidas são as da oferta de referência e se editam aqui mesmo." |
+| 4 | 1:00 | Condições pedidas: mudar a condição de pagamento na linha da parte e o texto de Pagamento. | "As condições pedidas são as da oferta de referência e se editam aqui mesmo. O valor é de cada parte; o total em cima é a soma." |
 | 5 | 1:20 | Corretores: apontar a estrela de principal. Ofertas: mostrar "Usar como referência" (se houver duas). | "Se o terreno chegar por outro corretor, registre outra oferta. A estrela marca o corretor principal." |
 | 6 | 1:40 | Dar a **temperatura** no topo (Morna). | "Agora a temperatura: o quanto a negociação está promissora. Clique na barra." |
 | 7 | 1:55 | Clicar em **"Nova proposta"**: Origem BKM, valor, forma, Apresentada, validade; **Registrar**. Mostrar v1. | "Quando a BKM faz uma proposta, registre aqui. Ela vira a versão 1." |
@@ -26,6 +26,8 @@
 | 18 | 6:40 | Clicar num card; na ficha, painel › **Logs**; filtrar por usuário; clicar num log. | "Na ficha, os Logs mostram tudo o que mudou. Clicando num log, você vai direto ao campo." |
 | 19 | 7:05 | Abrir o **sino**; clicar num aviso. | "E o sino traz os avisos dos seus terrenos: clique e a ficha abre no lugar certo." |
 | 20 | 7:20 | Encerramento. | "É isso. Dúvidas, o manual do usuário tem cada tela em detalhe, inclusive o que ainda não está disponível." |
+
+**Precisa regravar a partir do passo 4** (10/nov/2026: Condições pedidas e Partes viraram um quadro só).
 
 **Atenção ao gravar:** movimentos no funil não se desfazem com Ctrl+Z. Use um terreno de teste ou volte a etapa arrastando, com motivo.
 

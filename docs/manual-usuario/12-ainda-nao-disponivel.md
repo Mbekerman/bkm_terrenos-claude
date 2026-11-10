@@ -20,8 +20,8 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 
 | Aba | Situação |
 |---|---|
-| **Estudos de massa** (pedido ao arquiteto, tipologias, CA, eficiência, estudo válido) | Só no protótipo |
-| **Viabilidades** (estudo de viabilidade estática, DRE, modelos, "Rentabilidade abaixo da mínima") | Só no protótipo. Por isso Unidades e VGV do Resumo ficam vazios. |
+| **Estudos de massa: PDF e DWG** | Entram com a aba Documentos; o resto de Estudos Técnicos › Estudos de massa já está no sistema ([14](14-ficha-estudos-de-massa.md)). |
+| **Estudos de viabilidade** (em Estudos Técnicos; estudo de viabilidade estática, DRE, modelos, "Rentabilidade abaixo da mínima") | Só no protótipo. Por isso Unidades e VGV do Resumo ficam vazios. |
 | **Jornada** (as fases do terreno, "Abrir antes da hora") | Só no protótipo |
 | **Documentos** (envio com versão, pastas no Google Drive, planta e desenho do GeoSampa) | Só no protótipo; pastas no Drive no plano |
 
@@ -33,7 +33,7 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 | **"O que esta etapa pede"** no quadro de avanço (perguntas da Jornada) | Só no protótipo |
 | **Olhinho e lixeira** nos Logs (prévia sem a alteração e desfazer uma alteração antiga) | Só no protótipo. Hoje, use o Ctrl+Z para o que acabou de fazer. |
 | Quadro de **negociação por parte** (cada parte com sua etapa e botão de avançar) | Só no protótipo |
-| **Topográfico preliminar em São Paulo** (cotas do laser da prefeitura, quadra inteira sem SQL) e guardar o PDF e o DXF em Documentos | Só no protótipo. Fora de São Paulo já está na aba Infraestrutura. |
+| **Topográfico preliminar em São Paulo** (cotas do laser da prefeitura, quadra inteira sem SQL) e guardar o PDF e o DXF em Documentos | Só no protótipo. Fora de São Paulo já está em Estudos Técnicos › Avaliação de infraestrutura. |
 | **Busca de cima por matrícula e SQL** | O texto do campo promete, mas hoje não busca. A fazer. |
 | **Aviso por e-mail** e preferências de e-mail no menu do avatar | Planejado (envio pela conta bkm@) |
 | **WhatsApp** | Planejado, depois do e-mail |
