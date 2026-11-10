@@ -21,7 +21,7 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 | Aba | Situação |
 |---|---|
 | **Estudos de massa: PDF e DWG** | Entram com a aba Documentos; o resto de Estudos Técnicos › Estudos de massa já está no sistema ([14](14-ficha-estudos-de-massa.md)). |
-| **Estudos de viabilidade** (em Estudos Técnicos; estudo de viabilidade estática, DRE, modelos, "Rentabilidade abaixo da mínima") | Só no protótipo. Por isso Unidades e VGV do Resumo ficam vazios. |
+| **Estudos de viabilidade** (em Estudos Técnicos) | Em partes ([15](15-ficha-viabilidades.md)): já estão a lista, o Resumo da viabilidade, o estudo válido e a seção Tipologias. Faltam as seções Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE, os modelos de estudo e o vínculo com o estudo de massa. |
 | **Relevo medido sozinho** (o perfil topográfico em 7 perfis, pelas cotas da poligonal) | Só no protótipo. Estudos Técnicos › Avaliação de infraestrutura já tem a visita técnica, as viabilidades técnicas e o Topográfico fora de São Paulo; o "Perfil topográfico" fica vazio até a medição chegar. |
 | **Jornada** (as fases do terreno, "Abrir antes da hora") | Só no protótipo |
 | **Documentos** (envio com versão, pastas no Google Drive, planta e desenho do GeoSampa) | Só no protótipo; pastas no Drive no plano |
