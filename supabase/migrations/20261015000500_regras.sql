@@ -1574,8 +1574,10 @@ begin
     raise exception 'Esta parte já foi comprada' using errcode = '22023';
   end if;
   perform app._parte_pode_sair(tp);
+  perform set_config('app.sem_espelho', '1', true);   -- só as etiquetas desta parte saem; as cópias das outras ficam
   delete from app.inscricao_partes where parte_id = tp.id;
   delete from app.matricula_partes where parte_id = tp.id;
+  perform set_config('app.sem_espelho', '', true);
   update app.terreno_partes set ativa = false, removida_em = now(), motivo_remocao = trim(p_motivo) where id = tp.id;
   for v_principal in select distinct principal_id from app.processos where parte_id = tp.id and principal_id is not null loop
     perform app._sincronizar_principal(v_principal);
@@ -1610,8 +1612,10 @@ begin
      or exists (select 1 from app.proposta_partes where parte_id = tp.id) then
     raise exception 'A parte % já tem histórico: tire-a do terreno com um motivo', tp.nome using errcode = '22023';
   end if;
+  perform set_config('app.sem_espelho', '1', true);   -- só as etiquetas desta parte saem; as cópias das outras ficam
   delete from app.inscricao_partes where parte_id = tp.id;
   delete from app.matricula_partes where parte_id = tp.id;
+  perform set_config('app.sem_espelho', '', true);
   delete from app.terreno_pessoas where parte_id = tp.id;
   delete from app.terreno_partes where id = tp.id;
 end $$;
@@ -1655,11 +1659,19 @@ from (
   from app.matricula_partes c join app.matriculas m on m.id = c.matricula_id
   window w as (partition by c.matricula_id)
   union all
+  -- o SQL nas cópias da mesma matrícula conta uma vez (pedido do Moises, 10/nov/2026): a divisão é entre as matrículas
+  -- em que ele está (e as cópias soltas), e cada linha leva a fração do grupo dela
   select 'inscricao', c.id, c.empresa_id, c.terreno_id, c.parte_id, c.inscricao_id, c.percentual, c.matricula_parte_id,
-         i.area_cadastral_m2,
-         sum(c.percentual) over w, count(*) filter (where c.percentual is null) over w, count(*) over w
+         i.area_cadastral_m2, g.soma_informada, g.sem_percentual, g.copias
   from app.inscricao_partes c join app.inscricoes_municipais i on i.id = c.inscricao_id
-  window w as (partition by c.inscricao_id)
+  left join app.matricula_partes mp on mp.id = c.matricula_parte_id
+  join (
+    select inscricao_id, grupo, sum(percentual) over w as soma_informada, count(*) filter (where percentual is null) over w as sem_percentual, count(*) over w as copias
+    from (select x.inscricao_id, coalesce(y.matricula_id, x.id) as grupo, max(x.percentual) as percentual
+            from app.inscricao_partes x left join app.matricula_partes y on y.id = x.matricula_parte_id
+           group by x.inscricao_id, coalesce(y.matricula_id, x.id)) gg
+    window w as (partition by inscricao_id)
+  ) g on g.inscricao_id = c.inscricao_id and g.grupo = coalesce(mp.matricula_id, c.id)
 ) x;
 grant select on app.v_etiquetas to authenticated;
 

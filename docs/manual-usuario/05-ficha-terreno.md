@@ -101,11 +101,12 @@ Embaixo vem **um quadro por parte**, numa grade, com a seta que abre e fecha a l
 - Cada **matrícula** levada a uma parte vira um **subquadro amarelo** dela.
 - O **SQL entra sempre dentro de uma matrícula.** Solto sobre uma parte com uma matrícula só, vai para ela; com mais de uma matrícula, solte sobre a matrícula certa. Parte sem matrícula recusa o SQL com o aviso **"É necessário atribuir uma matrícula à parte antes de lançar lotes nela"**.
 - Mover ou tirar a matrícula leva ou solta os SQLs dela junto.
+- **Matrícula repetida** (a mesma matrícula em mais de uma parte): as cópias são a mesma matrícula e têm sempre os **mesmos SQLs**. A cópia nova já nasce com os SQLs da original, e pôr ou tirar um SQL em qualquer uma das cópias põe ou tira em todas. Tirar a matrícula de uma parte só não mexe nos SQLs das outras.
 - Com uma parte só, o botão **"Enviar tudo para Vendedor 1"** faz tudo de uma vez.
 
 ### Menu da etiqueta (clique direito)
 
-- **Duplicar**: cria uma cópia no mesmo lugar da original. Serve quando o mesmo lote é de mais de uma parte. A cópia nasce com o que falta para 100% (ou com 0% e um alerta, se o lote já está todo nas outras partes).
+- **Duplicar**: cria uma cópia no mesmo lugar da original. Serve quando o mesmo lote é de mais de uma parte. A cópia nasce com o que falta para 100% (ou com 0% e um alerta, se o lote já está todo nas outras partes). A matrícula duplicada já vem com os SQLs dela. O SQL que está dentro de uma matrícula, duplicado, nasce solto na área de cima, para você pôr numa outra matrícula (na mesma ele já está em todas as cópias).
 - **Mover para** (ou **Pôr em**, se está sem parte): leva a etiqueta para outra parte.
 - **Editar**: abre a janela da etiqueta.
 - **Tirar da parte**: devolve para a área de cima. Se o lote está em outras partes, a etiqueta fica solta com o percentual dela; o **x** de uma cópia solta a apaga.
@@ -118,6 +119,9 @@ Toda etiqueta mostra uma **mini pizza** com a fração dela: cheia em 100%, trac
 - O percentual é **opcional**. Sem ele, o que falta para 100% se divide igual entre as partes sem percentual.
 
 **Para que serve:** a **área da parte** = soma de (área do SQL × % do SQL × % da matrícula). Sem SQL, usa a área das matrículas.
+
+- O **% da matrícula** é quanto da matrícula é daquela parte. Com a mesma matrícula nos Vendedores 1, 2 e 3 com 50%, 30% e 20%, e SQLs somando 1.000 m², as partes ficam com 500, 300 e 200 m²: a área não conta duas vezes.
+- O **% do SQL** é quanto do SQL está dentro daquela matrícula, o mesmo em todas as cópias dela. Só muda alguma coisa quando um SQL é dividido entre duas matrículas diferentes; no normal, fica 100%.
 
 ### Janela da etiqueta (lápis ou clique)
 
