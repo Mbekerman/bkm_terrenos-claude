@@ -284,7 +284,7 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
   /* "Corretor da oferta" (pedido do Moises, 10/nov/2026): o corretor da oferta ativa; sem oferta, o da janela */
   usePedido(['cond'], (pd) => {
     if (pd.campo === 'cid') { if (ed) { abrirQuadroJa('comercial', 'cond'); focar('c-cid'); } else if (edita) { registrar(); focar('o-c'); } return; }
-    if (ed) { abrirQuadroJa('comercial', 'cond'); focar('c-valor'); } else if (edita) { registrar(); focar(c.partes.filter((p) => p.ativa !== false).length > 1 ? 'o-v-0' : 'o-v'); }
+    if (ed) { abrirQuadroJa('comercial', 'cond'); focar('c-valor'); } else if (edita) registrar();
   });
   const acoes = !o ? (edita ? <div className="sec-acoes"><button className="btn sm" onClick={registrar}><Ic n="add" s={16} />Registrar oferta</button></div> : undefined)
     : <span className="faint" style={{ fontSize: 12, marginLeft: 'auto' }}>oferta de {fd(o.data_oferta)}</span>;
