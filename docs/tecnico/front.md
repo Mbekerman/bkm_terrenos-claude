@@ -514,7 +514,8 @@ A primeira versão em uso é, por decisão do Moisés: login, mapa, novo terreno
 | Tarefas (Lista, Quadro, Cronograma, Calendário, Funil, cartão, modelos, automações, aprovação, pausa, recorrência) | não | A ficha só **lê** as tarefas abertas do quadro do terreno (`Painel.tsx`, aba Tarefas). As tarefas devem ir para um banco próprio (`bkm_tarefas`, ADR 0002). |
 | Configurações (Funil, Jornada, Fases, Campos, Viabilidade, Parâmetros, Topografia, Tarefas, Equipe, Notificações) | não | Ajuste urgente direto no banco, a pedido do Moisés. |
 | Aba Estudos de massa | sim | `ficha/Massa.tsx`, sem o envio do PDF e do DWG (entram com Documentos). |
-| Abas da ficha Jornada, Documentos | não | Mostram "Esta aba entra depois da primeira versão" (`Ficha.tsx`, fim). |
+| Aba Jornada da ficha | sim | `ficha/Jornada.tsx`: linha do tempo da negociação (porte de `proto_funil.js` › `trilhaHtml`, pelas `processo_transicoes` do processo de entrada, com o SLA de `etapas_modelo.sla_dias`) e fases do terreno (porte de `proto_fases.js` › `abaFases`, por `app.fases_do_terreno`; Abrir, Abrir antes da hora e Reabrir por `app.abrir_fase`, forçar só gestor e diretor com justificativa). "O que esta etapa pede" fica de fora. |
+| Aba Documentos da ficha | não | Mostra "Esta aba entra depois da primeira versão" (`Ficha.tsx`, fim). |
 | Estudos de viabilidade: Resumo da viabilidade, lista, popup com indicadores e Tipologias | sim | `viab/Viabilidade.tsx`, `viab/calc.ts`, `viab/dados.ts`; o popup abre por `abrirEstudo(id)` de qualquer lugar da ficha e fica em `/terrenos/A123/viabilidade/N` na página. |
 | Estudo de viabilidade: seções Terreno, Comercial, Obras, Gerais, Financeiras, Taxas, DRE; modelos; vínculo com estudo de massa | não | Próximos PRs do porte. |
 | Visita técnica e Viabilidades técnicas | sim | `ficha/Infra.tsx` (porte de `proto_infra.js` › `vtSecao`, `vtecSecao`), na aba Infraestrutura depois do Relevo. |
