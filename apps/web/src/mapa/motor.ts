@@ -7,7 +7,9 @@ import { mkMarcaHtml, mkTitulo, type Emp } from './mercado';
 // G_eu, G_focar, svFechar, lugarAbrir, gStreetView) e proto_novo.js (mpBuscar, achadoPin). Imperativo, como lá:
 // o React desenha a página e entrega os dados; o motor mexe só dentro do contêiner do mapa.
 
-export interface Pino { id: string; nome: string; lat: number; lng: number; poly: [number, number][] | null; cor: string; fg: string }
+export interface Pino { id: string; nome: string; lat: number; lng: number; poly: [number, number][] | null; cor: string; fg: string; codigo?: string }
+/** de longe (zoom até este), a etiqueta do terreno cresce um pouco (pedido do Moises, 10/nov/2026) */
+const ZOOM_LONGE = 14;
 export interface Ganchos {
   pino(id: string): void;
   vazio(lat: number, lng: number): void;
@@ -113,6 +115,8 @@ export class Motor {
       }
       g.duplo(e.latLng.lat(), e.latLng.lng(), alvo);
     });
+    const zoomClasse = () => el.classList.toggle('z-longe', (M.getZoom() ?? 99) <= ZOOM_LONGE);
+    zoomClasse(); M.addListener('zoom_changed', zoomClasse);
     M.addListener('idle', () => { const c = M.getCenter(); guardarVista({ c: { lat: c.lat(), lng: c.lng() }, z: M.getZoom() }); g.movendo(false); });
     /* Street View: fecha no nosso X ou no Esc; o fechar do Google fica escondido para não haver dois */
     const sv = M.getStreetView();
@@ -146,9 +150,11 @@ export class Motor {
     const { AdvancedMarkerElement } = gLib.marker, { google } = window;
     for (const t of ps) {
       const d = document.createElement('div');
-      d.className = 'pin g' + (sel === t.id ? ' sel' : '');
+      /* etiqueta com o código do terreno e um ponto embaixo no lugar exato, para se destacar dos pinos do Google
+         (opção 2 da simulação, escolhida pelo Moises em 10/nov/2026) */
+      d.className = 'pin et' + (sel === t.id ? ' sel' : '');
       d.dataset.terreno = t.id;
-      d.innerHTML = `<span class="pin-b" style="background:${t.cor}"><b class="pin-d" style="background:${t.fg}"></b></span>`;
+      d.innerHTML = `<span class="et-b" style="background:${t.cor};color:${t.fg}">${esc(t.codigo || '•')}<i style="background:${t.cor}"></i></span><span class="et-c"></span>`;
       const mk = new AdvancedMarkerElement({ map: this.mapa, position: gLL(t.lat, t.lng), content: d, title: t.nome, gmpClickable: !this.modo, zIndex: sel === t.id ? 10 : 1 });
       mk.addEventListener('gmp-click', () => this.g.pino(t.id));
       d.addEventListener('pointerenter', () => this.g.passar?.(t.id));

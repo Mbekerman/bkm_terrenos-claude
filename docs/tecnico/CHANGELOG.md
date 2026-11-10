@@ -4,6 +4,7 @@ Toda mudança que entra na `develop` ganha uma linha aqui, no mesmo PR (ver [com
 
 ## 2026-11-10
 
+- #295 Marcador do terreno no mapa (pedido do Moises, 10/nov/2026): `Motor.desenhar` monta a etiqueta `.pin.et` (código em `.et-b` com ponteiro, ponto `.et-c` no lugar exato, deslocado meia bolinha para baixo para o ponto cair na coordenada); `Pino.codigo` vem de `pinoDe` em `pages/Mapa.tsx`; `zoom_changed` alterna `.z-longe` no contêiner com zoom ≤ `ZOOM_LONGE` (14), que sobe a fonte de 13 para 15 px (medidas em em). Mini-mapa e pino de edição seguem com `.pin-b`. Sem mudança no banco nem em permissão.
 - #293 Remendo dos acentos do GeoSanja (`novo/acentosSjc.ts`): o servidor devolve "?" no lugar das letras acentuadas; `gsjInfoBB` conserta as propriedades de texto e `gsjLinhas` conserta na leitura (consultas antigas). Lista de palavras levantada em 324 consultas às camadas do visitante (59 nomes com "?", todos resolvidos); fora da lista, "?o" final vira "ão".
 - #293 Topográfico de SJC com os lotes das quadras: `gerarTopografico` chama `quadrasSjc` (com a base de `lotesBase`, `TerrenoTopo.empresa`) e põe os lotes na camada `LOTES_PREFEITURA`, número do lote na folha e a inscrição em `TEXTO_LOTES` no DXF (duas layers novas em `topo/modelo.dxf`, HANDSEED 68).
 - #293 Comercial › Partes: `MatsParte` e `JanelaMat` em `ficha/Comercial.tsx` (etiquetas `.etq.m` sem x; SQLs da matrícula por `inscricao_partes.matricula_parte_id`, área = área do lote × fração do SQL × fração da matrícula, como `areaSqls`).
