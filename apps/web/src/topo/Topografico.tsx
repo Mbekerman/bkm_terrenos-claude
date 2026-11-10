@@ -1,7 +1,12 @@
-// Aba Infraestrutura, por enquanto só o quadro Relevo com o perfil e o botão Topográfico (proto_topo.js › topoBotao,
-// topoModal): a janela mostra o plano, o andamento passo a passo, a prévia e os botões para baixar o PDF e o ZIP.
-// Visita técnica e viabilidades técnicas em ficha/Infra.tsx; a medição automática do perfil entra depois.
-import { useState } from 'react';
+// Aba Infraestrutura: o quadro Relevo (proto_infra.js › tpSecao), com o perfil medido sozinho (topo/relevo.ts) e o botão
+// Topográfico (proto_topo.js › topoBotao, topoModal): a janela mostra o plano, o andamento passo a passo, a prévia e os
+// botões para baixar o PDF e o ZIP. Visita técnica e viabilidades técnicas em ficha/Infra.tsx.
+import { useState, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
+import { data as fd } from '../lib/format';
+import { GEO_BASE } from '../novo/geosampa';
+import { chavePoly, ehSP, medirEGravar, useEstRelevo } from './relevo';
 import { useSessao } from '../lib/sessao';
 import { Dialogo } from '../components/ui';
 import { Ic } from '../components/Moldura';
@@ -16,23 +21,67 @@ const FEITOS: Record<string, Resultado> = {};
 
 export default function AbaInfra({ f }: { f: Ficha }) {
   const [aberto, setAberto] = useState(false);
-  const sp = f.t.municipio_id === '3550308' || /^são paulo$/i.test(f.municipio ?? '');
-  const tp = f.topo;
+  const sp = ehSP(f.t.municipio_id, f.municipio);
   return (
     <>
       <Quadro aba="infra" id="relevo" primeiro titulo="Relevo"
         acoes={f.poly ? <button className="btn sm" onClick={() => setAberto(true)}><Ic n="doc" s={16} />Topográfico</button> : null}>
-        <div className="sec-b"><dl className="kvl">
-          <div className="kv"><dt>Perfil topográfico</dt><dd>{tp ? <span className={`tp-chip tp-${tp.perfil}`}>{tp.perfil === 'inclinado' && tp.decl != null ? `Inclinado · ${num(tp.decl, 1)}%` : TP_N[tp.perfil] ?? tp.perfil}</span> : <span className="ni">Não medido</span>}</dd></div>
-          {tp?.desnivel != null ? <div className="kv"><dt>Desnível</dt><dd>{num(tp.desnivel, 1)} m</dd></div> : null}
-        </dl>
-          <div className="hint" style={{ marginTop: 12 }}>
-            {sp ? 'Em São Paulo o topográfico usa o laser da prefeitura e entra numa próxima entrega.' : f.poly ? 'O botão Topográfico gera a planta preliminar com as curvas de nível do Google sobre a imagem de satélite.' : 'Desenhe a poligonal do terreno para gerar o topográfico.'}
-          </div>
-        </div>
+        <div className="sec-b"><Relevo f={f} sp={sp} /></div>
       </Quadro>
       <QuadrosInfra f={f} />
       {aberto ? <JanelaTopo f={f} sp={sp} fechar={() => setAberto(false)} /> : null}
+    </>
+  );
+}
+
+const TP_CFG0 = { plano: 5, inclinado: 10, leve: 13, mediano: 19, intenso: 24, agudo: 30, critico: 1.5 };
+/** limites da classificação da empresa (Configurações › Topografia), para a frase da regra; sem linha, os padrões */
+function useTopoCfg(empresa: string | null | undefined) {
+  return useQuery({
+    queryKey: ['topo-cfg', empresa], enabled: !!empresa, staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data } = await supabase.from('topografia_config').select('plano_ate_pct,inclinado_ate_pct,leve_ate_pct,mediano_ate_pct,intenso_ate_pct,agudo_ate_pct,critico_terra_m3m2').eq('empresa_id', empresa!).maybeSingle();
+      const d = data as Record<string, number | null> | null, v = (k: string, p: number) => (d?.[k] != null ? Number(d[k]) : p);
+      return { plano: v('plano_ate_pct', 5), inclinado: v('inclinado_ate_pct', 10), leve: v('leve_ate_pct', 13), mediano: v('mediano_ate_pct', 19), intenso: v('intenso_ate_pct', 24), agudo: v('agudo_ate_pct', 30), critico: v('critico_terra_m3m2', 1.5) };
+    },
+  });
+}
+
+/** quadro Relevo (proto_infra.js › tpSecao): a faixa com o perfil, os números da medição, a escala dos 7 perfis e a regra */
+function Relevo({ f, sp }: { f: Ficha; sp: boolean }) {
+  const { edita } = useSessao(), qc = useQueryClient(), est = useEstRelevo(f.id);
+  const t = f.t as Record<string, any>, C = useTopoCfg(t.empresa_id).data ?? TP_CFG0;
+  const medir = () => medirEGravar({ id: f.id, poly: f.poly, sp }, qc);
+  if (!f.poly) return <div className="muted">Sem poligonal. A classificação sai sozinha quando a poligonal for desenhada.</div>;
+  if (est.em) return <div className="tp-medindo"><span className="tp-gira" aria-hidden="true" />Medindo o relevo pelas cotas {sp ? 'do laser 2020 da prefeitura' : 'do Google'}...</div>;
+  const perfil = t.topo_perfil as string | null;
+  if (!perfil && est.erro) return (
+    <div className="banner warn"><Ic n="warn" /><div style={{ flex: 1 }}>Não deu para medir o relevo: {est.erro}
+      {!est.local && edita ? <> <button className="linkbtn" onClick={medir}>Tentar de novo</button></> : null}</div></div>
+  );
+  if (!perfil) return <div className="muted">{edita ? 'Ainda não medido.' : 'Ainda não medido. Quem edita a ficha mede ao abri-la.'}</div>;
+  const decl = t.topo_declividade_pct != null ? Number(t.topo_declividade_pct) : null, incl = t.topo_inclinacao_pct != null ? Number(t.topo_inclinacao_pct) : null;
+  const terra = t.topo_terra_m3m2 != null ? Number(t.topo_terra_m3m2) : null, desn = t.topo_desnivel_m != null ? Number(t.topo_desnivel_m) : null;
+  const laser = t.topo_fonte === 'laser';
+  const nome = perfil === 'inclinado' && decl != null ? `Inclinado · ${num(decl, 1)}%` : TP_N[perfil] ?? perfil;
+  const lin = (k: string, v: ReactNode, x?: ReactNode) => <div className="kv"><dt>{k}</dt><dd>{v}{x ? <span className="kv-2">{x}</span> : null}</dd></div>;
+  /* os pontos e as cotas mínima e máxima só existem na medição desta sessão (o banco guarda o desnível) */
+  const daSessao = est.chave === chavePoly(f.poly) && est.pontos != null;
+  return (
+    <>
+      <div className={`tp-faixa tp-${perfil}`}><div className="tp-n">{nome}</div>
+        <div className="tp-s">{!laser && perfil !== 'acidentado_critico' ? 'Acidentado não avaliado: com as cotas do Google o erro é de 1 a 4 m. Precisa do levantamento.' : `Medido em ${fd(String(t.topo_calculado_em ?? '').slice(0, 10))}`}</div></div>
+      <dl className="kvl tp-kv">
+        {decl != null ? lin('Declividade média', num(decl, 1) + '%', 'média da inclinação em cada ponto; decide o perfil') : null}
+        {incl != null ? lin('Inclinação do plano', num(incl, 1) + '%', 'plano que melhor se ajusta às cotas') : null}
+        {lin('Terra mexida até o plano', terra != null ? num(terra, 2) + ' m³/m²' : <span className="faint">não avaliada</span>, terra != null ? 'corte + aterro ÷ área' : '')}
+        {desn != null ? lin('Desnível', num(desn, 1) + ' m', daSessao ? `cotas de ${num(est.min!, 1)} a ${num(est.max!, 1)} m` : '') : null}
+        {lin('Cotas', laser ? 'Laser 2020 da Prefeitura de São Paulo' : 'Google (grade de 5 m)', daSessao ? num(est.pontos!) + ' pontos dentro da poligonal' : '')}
+      </dl>
+      <div className="tp-escala" role="list" aria-label="Perfis">{Object.entries(TP_N).map(([k, l]) => <span role="listitem" key={k} className={`tp-e tp-${k}${k === perfil ? ' on' : ''}`}>{l}</span>)}</div>
+      <p className="tp-regra">Pela declividade média: Plano até {num(C.plano)}%, Inclinado até {num(C.inclinado)}%, Leve até {num(C.leve)}%, Mediano até {num(C.mediano)}%, Intenso até {num(C.intenso)}%, Agudo até {num(C.agudo)}%; acima, ou com terra mexida acima de {num(C.critico, 2)} m³/m², Crítico. Triagem: não substitui o levantamento planialtimétrico.
+        {edita && (!sp || GEO_BASE) ? <> <button className="linkbtn" onClick={medir}>Medir de novo</button></> : null}</p>
+      {est.erro && est.chave === chavePoly(f.poly) ? <div className="banner warn" style={{ marginTop: 12 }}><Ic n="warn" /><div>A nova medição falhou: {est.erro}</div></div> : null}
     </>
   );
 }

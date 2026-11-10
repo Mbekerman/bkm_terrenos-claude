@@ -14,7 +14,7 @@ import JSZip from 'jszip';
 import { supabase } from '../lib/supabase';
 import { GMAPS_KEY } from '../lib/config';
 import { carregarGoogle } from '../mapa/google';
-import { geoAneis, geoAreaAnel, geoNoAnel, latLngUtm, utmLatLng } from '../novo/geosampa';
+import { GEO_BASE, geoAneis, geoAreaAnel, geoNoAnel, geoWfs, latLngUtm, utmLatLng } from '../novo/geosampa';
 import { GSJ_BASE, gsjInfoBB, gsjPoligono, gsjToken } from '../novo/geosanja';
 import { centroPoly, lotesUniao, type P } from '../novo/geo';
 import { quadrasSjc } from '../novo/lotesSjc';
@@ -22,7 +22,8 @@ import { baseLotes } from '../novo/lotesBase';
 import MODELO from './modelo.dxf?raw';
 
 export const TOPO_FOLGA = 30;
-const PASSO_G = 5, DPI = 160;
+export const PASSO_G = 5;
+const DPI = 160;
 const num = (v: number, d = 0) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const distSeg = (p: number[], a: number[], b: number[]) => { const dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy, t = L ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L)) : 0; return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy); };
 const ext = (pts: number[][]) => pts.reduce((b, p) => [Math.min(b[0], p[0]), Math.min(b[1], p[1]), Math.max(b[2], p[0]), Math.max(b[3], p[1])], [Infinity, Infinity, -Infinity, -Infinity]);
@@ -32,7 +33,7 @@ const geoMapa = (g: any, f: (p: number[]) => number[]) => g && { ...g, coordinat
 export interface TerrenoTopo { id: string; codigo: string; nome: string; municipio: string | null; uf: string | null; municipioId: string | null; poly: P[] | null; empresa?: string | null }
 export interface Resultado { pdf: Blob; zip: Blob; previa: string; nome: string; resumo: Resumo }
 export interface Resumo { contorno: string; cotas: string; imagem: string; curvas: string; area: number; min: number; max: number; dec: number | null; erros: string[]; escala: number; papel: string }
-type Passo = (t: string) => void;
+export type Passo = (t: string) => void;
 
 /* ---------- contorno: lotes da prefeitura (São José dos Campos) ou a poligonal desenhada ---------- */
 async function contorno(t: TerrenoTopo, base: string | null) {
@@ -57,7 +58,7 @@ async function contorno(t: TerrenoTopo, base: string | null) {
 }
 
 /* ---------- grade de 1 m sobre a área do levantamento; D = distância ao contorno (0 dentro) ---------- */
-function grade(P: number[][][], bb: number[], s: number) {
+export function grade(P: number[][][], bb: number[], s: number) {
   const nx = Math.ceil((bb[2] - bb[0]) / s) + 1, ny = Math.ceil((bb[3] - bb[1]) / s) + 1, D = new Float32Array(nx * ny), ed: number[][][] = [];
   P.forEach((r) => r.forEach((p, i) => ed.push([p, r[(i + 1) % r.length]])));
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
@@ -68,10 +69,10 @@ function grade(P: number[][][], bb: number[], s: number) {
   }
   return { nx, ny, x0: bb[0], y0: bb[1], s, D, Z: new Float32Array(nx * ny).fill(NaN) };
 }
-type Grade = ReturnType<typeof grade>;
+export type Grade = ReturnType<typeof grade>;
 
 /* ---------- cotas pelo Google: grade de 5 m (até 512 pontos por pedido) e Catmull-Rom para 1 m ---------- */
-async function cotasGoogle(G: Grade, l0: number, av: Passo) {
+export async function cotasGoogle(G: Grade, l0: number, av: Passo) {
   if (!(await carregarGoogle())) throw new Error('as cotas fora de São Paulo vêm do Google, que não respondeu (só funciona na versão publicada).');
   const { ElevationService } = await window.google.maps.importLibrary('elevation');
   const k = Math.round(PASSO_G / G.s), cx = Math.ceil((G.nx - 1) / k) + 3, cy = Math.ceil((G.ny - 1) / k) + 3, C = new Float32Array(cx * cy).fill(NaN), pts: [number, P][] = [];
@@ -106,6 +107,88 @@ async function cotasGoogle(G: Grade, l0: number, av: Passo) {
     if (z === z) G.Z[j * G.nx + i] = z;
   }
   return { n: pts.length, res: res || 9.5 };
+}
+
+/* ---------- cotas pelo laser 2020 da prefeitura (São Paulo; proto_topo.js › topoLaser): as folhas do MDT que tocam a área,
+   baixadas pelo repasse do Caddy (/geosampa/Download/File/125) e lidas com o laz-perf (npm) no navegador; média por célula,
+   buracos preenchidos pelos vizinhos e leve suavização ---------- */
+export const MDT = () => (GEO_BASE ? GEO_BASE.replace(/geoserver\/geoportal\/$/, '') + 'Download/File/125?key=cd_quadricula&value=' : null);
+/* leitor das folhas .laz: o laz-perf 0.0.7 do npm, empacotado com o app (sem CDN) e carregado só quando o laser é usado */
+let LZ: any = null;
+async function lazPerf() {
+  if (LZ) return LZ;
+  const [m, w] = await Promise.all([import('laz-perf/lib/web/laz-perf.js'), import('laz-perf/lib/web/laz-perf.wasm?url')]);
+  const criar = (m as any).default ?? (m as any).createLazPerf ?? m;
+  LZ = await criar({ locateFile: () => w.default });
+  return LZ;
+}
+/** tenta de novo o que depende da prefeitura (o GeoSampa às vezes demora ou cai): 3 vezes, com espera crescente */
+export async function tenta<T>(fn: () => Promise<T>, n = 3): Promise<T> {
+  for (let k = 1; ; k++) { try { return await fn(); } catch (e) { if (k >= n) throw e; await new Promise((ok) => setTimeout(ok, 1500 * k)); } }
+}
+/** bb em UTM 23S (EPSG:31983), como a grade */
+export async function cotasLaser(G: Grade, bb: number[], av: Passo) {
+  const base = MDT();
+  if (!base) throw new Error('o laser da prefeitura só responde na versão publicada.');
+  const fol = await tenta(() => geoWfs({ typeNames: 'geoportal:quadricula_folha_mdt_mds_2020', bbox: bb.join(',') + ',urn:ogc:def:crs:EPSG::31983' }));
+  if (!fol.length) throw new Error('nenhuma folha do laser cobre o terreno.');
+  const M = await lazPerf(), S = new Float64Array(G.nx * G.ny), N = new Uint16Array(G.nx * G.ny);
+  let k = 0;
+  for (const f of fol) {
+    const q = f.properties.cd_quadricula;
+    av(`folha ${++k} de ${fol.length} do laser (${q})`);
+    const buf = await tenta(async () => {
+      const r = await fetch(base + encodeURIComponent(q));
+      if (!r.ok) throw new Error('GeoSampa respondeu ' + r.status);
+      const z = await JSZip.loadAsync(await r.arrayBuffer()), arq = Object.values(z.files).find((x) => /\.laz$/i.test(x.name));
+      if (!arq) throw new Error('folha do laser sem o arquivo .laz');
+      return arq.async('uint8array');
+    });
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const sx = dv.getFloat64(131, true), sy = dv.getFloat64(139, true), sz = dv.getFloat64(147, true), ox = dv.getFloat64(155, true), oy = dv.getFloat64(163, true), oz = dv.getFloat64(171, true);
+    const p = M._malloc(buf.length); M.HEAPU8.set(buf, p);
+    const lz = new M.LASZip();
+    try {
+      lz.open(p, buf.length);
+      const n = lz.getCount(), len = lz.getPointLength(), pp = M._malloc(len);
+      try {
+        for (let i = 0; i < n; i++) {
+          lz.getPoint(pp);
+          const d = new DataView(M.HEAPU8.buffer, pp, len), x = d.getInt32(0, true) * sx + ox, y = d.getInt32(4, true) * sy + oy;
+          const gi = Math.round((x - G.x0) / G.s), gj = Math.round((y - G.y0) / G.s);
+          if (gi < 0 || gj < 0 || gi >= G.nx || gj >= G.ny) continue;
+          const c = gj * G.nx + gi; S[c] += d.getInt32(8, true) * sz + oz; N[c]++;
+        }
+      } finally { M._free(pp); }
+    } finally { lz.delete(); M._free(p); }
+  }
+  const Z = G.Z;
+  for (let c = 0; c < Z.length; c++) if (N[c]) Z[c] = S[c] / N[c];
+  const viz = (A: Float32Array, i: number, j: number, f?: number[]) => {
+    let s = 0, n = 0;
+    for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) {
+      const x = i + a, y = j + b;
+      if (x < 0 || y < 0 || x >= G.nx || y >= G.ny) continue;
+      const v = A[y * G.nx + x], w = f ? f[(b + 1) * 3 + a + 1] : 1;
+      if (v === v) { s += v * w; n += w; }
+    }
+    return n ? s / n : NaN;
+  };
+  for (let it = 0; it < 40; it++) {
+    const B = Z.slice(); let falta = 0;
+    for (let j = 0; j < G.ny; j++) for (let i = 0; i < G.nx; i++) {
+      const c = j * G.nx + i;
+      if (Z[c] === Z[c] || G.D[c] > TOPO_FOLGA + 2) continue;
+      const v = viz(B, i, j); if (v === v) Z[c] = v; else falta++;
+    }
+    if (!falta) break;
+  }
+  const ker = [1, 2, 1, 2, 4, 2, 1, 2, 1];
+  for (let it = 0; it < 4; it++) { const B = Z.slice(); for (let j = 0; j < G.ny; j++) for (let i = 0; i < G.nx; i++) { const c = j * G.nx + i; if (B[c] === B[c]) Z[c] = viz(B, i, j, ker); } }
+  let ok = 0, tot = 0;
+  for (let c = 0; c < Z.length; c++) if (G.D[c] <= TOPO_FOLGA) { tot++; if (Z[c] === Z[c]) ok++; }
+  if (ok < tot * 0.97) throw new Error('o laser não cobre a área toda.');
+  return { folhas: fol.map((f) => f.properties.cd_quadricula as string) };
 }
 
 /* ---------- curvas de nível: quadrados marchantes nível a nível, segmentos encadeados em linhas ---------- */

@@ -22,7 +22,6 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 |---|---|
 | **Estudos de massa** (pedido ao arquiteto, tipologias, CA, eficiência, estudo válido) | Só no protótipo |
 | **Viabilidades** (estudo de viabilidade estática, DRE, modelos, "Rentabilidade abaixo da mínima") | Só no protótipo. Por isso Unidades e VGV do Resumo ficam vazios. |
-| **Relevo medido sozinho** (o perfil topográfico em 7 perfis, pelas cotas da poligonal) | Só no protótipo. A aba Infraestrutura já tem a visita técnica, as viabilidades técnicas e o Topográfico fora de São Paulo; o "Perfil topográfico" fica vazio até a medição chegar. |
 | **Jornada** (as fases do terreno, "Abrir antes da hora") | Só no protótipo |
 | **Documentos** (envio com versão, pastas no Google Drive, planta e desenho do GeoSampa) | Só no protótipo; pastas no Drive no plano |
 

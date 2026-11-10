@@ -5,6 +5,7 @@ import { data as fd, milhoes, m2 } from '../lib/format';
 import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
 import { carregarFicha, completude, dispensados, type Falta, FONTE_AREA, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
+import { useEstRelevo, useRelevoAuto } from '../topo/relevo';
 import MiniMapa from './MiniMapa';
 import { fixa, geojson } from '../novo/geo';
 import { LapisMapa, verificarEndereco } from '../novo/TrocarEndereco';
@@ -308,6 +309,7 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
   );
   const dois = (a: ReactNode, b: ReactNode) => <span>{a}{b ? <span className="kv-2">{b}</span> : null}</span>;
   const [cor, fg] = corPino(f);
+  const rel = useEstRelevo(f.id);
   const end = [f.logradouro && f.logradouro + (f.numero ? ', ' + f.numero : ''), f.bairro].filter(Boolean).join(' · ');
   const mun = [[f.municipio, f.uf].filter(Boolean).join(' · '), f.zona && 'Zona ' + (ZONA[f.zona] ?? f.zona)].filter(Boolean).join(' · ');
   const e = f.estacao;
@@ -317,7 +319,7 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
   const tp = f.topo
     ? <span id="rs-topo"><span className={`tp-chip tp-${f.topo.perfil}`}>{f.topo.perfil === 'inclinado' ? `Inclinado · ${num(f.topo.decl, 1)}%` : TP_N[f.topo.perfil] ?? f.topo.perfil}</span>
       {f.topo.desnivel != null && <span className="kv-2">desnível {num(f.topo.desnivel, 1)} m</span>}</span>
-    : '';
+    : rel.em ? <span id="rs-topo"><span className="faint">medindo...</span></span> : '';
   return (
     <div className="geral">
       <div className="geral-c">
@@ -450,6 +452,8 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
 }) {
   const [pn] = usePN();
   const navegar = useNavigate();
+  /* relevo medido sozinho ao abrir a ficha, em qualquer aba (topo/relevo.ts) */
+  useRelevoAuto(f);
   const c = completude(f);
   const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
   const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;

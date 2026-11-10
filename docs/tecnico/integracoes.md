@@ -206,7 +206,7 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 - Protótipo: `proto_topo.js` (`TOPO_MDT`, `:28`: `/geosampa/Download/File/125?key=cd_quadricula&value=<folha>`; as folhas que cobrem a área vêm da camada `geoportal:quadricula_folha_mdt_mds_2020`). As folhas são lidas no navegador pelo **laz-perf 0.0.7** (`https://cdn.jsdelivr.net/npm/laz-perf@0.0.7/lib/web/`, ou a meta `lazperf-url`).
 - Ferramenta: `tools/topografia/medir.py` (seção 15).
 - Banco: `app.topografia_config`, `app.classificar_topografia`, `app.registrar_topografia`.
-- React: **ainda não** (relevo e topográfico ficaram para depois na primeira versão).
+- React: o relevo medido sozinho (`topo/relevo.ts` › `medirRelevo`, `cotasLaser` em `topo/gerar.ts`, desde 10/nov/2026). As folhas são lidas pelo **laz-perf 0.0.7 do npm** (versão fixa no `package.json`), empacotado com o app e carregado só quando o laser é usado (o `.wasm` sai em `/assets`): o React não carrega script de CDN. O topográfico de São Paulo ainda não.
 
 **Custo.** Nenhum. **Limites:** cada folha tem vários MB; terreno grande baixa várias.
 
