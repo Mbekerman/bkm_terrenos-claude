@@ -9,6 +9,7 @@ import { Ic } from '../components/Moldura';
 import { m2 } from '../lib/format';
 import { Adorno, metros } from '../lib/mascara';
 import { CAMADA, geoLinhas, geoVals, type LinhaToca } from '../lib/camadas';
+import { gsjLinhas } from '../novo/geosanja';
 import { consultarArea } from '../novo/consulta';
 import { Busca } from '../lib/buscando';
 import type { Ficha, R } from './dados';
@@ -362,8 +363,8 @@ function Panorama({ d, merc, sjc, lotes }: { d: D; merc: R[]; sjc: boolean; lote
   }
   const n = lotes.filter(Boolean).length;
   /* as camadas da prefeitura de todos os lotes consultados: o que toca algum lote, junto, sem repetir */
-  const gs = lotes.map((i) => (i ? d.ultLote.get(i) : undefined)).filter((g): g is R => g?.base === 'geosampa');
-  const jc = juntarCamadas(gs), junto = geoLinhas(jc.camadas, jc.erros);
+  const gs = lotes.map((i) => (i ? d.ultLote.get(i) : undefined)).filter((g): g is R => g?.base === 'geosampa' || g?.base === 'geosanja');
+  const jc = juntarCamadas(gs), junto = sjc ? gsjLinhas(jc.camadas, jc.erros) : geoLinhas(jc.camadas, jc.erros);
   const quem = gs.length === 1 && n === 1 ? 'O lote não toca' : gs.length === n ? `Nenhum dos ${n} lotes toca` : `Nenhum dos ${gs.length} lotes consultados toca`;
   if (!ordem.length && !gs.length) return null;
   return (
@@ -397,8 +398,9 @@ function Toca({ linhas, titulo, nada }: { linhas: LinhaToca[]; titulo: ReactNode
 function CamadasLote({ d, ins }: { d: D; ins: string }) {
   const g = d.ultLote.get(ins);
   if (!g) return <div className="hint lz-cam">Sem consulta à prefeitura neste lote (tombamento, ZEIS, mananciais e outras restrições).</div>;
-  if (g.base !== 'geosampa') return null;
-  return <div className="lz-cam"><Toca linhas={geoLinhas(g.camadas || {}, g.camadas_com_erro || [])}
+  if (g.base !== 'geosampa' && g.base !== 'geosanja') return null;
+  const linhas = (g.base === 'geosanja' ? gsjLinhas : geoLinhas)(g.camadas || {}, g.camadas_com_erro || []);
+  return <div className="lz-cam"><Toca linhas={linhas}
     titulo={<>Demais parâmetros e restrições <span className="faint">· {d.base?.nome ?? 'consulta'} de {fdh(g.consultado_em)}</span></>} /></div>;
 }
 

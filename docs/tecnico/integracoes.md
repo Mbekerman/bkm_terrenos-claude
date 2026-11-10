@@ -14,14 +14,14 @@ Retrato de **8 de novembro de 2026**. "React" é o sistema real (`apps/web`); "p
 | Places API (New) | busca de endereço, lugares do mapa, pontos de interesse do entorno | sim | sim | `GOOGLE_MAPS_KEY` |
 | Routes API (matriz a pé) e Distance Matrix | distância a pé até os pontos de interesse | sim | sim (e rota no mapa) | `GOOGLE_MAPS_KEY` |
 | Geocoding | endereço a partir do ponto (Novo terreno, troca de endereço) | sim | sim | `GOOGLE_MAPS_KEY` |
-| Elevation | cotas fora de São Paulo (relevo, topográfico) | não | sim | `GOOGLE_MAPS_KEY` |
+| Elevation | cotas fora de São Paulo (relevo, topográfico) | sim (topográfico) | sim | `GOOGLE_MAPS_KEY` |
 | Street View | ver a rua | sim | sim | `GOOGLE_MAPS_KEY` |
-| Maps Static API | imagem de satélite por baixo do topográfico fora de São Paulo (sem ela, Esri) | não | sim | `GOOGLE_MAPS_KEY` |
+| Maps Static API | imagem por baixo do topográfico fora de São Paulo (no sistema real, satélite com nomes de rua, sem reserva; no protótipo, sem ela, Esri) | sim | sim | `GOOGLE_MAPS_KEY` |
 | People API | foto do Google da pessoa logada | sim | não | token OAuth da própria pessoa |
 | Google OAuth (login) | entrar com a conta @bkm.com.br | sim | não | app OAuth "Interno" no GCP, configurado no Supabase |
 | GeoSampa (Prefeitura de SP) | lote pelo SQL, camadas urbanísticas, mapa de lotes | sim | sim | nenhuma (repasse do Caddy `/geosampa`) |
 | Laser 2020 / MDT (GeoSampa) | cotas do terreno em São Paulo | não | sim | nenhuma (repasse `/geosampa/Download/File/125`) |
-| GeoSanja (Prefeitura de SJC) | lote pela inscrição, camadas | não | sim | token de visitante (repasse `/geosanja`) |
+| GeoSanja (Prefeitura de SJC) | lote pela inscrição, camadas | sim | sim | token de visitante (repasse `/geosanja`) |
 | IBGE (Censo 2022) | setores censitários: renda, densidade, perfil | sim (arquivos) | sim (arquivos) | nenhuma (FTP público, só na geração) |
 | Monitor de mercado (Órulo) | concorrência no mapa e no entorno | sim | sim | chave publicável do Supabase |
 | Supabase | banco, login, Realtime | sim | não | `SUPABASE_URL`, `SUPABASE_KEY` (publicável) |
@@ -226,7 +226,7 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 | `/geosanja/v1/proxy` | GET | repasse de camadas (WMS) |
 | `/geosanja/v1/localizar` | POST | busca pela inscrição |
 
-**Onde.** Só no protótipo: `proto_geosanja.js` (`GSJ_BASE`, `:13`; `gsjToken`, `:46`). O React **não** tem GeoSanja ainda: a inscrição de SJC entra com o rótulo e a máscara da cidade (`app.bases_cadastrais`), sem busca.
+**Onde.** No React, `apps/web/src/novo/geosanja.ts` (porte de `proto_geosanja.js`): `GSJ_BASE` (meta `geosanja-url`, senão `origem/geosanja/v1/`; nulo em `localhost`), `gsjLote` (token de visitante, pede outro no 401), `GSJ_CAMADAS` e `consultarLoteSjc`, que grava por `app.registrar_consulta_lote` com `p_lote = {inscricao}`, a poligonal em graus, as camadas pela chave `camada:n` e as zonas com a área no lote (amostragem em grade, `geoAreaZonas` de `novo/consulta.ts`) e a macrozona (MC, ME, MOC) pela camada `macrozoneamentoUrbano`. Roda sozinha ao incluir a inscrição (`consultarTerreno(..., base)`, que em SJC não faz a consulta pela poligonal nem a fila do IPTU) e no "Buscar no GeoSanja" da etiqueta; em seguida a poligonal do terreno é refeita pela soma dos lotes (`refazerPoligonal` em `ficha/Partes.tsx`). `gsjLinhas` monta a lista "Demais parâmetros e restrições" da aba Terreno. Planta (PDF) e desenho (DXF) ficam para a aba Documentos. Protótipo: `proto_geosanja.js`.
 
 **Custo.** Nenhum. **Limites:** API interna, pode mudar sem aviso (CLAUDE.md). O token de visitante expira; o código pede outro.
 

@@ -861,7 +861,7 @@ export default function Mapa() {
         onClick={() => foco(t)} onPointerEnter={() => passar(t.id)} onPointerLeave={() => passar(null)} onKeyDown={(ev) => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) foco(t); }}>
         <span className="pin-mini mp-cod" style={{ background: cs[0], color: cs[1] }} title={`${t.nome} · ${subNome(fases, t)}`}>{t.codigo}</span>
         <div className="mp-it-t"><div className="t1">{t.nome}</div><div className="t2">{ad ? `${num(ad)} m²` : 'Área não informada'} · {nm}{t.lat == null && <> · <span style={{ color: 'var(--terracota)' }}>sem localização</span></>}</div>
-          {geoCons?.terreno === t.id && <span className="chip blue lg-cons">Consultando o GeoSampa: {geoCons.feitos} de {geoCons.total}</span>}</div>
+          {geoCons?.terreno === t.id && <span className="chip blue lg-cons">Consultando o {geoCons.nome ?? 'GeoSampa'}: {geoCons.feitos} de {geoCons.total}</span>}</div>
         <button className="iconbtn mp-lupa" title="Ver ficha" aria-label={`Ver ficha de ${t.nome}`} onClick={(ev) => { ev.stopPropagation(); abrirGav(t.id); }}><Bi n="busca" s={22} /></button>
         {cartao && <button className="iconbtn mp-lupa mp-fx" title="Fechar" aria-label="Fechar" onClick={(ev) => { ev.stopPropagation(); selecionar(null); }}><Ic n="close" s={22} /></button>}
         {s && t.lat != null && motorPronto && (

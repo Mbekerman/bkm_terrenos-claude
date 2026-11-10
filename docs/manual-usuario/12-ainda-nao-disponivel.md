@@ -22,7 +22,7 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 |---|---|
 | **Estudos de massa** (pedido ao arquiteto, tipologias, CA, eficiência, estudo válido) | Só no protótipo |
 | **Viabilidades** (estudo de viabilidade estática, DRE, modelos, "Rentabilidade abaixo da mínima") | Só no protótipo. Por isso Unidades e VGV do Resumo ficam vazios. |
-| **Infraestrutura** (relevo em 7 perfis, visita técnica, viabilidades técnicas de energia, água, esgoto e gás) | Só no protótipo. Por isso "Perfil topográfico" fica vazio; a "Visita técnica" fica fora da completude até a aba chegar. |
+| **Infraestrutura** (relevo em 7 perfis medido sozinho, visita técnica, viabilidades técnicas de energia, água, esgoto e gás) | Só no protótipo; a aba já tem o quadro Relevo com o Topográfico fora de São Paulo. Por isso "Perfil topográfico" fica vazio; a "Visita técnica" fica fora da completude até a aba chegar. |
 | **Jornada** (as fases do terreno, "Abrir antes da hora") | Só no protótipo |
 | **Documentos** (envio com versão, pastas no Google Drive, planta e desenho do GeoSampa) | Só no protótipo; pastas no Drive no plano |
 
@@ -34,8 +34,7 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 | **"O que esta etapa pede"** no quadro de avanço (perguntas da Jornada) | Só no protótipo |
 | **Olhinho e lixeira** nos Logs (prévia sem a alteração e desfazer uma alteração antiga) | Só no protótipo. Hoje, use o Ctrl+Z para o que acabou de fazer. |
 | Quadro de **negociação por parte** (cada parte com sua etapa e botão de avançar) | Só no protótipo |
-| **"Adicionar ponto"** de interesse marcado no mapa | Só no protótipo |
-| **Topográfico preliminar** (PDF e DXF com curvas de nível) | Só no protótipo |
+| **Topográfico preliminar em São Paulo** (cotas do laser da prefeitura, quadra inteira sem SQL) e guardar o PDF e o DXF em Documentos | Só no protótipo. Fora de São Paulo já está na aba Infraestrutura. |
 | **Busca de cima por matrícula e SQL** | O texto do campo promete, mas hoje não busca. A fazer. |
 | **Aviso por e-mail** e preferências de e-mail no menu do avatar | Planejado (envio pela conta bkm@) |
 | **WhatsApp** | Planejado, depois do e-mail |

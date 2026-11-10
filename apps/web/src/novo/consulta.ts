@@ -13,6 +13,7 @@ import { medirFrentes } from './frentesCalc';
 import { filaIptu } from '../lib/iptu';
 import { classificarFrentes, frentesSemSaida } from './viasCalc';
 import { buscando } from '../lib/buscando';
+import { GSJ_BASE, consultarLoteSjc } from './geosanja';
 
 /** [camada ("camada@raio" = a mesma com outro raio), geometria, raio em metros (0 = só o que toca), atributos guardados (todos se vazio)] */
 const GEO_CAMADAS: [string, string, number?, string[]?][] = [
@@ -45,10 +46,10 @@ const GEO_CAMADAS: [string, string, number?, string[]?][] = [
 ];
 
 /* ---------- geometria em UTM ---------- */
-const geoDentro = (pt: number[], g: any) => (g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [])
+export const geoDentro = (pt: number[], g: any) => (g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [])
   .some((poly: number[][][]) => geoNoAnel(pt, poly[0]) && !poly.slice(1).some((h) => geoNoAnel(pt, h)));
 /** área de cada zona dentro do lote, por amostragem em grade (~2.500 pontos): erro abaixo de 1% */
-function geoAreaZonas(lote: any, feicoes: any[], cod: (p: any) => string) {
+export function geoAreaZonas(lote: any, feicoes: any[], cod: (p: any) => string) {
   const r = geoAneis(lote)[0], xs = r.map((p) => p[0]), ys = r.map((p) => p[1]), x0 = Math.min(...xs), y0 = Math.min(...ys), x1 = Math.max(...xs), y1 = Math.max(...ys);
   const passo = Math.max(0.2, Math.sqrt(((x1 - x0) * (y1 - y0)) / 2500)), area = geoAreaAnel(r), cont: Record<string, number> = {};
   let n = 0;
@@ -232,7 +233,7 @@ async function zonaBuscar(terrenoId: string, poly: P[] | null, lat: number | nul
 }
 
 /* ---------- andamento ("Consultando o GeoSampa: N de M"), lido pela lista do mapa ---------- */
-export interface Andamento { terreno: string; feitos: number; total: number }
+export interface Andamento { terreno: string; feitos: number; total: number; nome?: string }
 let A: Andamento | null = null;
 const ouvintes = new Set<() => void>();
 const mudar = (a: Andamento | null) => { A = a; ouvintes.forEach((f) => f()); };
@@ -243,29 +244,40 @@ const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const gravado = (id: string) => window.dispatchEvent(new CustomEvent('terreno-gravado', { detail: id }));
 
 /** depois do cadastro: cada SQL (com uma nova tentativa) e depois a poligonal; avisa no fim */
-export async function consultarTerreno(terrenoId: string, poly: P[] | null, ins: { id: string; sql: string }[], aviso: (m: string, erro?: boolean) => void) {
+export async function consultarTerreno(terrenoId: string, poly: P[] | null, ins: { id: string; sql: string }[], aviso: (m: string, erro?: boolean) => void, base = 'geosampa') {
+  /* São José dos Campos: a mesma consulta pelo GeoSanja, sem IPTU nem consulta pela poligonal (o GeoSanja só responde por lote) */
+  if (base === 'geosanja') {
+    if (!GSJ_BASE || A || !ins.length) return;
+    return buscando(terrenoId, 'geosampa', consultarTudo(terrenoId, null, ins, aviso, true));
+  }
   /* o IPTU de cada SQL vem da Prefeitura em segundo plano, pelo serviço do IPTU (pedido do Moises, 9/nov/2026) */
   if (GEO_BASE && ins.length) void filaIptu(ins.map((i) => i.id));
   if (!GEO_BASE || A || !ins.length) return;
   return buscando(terrenoId, 'geosampa', consultarTudo(terrenoId, poly, ins, aviso));
 }
-async function consultarTudo(terrenoId: string, poly: P[] | null, ins: { id: string; sql: string }[], aviso: (m: string, erro?: boolean) => void) {
-  mudar({ terreno: terrenoId, feitos: 0, total: ins.length });
+async function consultarTudo(terrenoId: string, poly: P[] | null, ins: { id: string; sql: string }[], aviso: (m: string, erro?: boolean) => void, sjc = false) {
+  const nome = sjc ? 'GeoSanja' : 'GeoSampa';
+  mudar({ terreno: terrenoId, feitos: 0, total: ins.length, nome });
   let falhas = 0, areaOk = true;
   try {
     for (const i of ins) {
       let ok = false;
       for (let t = 0; t < 2 && !ok; t++) {
         if (t) await espera(1500);
-        try { ok = await consultarLote(i.id, i.sql, true); } catch (e) { console.warn('GeoSampa', i.sql, e); }
+        try { ok = await (sjc ? consultarLoteSjc(i.id, i.sql, true) : consultarLote(i.id, i.sql, true)); } catch (e) { console.warn(sjc ? 'GeoSanja' : 'GeoSampa', i.sql, e); }
       }
       if (!ok) falhas++;
       else gravado(terrenoId);
-      mudar({ terreno: terrenoId, feitos: A!.feitos + 1, total: ins.length });
+      mudar({ terreno: terrenoId, feitos: A!.feitos + 1, total: ins.length, nome });
     }
     if (poly && poly.length >= 3) { try { await consultarArea(terrenoId, poly, true); gravado(terrenoId); } catch (e) { areaOk = false; console.warn('GeoSampa área', e); } }
   } finally { mudar(null); }
   const n = ins.length;
+  if (sjc) {
+    if (falhas) aviso(`GeoSanja consultado; ${falhas} inscriç${falhas > 1 ? 'ões não responderam' : 'ão não respondeu'}. Use "Buscar no GeoSanja" na inscrição.`, true);
+    else aviso(`GeoSanja consultado ${n > 1 ? `nas ${n} inscrições` : 'na inscrição'}: zonas e restrições preenchidas.`);
+    return;
+  }
   if (falhas) aviso(`GeoSampa consultado; ${falhas} SQL${falhas > 1 ? 's' : ''} não respondeu. Use "Buscar no GeoSampa" no SQL.`, true);
   else if (!areaOk) aviso('GeoSampa consultado nos SQLs, mas a consulta pela poligonal falhou. Tente de novo na ficha.', true);
   else aviso(`GeoSampa consultado ${n > 1 ? `nos ${n} SQLs` : 'no SQL'} e pela poligonal: parâmetros e restrições preenchidos.`);

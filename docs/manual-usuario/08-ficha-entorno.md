@@ -27,7 +27,6 @@ Quatro quadros: **Pontos de interesse**, **Renda e população do entorno**, **P
 **O que não dá:**
 
 - Buscar de novo à mão: a busca é refeita só quando o terreno muda de lugar.
-- **Ainda não disponível:** "Adicionar ponto" (marcar um ponto próprio no mapa).
 
 ## Renda e população do entorno
 
