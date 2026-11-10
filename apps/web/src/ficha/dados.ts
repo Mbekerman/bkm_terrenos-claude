@@ -180,7 +180,8 @@ async function carregarSeparado(empresa: string, codigo: string): Promise<Ficha 
     ? await supabase.from('processo_transicoes').select('processo_id,de_etapa,para_etapa,em').in('processo_id', pids).order('em')
     : { data: [], error: null };
   if (trs.error) throw trs.error;
-  const visita = new Set((itI.data as R[]).filter((i) => !i.viabilidade_tecnica).map((i) => i.codigo));
+  /* os 8 itens ativos da visita técnica (energia, água, esgoto e gás também, como no protótipo) */
+  const visita = new Set((itI.data as R[]).filter((i) => i.ativo !== false).map((i) => i.codigo));
   const c0 = (cor.data as R[])[0], c = (c0?.corretores ?? null) as R | null;
   return montar({
     x, tr: t.data as R, ru: u.data as R | null, o1: (of1.data as R[])[0], qOfertas: of1.count ?? 0,
@@ -199,7 +200,7 @@ async function carregarSeparado(empresa: string, codigo: string): Promise<Ficha 
 export const ehSP = (f: { municipio?: string | null; uf?: string | null }) => f.municipio === 'São Paulo' && f.uf === 'SP';
 export type Falta = [string, string, string?, string?];
 /** a aba Infraestrutura já foi portada? enquanto não, a visita técnica não entra na completude */
-export const INFRA_PORTADA = false;
+export const INFRA_PORTADA = true;
 /** os itens que quem edita descartou neste terreno (terrenos.completude_dispensada): saem da lista e da conta */
 export const dispensados = (f: Pick<Ficha, 't'>): string[] => ((f.t as R | undefined)?.completude_dispensada as string[] | undefined) ?? [];
 /** rótulo de cada item, para o log ("Descartado do Falta preencher: Testada") */
@@ -219,9 +220,8 @@ export function completude(f: Ficha): Completude {
     ['inscricao', f.qInsc > 0, 'Inscrição e IPTU', 'terreno', 'lotes', 'es-sql'],
     ['proprietario', f.temProprietario, 'Proprietário', 'terreno', 'partes-cad', 'pp-ed'],
     ['zoneamento', !!f.zonas, 'Zoneamento', 'terreno', 'analise', 'an-l'],
-    /* Visita técnica fica de fora enquanto a aba Infraestrutura não existe no sistema real (só no protótipo):
-       contá-la deixava a ficha presa abaixo de 100% sem ter onde preencher. Volta com o porte da aba (INFRA_PORTADA). */
-    ...(INFRA_PORTADA ? [['visita', f.infraNV === 0, 'Visita técnica', 'infra'] as [string, boolean, ...Falta]] : []),
+    /* Visita técnica: os 8 itens verificados (Sim, Parcial, Não ou Não se aplica), na aba Infraestrutura (ficha/Infra.tsx) */
+    ...(INFRA_PORTADA ? [['visita', f.infraNV === 0, 'Visita técnica', 'infra', 'visita'] as [string, boolean, ...Falta]] : []),
     ['valor', !!f.valorPedido, 'Valor pedido', 'comercial', 'cond', 'valor'],
     ['temperatura', !!f.temp, 'Temperatura', 'geral', 'temp'],
   ];

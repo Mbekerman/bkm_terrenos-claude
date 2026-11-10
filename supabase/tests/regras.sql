@@ -190,6 +190,8 @@ select pg_temp.ok((select disponibilidade from app.v_terreno_infraestrutura wher
 insert into app.terreno_infraestrutura (terreno_id, item, empresa_id, disponibilidade, data_verificacao, observacoes) values (:'t1', 'calcada', :'emp', 'parcial', current_date, 'Só na frente da Cupecê');
 select pg_temp.ok((select disponibilidade from app.v_terreno_infraestrutura where terreno_id = :'t1' and item = 'calcada') = 'parcial', 'visita técnica aceita Parcial (e Não se aplica)');
 select pg_temp.ok(not exists (select 1 from app.v_terreno_infraestrutura where item = 'fibra'), 'telefonia saiu da visita técnica');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terreno_infraestrutura' and depois->>'terreno_id' = :'t1') = 2, 'cada item da visita técnica vai para os logs');
+select pg_temp.ok((app.ficha_dados(:'emp', (select codigo from app.terrenos where id = :'t1')) ->> 'infra_nv')::int = 6, 'a ficha conta os 8 itens da visita (água verificada conta)');
 \echo '# viabilidades técnicas'
 select pg_temp.ok((select string_agg(servico, ',' order by ordem) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1') = 'energia,agua,esgoto,gas'
   and not exists (select 1 from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and situacao <> 'nao_solicitada'), 'energia, água, esgoto e gás, todas não solicitadas');
