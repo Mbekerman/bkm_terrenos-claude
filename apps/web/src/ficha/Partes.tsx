@@ -1143,8 +1143,8 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
             <td className="muted vv-f">{vv.fonte || '—'}</td></tr>
         </tbody></table></div>
       ) : <div className="muted">Sem IPTU lançado.</div>}
-      {edita && !sp && <details className="details"><summary>{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</summary><FormIptu f={f} x={x} vv={vv} /></details>}
-      {sjc && <div className="hint">O GeoSanja traz só a poligonal do lote, a zona e as restrições. A área cadastral, o endereço, a testada, o valor venal, o IPTU e o cartório não vêm de lá: digite-os aqui e na aba Terreno.</div>}
+      {edita && !sp && <details className="details" open={!vv}><summary>{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</summary><FormIptu f={f} x={x} vv={vv} /></details>}
+      {sjc && <div className="hint">O GeoSanja traz só a poligonal do lote, a zona e as restrições. A área cadastral, o endereço, a testada, o valor venal e o IPTU não vêm de lá: digite-os aqui e na aba Terreno.</div>}
       {sp && <div className="hint">Em São Paulo, o valor venal e o IPTU vêm sozinhos da Prefeitura e não se digitam (seção IPTU da aba Terreno).</div>}
     </Dialogo>
   );
