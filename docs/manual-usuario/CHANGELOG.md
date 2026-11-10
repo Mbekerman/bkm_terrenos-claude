@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
+- **Terrenos próximos agrupados** (página Mapa): etiquetas que se cobririam viram uma só, a do terreno mais adiantado no funil, com "+N"; o clique abre as do grupo em leque. Aproximando, elas se separam sozinhas. Ver [Mapa](02-mapa.md). (#304)
 - **Área total na proposta** (aba Comercial, Nova proposta): ao marcar as partes da proposta, aparece embaixo a soma das áreas delas, quantas partes de quantas e o valor por m². Ver [Comercial](06-ficha-comercial.md). (#303)
 - **Produção atualizada** (endereço de produção): o protótipo de produção passa a ser o mesmo do ambiente de desenvolvimento. O sistema real continua só no ambiente de desenvolvimento até ser ligado em produção. (#301)
 - **Arrastar o mapa enquanto arrasta um ponto** (página Mapa e mini-mapa da ficha): segurando um ponto ou pino com o botão esquerdo, aperte e segure a roda do mouse para arrastar o mapa; soltando a roda, volta a mover o ponto. Ver [Mapa](02-mapa.md#editar-a-poligonal-de-um-terreno). (#300)
