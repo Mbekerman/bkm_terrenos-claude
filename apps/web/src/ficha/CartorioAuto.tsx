@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSessao } from '../lib/sessao';
 import { GEO_BASE } from '../novo/geosampa';
+import { GSJ_BASE } from '../novo/geosanja';
 import { cartorioPelaArea, zonaPelaArea } from '../novo/consulta';
 import type { Ficha } from './dados';
 
@@ -24,21 +25,24 @@ export default function CartorioAuto({ f }: { f: Ficha }) {
   }, [f.id, qc]);
   const loc = f.poly && f.poly.length >= 3 ? JSON.stringify(f.poly) : `${f.lat}|${f.lng}`;
   const sp = !f.municipio || /^São Paulo$/i.test(f.municipio);
+  /* São José dos Campos pelo GeoSanja, pelo pino (10/nov/2026) */
+  const sjc = !!f.municipio && /^São José dos Campos$/i.test(f.municipio);
+  const base = sjc ? GSJ_BASE : sp ? GEO_BASE : null;
   useEffect(() => {
-    if (!GEO_BASE || !edita || !sp || f.t.cartorio_origem === 'digitado' || (f.lat == null && !f.poly)) return;
+    if (!base || !edita || f.t.cartorio_origem === 'digitado' || (f.lat == null && !f.poly)) return;
     const k = f.id + '|' + loc;
     if (TENT.has(k)) return;
     TENT.add(k);
-    cartorioPelaArea(f.id, f.poly, f.lat, f.lng).catch((e) => console.warn('cartório pelo GeoSampa', e));
-  }, [f.id, loc, sp, edita, f.t.cartorio_origem, f.lat, f.lng, f.poly]);
+    cartorioPelaArea(f.id, f.poly, f.lat, f.lng, sjc).catch((e) => console.warn('cartório pelo GeoSampa', e));
+  }, [f.id, loc, base, sjc, edita, f.t.cartorio_origem, f.lat, f.lng, f.poly]);
   /* zona escolhida antes de existir a origem (zona_origem nula) conta como digitada */
   const zonaLivre = !f.t.zona || f.t.zona_origem === 'prefeitura';
   useEffect(() => {
-    if (!GEO_BASE || !edita || !sp || !zonaLivre || (f.lat == null && !f.poly)) return;
+    if (!base || !edita || !zonaLivre || (f.lat == null && !f.poly)) return;
     const k = f.id + '|' + loc;
     if (TENT_Z.has(k)) return;
     TENT_Z.add(k);
-    zonaPelaArea(f.id, f.poly, f.lat, f.lng).catch((e) => console.warn('zona pelo GeoSampa', e));
-  }, [f.id, loc, sp, edita, zonaLivre, f.lat, f.lng, f.poly]);
+    zonaPelaArea(f.id, f.poly, f.lat, f.lng, sjc).catch((e) => console.warn('zona pelo GeoSampa', e));
+  }, [f.id, loc, base, sjc, edita, zonaLivre, f.lat, f.lng, f.poly]);
   return null;
 }

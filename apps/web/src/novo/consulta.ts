@@ -13,7 +13,7 @@ import { medirFrentes } from './frentesCalc';
 import { filaIptu } from '../lib/iptu';
 import { classificarFrentes, frentesSemSaida } from './viasCalc';
 import { buscando } from '../lib/buscando';
-import { GSJ_BASE, consultarLoteSjc } from './geosanja';
+import { GSJ_BASE, cartorioSjc, consultarLoteSjc, zonaSjc } from './geosanja';
 
 /** [camada ("camada@raio" = a mesma com outro raio), geometria, raio em metros (0 = só o que toca), atributos guardados (todos se vazio)] */
 const GEO_CAMADAS: [string, string, number?, string[]?][] = [
@@ -180,10 +180,19 @@ export const avisarConsultado = (terrenoId: string) => window.dispatchEvent(new 
 /** Cartório da circunscrição (São Paulo), como o protótipo (proto_geosampa.js, geoCartorio): pela poligonal, a circunscrição
     que cobre a maior parte dela; sem poligonal, pelo pino. Grava por app.cartorio_da_prefeitura, que só preenche o vazio ou
     troca o que veio do GeoSampa, nunca o digitado. Devolve o cartório achado ("7º CRI") ou null. */
-export const cartorioPelaArea = (terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null) =>
-  buscando(terrenoId, 'cartorio', cartorioBuscar(terrenoId, poly, lat, lng));
-async function cartorioBuscar(terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null) {
+export const cartorioPelaArea = (terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null, sjc = false) =>
+  buscando(terrenoId, 'cartorio', cartorioBuscar(terrenoId, poly, lat, lng, sjc));
+async function cartorioBuscar(terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null, sjc = false) {
   let c: string | null | undefined = null;
+  /* São José dos Campos: pelo pino, no GeoSanja (o pino fica dentro da poligonal) */
+  if (sjc) {
+    const v = lat != null && lng != null ? await cartorioSjc(lat, lng) : null;
+    if (!v) return null;
+    const { data, error } = await supabase.rpc('cartorio_da_prefeitura', { p_terreno: terrenoId, p_cartorio: v });
+    if (error) throw error;
+    if (data) avisarConsultado(terrenoId);
+    return v;
+  }
   if (poly && poly.length >= 3) {
     const anel = poly.map(([la, ln]) => latLngUtm(la, ln)); anel.push(anel[0]);
     const g = { type: 'Polygon', coordinates: [anel] };
@@ -207,13 +216,14 @@ async function cartorioBuscar(terrenoId: string, poly: P[] | null, lat: number |
     nm_regiao_05 da camada subprefeitura_v2 do GeoSampa) da subprefeitura que cobre a maior parte da poligonal; sem poligonal,
     a do pino. Grava por app.zona_da_prefeitura, que só preenche o vazio ou troca o que veio do GeoSampa, nunca o digitado.
     Devolve a zona achada ("sul") ou null. */
-export const zonaPelaArea = (terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null) =>
-  buscando(terrenoId, 'zona', zonaBuscar(terrenoId, poly, lat, lng));
-const REGIAO: Record<string, string> = { centro: 'centro', norte: 'norte', sul: 'sul', leste: 'leste', oeste: 'oeste' };
-async function zonaBuscar(terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null) {
+export const zonaPelaArea = (terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null, sjc = false) =>
+  buscando(terrenoId, 'zona', zonaBuscar(terrenoId, poly, lat, lng, sjc));
+const REGIAO: Record<string, string> = { centro: 'centro', norte: 'norte', sul: 'sul', leste: 'leste', oeste: 'oeste', sudeste: 'sudeste' };
+async function zonaBuscar(terrenoId: string, poly: P[] | null, lat: number | null, lng: number | null, sjc = false) {
   const campos = 'nm_regiao_05';
   let r: string | null | undefined = null;
-  if (poly && poly.length >= 3) {
+  if (sjc) r = lat != null && lng != null ? await zonaSjc(lat, lng) : null;
+  else if (poly && poly.length >= 3) {
     const anel = poly.map(([la, ln]) => latLngUtm(la, ln)); anel.push(anel[0]);
     const g = { type: 'Polygon', coordinates: [anel] };
     const f = await geoWfs({ typeNames: 'geoportal:subprefeitura_v2', propertyName: campos + ',ge_poligono', CQL_FILTER: `INTERSECTS(ge_poligono,${geoWkt(g)})` });
@@ -248,7 +258,7 @@ export async function consultarTerreno(terrenoId: string, poly: P[] | null, ins:
   /* São José dos Campos: a mesma consulta pelo GeoSanja, sem IPTU nem consulta pela poligonal (o GeoSanja só responde por lote) */
   if (base === 'geosanja') {
     if (!GSJ_BASE || A || !ins.length) return;
-    return buscando(terrenoId, 'geosampa', consultarTudo(terrenoId, null, ins, aviso, true));
+    return buscando(terrenoId, 'geosanja', consultarTudo(terrenoId, null, ins, aviso, true));
   }
   /* o IPTU de cada SQL vem da Prefeitura em segundo plano, pelo serviço do IPTU (pedido do Moises, 9/nov/2026) */
   if (GEO_BASE && ins.length) void filaIptu(ins.map((i) => i.id));

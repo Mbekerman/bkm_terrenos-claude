@@ -293,6 +293,7 @@ erDiagram
     text cartorio_origem "prefeitura | digitado"
     text zona_origem "prefeitura | digitado"
     text historico_uso "pesquisado, digitado"
+    text_arr completude_dispensada "itens descartados do Falta preencher"
     float latitude
     float longitude
     jsonb poligono_geojson "obrigatoria"

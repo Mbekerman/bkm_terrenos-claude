@@ -4,7 +4,7 @@ import { useSessao } from '../lib/sessao';
 import { data as fd, milhoes, m2 } from '../lib/format';
 import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
-import { carregarFicha, completude, type Falta, FONTE_AREA, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
+import { carregarFicha, completude, dispensados, type Falta, FONTE_AREA, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
 import MiniMapa from './MiniMapa';
 import { fixa, geojson } from '../novo/geo';
 import { LapisMapa, verificarEndereco } from '../novo/TrocarEndereco';
@@ -269,7 +269,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
         ))}
       </div>
       <div className="fi-fim">
-        {topoFora && c.faltam.length > 0 && <Faltam c={c} irAba={irAba} alerta />}
+        {topoFora && c.faltam.length > 0 && <Faltam f={f} c={c} irAba={irAba} alerta />}
         <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`} hidden={!sobra}>
           <button className="iconbtn adv-mb" aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações" title="Mais ações" onClick={() => setMenu(!menu)}>{SVG_DOTS}</button>
           <div className="adv-menu" role="menu">
@@ -381,8 +381,20 @@ export function usePreCarregarFicha() {
 /** "Ficha N% completa" com a bolinha vermelha do que falta; o menu leva direto ao campo, já em edição, com o conteúdo
     selecionado e uma iluminada rápida (pedidos do Moisés, 5 e 6/nov/2026). Em "alerta", o mesmo menu num botão de alerta
     na barra das abas, para quando o topo saiu da vista */
-function Faltam({ c, irAba, alerta }: { c: ReturnType<typeof completude>; irAba: (k: string) => void; alerta?: boolean }) {
+function Faltam({ f, c, irAba, alerta }: { f: F; c: ReturnType<typeof completude>; irAba: (k: string) => void; alerta?: boolean }) {
   const [ab, setAb] = useState(false);
+  const { edita } = useSessao();
+  const salvarT = useSalvar(f);
+  /* descartar um item tira da lista e da conta, só neste terreno; fica no log (pedido do Moises, 10/nov/2026) */
+  /* o que já foi pedido e ainda não voltou do banco conta: dois descartes seguidos não se pisam */
+  const lista = useRef<string[]>(dispensados(f));
+  const chaveF = dispensados(f).join(',');
+  useEffect(() => { lista.current = chaveF ? chaveF.split(',') : []; }, [chaveF]);
+  const trocar = (k: string, fora: boolean) => {
+    const atual = lista.current;
+    lista.current = fora ? [...new Set([...atual, k])].sort() : atual.filter((x) => x !== k);
+    void salvarT({ completude_dispensada: lista.current });
+  };
   const raiz = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     if (!ab) return;
@@ -404,12 +416,25 @@ function Faltam({ c, irAba, alerta }: { c: ReturnType<typeof completude>; irAba:
       {alerta
         ? <button type="button" className="iconbtn fi-alerta-b" aria-haspopup="menu" aria-expanded={ab} onClick={() => setAb((x) => !x)} aria-label={rot} title={rot}>
             <Ic n="warn" s={20} /><span className="fi-comp-n" aria-hidden="true">{n}</span></button>
-        : <button type="button" className="fi-comp-b" aria-haspopup="menu" aria-expanded={ab} disabled={!n} onClick={() => setAb((x) => !x)} aria-label={rot}>
+        : <button type="button" className="fi-comp-b" aria-haspopup="menu" aria-expanded={ab} disabled={!n && !c.descartados.length} onClick={() => setAb((x) => !x)} aria-label={rot}>
             <b>Ficha {c.pct}% completa</b>{n > 0 && <span className="fi-comp-n" aria-hidden="true">{n}</span>}</button>}
       {ab && (
         <div className="adv-menu fi-comp-m" role="menu">
-          <div className="fi-comp-t">Falta preencher</div>
-          {c.faltam.map((x) => <button key={x[0]} type="button" role="menuitem" onClick={() => ir(x)}>{x[0]}</button>)}
+          {n > 0 && <div className="fi-comp-t">Falta preencher</div>}
+          {c.faltam.map((x, i) => (
+            <div key={x[0]} className="fi-comp-l">
+              <button type="button" role="menuitem" onClick={() => ir(x)}>{x[0]}</button>
+              {edita && <button type="button" className="fi-comp-x" title="Descartar: não pedir este item neste terreno" aria-label={`Descartar ${x[0]}`}
+                onClick={() => trocar(c.chaves[i], true)}><Ic n="close" s={16} /></button>}
+            </div>))}
+          {c.descartados.length > 0 && <>
+            <div className="fi-comp-t">Descartados ({c.descartados.length})</div>
+            {c.descartados.map((d) => (
+              <div key={d.k} className="fi-comp-l fi-comp-d">
+                <span>{d.rot}</span>
+                {edita && <button type="button" className="fi-comp-v" onClick={() => trocar(d.k, false)}>Voltar a pedir</button>}
+              </div>))}
+          </>}
         </div>
       )}
     </span>
@@ -460,7 +485,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
       <div className="stack">
         {c.pct < 100 && (
           <div className="complete">
-            <span className="progress"><span className="bar"><span style={{ width: `${c.pct}%` }} /></span><Faltam c={c} irAba={irAba} /></span>
+            <span className="progress"><span className="bar"><span style={{ width: `${c.pct}%` }} /></span><Faltam f={f} c={c} irAba={irAba} /></span>
           </div>
         )}
         <div className="adv-main"><Avancos f={f} irAba={irAba} /></div>

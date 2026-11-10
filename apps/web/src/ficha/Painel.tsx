@@ -6,7 +6,7 @@ import { useSessao } from '../lib/sessao';
 import { data as fd, diasEntre, hojeISO, m2, milhoes, somarDias, FORMA } from '../lib/format';
 import { Ic } from '../components/Moldura';
 import { abrirQuadro, OPT, pedirCampo, SECOES } from './edicao';
-import { completude, TEMP, type Ficha as F, type R } from './dados';
+import { completude, ITEM_COMPLETUDE, TEMP, type Ficha as F, type R } from './dados';
 import { Avanco, procsAvanco, useAvanco } from './Avanco';
 import { useComercial } from './Comercial';
 
@@ -104,7 +104,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       if (ins) return { txt: 'Terreno cadastrado', det: [o.nome].filter(Boolean), aba: 'terreno', q: 'ident' };
       if (del) return { txt: 'Terreno excluído' };
       const linhas: string[] = [], secs = new Set<string>();
-      let q0: string | undefined;
+      let q0: string | undefined, topoComp = false;
       const polyMudou = JSON.stringify(x?.poligono_geojson ?? null) !== JSON.stringify(d?.poligono_geojson ?? null);
       if (polyMudou) {
         linhas.push(!d?.poligono_geojson ? 'Poligonal removida' : !x?.poligono_geojson ? 'Poligonal desenhada'
@@ -123,6 +123,16 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
           continue;
         }
         if (k === 'historico_uso') { linhas.push('Histórico de uso alterado'); secs.add('histuso'); q0 ??= 'histuso'; continue; }
+        /* itens descartados do "Falta preencher" (10/nov/2026): o log diz quais saíram e quais voltaram a ser pedidos */
+        if (k === 'completude_dispensada') {
+          const av = new Set((x?.[k] as string[] | null) ?? []), dv = new Set((d?.[k] as string[] | null) ?? []);
+          const nome = (i: string) => ITEM_COMPLETUDE[i] ?? i;
+          const sai = [...dv].filter((i) => !av.has(i)).map(nome), volta = [...av].filter((i) => !dv.has(i)).map(nome);
+          if (sai.length) linhas.push(`Descartado do Falta preencher: ${sai.join(', ')}`);
+          if (volta.length) linhas.push(`Voltou ao Falta preencher: ${volta.join(', ')}`);
+          topoComp = true;
+          continue;
+        }
         const cp = CAMPO[k];
         if (!cp) continue;
         if (k === 'municipio_id') continue;
@@ -130,6 +140,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
         secs.add(cp[3]); q0 ??= cp[3];
       }
       if (!linhas.length) return null;
+      if (topoComp && !secs.size) return { txt: linhas.length === 1 ? linhas[0] : 'Falta preencher alterado', det: linhas.length > 1 ? linhas : undefined, topo: '.fi-comp-b' };
       const s1 = secs.size === 1 ? [...secs][0] : null;
       const txt = linhas.length === 1 ? linhas[0] : s1 && SECOES[s1] ? `${SECOES[s1].titulo} editado` : s1 === 'areas' ? 'Áreas e dimensões editadas' : 'Ficha editada';
       return { txt, det: linhas.length > 1 ? linhas : undefined, aba: 'terreno', q: q0 };

@@ -1215,7 +1215,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
   async function buscar() {
     setBusc(true);
     try {
-      const ok = await buscando(f.id, 'geosampa', sjc ? consultarLoteSjc(x!.id, x!.inscricao) : consultarLote(x!.id, x!.inscricao));
+      const ok = await buscando(f.id, sjc ? 'geosanja' : 'geosampa', sjc ? consultarLoteSjc(x!.id, x!.inscricao) : consultarLote(x!.id, x!.inscricao));
       toast(ok ? `${nomeBase} consultado.` : `O ${nomeBase} não achou o lote ${sjc ? 'desta inscrição' : 'deste SQL'}.`, !ok); recarregar();
       /* em SJC a poligonal do lote só chega pela consulta: refaz a do terreno pela soma dos lotes */
       if (ok && sjc) { await refazerPoligonal(f, `${x!.inscricao} consultada`, toast); recarregar('tudo'); }
@@ -1250,8 +1250,8 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
             <td className="muted vv-f">{vv.fonte || '—'}</td></tr>
         </tbody></table></div>
       ) : <div className="muted">Sem IPTU lançado.</div>}
-      {edita && !sp && <details className="details"><summary>{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</summary><FormIptu f={f} x={x} vv={vv} /></details>}
-      {sjc && <div className="hint">O GeoSanja traz só a poligonal do lote, a zona e as restrições. A área cadastral, o endereço, a testada, o valor venal, o IPTU e o cartório não vêm de lá: digite-os aqui e na aba Terreno.</div>}
+      {edita && !sp && <details className="details" open={!vv}><summary>{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</summary><FormIptu f={f} x={x} vv={vv} /></details>}
+      {sjc && <div className="hint">O GeoSanja traz só a poligonal do lote, a zona e as restrições. A área cadastral, o endereço, a testada, o valor venal e o IPTU não vêm de lá: digite-os aqui e na aba Terreno.</div>}
       {sp && <div className="hint">Em São Paulo, o valor venal e o IPTU vêm sozinhos da Prefeitura e não se digitam (seção IPTU da aba Terreno).</div>}
     </Dialogo>
   );

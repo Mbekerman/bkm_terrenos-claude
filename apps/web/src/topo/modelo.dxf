@@ -505,7 +505,7 @@ $SPLINESEGS
   9
 $HANDSEED
   5
-65
+68
   9
 $SURFTAB1
  70
@@ -2061,7 +2061,7 @@ LAYER
 100
 AcDbSymbolTable
  70
-28
+30
   0
 LAYER
   5
@@ -2648,6 +2648,50 @@ AcDbSymbolTableRecord
 AcDbLayerTableRecord
   2
 CURVAS_PREFEITURA
+ 70
+0
+ 62
+8
+  6
+CONTINUOUS
+370
+13
+390
+13
+  0
+LAYER
+  5
+66
+330
+1
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+LOTES_PREFEITURA
+ 70
+0
+ 62
+8
+  6
+CONTINUOUS
+370
+13
+390
+13
+  0
+LAYER
+  5
+67
+330
+1
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+TEXTO_LOTES
  70
 0
  62
