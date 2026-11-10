@@ -4634,6 +4634,8 @@ html[data-tema="escuro"] .cond-b { background: #1e1f20 } html[data-tema="escuro"
 .ptcom-ml { display: none }
 .ptcom input.ptc-n { width: 100%; text-align: right } .ptcom select { width: 100% }
 .ptcom-tot { font-weight: 500 }
+.ptcom-zona { display: block; font-size: 12px; color: #747775; margin-top: 2px }
+html[data-tema="escuro"] .ptcom-zona { color: #8e918f }
 .ptcom { container-type: inline-size }
 @container (max-width: 760px) {
   .ptcom-th { display: none }

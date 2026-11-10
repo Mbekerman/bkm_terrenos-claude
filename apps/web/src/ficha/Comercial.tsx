@@ -214,8 +214,8 @@ function JanelaMat({ L, x, c, rot, fechar }: { L: Lotes; x: R; c: R; rot: string
   );
 }
 
-function LinhaParte({ o, pa, um, primeiro, area, nomeDet, mudar }: {
-  o: R | null; pa: R; um: boolean; primeiro: boolean; area: number | null; nomeDet: ReactNode;
+function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar }: {
+  o: R | null; pa: R; um: boolean; primeiro: boolean; area: number | null; zonas: string; nomeDet: ReactNode;
   mudar: (pa: R, valor: number | null, forma: string | null) => Promise<void>;
 }) {
   const { edita } = useSessao();
@@ -231,7 +231,7 @@ function LinhaParte({ o, pa, um, primeiro, area, nomeDet, mudar }: {
   return (
     <div className="ptcom-r">
       <div className="ptcom-p"><b>{pa.nome}</b>{pa.pessoa_nome && <> <span className="faint">{pa.pessoa_nome}</span></>}{nomeDet}</div>
-      <div className="ptcom-c">{L(um ? 'Área adotada' : 'Área da parte')}<span>{area != null ? m2(Math.round(area * 100) / 100) : '—'}</span></div>
+      <div className="ptcom-c">{L(um ? 'Área adotada' : 'Área da parte')}<span>{area != null ? m2(Math.round(area * 100) / 100) : '—'}</span>{zonas && <span className="ptcom-zona" title="Zoneamento">{zonas}</span>}</div>
       <div className="ptcom-c field">{L('Valor pedido')}{ro ? <span>{valor != null ? brl(valor) : '—'}</span>
         : <Adorno t="moeda"><input className="ptc-n" id={primeiro ? 'c-valor' : undefined} inputMode="decimal" data-fmt="moeda" value={vv} aria-label={`Valor pedido de ${pa.nome}`}
           onChange={(e) => { setVv(e.target.value); const n = lerNum(e.target.value); setVm(n != null && area ? numTxt(Math.round(n / area)) : ''); }}
@@ -285,6 +285,8 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
   const P = L?.partes ?? [], um = P.length <= 1, rot = L?.base?.rotulo ?? 'Inscrição';
   // com uma parte só, ela é o terreno inteiro: vale a área adotada do terreno (sem ela, a das matrículas ou dos SQLs)
   const areaDe = (pid: string) => (um && f.area != null ? +f.area : L ? ptArea(L, pid).area : null);
+  // zoneamento da parte, discreto embaixo da área (pedido do Moises, 10/nov/2026)
+  const zonasDe = (pid: string) => (!L ? '' : [...new Set(daParte(L, 's', pid).map((e) => e.x).flatMap((i) => ((L.consultas[i.id]?.zonas ?? []) as R[]).map((z) => z.sigla)).filter(Boolean))].join(' / '));
   const valorDe = (pid: string): number | null => (!o ? null : um ? o.valor_pedido ?? null : (o.oferta_partes ?? []).find((x: R) => x.parte_id === pid)?.valor_pedido ?? null);
   async function mudar(pa: R, valor: number | null, forma: string | null) {
     if (!o) return;
@@ -332,7 +334,7 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
         </dl>
         {L && <div className="ptcom cond-pt">
           <div className="ptcom-r ptcom-th"><span>{um ? 'Parte' : 'Por parte'}</span><span>{um ? 'Área adotada' : 'Área da parte'}</span><span>Valor pedido</span><span>Valor por m²</span><span>Condição de pagamento</span></div>
-          {P.map((pa, i) => <LinhaParte key={pa.id} o={o} pa={pa} um={um} primeiro={i === 0} area={areaDe(pa.id)} nomeDet={<MatsParte L={L} pid={pa.id} rot={rot} />} mudar={mudar} />)}
+          {P.map((pa, i) => <LinhaParte key={pa.id} o={o} pa={pa} um={um} primeiro={i === 0} area={areaDe(pa.id)} zonas={zonasDe(pa.id)} nomeDet={<MatsParte L={L} pid={pa.id} rot={rot} />} mudar={mudar} />)}
           {!um && (
             <div className="ptcom-r ptcom-tot"><div className="ptcom-p"><b>Total</b></div><div className="ptcom-c">{Lb('Área da parte')}<span>{aT ? m2(Math.round(aT * 100) / 100) : '—'}</span></div>
               <div className="ptcom-c">{Lb('Valor pedido')}<span>{vT != null ? <>{brl(vT)}{nCom < P.length ? <> <span className="faint">(faltam {P.length - nCom})</span></> : null}</> : '—'}</span></div>
