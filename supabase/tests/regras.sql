@@ -450,8 +450,7 @@ select pg_temp.como(:'analista');
 select app.registrar_proposta(:'neg', 'vendedor', 8900000, 'permuta_com_torna', 'Pede 9% em permuta') as p5 \gset
 select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'neg', 'proposta_enviada'), 'Proposta Enviada exige ter passado por Preparando Proposta');
 select pg_temp.como(:'gestor');
-select pg_temp.falha(format('select app.mover_subetapa(%L, %L, true)', :'neg', 'proposta_enviada'), 'avanço forçado exige justificativa');
-select app.mover_subetapa(:'neg', 'proposta_enviada', true, 'Proposta foi direto por e-mail') \gset
+select app.mover_subetapa(:'neg', 'proposta_enviada', true) \gset
 select pg_temp.ok((select forcado from app.processo_transicoes where processo_id = :'neg' and para_subetapa = 'proposta_enviada'), 'gestor força o pré-requisito e fica registrado');
 
 \echo '# aprovações'
@@ -483,6 +482,10 @@ select pg_temp.ok((select user_id = :'analista' and aprovacao_id is not null fro
   'a passagem fica no nome de quem pediu, ligada ao pedido aprovado');
 select pg_temp.ok((select decidido_por from app.aprovacoes where pedido_id = :'ped2') = :'diretor', 'quem aprovou de fato fica registrado');
 select pg_temp.como(:'gestor');
+select app.mover_para_etapa(:'neg', 'negociacao') \gset
+select pg_temp.ok((select evento = 'retorno' and comentario is null from app.processo_transicoes where processo_id = :'neg' order by em desc limit 1),
+  'voltar de etapa sem motivo: o motivo é opcional (10/nov/2026)');
+select app.mover_etapa(:'neg') \gset
 select app.mover_para_etapa(:'neg', 'negociacao', false, 'Vendedor reabriu o preço') \gset
 select pg_temp.ok((select evento = 'retorno' and para_subetapa = 'aguardando_reuniao' from app.processo_transicoes where processo_id = :'neg' order by em desc limit 1),
   'voltar de etapa é "retorno" e entra na subetapa inicial');
@@ -565,13 +568,9 @@ select pg_temp.falha(format('select app.registrar_documento(%L, %L, %L, %L)', :'
 \echo '# status: stand by, perdido, descartado'
 select pg_temp.falha(format('select app.arquivar_terreno(%L, %L)', :'t1', 'teste'), 'não arquiva com negociação aberta');
 select pg_temp.como(:'analista');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L)', :'neg', 'descartado'), 'descartar exige motivo da lista');
 select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L)', :'neg', 'descartado', 'preco_alto'), 'motivo fora da lista é recusado');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L)', :'neg', 'descartado', 'outros'), 'Descartado por Outros exige texto');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L)', :'neg', 'perdido', 'vendido_terceiro'), 'Perdido exige relato');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L)', :'neg', 'concluido', '<p>Fechado</p>'), 'Comprado exige relato e pontos de sucesso');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L)', :'neg', 'stand_by', 'Inventário'), 'Stand By exige data futura');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_retomar_em => current_date + 30)', :'neg', 'stand_by'), 'Stand By exige justificativa');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_retomar_em => current_date)', :'neg', 'stand_by'), 'Stand By com data de hoje ou passada é recusado');
+select pg_temp.falha(format('select app.editar_encerramento(%L, %L)', :'neg', '{"detalhe":"x"}'), 'fase ativa não tem encerramento para editar');
 select app.encerrar_processo(:'neg', 'stand_by', p_detalhe => 'Inventário em andamento', p_retomar_em => current_date + 30) \gset
 select pg_temp.ok((select status = 'stand_by' and etapa_atual = 'contrato' and subetapa_atual = 'em_ajuste' from app.processos where id = :'neg'), 'stand by guarda etapa e subetapa');
 select pg_temp.ok((select array_agg(dias_antes order by dias_antes) from app.lembretes where origem_tabela = 'processos' and origem_id = :'neg') = '{0,7}', 'stand by cria os lembretes padrão (7 dias antes e no dia)');
@@ -581,13 +580,24 @@ select app.rotina_diaria(current_date + 23) \gset
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'stand_by_retomar') = 1, 'responsável é lembrado 7 dias antes de retomar, sem repetir');
 select pg_temp.como(:'analista');
+select app.editar_encerramento(:'neg', '{"retomar_em":null,"detalhe":""}');
+select pg_temp.ok((select retomar_em is null and detalhe_encerramento is null and status = 'stand_by' from app.processos where id = :'neg'), 'Stand By fica sem data e sem justificativa, completados depois');
+select pg_temp.falha(format('select app.editar_encerramento(%L, %L)', :'neg', '{"motivo":"vendido_terceiro"}'), 'motivo só para Perdido e Descartado, também ao editar');
+select pg_temp.falha(format('select app.editar_encerramento(%L, %L)', :'neg', '{"retomar_em":"2000-01-01"}'), 'data de retomar editada precisa ser futura');
+select app.editar_encerramento(:'neg', format('{"retomar_em":"%s","detalhe":"Inventário"}', current_date + 40)::jsonb);
+select pg_temp.ok((select retomar_em = current_date + 40 and detalhe_encerramento = 'Inventário' from app.processos where id = :'neg'), 'a faixa do Stand By completa a data e a justificativa depois');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'processos' and registro_id = :'neg'::uuid and lower(acao) = 'update') > 0, 'editar o encerramento fica nos logs');
 select app.retomar_processo(:'neg');
 select pg_temp.ok((select status = 'ativo' and subetapa_atual = 'em_ajuste' from app.processos where id = :'neg'), 'retomar volta para Ativo na mesma etapa e subetapa');
 select pg_temp.ok((select tempo_stand_by > interval '0' from app.v_tempo_subetapas where processo_id = :'neg' and subetapa = 'em_ajuste'), 'tempo em stand by fica separado do tempo ativo');
 select pg_temp.ok((select ultima_saida is not null and passagens = 1 from app.v_tempo_subetapas where processo_id = :'neg' and subetapa = 'estudo_viabilidade'),
   'tempo por subetapa: entrada e saída de Estudo de Viabilidade lidas do histórico');
 select pg_temp.ok((select count(*) from app.v_tempo_subetapas where processo_id = :'neg' and atual) = 1, 'só a subetapa atual está em aberto');
-select app.encerrar_processo(:'neg', 'perdido', 'vendido_terceiro', 'Fechou com a construtora vizinha por valor maior') \gset
+select app.encerrar_processo(:'neg', 'perdido') \gset
+select pg_temp.ok((select status = 'perdido' and motivo_encerramento is null and detalhe_encerramento is null from app.processos where id = :'neg'), 'Perdido sem motivo nem relato: preenche depois');
+select pg_temp.falha(format('select app.editar_encerramento(%L, %L)', :'neg', '{"motivo":"preco_alto"}'), 'motivo editado fora da lista é recusado');
+select pg_temp.falha(format('select app.editar_encerramento(%L, %L)', :'neg', '{"pontos_sucesso":"x"}'), 'pontos de sucesso só na conclusão, também ao editar');
+select app.editar_encerramento(:'neg', '{"motivo":"vendido_terceiro","detalhe":"Fechou com a construtora vizinha por valor maior"}');
 select pg_temp.ok((select status = 'perdido' and etapa_atual = 'contrato' and motivo_encerramento = 'vendido_terceiro' from app.processos where id = :'neg'), 'perdido guarda motivo, relato e a etapa onde parou');
 select pg_temp.ok((select motivo_encerramento_nome from app.v_terrenos where id = :'t1') = 'Vendido para terceiro', 'listagem mostra o nome do motivo');
 select pg_temp.falha(format('select app.retomar_processo(%L)', :'neg'), 'perdido não volta para Ativo');
@@ -1025,8 +1035,9 @@ select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L, %L)', :'ap
 select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L)', :'ap', 'bkm', 'a_vista'), 'proposta só na negociação');
 select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L)', :'ap', 'concluido', 'Aprovado'), 'fase se conclui só na última etapa');
 select app.mover_para_etapa(:'ap', 'alvaras') \gset
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L)', :'ap', 'concluido'), 'concluir a fase exige relato');
-select app.encerrar_processo(:'ap', 'concluido', p_detalhe => '<p>Alvará de execução emitido</p>') \gset
+select app.encerrar_processo(:'ap', 'concluido') \gset
+select app.editar_encerramento(:'ap', '{"detalhe":"<p>Alvará de execução emitido</p>"}');
+select pg_temp.ok((select detalhe_encerramento from app.processos where id = :'ap') = '<p>Alvará de execução emitido</p>', 'concluir sem relato e escrever o relato depois');
 select pg_temp.ok((select status from app.processos where id = :'ap') = 'concluido'
   and exists (select 1 from app.processos where terreno_id = :'t2' and fase = 'incorporacao' and status = 'ativo'),
   'concluir a Aprovação (sem pontos de sucesso) abre o Registro de Incorporação');
@@ -2939,10 +2950,9 @@ select pg_temp.ok((select subetapa_atual = 'estudo_viabilidade' from app.process
 select app.gravar_campo(:'tfn', 'oferta.valor_pedido', '1500000');
 select pg_temp.ok((select situacao = 'nao_se_aplica' and not trava from app.v_tarefas_etapa where tarefa_id = :'kpr'), 'condição que deixou de valer: a tarefa fica, não trava e não se aplica mais');
 select pg_temp.como(:'gestor');
-select pg_temp.falha(format('select app.mover_etapa(%L, true, %L)', :'pfn', ' '), 'o gestor força só com justificativa');
-select app.mover_etapa(:'pfn', true, 'Seguimos com o estudo em paralelo') \gset
+select app.mover_etapa(:'pfn', true, null) \gset
 select pg_temp.ok((select etapa_atual = 'negociacao' from app.processos where id = :'pfn')
-  and (select forcado from app.processo_transicoes where processo_id = :'pfn' order by em desc limit 1), 'o gestor avança com justificativa, que fica no histórico');
+  and (select forcado from app.processo_transicoes where processo_id = :'pfn' order by em desc limit 1), 'o gestor avança sem os requisitos, com a justificativa opcional, e o histórico marca forçado');
 select id as kcr from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Cobrar retorno da proposta' \gset
 select pg_temp.ok((select prioridade = 'alta' and etapa = 'negociacao' from fluxo.tarefas where id = :'kcr'), 'gatilho "Terreno entrou na etapa" roda nos cartões da etapa');
 select pg_temp.ok((select prioridade = 'media' from fluxo.tarefas where id = :'kvb'), 'o gatilho não toca cartão de outra etapa');
