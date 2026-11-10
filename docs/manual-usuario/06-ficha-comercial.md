@@ -105,6 +105,8 @@ Na lista, a reunião online com link mostra **"Entrar na reunião"** (agendada) 
 
 **Editar:** clique na reunião (ou no lápis ao lado da situação). O formulário abre no lugar dela, com tudo o que foi gravado; mude o que precisar, inclusive os participantes e a situação (Agendada, Realizada ou **Cancelada**), e clique em **Salvar**. Cada mudança fica nos Logs ("Reunião alterada: ...", "Participante incluído na reunião de ...", "Participante tirado da reunião de ..."). Quem tem perfil Leitura só vê.
 
+**Observações das ofertas (diretor):** o diretor vê, embaixo da lista, as observações de todas as ofertas do terreno juntas, da mais nova para a mais antiga, com o número, a data e o selo da ativa.
+
 Uma reunião **Agendada** ganha o botão **"Marcar realizada"** quando acontece.
 
 **Regra:** reunião realizada não pode ter data futura.

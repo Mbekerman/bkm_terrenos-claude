@@ -5258,3 +5258,10 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 .of-card .of-tot td { border-top: 1px solid var(--contorno, #c4c7c5) }
 .mini-tbl .iconbtn.sm, .of-card .iconbtn.sm { width: 32px; height: 32px; margin: -4px 0 }
 #sec-ofertas .mini-tbl .chip { white-space: nowrap }
+/* observações de todas as ofertas, para o diretor (pedido do Moises, 10/nov/2026) */
+#sec-ofertas .of-obs-todas { margin-top: 20px }
+#sec-ofertas .of-obs-todas .of-t { font-size: 14px; font-weight: 500; margin-bottom: 4px }
+#sec-ofertas .of-obs { padding: 10px 0; border-bottom: 1px solid var(--contorno-suave, #e3e3e3) }
+#sec-ofertas .of-obs:last-child { border-bottom: 0 }
+#sec-ofertas .of-obs-h { font-size: 13px; color: var(--texto-suave, #444746); display: flex; align-items: center; gap: 8px }
+#sec-ofertas .of-obs-t { white-space: pre-wrap; margin-top: 4px }

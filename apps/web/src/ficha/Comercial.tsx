@@ -390,7 +390,15 @@ function SecOfertas({ f, c, registrar }: { f: Ficha; c: Com; registrar: () => vo
             );
           })}
         </tbody></table></div>
-      ) : <div className="muted">Nenhuma oferta.</div>}</div>
+      ) : <div className="muted">Nenhuma oferta.</div>}
+      {/* o diretor vê as observações de todas as ofertas do terreno juntas (pedido do Moises, 10/nov/2026) */}
+      {dir && os.some((o) => o.observacoes) && <div className="of-obs-todas">
+        <div className="of-t">Observações das ofertas</div>
+        {os.filter((o) => o.observacoes).sort((a, b) => (b.numero ?? 0) - (a.numero ?? 0)).map((o) => (
+          <div key={o.id} className="of-obs"><div className="of-obs-h"><b className="num">{f.codigo}-{o.numero}</b> · {fd(o.data_oferta)}{o.vigente && <span className="chip good sm">Ativa</span>}</div>
+            <div className="of-obs-t">{o.observacoes}</div></div>
+        ))}
+      </div>}</div>
       {aberta && <CardOferta f={f} c={c} o={aberta} fechar={() => setCard(null)} />}
     </Quadro>
   );
