@@ -29,9 +29,13 @@ No alto da lista ficam o total (**"N terrenos · m²"**, com **"N sem localizaç
 
 **Como mudar a largura da lista:** arraste a borda entre a lista e o mapa (o cursor vira ⇔). No mínimo, a lista mostra só as bolinhas. **Dois cliques** na borda voltam à largura padrão. O sistema lembra a largura no seu navegador.
 
+### Como o terreno aparece no mapa
+
+Cada terreno aparece como uma **etiqueta com o código** (A112), na cor da fase, da etapa ou da subetapa, com contorno branco e preto e um **ponto embaixo** que marca o lugar exato. O formato é diferente dos pinos redondos do Google, para o terreno se destacar logo de cara. Com o mapa mais afastado (zoom de cidade ou bairro), a etiqueta fica um pouco maior. O terreno selecionado ganha um anel azul em volta da etiqueta e o ponto fica azul.
+
 ### Selecionar um terreno
 
-- Clique na **linha** da lista, no **pino** ou na **poligonal**: o terreno fica selecionado (o pino acende e a linha se destaca; a lista rola até ela).
+- Clique na **linha** da lista, no **pino** ou na **poligonal**: o terreno fica selecionado (a etiqueta ganha o anel azul e a linha se destaca; a lista rola até ela).
 - A linha selecionada mostra os botões **"Editar poligonal"** (ou **"Desenhar poligonal"**, se o terreno ainda não tem) e **"Street View"**.
 - Clicar no vazio do mapa tira a seleção.
 
