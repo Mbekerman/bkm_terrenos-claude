@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
 import { comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
-import { empilhar } from '../components/Desfazer';
+import { empilhar, type Desfeito } from '../components/Desfazer';
 import { Adorno } from '../lib/mascara';
 import { Ic } from '../components/Moldura';
 import { data as fd, m2 } from '../lib/format';
@@ -388,13 +388,15 @@ const FECHADAS = new Set<string>();
 const RECOLHIDOS = new Set<Tp>();   // quadros de Matrículas e de SQLs recolhidos (só quando um fica sobre o outro), na sessão   // partes com o quadro recolhido (a seta recolhe a linha inteira)
 /* a etiqueta: o lote (x) e, dentro de uma parte, a cópia dela (c); o mesmo lote pode ter cópia em mais de uma parte */
 type Etq = { tipo: Tp; x: R; c?: R };
+/** contexto de uma mudança em grupo: os avisos e os desfazer de cada etiqueta, juntados no fim */
+type Grupo = { avisos: string[]; pilha: Desfeito[] };
 const chave = (e: Etq) => `${e.tipo}:${e.x.id}${e.c ? ':' + e.c.id : ''}`;
 /** a etiqueta do lote sem nenhuma cópia, como se fosse uma cópia solta inteira (id vazio): a pizza, a barra e a janela
     valem igual, numa parte ou não (pedido do Moises, 6/nov/2026); gravar o percentual dela cria a cópia solta */
 const virtual = (tipo: Tp, x: R): R => ({ id: '', [FK[tipo]]: x.id, parte_id: null, percentual: null });
 const comC = (e: Etq): Etq & { c: R } => ({ ...e, c: e.c ?? virtual(e.tipo, e.x) });
 
-function Etiqueta({ e, L, rot, edita, ver, tirar, menu, pct }: { e: Etq; L: Lotes; rot: string; edita: boolean; ver: (k: string) => void; tirar: (k: string) => void; menu: (k: string, x: number, y: number) => void; pct: (k: string, r: DOMRect) => void }) {
+function Etiqueta({ e, L, rot, edita, ver, tirar, menu, pct, sel }: { e: Etq; L: Lotes; rot: string; edita: boolean; ver: (k: string) => void; tirar: (k: string) => void; menu: (k: string, x: number, y: number) => void; pct: (k: string, r: DOMRect) => void; sel?: Set<string> }) {
   const n = e.tipo === 'm' ? e.x.numero : e.x.inscricao, k = chave(e), c = e.c ?? virtual(e.tipo, e.x);
   /* mini pizza com a fração da parte no lote, sempre que a etiqueta está numa parte (cheia em 100%; com 0%, o alerta);
      o clique abre a barra do percentual (pedido do Moises, 6/nov/2026) */
@@ -403,7 +405,7 @@ function Etiqueta({ e, L, rot, edita, ver, tirar, menu, pct }: { e: Etq; L: Lote
   const dica = `${L.partes.find((pa) => pa.id === c.parte_id)?.nome ?? 'Solta'}: ${num(pz, pz % 1 ? 1 : 0)}% deste lote${fr.est ? ' (estimado: sem percentual informado)' : ''}${cs.length > 1 ? ` · em ${cs.length} cópias` : ''}`;
   const shared = cs.length > 1;
   return (
-    <span className={`etq ${e.tipo}`} data-etq={k} tabIndex={edita ? 0 : undefined} aria-label={`${e.tipo === 'm' ? 'Matrícula' : rot} ${n}${pz != null ? ', ' + dica : ''}`}
+    <span className={`etq ${e.tipo}${sel?.has(k) ? ' etq-sel' : ''}`} data-etq={k} aria-selected={sel?.has(k) || undefined} tabIndex={edita ? 0 : undefined} aria-label={`${e.tipo === 'm' ? 'Matrícula' : rot} ${n}${pz != null ? ', ' + dica : ''}`}
       onContextMenu={(ev) => { if (!edita) return; ev.preventDefault(); menu(k, ev.clientX, ev.clientY); }}
       onKeyDown={(ev) => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) { ev.preventDefault(); ver(k); } if (edita && (ev.key === 'ContextMenu' || (ev.shiftKey && ev.key === 'F10'))) { ev.preventDefault(); const r = ev.currentTarget.getBoundingClientRect(); menu(k, r.left, r.bottom); } }}>
       {pz != null && (edita
@@ -483,10 +485,10 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const jaEm = (e: Etq, pid: string) => copias(LR.current, e.tipo, e.x.id).some((c) => c.parte_id === pid);
   /* o SQL entra na parte sempre dentro de uma matrícula dela (pedido do Moises, 6/nov/2026): com uma matrícula só, vai para ela;
      com mais de uma, precisa ser solto sobre a matrícula; sem matrícula, não entra */
-  function matDaParte(pid: string): string | null {
+  function matDaParte(pid: string, av: (m: string, erro?: boolean) => void = toast): string | null {
     const ms = LR.current.cm.filter((c) => c.parte_id === pid);
-    if (!ms.length) { toast(`É necessário atribuir uma matrícula à parte ${nomeP(pid)} antes de lançar lotes nela.`, true); return null; }
-    if (ms.length > 1) { toast(`A parte ${nomeP(pid)} tem mais de uma matrícula: solte o ${rot} sobre a matrícula dele.`, true); return null; }
+    if (!ms.length) { av(`É necessário atribuir uma matrícula à parte ${nomeP(pid)} antes de lançar lotes nela.`, true); return null; }
+    if (ms.length > 1) { av(`A parte ${nomeP(pid)} tem mais de uma matrícula: solte o ${rot} sobre a matrícula dele.`, true); return null; }
     return ms[0].id;
   }
   const nomeM = (mp: string | null | undefined) => { const c = mp ? LR.current.cm.find((y) => y.id === mp) : null; const m = c && LR.current.mats.find((x) => x.id === c.matricula_id); return m ? `matrícula ${m.numero}` : 'matrícula'; };
@@ -494,21 +496,24 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
   const levarSqls = (cid: string, pid: string | null) => local('s', (cs) => cs.map((y) => (y.matricula_parte_id === cid ? { ...y, parte_id: pid } : y)));
   const mudarM = async (id: string, v: R) => { if ('parte_id' in v) levarSqls(id, v.parte_id); return mudarC('m', id, v); };
   /** leva a etiqueta para a parte (null = de volta para sem parte); o SQL, para dentro da matrícula mp (sem mp, a única da parte) */
-  async function parte(k: string, pid: string | null, mp?: string | null) {
+  async function parte(k: string, pid: string | null, mp?: string | null, ctx?: Grupo) {
+    /* em grupo (seleção por retângulo), os avisos e o Ctrl+Z se juntam num só */
+    const av = (m: string, erro = false) => (ctx ? ctx.avisos.push(m) : toast(m, erro));
+    const emp = (d: Desfeito) => (ctx ? ctx.pilha.push(d) : empilhar(d));
     const e = achar(k);
     if (!e) return;
     if (e.tipo === 's') {
-      if (pid && !mp) { mp = matDaParte(pid); if (!mp) return; }
+      if (pid && !mp) { mp = matDaParte(pid, av); if (!mp) return; }
       if (!pid) mp = null;
     }
     const dest: R = e.tipo === 's' ? { parte_id: pid, matricula_parte_id: mp ?? null } : { parte_id: pid };
     const onde = e.tipo === 's' && mp ? `${nomeM(mp)} da parte ${nomeP(pid)}` : `parte ${nomeP(pid)}`;
     if (!e.c) {   // sem parte → parte
       if (!pid) return;
-      if (e.tipo === 's' && copias(LR.current, 's', e.x.id).some((y) => y.matricula_parte_id === mp)) { toast(`${nome(e)} já está na ${onde}.`, true); return; }
+      if (e.tipo === 's' && copias(LR.current, 's', e.x.id).some((y) => y.matricula_parte_id === mp)) { av(`${nome(e)} já está na ${onde}.`, true); return; }
       const row = { ...nova(e, pid), ...dest };
       if (!(await inserir(e.tipo, [row]))) return;
-      empilhar({ rotulo: `${nome(e)} na ${onde}`, fazer: () => apagarC(e.tipo, [row.id]), refazer: () => inserir(e.tipo, [row]) });
+      emp({ rotulo: `${nome(e)} na ${onde}`, fazer: () => apagarC(e.tipo, [row.id]), refazer: () => inserir(e.tipo, [row]) });
       return;
     }
     const c = e.c;
@@ -526,16 +531,16 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         for (const id of dentro) if (!(await mudarC('s', id, { matricula_parte_id: c.id, parte_id: c.parte_id }))) return false;
         return true;
       };
-      empilhar({ rotulo: `${nome(e)} fora da parte ${nomeP(c.parte_id)}`, fazer: repor, refazer: () => apagarC(e.tipo, [c.id]) });
-      if (dentro.length) toast(`${nome(e)} saiu da parte; ${dentro.length > 1 ? `os ${dentro.length} ${rot}s dela ficaram soltos` : `o ${rot} dela ficou solto`}.`);
+      emp({ rotulo: `${nome(e)} fora da parte ${nomeP(c.parte_id)}`, fazer: repor, refazer: () => apagarC(e.tipo, [c.id]) });
+      if (dentro.length) av(`${nome(e)} saiu da parte; ${dentro.length > 1 ? `os ${dentro.length} ${rot}s dela ficaram soltos` : `o ${rot} dela ficou solto`}.`);
       return;
     }
-    if (pid && e.tipo === 'm' && jaEm(e, pid)) { toast(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
-    if (pid && e.tipo === 's' && copias(LR.current, 's', e.x.id).some((y) => y.id !== c.id && y.matricula_parte_id === mp)) { toast(`${nome(e)} já está na ${onde}.`, true); return; }
+    if (pid && e.tipo === 'm' && jaEm(e, pid)) { av(`${nome(e)} já está na parte ${nomeP(pid)}.`, true); return; }
+    if (pid && e.tipo === 's' && copias(LR.current, 's', e.x.id).some((y) => y.id !== c.id && y.matricula_parte_id === mp)) { av(`${nome(e)} já está na ${onde}.`, true); return; }
     const antes: R = e.tipo === 's' ? { parte_id: c.parte_id, matricula_parte_id: c.matricula_parte_id ?? null } : { parte_id: c.parte_id };
     const mv = (v: R) => (e.tipo === 'm' ? mudarM(c.id, v) : mudarC('s', c.id, v));
     if (!(await mv(dest))) return;
-    empilhar({ rotulo: pid ? `${nome(e)} na ${onde}` : `${nome(e)} solta`, fazer: () => mv(antes), refazer: () => mv(dest) });
+    emp({ rotulo: pid ? `${nome(e)} na ${onde}` : `${nome(e)} solta`, fazer: () => mv(antes), refazer: () => mv(dest) });
   }
   /** duplica a etiqueta noutra parte: o lote passa a ser de mais de uma parte (pedido do Moisés, 6/nov/2026). A cópia nasce
       com o que falta para 100%; se o lote já está todo nas outras partes, nasce com 0% e o alerta. As etiquetas sem percentual
@@ -709,26 +714,78 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     re((x) => x + 1);
   }
 
+  /* seleção de várias etiquetas (pedido do Moises, 10/nov/2026): com o mouse, clicar no vazio da seção e arrastar desenha um
+     retângulo, e as etiquetas que ele toca ficam selecionadas; Ctrl (⌘ no Mac) ou Shift com o clique na etiqueta ou no começo
+     do retângulo soma à seleção; clique no vazio ou Esc limpa. Arrastar uma etiqueta selecionada leva todas juntas */
+  const [sel, setSel] = useState<Set<string>>(() => new Set());
+  const selR = useRef(sel);
+  selR.current = sel;
+  useEffect(() => {
+    if (!sel.size) return;
+    /* na captura, para o Esc só limpar a seleção (e não fechar a gaveta da ficha junto) */
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.scrim')) { e.stopPropagation(); setSel(new Set()); } };
+    document.addEventListener('keydown', esc, true);
+    return () => document.removeEventListener('keydown', esc, true);
+  }, [sel.size]);
+  /* etiqueta que sumiu (excluída, movida por outra pessoa) sai da seleção */
+  useEffect(() => {
+    if (!sel.size) return;
+    const vivas = new Set<string>(); sec.current?.querySelectorAll<HTMLElement>('.etq[data-etq]').forEach((el) => vivas.add(el.dataset.etq!));
+    if ([...sel].some((k) => !vivas.has(k))) setSel(new Set([...sel].filter((k) => vivas.has(k))));
+  });
+  /** leva o grupo para o destino solto: as matrículas antes (os SQLs podem entrar nelas), um aviso e um Ctrl+Z só */
+  async function grupo(ks: string[], drop: 'pool' | 'parte' | 'mat', pid: string | null, mp?: string) {
+    const ctx: Grupo = { avisos: [], pilha: [] };
+    const es = ks.map((k) => ({ k, e: achar(k) })).filter((y) => y.e) as { k: string; e: Etq }[];
+    const ms = es.filter((y) => y.e.tipo === 'm'), ss = es.filter((y) => y.e.tipo === 's');
+    const alvo = drop === 'pool' ? null : pid;
+    for (const { k } of ms) await parte(k, alvo, undefined, ctx);
+    for (const { k, e } of ss) {
+      /* o SQL que já foi junto com a matrícula dele não anda de novo */
+      const c = e.c && copiasDe(LR.current, 's').find((y) => y.id === e.c!.id);
+      if (alvo && drop === 'parte' && c?.parte_id === alvo) continue;
+      await parte(k, alvo, drop === 'mat' ? mp : undefined, ctx);
+    }
+    const n = ctx.pilha.length;
+    if (n) {
+      const pilha = [...ctx.pilha];
+      empilhar({ rotulo: `${n} etiquetas ${alvo ? `na parte ${nomeP(alvo)}` : 'soltas'}`,
+        fazer: async () => { for (const d of [...pilha].reverse()) if (!(await d.fazer())) return false; return true; },
+        refazer: async () => { for (const d of pilha) if (!(await d.refazer())) return false; return true; } });
+    }
+    const avisos = [...new Set(ctx.avisos)];
+    if (avisos.length) toast((n ? `${n} de ${es.length} etiquetas foram. ` : '') + avisos.join(' '), !n);
+    else if (n) toast(`${n} etiqueta${n > 1 ? 's' : ''} ${alvo ? `na parte ${nomeP(alvo)}` : `solta${n > 1 ? 's' : ''}`}.`);
+    setSel(new Set());
+  }
+  const grupoR = useRef(grupo);
+  grupoR.current = grupo;
+
   /* arrastar e soltar (mouse e toque: no toque, segurar a etiqueta antes de arrastar) */
   const parteR = useRef<(k: string, pid: string | null, mp?: string | null) => Promise<void>>(parte);
   parteR.current = parte;
   useEffect(() => {
     if (!edita) return;
-    let A: any = null;
+    let A: any = null, Q: any = null;   // A: etiqueta (ou grupo) sendo arrastada; Q: o retângulo de seleção
     const raiz = () => sec.current;
     const comecar = () => {
       const a = A; if (!a) return; a.ativo = true;
       const r = a.el.getBoundingClientRect(); a.dx = a.x - r.left; a.dy = a.y - r.top;
-      const g = a.el.cloneNode(true); g.classList.add('etq-fantasma'); g.style.width = r.width + 'px'; document.body.appendChild(g); a.g = g;
-      a.el.classList.add('etq-origem'); document.body.classList.add('etq-arrastando');
-      const [tipo, lote] = a.k.split(':'), orig = a.el.closest('[data-drop]');
-      /* a parte que já tem o lote não acende */
-      const cs = copias(LR.current, tipo as Tp, lote), tem = new Set(cs.map((c) => c.parte_id)), temM = new Set(cs.map((c) => c.matricula_parte_id));
-      /* o SQL vai para dentro de uma matrícula (a parte inteira também aceita: com uma matrícula só, ele entra nela); a matrícula, para a parte */
-      const aceita = (d: HTMLElement) => d.dataset.tipo === tipo || (tipo === 's'
-        ? (d.dataset.drop === 'mat' && !temM.has(d.dataset.mp!)) || d.dataset.drop === 'parte'
-        : d.dataset.drop === 'parte' && !tem.has(d.dataset.p!));
-      raiz()?.querySelectorAll<HTMLElement>('[data-drop]').forEach((d) => { if (d !== orig && aceita(d)) d.classList.add('etq-aceita'); });
+      const g = a.el.cloneNode(true) as HTMLElement; g.classList.add('etq-fantasma'); g.classList.remove('etq-sel'); g.style.width = r.width + 'px';
+      if (a.ks.length > 1) { const b = document.createElement('span'); b.className = 'etq-conta'; b.textContent = String(a.ks.length); g.appendChild(b); g.classList.add('grupo'); }
+      document.body.appendChild(g); a.g = g;
+      a.els = a.ks.map((k: string) => raiz()?.querySelector<HTMLElement>(`.etq[data-etq="${k}"]`)).filter(Boolean);
+      a.els.forEach((el: HTMLElement) => el.classList.add('etq-origem')); document.body.classList.add('etq-arrastando');
+      /* destino aceita se aceita alguma das etiquetas do grupo (a parte que já tem o lote não acende para ele) */
+      const regras = a.ks.map((k: string) => {
+        const [tipo, lote] = k.split(':'), orig = raiz()?.querySelector<HTMLElement>(`.etq[data-etq="${k}"]`)?.closest('[data-drop]');
+        const cs = copias(LR.current, tipo as Tp, lote), tem = new Set(cs.map((c) => c.parte_id)), temM = new Set(cs.map((c) => c.matricula_parte_id));
+        /* o SQL vai para dentro de uma matrícula (a parte inteira também aceita: com uma matrícula só, ele entra nela); a matrícula, para a parte */
+        return (d: HTMLElement) => d !== orig && (d.dataset.tipo === tipo || (tipo === 's'
+          ? (d.dataset.drop === 'mat' && !temM.has(d.dataset.mp!)) || d.dataset.drop === 'parte'
+          : d.dataset.drop === 'parte' && !tem.has(d.dataset.p!)));
+      });
+      raiz()?.querySelectorAll<HTMLElement>('[data-drop]').forEach((d) => { if (regras.some((f: (d: HTMLElement) => boolean) => f(d))) d.classList.add('etq-aceita'); });
       mover(a.x, a.y);
     };
     const mover = (x: number, y: number) => {
@@ -742,24 +799,73 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const fim = (soltar: boolean, x = 0, y = 0) => {
       const a = A; A = null; if (!a) return; clearTimeout(a.timer); if (!a.ativo) return;
       soltou.current = Date.now();
-      a.g?.remove(); a.el.classList.remove('etq-origem'); document.body.classList.remove('etq-arrastando');
+      a.g?.remove(); a.els?.forEach((el: HTMLElement) => el.classList.remove('etq-origem')); document.body.classList.remove('etq-arrastando');
       const d = soltar ? (document.elementFromPoint(x, y) as HTMLElement | null)?.closest?.<HTMLElement>('.etq-aceita') : null;
       document.querySelectorAll('.etq-aceita,.etq-sobre').forEach((z) => z.classList.remove('etq-aceita', 'etq-sobre'));
-      if (d) parteR.current(a.k, d.dataset.drop === 'pool' ? null : d.dataset.p!, d.dataset.drop === 'mat' ? d.dataset.mp! : undefined);
+      if (!d) return;
+      const drop = d.dataset.drop as 'pool' | 'parte' | 'mat';
+      if (a.ks.length > 1) grupoR.current(a.ks, drop, drop === 'pool' ? null : d.dataset.p!, drop === 'mat' ? d.dataset.mp! : undefined);
+      else parteR.current(a.k, drop === 'pool' ? null : d.dataset.p!, drop === 'mat' ? d.dataset.mp! : undefined);
+    };
+    /* o retângulo: só com o mouse e a partir do vazio (fora de etiqueta, campo, botão e título de parte) */
+    const VAZIO_NAO = '.etq, input, select, textarea, button, a, label, [contenteditable], .etq-menu, .scrim';
+    const laco = (x: number, y: number) => {
+      const q = Q; if (!q) return;
+      const l = Math.min(q.x, x), t = Math.min(q.y, y), w = Math.abs(x - q.x), h = Math.abs(y - q.y);
+      Object.assign(q.div.style, { left: l + 'px', top: t + 'px', width: w + 'px', height: h + 'px' });
+      const dentro = new Set<string>(q.base);
+      raiz()?.querySelectorAll<HTMLElement>('.etq[data-etq]').forEach((el) => {
+        if (el.closest('.fechado')) return;
+        const r = el.getBoundingClientRect();
+        if (r.right >= l && r.left <= l + w && r.bottom >= t && r.top <= t + h) dentro.add(el.dataset.etq!);
+      });
+      const atual = selR.current;
+      if (dentro.size !== atual.size || [...dentro].some((k) => !atual.has(k))) setSel(dentro);
+      if (y < 60) scrollBy(0, -14); else if (y > innerHeight - 60) scrollBy(0, 14);
     };
     const down = (e: PointerEvent) => {
-      const el = (e.target as HTMLElement).closest?.<HTMLElement>('.etq[data-etq]');
-      if (!el || !raiz()?.contains(el) || e.button > 0 || (e.target as HTMLElement).closest('.etq-x,.etq-ed,.etq-pzb')) return;
-      A = { el, k: el.dataset.etq, x: e.clientX, y: e.clientY, pid: e.pointerId, toque: e.pointerType !== 'mouse', ativo: false };
+      const alvo = e.target as HTMLElement;
+      const el = alvo.closest?.<HTMLElement>('.etq[data-etq]');
+      const somar = e.ctrlKey || e.metaKey || e.shiftKey;
+      if (!el) {
+        if (e.pointerType !== 'mouse' || e.button !== 0 || !raiz()?.contains(alvo) || alvo.closest(VAZIO_NAO)) return;
+        Q = { x: e.clientX, y: e.clientY, pid: e.pointerId, ativo: false, base: somar ? [...selR.current] : [] };
+        return;
+      }
+      if (!raiz()?.contains(el) || e.button > 0 || alvo.closest('.etq-x,.etq-ed,.etq-pzb')) return;
+      const k = el.dataset.etq!;
+      if (somar && e.pointerType === 'mouse') {   // Ctrl/Shift + clique: põe ou tira da seleção, sem abrir a janela
+        e.preventDefault(); soltou.current = Date.now();
+        setSel((s0) => { const n = new Set(s0); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+        return;
+      }
+      const ks = selR.current.has(k) && selR.current.size > 1 ? [...selR.current] : [k];
+      A = { el, k, ks, x: e.clientX, y: e.clientY, pid: e.pointerId, toque: e.pointerType !== 'mouse', ativo: false };
       if (A.toque) { const a = A; a.timer = setTimeout(() => { if (A === a) comecar(); }, 300); }
     };
     const move = (e: PointerEvent) => {
+      const q = Q;
+      if (q && e.pointerId === q.pid) {
+        if (!q.ativo) {
+          if (Math.hypot(e.clientX - q.x, e.clientY - q.y) < 5) return;
+          q.ativo = true; q.div = document.createElement('div'); q.div.className = 'etq-laco'; document.body.appendChild(q.div);
+          document.body.classList.add('etq-lacando'); getSelection()?.removeAllRanges();
+        }
+        e.preventDefault(); laco(e.clientX, e.clientY); return;
+      }
       const a = A; if (!a || e.pointerId !== a.pid) return;
       if (!a.ativo) { const d = Math.hypot(e.clientX - a.x, e.clientY - a.y); if (a.toque) { if (d > 8) { clearTimeout(a.timer); A = null; } return; } if (d < 5) return; comecar(); }
       e.preventDefault(); mover(e.clientX, e.clientY);
     };
-    const up = (e: PointerEvent) => { if (A && e.pointerId === A.pid) fim(true, e.clientX, e.clientY); };
-    const cancel = (e: PointerEvent) => { if (A && e.pointerId === A.pid) fim(false); };
+    const fimQ = (e: PointerEvent) => {
+      const q = Q; if (!q || e.pointerId !== q.pid) return false;
+      Q = null;
+      if (q.ativo) { q.div.remove(); document.body.classList.remove('etq-lacando'); soltou.current = Date.now(); }
+      else if (!q.base.length && selR.current.size) setSel(new Set());   // clique no vazio limpa
+      return true;
+    };
+    const up = (e: PointerEvent) => { if (fimQ(e)) return; if (A && e.pointerId === A.pid) fim(true, e.clientX, e.clientY); };
+    const cancel = (e: PointerEvent) => { if (fimQ(e)) return; if (A && e.pointerId === A.pid) fim(false); };
     const tm = (e: TouchEvent) => { if (A?.ativo) e.preventDefault(); };
     const ctx = (e: MouseEvent) => { if (A || (e.target as HTMLElement).closest?.('.etq[data-etq]')) e.preventDefault(); };
     document.addEventListener('pointerdown', down); document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
@@ -767,6 +873,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     return () => {
       document.removeEventListener('pointerdown', down); document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up);
       document.removeEventListener('pointercancel', cancel); document.removeEventListener('touchmove', tm); document.removeEventListener('contextmenu', ctx);
+      Q?.div?.remove(); document.body.classList.remove('etq-lacando');
     };
   }, [edita]);
 
@@ -775,7 +882,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const lista = lotesDe(L, tipo), es: Etq[] = lista.flatMap((x) => { const cs = copias(L, tipo, x.id); return cs.length ? cs.filter((c) => !c.parte_id).map((c) => ({ tipo, x, c })) : [{ tipo, x }]; });
     return (
       <div className="etq-pool" data-drop="pool" data-tipo={tipo}>
-        {es.length ? es.map((e) => <Etiqueta key={chave(e)} e={e} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)
+        {es.length ? es.map((e) => <Etiqueta key={chave(e)} e={e} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} sel={sel} />)
           : <span className="etq-vazio">{lista.length ? 'Todas já estão numa parte.' : tipo === 'm' ? 'Nenhuma matrícula ainda.' : `Nenhum ${rot} ainda.`}</span>}
       </div>
     );
@@ -875,8 +982,8 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                       const dentro = is.filter((y) => y.c.matricula_parte_id === c.id);
                       return (
                         <div key={c.id} className="etq-mq" data-drop="mat" data-p={pa.id} data-mp={c.id}>
-                          <div className="etq-mq-h"><Etiqueta e={{ tipo: 'm', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} /></div>
-                          <div className="etq-mq-b">{dentro.length ? dentro.map(({ x: y, c: cy }) => <Etiqueta key={cy.id} e={{ tipo: 's', x: y, c: cy }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)
+                          <div className="etq-mq-h"><Etiqueta e={{ tipo: 'm', x, c }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} sel={sel} /></div>
+                          <div className="etq-mq-b">{dentro.length ? dentro.map(({ x: y, c: cy }) => <Etiqueta key={cy.id} e={{ tipo: 's', x: y, c: cy }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} sel={sel} />)
                             : <span className="etq-vazio">{edita ? `Solte aqui os ${rot}s desta matrícula.` : `Sem ${rot}.`}</span>}</div>
                         </div>
                       );
@@ -886,7 +993,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                       return sem.length > 0 && (
                         <div className="etq-mq sem">
                           <div className="etq-mq-h"><span className="faint">{rot}s sem matrícula: arraste cada um para a matrícula dele</span></div>
-                          <div className="etq-mq-b">{sem.map(({ x: y, c: cy }) => <Etiqueta key={cy.id} e={{ tipo: 's', x: y, c: cy }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} />)}</div>
+                          <div className="etq-mq-b">{sem.map(({ x: y, c: cy }) => <Etiqueta key={cy.id} e={{ tipo: 's', x: y, c: cy }} L={L} rot={rot} edita={edita} ver={ver} tirar={tirar} menu={abrirMenu} pct={abrirPct} sel={sel} />)}</div>
                         </div>
                       );
                     })()}

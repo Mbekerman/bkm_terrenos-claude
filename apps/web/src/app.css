@@ -413,3 +413,14 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
 :is(.mapa, .mini-mapa).modo.leaflet-dragging, :is(.mapa, .mini-mapa).modo.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive),
 .mapa.regua.leaflet-dragging, .mapa.regua.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive) { cursor: grabbing }
+
+/* seleção de etiquetas por retângulo e arraste em grupo (pedido do Moises, 10/nov/2026; ficha/Partes.tsx) */
+.etq-laco { position: fixed; z-index: 1000; pointer-events: none; border: 1px solid #0b57d0; background: rgba(11, 87, 208, .1); border-radius: 2px }
+body.etq-lacando, body.etq-lacando * { user-select: none !important; cursor: crosshair !important }
+.etq.etq-sel { outline: 2px solid #0b57d0; outline-offset: 1px; box-shadow: 0 0 0 4px rgba(11, 87, 208, .16) }
+.etq-fantasma.grupo { overflow: visible; box-shadow: 0 6px 16px rgba(0,0,0,.22), 4px 4px 0 -1px #fff, 4px 4px 0 0 #b9a0ea, 8px 8px 0 -1px #fff, 8px 8px 0 0 #b9a0ea }
+.etq-fantasma.grupo.m { box-shadow: 0 6px 16px rgba(0,0,0,.22), 4px 4px 0 -1px #fff, 4px 4px 0 0 #e3c25a, 8px 8px 0 -1px #fff, 8px 8px 0 0 #e3c25a }
+.etq-conta { position: absolute; top: -9px; right: -9px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #0b57d0; color: #fff; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center }
+html[data-tema="escuro"] .etq-laco { border-color: #a8c7fa; background: rgba(168, 199, 250, .12) }
+html[data-tema="escuro"] .etq.etq-sel { outline-color: #a8c7fa; box-shadow: 0 0 0 4px rgba(168, 199, 250, .18) }
+html[data-tema="escuro"] .etq-conta { background: #a8c7fa; color: #062e6f }

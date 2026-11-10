@@ -94,6 +94,8 @@ Embaixo vem **um quadro por parte**, numa grade, com a seta que abre e fecha a l
 
 **Arraste** a etiqueta da área de cima para o quadro da parte, ou de uma parte para outra.
 
+**Várias de uma vez** (no computador): clique num espaço vazio da seção e arraste o mouse; um retângulo azul aparece e as etiquetas que ele toca ficam **selecionadas** (contorno azul). Para somar etiquetas à seleção, segure **Ctrl** (⌘ no Mac) ou **Shift** e clique nelas, ou desenhe outro retângulo com a tecla apertada. Depois arraste **qualquer uma das selecionadas**: vão todas juntas, com o número delas no canto da etiqueta que você leva. As regras abaixo valem para cada uma; as que não puderem entrar ficam onde estavam, e o aviso diz quantas foram e por quê. Matrículas e SQLs podem ir no mesmo grupo: as matrículas entram primeiro, e os SQLs vão para dentro delas quando a parte fica com uma matrícula só. **Ctrl+Z** desfaz o grupo inteiro de uma vez. Clique no vazio ou **Esc** limpa a seleção.
+
 **Regras:**
 
 - Cada **matrícula** levada a uma parte vira um **subquadro amarelo** dela.
