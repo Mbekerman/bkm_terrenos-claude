@@ -116,7 +116,7 @@ apps/web/
 | `Massa.tsx` | Aba Estudos de massa: lista com o válido, Solicitar estudo (com rascunho), ficha do estudo editada no lugar (tipologias numa fila que manda a lista inteira a `salvar_estudo_massa`), Ver pedido, Marcar como entregue / válido, Apagar e Criar estudo de viabilidade (`criar_viabilidade_da_massa`). |
 | `Contaminacao.tsx` | Popup "Ver detalhes" da contaminação: registros SIGAC e SVMA com todos os atributos e o recorte do mapa de lotes do GeoSampa (WMS) com o terreno e os registros. |
 | `Parametros.tsx` | Seção Parâmetros urbanísticos da aba Terreno (`SecParametros`, desde #324 três quadros soltos, `indices`, `rest` e `histuso`, cada um um chip da aba Terreno): panorama do terreno (parâmetros de todos os lotes unidos por " / ", camadas somadas e o "não toca" uma vez só), zonas por lote (em "Ver lote por lote"), potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
-| `Entorno.tsx` + `entorno.ts` | `AbaEntorno` (subaba Entorno de Estudos Técnicos): pontos de interesse (busca no Google, rota a pé, excluir/restaurar). `AbaMercado` (aba Mercado e Demografia, desde #324): renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
+| `Entorno.tsx` + `entorno.ts` | `AbaMercado` (aba Mercado e Demografia, desde #324, no lugar da aba Entorno): pontos de interesse (busca no Google, rota a pé, excluir/restaurar), renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
 | `Painel.tsx` | Painel lateral: quadro de avanço no topo e as abas Ações, Tarefas e Logs (sem olhinho nem lixeira). Os logs automáticos (`auditoria.automatico`) ficam recolhidos dentro da última ação da mesma pessoa (`agrupar`, janela de 30 min); a aba conta só ações. Gravação feita pelo sistema como consequência leva `automatico(...)` (`lib/supabase.ts`). |
 | `Avanco.tsx` | Quadro de avanço: subetapa, prazo, pendências, Avançar / Pedir aprovação / Concluir, Stand By / Perdido / Descartado, aprovar e recusar. Só por RPC. |
 | `MiniMapa.tsx` | Mini-mapa da Visão geral, com edição da poligonal no lugar. |
@@ -171,7 +171,7 @@ As rotas ficam em `src/App.tsx`. Todas moram dentro da `Moldura` (barra e menu).
 | `/mapa/A123/ficha` | Mapa com a ficha na gaveta da direita | A aba da gaveta **não** vai para o endereço (fica só na gaveta, como no protótipo). |
 | `/terrenos/novo` | Mapa com a janela do Novo terreno aberta | Fechar a janela volta para `/mapa`. |
 | `/terrenos/A123` | Ficha, aba Visão geral | O código é aceito em minúsculas (vira maiúsculas). |
-| `/terrenos/A123/<aba>` | Ficha na aba | Abas: `geral`, `terreno`, `comercial`, `massa`, `viabilidade`, `entorno`, `infra`, `mercado`, `jornada`, `documentos` (`massa` a `infra` são as subabas de Estudos Técnicos; `estudos` abre a última vista na sessão). Links antigos (`cadastro`, `negociacao`, `urbanismo`, `parametros`, `fases`, `viabilidades`) viram a aba nova (`Ficha.tsx`, `ANTIGA`). |
+| `/terrenos/A123/<aba>` | Ficha na aba | Abas: `geral`, `terreno`, `comercial`, `massa`, `viabilidade`, `infra`, `mercado`, `jornada`, `documentos` (`massa`, `viabilidade` e `infra` são as subabas de Estudos Técnicos; `estudos` abre a última vista na sessão). Links antigos (`cadastro`, `negociacao`, `urbanismo`, `parametros`, `fases`, `viabilidades`, `entorno`) viram a aba nova (`Ficha.tsx`, `ANTIGA`). |
 | `/funil` | Funil, nível das fases | |
 | `/funil/<fase>` | Etapas da fase | Ex.: `/funil/novos_negocios` (o código da fase, de `fases_modelo.codigo`). |
 | `/funil/<fase>/<etapa>` | Subetapas da etapa | |
@@ -284,7 +284,7 @@ A chave começa por um nome curto e depois o que a identifica. Invalidar pelo no
 | `['ficha-logs', ...]`, `['ficha-tarefas', terreno]` | painel lateral | `ficha/Painel.tsx` |
 | `['ficha-listas', empresa]` | equipe e eixos para os seletores (5 min) | `ficha/edicao.tsx` |
 | `['ficha-massa', terreno]` | estudos de massa, tipologias e viabilidades presas | `ficha/Massa.tsx` |
-| `['parametros', ...]`, `['entorno', ...]` | seção Parâmetros urbanísticos (aba Terreno) e aba Entorno | `ficha/Parametros.tsx`, `ficha/Entorno.tsx` |
+| `['parametros', ...]`, `['entorno', ...]` | seção Parâmetros urbanísticos (aba Terreno) e aba Mercado e Demografia | `ficha/Parametros.tsx`, `ficha/Entorno.tsx` |
 | `['funil', empresa]` | quadro do funil | `pages/Funil.tsx` |
 | `['filtros', empresa]`, `['visoes', ...]` | dados dos filtros e visões salvas | `filtros/Filtros.tsx` |
 | `['avisos', usuário, empresa]` | sino (recarrega a cada 60 s e pelo Realtime) | `components/Moldura.tsx` |

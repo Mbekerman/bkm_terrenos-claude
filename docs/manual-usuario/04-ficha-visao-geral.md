@@ -67,21 +67,20 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mer
 | Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
 | Estudos Técnicos › Estudos de massa | Disponível | [14](14-ficha-estudos-de-massa.md) |
 | Estudos Técnicos › Estudos de viabilidade | Disponível em parte: lista, Resumo da viabilidade e a seção Tipologias do estudo | [15](15-ficha-viabilidades.md) |
-| Estudos Técnicos › Entorno | Disponível: Pontos de interesse | [08](08-ficha-entorno.md) |
 | Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico**), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
-| Mercado e Demografia | Disponível: Renda e população, Perfil da população e Concorrência | [08](08-ficha-entorno.md) |
+| Mercado e Demografia | Disponível: Pontos de interesse, Renda e população, Perfil da população e Concorrência | [08](08-ficha-entorno.md) |
 | Jornada | Disponível: linha do tempo e fases do terreno | [16](16-ficha-jornada.md) |
 | Documentos | **Ainda não disponível** (mostra "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
-**Estudos Técnicos** junta quatro partes, nesta ordem: Estudos de massa, Estudos de viabilidade, Entorno e Avaliação de infraestrutura. Com ela aberta, aparecem logo abaixo da barra quatro botões, um para cada parte; o que está aberto fica em azul-claro. Clicar em Estudos Técnicos abre a parte que você viu por último na sessão (da primeira vez, Estudos de massa).
+**Estudos Técnicos** junta três partes, nesta ordem: Estudos de massa, Estudos de viabilidade e Avaliação de infraestrutura. Com ela aberta, aparecem logo abaixo da barra três botões, um para cada parte; o que está aberto fica em azul-claro. Clicar em Estudos Técnicos abre a parte que você viu por último na sessão (da primeira vez, Estudos de massa).
 
 **Como andar pelas abas:**
 
 - Clique na aba.
 - A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (com o mouse em cima, o cursor é o dedinho, como em qualquer botão; vira mão fechada enquanto você segura o botão do mouse). Solta com força, ela continua rodando e freia aos poucos.
-- O **⋮ "Mais ações"** (só quando a barra não cabe) lista todas as abas, com as quatro partes de Estudos Técnicos embaixo do nome dela e a atual marcada.
+- O **⋮ "Mais ações"** (só quando a barra não cabe) lista todas as abas, com as três partes de Estudos Técnicos embaixo do nome dela e a atual marcada.
 
-Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos Técnicos, o da parte, como `/terrenos/A123/entorno`), então dá para mandar o link direto para uma aba.
+Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos Técnicos, o da parte, como `/terrenos/A123/infra`), então dá para mandar o link direto para uma aba.
 
 ## Seções em botões
 
@@ -89,7 +88,7 @@ Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos T�
 
 Em todas as abas menos a Visão geral, cada **seção** (Identificação, Endereço e localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra.
 
-Em Estudos Técnicos a barra é uma só, com as quatro partes; dentro de cada parte, os quadros (Relevo, Visita técnica, Viabilidades técnicas, Resumo da viabilidade...) continuam abrindo e fechando pela seta. Em Estudos de massa, o estudo aberto aparece embaixo da lista, também como quadro que abre e fecha.
+Em Estudos Técnicos a barra é uma só, com as três partes; dentro de cada parte, os quadros (Relevo, Visita técnica, Viabilidades técnicas, Resumo da viabilidade...) continuam abrindo e fechando pela seta. Em Estudos de massa, o estudo aberto aparece embaixo da lista, também como quadro que abre e fecha.
 
 **Para ver os botões que não cabem**, a barra gira como uma roleta, igual à barra das abas: segure o botão do mouse e arraste para o lado; solte com força e ela continua girando e vai freando. Também funciona com Shift + roda do mouse, o deslize de lado do trackpad e, no celular, o dedo. Arrastar não troca de seção; só o clique troca. Quando **mais de um botão** fica de fora, aparecem os **três pontinhos (⋮)** no fim da barra, com a lista de todas as seções e a atual marcada.
 
@@ -134,7 +133,7 @@ Cada linha tem uma **seta** que leva à aba onde o dado mora.
 | **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Terreno › Parâmetros urbanísticos (a seta abre a seção em Índices urbanísticos). |
 | **Área adotada** | Área e a fonte | O seletor de **fonte** troca a área adotada ali mesmo (a Cadastral aparece sempre; as outras, quando preenchidas). |
 | **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido (unidades somadas das tipologias e VGV bruto) | Estudos Técnicos › Estudos de viabilidade (a seta leva lá); vazias enquanto nenhum estudo for o válido. Ver [15](15-ficha-viabilidades.md). |
-| **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Entorno). |
+| **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Mercado e Demografia, Pontos de interesse). |
 | **Valor pedido na entrada** | Valor da **primeira** oferta, com a data | Aba Comercial. |
 | **Perfil topográfico** | Plano, Inclinado, Acidentado... e o desnível | Medido sozinho (veja Relevo, abaixo); enquanto mede, "medindo...". A seta leva a Estudos Técnicos › Avaliação de infraestrutura. |
 | **Corretor** | Corretor principal e imobiliária | Aba Comercial. |

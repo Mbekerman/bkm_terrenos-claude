@@ -13,7 +13,7 @@ import { LapisMapa, verificarEndereco } from '../novo/TrocarEndereco';
 import Temperatura from './Temperatura';
 import AbaComercial from './Comercial';
 import Painel, { Avancos, Historico, usePN } from './Painel';
-import AbaEntorno, { AbaMercado, EntornoAuto } from './Entorno';
+import AbaMercado, { EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
 import AbaInfra from '../topo/Topografico';
 import AbaViabilidade, { PopEstudo } from '../viab/Viabilidade';
@@ -34,11 +34,12 @@ import { BarraChips, SecoesChips } from './Chips';
 // vieram depois, e o quadro de avanço com o painel de Logs (Painel.tsx, Avanco.tsx) na quarta entrega. As abas fora da primeira versão ficam
 // com o aviso.
 
-/** os itens da barra de abas; Estudos Técnicos junta, nesta ordem, Estudos de massa, Estudos de viabilidade, Entorno e
-    Avaliação de infraestrutura, que viram as subabas dela (pedido do Moises, 10/nov/2026). O endereço continua o da
-    subaba (`/terrenos/A123/entorno`), e `/terrenos/A123/estudos` abre a última subaba vista na sessão. */
-export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['viabilidade', 'Estudos de viabilidade'], ['entorno', 'Entorno'], ['infra', 'Avaliação de infraestrutura']];
-/** Mercado e Demografia: renda, perfil da população e concorrência, que saíram do Entorno (pedido do Moises, 10/nov/2026) */
+/** os itens da barra de abas; Estudos Técnicos junta, nesta ordem, Estudos de massa, Estudos de viabilidade e Avaliação de
+    infraestrutura, que viram as subabas dela (pedido do Moises, 10/nov/2026). O endereço continua o da subaba
+    (`/terrenos/A123/infra`), e `/terrenos/A123/estudos` abre a última subaba vista na sessão. */
+export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['viabilidade', 'Estudos de viabilidade'], ['infra', 'Avaliação de infraestrutura']];
+/** Mercado e Demografia: pontos de interesse, renda, perfil da população e concorrência; o Entorno saiu (pedido do Moises,
+    10/nov/2026), e o link antigo `/entorno` cai aqui */
 export const BARRA: [string, string, [string, string][]?][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'],
   ['estudos', 'Estudos Técnicos', ESTUDOS], ['mercado', 'Mercado e Demografia'], ['jornada', 'Jornada'], ['documentos', 'Documentos'], ['historico', 'Histórico']];
 /** Histórico só sem o painel (a classe o esconde onde o painel aparece) */
@@ -50,7 +51,7 @@ const grupo = (k: string) => BARRA.find(([g, , s]) => g === k || s?.some((x) => 
 const SUB_LEMBRA = 'bkm-terrenos-ficha-estudos';
 const subVista = () => { try { const v = sessionStorage.getItem(SUB_LEMBRA); return ESTUDOS.some((x) => x[0] === v) ? v! : ESTUDOS[0][0]; } catch { return ESTUDOS[0][0]; } };
 /** links antigos caem na aba nova (CLAUDE.md, ficha em abas); Parâmetros virou seção da aba Terreno (9/nov/2026) */
-const ANTIGA: Record<string, string> = { cadastro: 'terreno', negociacao: 'comercial', urbanismo: 'terreno', parametros: 'terreno', fases: 'jornada', viabilidades: 'viabilidade' };
+const ANTIGA: Record<string, string> = { cadastro: 'terreno', negociacao: 'comercial', urbanismo: 'terreno', parametros: 'terreno', fases: 'jornada', viabilidades: 'viabilidade', entorno: 'mercado' };
 export const abaN = (k: string | undefined | null) => {
   if (k === 'estudos') return subVista();
   const a = ANTIGA[k ?? ''] ?? k ?? 'geral'; return ABAS.some((x) => x[0] === a) ? a : 'geral';
@@ -302,7 +303,7 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
             : lin('Área adotada', f.area != null ? dois(m2(f.area), f.fonteArea ? FONTE_AREA[f.fonteArea] : null) : '', ir('terreno', 'Ver as áreas'))}
           {lin('Unidades do estudo válido', f.unidades != null ? `${num(f.unidades)} unidades` : '', ir('viabilidade', 'Ver os estudos de viabilidade'))}
           {lin('VGV do estudo válido', f.vgv != null ? milhoes(f.vgv) : '')}
-          {lin('Distância do metrô ou trem', est, ir('entorno', 'Ver o entorno'))}
+          {lin('Distância do metrô ou trem', est, ir('mercado', 'Ver os pontos de interesse', 'ent'))}
           {lin('Valor pedido na entrada', f.ofertaEntrada?.valor ? dois(milhoes(f.ofertaEntrada.valor), `oferta de ${fd(f.ofertaEntrada.data)}`) : '', ir('comercial', 'Ver as ofertas'))}
           {lin('Perfil topográfico', tp, ir('infra', 'Ver a infraestrutura'))}
           {lin('Corretor', f.corretor ? dois(f.corretor.nome, f.corretor.imob) : '', ir('comercial', 'Ver os corretores'))}
@@ -420,7 +421,6 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   const corpo = aba === 'geral' ? <VisaoGeral f={f} irAba={irAba} abrirMapa={abrirMapa} />
     : aba === 'terreno' ? <AbaTerreno key={f.id} f={f} />
     : aba === 'comercial' ? <AbaComercial key={f.id} f={f} cor={corPino(f)[0]} />
-    : aba === 'entorno' ? <AbaEntorno key={f.id} f={f} />
     : aba === 'mercado' ? <AbaMercado key={f.id} f={f} />
     : aba === 'infra' ? <AbaInfra key={f.id} f={f} />
     : aba === 'viabilidade' ? <AbaViabilidade key={f.id} f={f} />
@@ -465,7 +465,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
         : <SecoesChips key={aba} aba={aba} rotulo={ABAS.find((x) => x[0] === aba)?.[1] ?? aba}>
           <section className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
         </SecoesChips>}
-      {aba !== 'entorno' && f.lat != null && <EntornoAuto f={f} />}
+      {aba !== 'mercado' && f.lat != null && <EntornoAuto f={f} />}
       <CartorioAuto f={f} />
       <PopEstudo f={f} />
     </div><Painel f={f} irAba={irAba} /></div>

@@ -86,20 +86,15 @@ export function EntornoAuto({ f }: { f: Ficha }) {
   return null;
 }
 
-/** Estudos Técnicos › Entorno: os pontos de interesse (pedido do Moises, 10/nov/2026; renda, perfil e concorrência foram
-    para a aba Mercado e Demografia, abaixo) */
-export default function AbaEntorno({ f }: { f: Ficha }) {
-  if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Endereço e localização) para ver o entorno.</div></section>;
-  return <div className="stack"><SecPontos f={f} /></div>;
-}
-
-/** aba Mercado e Demografia (pedido do Moises, 10/nov/2026): renda, perfil da população e concorrência, cada um num chip */
-export function AbaMercado({ f }: { f: Ficha }) {
+/** aba Mercado e Demografia (pedido do Moises, 10/nov/2026): pontos de interesse, renda, perfil da população e
+    concorrência, cada um num chip; o Entorno de Estudos Técnicos saiu */
+export default function AbaMercado({ f }: { f: Ficha }) {
   /* um raio para cada quadro (pedido do Moisés, 6/nov/2026: antes era o mesmo nos dois) */
   const [raioR, setRaioR] = useState<Raio>(1000), [raioP, setRaioP] = useState<Raio>(1000);
   if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Endereço e localização) para ver o mercado e a demografia.</div></section>;
   return (
     <div className="stack">
+      <SecPontos f={f} />
       <SecRenda f={f} raio={raioR} setRaio={setRaioR} />
       <SecPerfil f={f} raio={raioP} setRaio={setRaioP} />
       <SecConcorrencia f={f} />
@@ -181,7 +176,7 @@ function SecPontos({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="entorno" id="ent" primeiro chip="Pontos de interesse" titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
+    <Quadro aba="mercado" id="ent" primeiro chip="Pontos de interesse" titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
       <div className="sec-b">{corpo}</div>
     </Quadro>
   );
