@@ -235,6 +235,8 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 
 **Custo.** Nenhum. **Limites:** API interna, pode mudar sem aviso (CLAUDE.md). O token de visitante expira; o código pede outro.
 
+**Varredura da cidade.** O job `tools/geosanja/varredura` (Cloud Run Job `varredura-sjc`, projeto `bkm-terrenos`, `southamerica-east1`) baixa a área urbana aos poucos, das 22h às 06:55 `America/Sao_Paulo`, uma requisição por vez. A montagem da quadra é a mesma da ficha (`novo/lotesSjcPuro.ts`). Grava por `app.varredura_sjc_guardar`, com a mesma semântica de `app.guardar_lotes_prefeitura` (PR #290): atualiza o que veio, não mexe no lote marcado `da_base` e apaga o que saiu de uma quadra montada por inteiro. Quadra ou lote com menos de 90 dias não é pedido de novo. O progresso é `app.varredura_sjc_relatorio(empresa)`. Deploy, pausa e a estimativa de noites: [tools/geosanja/varredura/README.md](../../tools/geosanja/varredura/README.md). Segredos `varredura-supabase-url` e `varredura-supabase-service-role` no Secret Manager; nada de chave no repositório. 403 ou falha repetida encerra a noite. Não contorna bloqueio.
+
 **Quando quebra.** Teste o token: `https://<serviço>.run.app/geosanja/v1/autenticar?token=VISITANTE`. Respostas gravadas para os testes em `tools/prototipo/testes/geosanja/` (`GRAVAR=1 node tools/prototipo/testes/tgeosjc.js`).
 
 ---

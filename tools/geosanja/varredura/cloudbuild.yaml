@@ -1,0 +1,14 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - tools/geosanja/varredura/Dockerfile
+      - -t
+      - southamerica-east1-docker.pkg.dev/$PROJECT_ID/varredura/varredura-sjc:$BUILD_ID
+      - -t
+      - southamerica-east1-docker.pkg.dev/$PROJECT_ID/varredura/varredura-sjc:latest
+      - .
+images:
+  - southamerica-east1-docker.pkg.dev/$PROJECT_ID/varredura/varredura-sjc:$BUILD_ID
+  - southamerica-east1-docker.pkg.dev/$PROJECT_ID/varredura/varredura-sjc:latest

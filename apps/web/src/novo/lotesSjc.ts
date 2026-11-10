@@ -7,13 +7,13 @@
 // 3. cada quadra é montada inteira pelos vizinhos: pontos a 1,5 m para fora de cada borda dos lotes achados; o da mesma quadra
 //    entra e é varrido também, o de outra quadra fica de fora e a rua não responde, o que faz a busca parar sozinha nas ruas.
 // Tudo em UTM 23S (metros), como o mapa de lotes de São Paulo (LotesGeo.tsx).
+// A varredura (grade, vizinhos a 1,5 m, parada na rua) mora em lotesSjcPuro.ts, compartilhada com o job
+// tools/geosanja/varredura. Aqui ficam o token, o paralelo de 8 e as plantas.
 import { GSJ_BASE, gsjLote, gsjToken } from './geosanja';
-import { geoAneis, geoAreaAnel, geoNoAnel, latLngUtm, utmLatLng } from './geosampa';
+import { anelUtm, montarQuadras, quadraDe, type Anel } from './lotesSjcPuro';
 
-type An = number[][];
-export interface LoteGsj { ic: string; an: An }
-/** limites para não varrer sem fim (gleba enorme, quadra sem rua em volta) */
-const MAX_LOTES = 300, MAX_PONTOS = 1500, PARALELO = 8;
+export { quadraDe };
+export interface LoteGsj { ic: string; an: Anel }
 
 /** inscrição do lote no ponto; null na rua ou fora do cadastro */
 export async function gsjNoPonto(lat: number, lng: number): Promise<string | null> {
@@ -25,110 +25,22 @@ export async function gsjNoPonto(lat: number, lng: number): Promise<string | nul
   return /^\d{2}\.\d{4}\.\d{4}\.\d{4}$/.test(t) ? t : null;
 }
 /** o lote da inscrição em UTM (anel fechado), ou null */
-async function anelDe(ic: string): Promise<An | null> {
+async function anelDe(ic: string): Promise<Anel | null> {
   const g = await gsjLote(ic);
-  if (!g) return null;
-  const r = geoAneis(g)[0].map(([lng, lat]) => latLngUtm(lat, lng) as number[]);
-  if (r.length && (r[0][0] !== r[r.length - 1][0] || r[0][1] !== r[r.length - 1][1])) r.push(r[0]);
-  return r;
-}
-/** a quadra da inscrição: setor e quadra ("41.0024") */
-export const quadraDe = (ic: string) => ic.slice(0, 7);
-
-async function emLotes<T, R>(xs: T[], f: (x: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = new Array(xs.length);
-  let i = 0;
-  await Promise.all(Array.from({ length: Math.min(PARALELO, xs.length) }, async () => { while (i < xs.length) { const k = i++; out[k] = await f(xs[k]); } }));
-  return out;
-}
-const bbDe = (an: An) => { const xs = an.map((p) => p[0]), ys = an.map((p) => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
-function fracao(an: An, ter: An) {
-  const [x0, y0, x1, y1] = bbDe(an); let n = 0, d = 0;
-  for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) { const pt = [x0 + ((x1 - x0) * (i + 0.5)) / 16, y0 + ((y1 - y0) * (j + 0.5)) / 16]; if (!geoNoAnel(pt, an)) continue; n++; if (geoNoAnel(pt, ter)) d++; }
-  return n ? d / n : 0;
+  return g ? anelUtm(g) : null;
 }
 
 /**
  * Os lotes das quadras que a poligonal ocupa (ter, UTM fechado) ou das quadras das inscrições dadas (ics), cada quadra inteira.
  * andamento(n): quantos lotes já achou.
  */
-export async function quadrasSjc(o: { ter?: An | null; ics?: string[]; andamento?: (n: number) => void }): Promise<{ lotes: LoteGsj[]; quadras: string[] }> {
+export async function quadrasSjc(o: { ter?: Anel | null; ics?: string[]; andamento?: (n: number) => void }): Promise<{ lotes: LoteGsj[]; quadras: string[] }> {
   if (!GSJ_BASE) throw new Error('A busca no GeoSanja funciona na versão publicada.');
-  const lotes = new Map<string, An>(), vazios: number[][] = [], fora = new Set<string>();
-  let pontos = 0;
-  const cobre = (p: number[]) => [...lotes.values()].some((an) => { const b = bbDe(an); return p[0] >= b[0] && p[0] <= b[2] && p[1] >= b[1] && p[1] <= b[3] && geoNoAnel(p, an); });
-  const perto = (p: number[]) => vazios.some((v) => Math.hypot(v[0] - p[0], v[1] - p[1]) < 1.2);
-  /** consulta os pontos (UTM) e devolve as inscrições novas, ainda sem desenho */
-  async function sondar(pts: number[][]): Promise<string[]> {
-    const ok = pts.filter((p) => !cobre(p) && !perto(p)).slice(0, Math.max(0, MAX_PONTOS - pontos));
-    pontos += ok.length;
-    const res = await emLotes(ok, async (p) => { const [la, ln] = utmLatLng(p[0], p[1]); try { return await gsjNoPonto(la, ln); } catch { return undefined; } });
-    if (ok.length && res.every((r) => r === undefined)) throw new Error('O GeoSanja não respondeu. Tente de novo em instantes.');
-    const novas = new Set<string>();
-    res.forEach((ic, k) => { if (ic === null) vazios.push(ok[k]); else if (ic && !lotes.has(ic)) novas.add(ic); });
-    return [...novas];
-  }
-  /** busca o desenho das inscrições e guarda os lotes (os sem desenho viram "fora") */
-  async function trazer(ics: string[]) {
-    const ans = await emLotes(ics, async (ic) => { try { return await anelDe(ic); } catch { return null; } });
-    ics.forEach((ic, k) => { const an = ans[k]; if (an && an.length >= 4) lotes.set(ic, an); else fora.add(ic); });
-    o.andamento?.(lotes.size);
-  }
-
-  let quadras: string[];
-  if (o.ter) {
-    /* 1. a grade na poligonal: passo pelo tamanho (4 a 15 m), sempre pulando o que já caiu num lote */
-    const ter = o.ter, area = geoAreaAnel(ter), [x0, y0, x1, y1] = bbDe(ter), s = Math.max(4, Math.min(15, Math.sqrt(area / 250)));
-    const grade: number[][] = [];
-    for (let x = x0 + s / 2; x < x1; x += s) for (let y = y0 + s / 2; y < y1; y += s) if (geoNoAnel([x, y], ter)) grade.push([x, y]);
-    if (!grade.length) grade.push([(x0 + x1) / 2, (y0 + y1) / 2]);
-    while (pontos < MAX_PONTOS && lotes.size < MAX_LOTES) {
-      const resta = grade.filter((p) => !cobre(p) && !perto(p));
-      if (!resta.length) break;
-      /* um ponto por vez em cada frente: os primeiros da fila e espalhados, para um lote grande cobrir muitos de uma vez */
-      const lote = resta.filter((_p, i) => i % Math.max(1, Math.floor(resta.length / PARALELO)) === 0).slice(0, PARALELO);
-      const novas = await sondar(lote);
-      if (novas.length) await trazer(novas);
-      lote.forEach((p) => { if (!cobre(p) && !perto(p)) vazios.push(p); });
-    }
-    const peso: Record<string, number> = {};
-    lotes.forEach((an, ic) => { const k = quadraDe(ic); peso[k] = Math.max(peso[k] || 0, fracao(an, ter) * geoAreaAnel(an)); });
-    quadras = Object.entries(peso).filter(([, v]) => v >= 10).sort((a, b) => b[1] - a[1]).map(([k]) => k);
-    if (!quadras.length) quadras = Object.keys(peso);
-    if (!quadras.length) throw new Error('A poligonal não ocupa nenhum lote do cadastro do GeoSanja.');
-    quadras = quadras.slice(0, 8);
-  } else {
-    const ics = [...new Set(o.ics || [])];
-    await trazer(ics);
-    quadras = [...new Set([...lotes.keys()].map(quadraDe))].slice(0, 8);
-    if (!quadras.length) throw new Error('O GeoSanja não achou o lote destas inscrições.');
-  }
-
-  /* 2. cada quadra inteira pelos vizinhos: pontos a 1,5 m para fora de cada borda, a cada 8 m no máximo */
-  /* os lotes de outras quadras ficam guardados só para não perguntar de novo pelos pontos deles; saem no fim */
-  const daQuadra = (ic: string) => quadras.includes(quadraDe(ic));
-  let fila = [...lotes.keys()].filter(daQuadra);
-  const feitos = new Set<string>();
-  while (fila.length && pontos < MAX_PONTOS && lotes.size < MAX_LOTES) {
-    const pts: number[][] = [];
-    fila.forEach((ic) => {
-      feitos.add(ic);
-      const r = lotes.get(ic)!;
-      for (let i = 0; i < r.length - 1; i++) {
-        const a = r[i], b = r[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
-        if (L < 1) continue;
-        const nx = (b[1] - a[1]) / L, ny = -(b[0] - a[0]) / L, n = Math.max(1, Math.floor(L / 8));
-        for (let k = 0; k < n; k++) {
-          const t = (k + 0.5) / n, m = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-          for (const sg of [1, -1]) { const p = [m[0] + sg * nx * 1.5, m[1] + sg * ny * 1.5]; if (!geoNoAnel(p, r)) pts.push(p); }
-        }
-      }
-    });
-    const novas = (await sondar(pts)).filter((ic) => !fora.has(ic));
-    if (novas.length) await trazer(novas);
-    fila = [...lotes.keys()].filter((ic) => daQuadra(ic) && !feitos.has(ic));
-  }
-  return { lotes: [...lotes].filter(([ic]) => daQuadra(ic)).map(([ic, an]) => ({ ic, an })), quadras };
+  const r = await montarQuadras({
+    ter: o.ter, ics: o.ics, andamento: o.andamento,
+    cliente: { noPonto: (lat, lng) => gsjNoPonto(lat, lng), anel: (ic) => anelDe(ic) },
+  });
+  return { lotes: r.lotes.map(({ ic, an }) => ({ ic, an })), quadras: r.quadras };
 }
 
 /* ---------- planta do loteamento aprovado (pedido do Moises, 10/nov/2026) ---------- */
