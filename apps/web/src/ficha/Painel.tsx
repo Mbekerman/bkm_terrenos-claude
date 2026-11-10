@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { data as fd, diasEntre, hojeISO, m2, milhoes, somarDias, FORMA } from '../lib/format';
 import { Ic } from '../components/Moldura';
-import { abrirQuadro, OPT, pedirCampo, SECOES } from './edicao';
+import { abrirQuadro, OPT, pedirCampo, Quadro, SECOES } from './edicao';
 import { completude, ITEM_COMPLETUDE, TEMP, TP_N, type Ficha as F, type R } from './dados';
 import { Avanco, procsAvanco, useAvanco } from './Avanco';
 import { useComercial } from './Comercial';
@@ -587,6 +587,12 @@ function Logs({ f, pn, set, irAba }: { f: F; pn: PN; set: (p: Partial<PN>) => vo
       {H.length ? linhas : <div className="empty">Nenhum registro {us.length ? 'destes usuários ' : ''}neste período.</div>}
     </div>
   );
+}
+
+/** sem o painel (celular ou tela estreita), os mesmos Logs viram a aba Histórico da ficha */
+export function Historico({ f, irAba }: { f: F; irAba: (k: string) => void }) {
+  const [pn, set] = usePN();
+  return <Quadro aba="historico" id="logs" primeiro titulo="Histórico"><div className="fi-hist"><Logs f={f} pn={pn} set={set} irAba={irAba} /></div></Quadro>;
 }
 
 /* ---------- ações: próximas ações da negociação (proto_painel.js › proximasAcoes; tarefas entram com o porte das tarefas) ---------- */

@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
+- **Aba Histórico** (ficha, sem o painel): em tela estreita e na gaveta do Mapa e do Pipeline, os Logs aparecem na aba Histórico, no fim da barra, com os mesmos filtros. (#321)
 - **Aba Jornada** (ficha): a linha do tempo da negociação, com os dias em cada etapa e subetapa contra o SLA, e as fases do terreno, com a situação, o que cada uma pede para abrir e os botões Abrir, Abrir antes da hora (gestor e diretor, com justificativa) e Reabrir. Ver [Jornada](16-ficha-jornada.md). (#320)
 - **Topográfico em São Paulo** (Estudos Técnicos › Avaliação de infraestrutura, quadro Relevo, botão Topográfico): as cotas vêm do laser de 2020 da prefeitura; sem SQL, a planta cobre a quadra inteira com os lotes numerados, numa folha maior se precisar (A2 a A0); traz calçadas com a largura, larguras das vias, córregos e melhoramentos do GeoSampa, e o DXF leva os pontos cotados do laser. Ver [Visão geral](04-ficha-visao-geral.md#topográfico-preliminar-aba-infraestrutura). (#319)
 - **Relevo medido sozinho** (ficha, aba Infraestrutura): ao abrir a ficha, o sistema mede as cotas dentro da poligonal (laser da prefeitura em São Paulo, Google fora) e mostra o perfil (Plano, Inclinado, Acidentado...), a declividade média, a inclinação do plano, a terra mexida e o desnível, com Medir de novo; o perfil aparece no Resumo da Visão geral. Ver [Visão geral](04-ficha-visao-geral.md). (#316)
