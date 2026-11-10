@@ -2113,6 +2113,7 @@ begin
     cartorio_origem = case when nullif(trim(v_novo.cartorio), '') is null then null
                            when nullif(trim(v_novo.cartorio), '') is distinct from t.cartorio then 'digitado' else t.cartorio_origem end,
     historico_uso = nullif(trim(v_novo.historico_uso), ''),
+    completude_dispensada = (select coalesce(array_agg(distinct x order by x), '{}') from unnest(coalesce(v_novo.completude_dispensada, '{}')) x),
     visita_tecnica_em = v_novo.visita_tecnica_em,
     latitude = v_novo.latitude, longitude = v_novo.longitude, poligono_geojson = v_novo.poligono_geojson,
     poligono_desenhado_geojson = v_novo.poligono_desenhado_geojson,
@@ -2871,7 +2872,8 @@ begin
   select * into t from app.terrenos where id = p_terreno for update;
   if not found then raise exception 'Terreno não encontrado' using errcode = 'P0002'; end if;
   perform app.exigir_editor(t.empresa_id);
-  if p_zona is null or p_zona not in ('leste','oeste','norte','sul','centro') then
+  -- São Paulo tem 5 regiões; São José dos Campos também Sudeste (LC 612/2018, anexo 4 do GeoSanja; 10/nov/2026)
+  if p_zona is null or p_zona not in ('leste','oeste','norte','sul','centro','sudeste') then
     raise exception 'Zona inválida: %', p_zona using errcode = '22023';
   end if;
   if t.zona_origem = 'digitado' or (t.zona is not null and t.zona_origem is null) or t.zona = p_zona then return false; end if;

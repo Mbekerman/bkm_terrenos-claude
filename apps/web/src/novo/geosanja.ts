@@ -4,7 +4,8 @@
 // próprio site (geo.sjc.sp.gov.br/v1) com o token de visitante, pelo Caddy em /geosanja (sem CORS; só na versão publicada).
 // A busca pela inscrição devolve só a poligonal do lote; zona (LC 623) com a área no lote, macrozona, centralidade, riscos e
 // restrições vêm das camadas liberadas ao visitante (GetFeatureInfo com raio cobrindo o lote, conferido aqui contra a
-// poligonal). Não vêm: área cadastral, endereço e número, testada, valor venal, IPTU e cartório (ficam para digitar).
+// poligonal). Não vêm: área cadastral, endereço e número, testada, valor venal e IPTU (ficam para digitar). O cartório (camada
+// circunscricao) e a zona da cidade (regiões geográficas, anexo 4 da LC 612) vêm pelo pino, em cartorioZonaSjc (10/nov/2026).
 // A planta (PDF) e o desenho (DXF) do lote ficam para quando a ficha tiver a aba Documentos.
 import { automatico, supabase } from '../lib/supabase';
 import { geoAneis, geoAreaAnel, digitos } from './geosampa';
@@ -77,10 +78,10 @@ export async function gsjPoligono(ic: string): Promise<P[] | null> {
   return g ? geoAneis(g)[0].slice(0, -1).map((p) => [p[1], p[0]] as P) : null;
 }
 /** feições da camada dentro do retângulo (graus): um pixel no centro com raio que alcança os cantos */
-export async function gsjInfoBB(camada: string, bb: number[]): Promise<any[]> {
+export async function gsjInfoBB(camada: string, bb: number[], ws = 'geoSJC', buffer = 75): Promise<any[]> {
   const u = new URL(GSJ_BASE + 'proxy');
-  const q: Record<string, string | number> = { SERVICE: 'WMS', VERSION: '1.1.1', REQUEST: 'GetFeatureInfo', LAYERS: 'geoSJC:' + camada, QUERY_LAYERS: 'geoSJC:' + camada, SRS: 'EPSG:4326',
-    BBOX: bb.join(','), WIDTH: 101, HEIGHT: 101, X: 50, Y: 50, BUFFER: 75, INFO_FORMAT: 'application/json', FEATURE_COUNT: 200, authToken: await gsjToken() };
+  const q: Record<string, string | number> = { SERVICE: 'WMS', VERSION: '1.1.1', REQUEST: 'GetFeatureInfo', LAYERS: ws + ':' + camada, QUERY_LAYERS: ws + ':' + camada, SRS: 'EPSG:4326',
+    BBOX: bb.join(','), WIDTH: 101, HEIGHT: 101, X: 50, Y: 50, BUFFER: buffer, INFO_FORMAT: 'application/json', FEATURE_COUNT: 200, authToken: await gsjToken() };
   Object.entries(q).forEach(([k, v]) => u.searchParams.set(k, String(v)));
   const r = await fetch(u);
   if (!r.ok) throw new Error('GeoSanja respondeu ' + r.status);
@@ -150,4 +151,23 @@ export function gsjLinhas(camadas: Record<string, any[]>, erros: string[]): Linh
     tema, grav, erro: erros.includes(k + ':' + j), j, ficha: GSJ_FICHA.includes(pref),
     vals: [...new Set((camadas[k + ':' + j] || []).map((x) => { try { return fmt(x) || null; } catch { return null; } }).filter(Boolean) as string[])],
   })).filter((l) => l.j > 0).sort((a, b) => Number(b.ficha) - Number(a.ficha)).map(({ tema, grav, erro, vals }) => ({ tema, grav, erro, vals }));
+}
+
+/* ---------- cartório e zona da cidade pelo pino (pedido do Moises, 10/nov/2026) ---------- */
+/** feições da camada no ponto (graus): o pixel do centro, sem raio */
+const noPonto = (camada: string, lat: number, lng: number, ws?: string) =>
+  gsjInfoBB(camada, [lng - 0.0005, lat - 0.0005, lng + 0.0005, lat + 0.0005], ws, 0);
+const REGIAO_SJC: Record<string, string> = { centro: 'centro', norte: 'norte', sul: 'sul', leste: 'leste', oeste: 'oeste', sudeste: 'sudeste' };
+const semAcento = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+/** 1º ou 2º Registro de Imóveis de São José dos Campos (camada circunscricao): "1º CRI", como em São Paulo */
+export async function cartorioSjc(lat: number, lng: number): Promise<string | null> {
+  const fs = await noPonto('circunscricao', lat, lng, 'geoInterno');
+  const n = fs.length === 1 ? String(fs[0].properties?.cartorio ?? '').replace(/\D/g, '') : '';
+  return n ? `${n}º CRI` : null;
+}
+/** região geográfica urbana (LC 612/2018: Centro, Norte, Leste, Oeste, Sul, Sudeste; São Francisco Xavier fica de fora,
+    porque a lista de zonas do sistema não tem) */
+export async function zonaSjc(lat: number, lng: number): Promise<string | null> {
+  const fs = await noPonto('anexo_04', lat, lng);
+  return fs.length === 1 ? REGIAO_SJC[semAcento(String(fs[0].properties?.regiao ?? ''))] ?? null : null;
 }

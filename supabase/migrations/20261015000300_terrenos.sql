@@ -85,6 +85,10 @@ create table app.terrenos (
   -- histórico de uso do terreno e dos vizinhos, pesquisado (fotos aéreas, matrícula, Cetesb); o automático
   -- são as áreas contaminadas da consulta à prefeitura (lote 2 da ficha em abas, 4/nov/2026)
   historico_uso         text,
+  -- itens do "Falta preencher" que quem edita descartou neste terreno (pedido do Moises, 10/nov/2026): saem da lista e da
+  -- conta da completude; a troca fica no log pela auditoria do terreno. Chaves fixas, as mesmas de completude() no front
+  completude_dispensada text[] not null default '{}' check (completude_dispensada <@ array['endereco','zona','ponto','area',
+    'testada','matricula','inscricao','proprietario','zoneamento','visita','valor','temperatura']::text[]),
   -- temperatura do terreno (decisão do Moises, 9/nov/2026): uma só, mesmo sem negociação; muda só por app.definir_temperatura
   temperatura           smallint check (temperatura between 1 and 5),  -- null = não avaliada
   temperatura_em        timestamptz,

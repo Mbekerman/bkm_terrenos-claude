@@ -32,6 +32,8 @@ A temperatura diz o quanto o terreno está promissor para a BKM. São 5 barras: 
 
 Mostra quanto dos 11 itens que importam para decidir a compra está preenchido. A bolinha vermelha diz quantos faltam. Clique para ver a lista; escolha um item e o sistema **abre a aba, abre o campo em edição e rola até ele**, que acende em verde-limão por um instante.
 
+Quem edita pode **descartar** um item que não se aplica àquele terreno: o **x** ao lado do item tira ele da lista e da conta do percentual, só neste terreno. O descarte fica no **Log** ("Descartado do Falta preencher: Testada"), e o fim do menu mostra **"Descartados (N)"** com **"Voltar a pedir"**. Ctrl+Z também desfaz.
+
 Os 11 itens:
 
 | Item | Onde se preenche |

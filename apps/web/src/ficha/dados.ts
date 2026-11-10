@@ -200,24 +200,34 @@ export const ehSP = (f: { municipio?: string | null; uf?: string | null }) => f.
 export type Falta = [string, string, string?, string?];
 /** a aba Infraestrutura já foi portada? enquanto não, a visita técnica não entra na completude */
 export const INFRA_PORTADA = false;
-export function completude(f: Ficha): { pct: number; faltam: Falta[] } {
-  const c: [boolean, ...Falta][] = [
-    [!!(f.logradouro && f.numero && f.bairro), 'Endereço completo', 'terreno', 'loc', f.logradouro && f.bairro ? 'numero' : 'end-mapa'],
-    [!!f.zona, 'Zona', 'terreno', 'loc', 'zona'],
-    [f.lat != null, 'Ponto no mapa', 'terreno', 'loc', 'end-mapa'],
-    [f.area != null, 'Área adotada', 'terreno', 'areas', 'area'],
+/** os itens que quem edita descartou neste terreno (terrenos.completude_dispensada): saem da lista e da conta */
+export const dispensados = (f: Pick<Ficha, 't'>): string[] => ((f.t as R | undefined)?.completude_dispensada as string[] | undefined) ?? [];
+/** rótulo de cada item, para o log ("Descartado do Falta preencher: Testada") */
+export const ITEM_COMPLETUDE: Record<string, string> = { endereco: 'Endereço completo', zona: 'Zona', ponto: 'Ponto no mapa', area: 'Área adotada',
+  testada: 'Testada', matricula: 'Matrícula', inscricao: 'Inscrição e IPTU', proprietario: 'Proprietário', zoneamento: 'Zoneamento',
+  visita: 'Visita técnica', valor: 'Valor pedido', temperatura: 'Temperatura' };
+export interface Completude { pct: number; faltam: Falta[]; chaves: string[]; descartados: { k: string; rot: string }[] }
+export function completude(f: Ficha): Completude {
+  const c0: [string, boolean, ...Falta][] = [
+    ['endereco', !!(f.logradouro && f.numero && f.bairro), 'Endereço completo', 'terreno', 'loc', f.logradouro && f.bairro ? 'numero' : 'end-mapa'],
+    ['zona', !!f.zona, 'Zona', 'terreno', 'loc', 'zona'],
+    ['ponto', f.lat != null, 'Ponto no mapa', 'terreno', 'loc', 'end-mapa'],
+    ['area', f.area != null, 'Área adotada', 'terreno', 'areas', 'area'],
     /* em São Paulo a testada vem da medição pela poligonal (GeoSampa); nas outras cidades, digitada */
-    [f.testada != null, 'Testada', 'terreno', 'areas', ehSP(f) ? 'frentes' : 'testada_principal_m'],
-    [f.qMat > 0, 'Matrícula', 'terreno', 'lotes', 'em-n'],
-    [f.qInsc > 0, 'Inscrição e IPTU', 'terreno', 'lotes', 'es-sql'],
-    [f.temProprietario, 'Proprietário', 'terreno', 'partes-cad', 'pp-ed'],
-    [!!f.zonas, 'Zoneamento', 'terreno', 'analise', 'an-l'],
+    ['testada', f.testada != null, 'Testada', 'terreno', 'areas', ehSP(f) ? 'frentes' : 'testada_principal_m'],
+    ['matricula', f.qMat > 0, 'Matrícula', 'terreno', 'lotes', 'em-n'],
+    ['inscricao', f.qInsc > 0, 'Inscrição e IPTU', 'terreno', 'lotes', 'es-sql'],
+    ['proprietario', f.temProprietario, 'Proprietário', 'terreno', 'partes-cad', 'pp-ed'],
+    ['zoneamento', !!f.zonas, 'Zoneamento', 'terreno', 'analise', 'an-l'],
     /* Visita técnica fica de fora enquanto a aba Infraestrutura não existe no sistema real (só no protótipo):
        contá-la deixava a ficha presa abaixo de 100% sem ter onde preencher. Volta com o porte da aba (INFRA_PORTADA). */
-    ...(INFRA_PORTADA ? [[f.infraNV === 0, 'Visita técnica', 'infra'] as [boolean, ...Falta]] : []),
-    [!!f.valorPedido, 'Valor pedido', 'comercial', 'cond', 'valor'],
-    [!!f.temp, 'Temperatura', 'geral', 'temp'],
+    ...(INFRA_PORTADA ? [['visita', f.infraNV === 0, 'Visita técnica', 'infra'] as [string, boolean, ...Falta]] : []),
+    ['valor', !!f.valorPedido, 'Valor pedido', 'comercial', 'cond', 'valor'],
+    ['temperatura', !!f.temp, 'Temperatura', 'geral', 'temp'],
   ];
-  const ok = c.filter((x) => x[0]).length;
-  return { pct: Math.round((ok / c.length) * 100), faltam: c.filter((x) => !x[0]).map((x) => x.slice(1) as Falta) };
+  const fora = new Set(dispensados(f));
+  const c = c0.filter((x) => !fora.has(x[0]));
+  const descartados = c0.filter((x) => fora.has(x[0])).map((x) => ({ k: x[0], rot: x[2] }));
+  const ok = c.filter((x) => x[1]).length, fal = c.filter((x) => !x[1]);
+  return { pct: c.length ? Math.round((ok / c.length) * 100) : 100, faltam: fal.map((x) => x.slice(2) as Falta), chaves: fal.map((x) => x[0]), descartados };
 }

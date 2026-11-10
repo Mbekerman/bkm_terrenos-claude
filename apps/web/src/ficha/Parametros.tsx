@@ -12,7 +12,7 @@ import { CAMADA, geoLinhas, geoVals, type LinhaToca } from '../lib/camadas';
 import { gsjLinhas } from '../novo/geosanja';
 import { consultarArea } from '../novo/consulta';
 import { Busca } from '../lib/buscando';
-import type { Ficha, R } from './dados';
+import { ehSP, type Ficha, type R } from './dados';
 import { CONT_KS, DetalhesContaminacao, registrosCont } from './Contaminacao';
 import { abrirQuadroJa, focar, lerNum, num, numStr, proximoCampo, Quadro, usePedido, useSalvar } from './edicao';
 
@@ -23,6 +23,10 @@ import { abrirQuadroJa, focar, lerNum, num, numStr, proximoCampo, Quadro, usePed
 // O terreno não guarda tipo de empreendimento: Mercado, HIS e HMP lado a lado (decisão do Moisés, 4/nov/2026).
 
 const TIPOS: [string, string][] = [['mercado', 'Mercado'], ['his', 'HIS'], ['hmp', 'HMP']];
+/* fora de São Paulo não há HIS e HMP na lei: um potencial e um CA máximo só, os do tipo mercado (pedido do Moises, 10/nov/2026) */
+const UM: [string, string][] = [['mercado', '']];
+const tiposDe = (um: boolean) => (um ? UM : TIPOS);
+const nomeTipo = (um: boolean, k: string) => (um ? '' : ' ' + TIPO_N[k]);
 const TIPO_N = Object.fromEntries(TIPOS);
 const MACROS: Record<string, string> = { MC: 'Consolidação', ME: 'Estruturação', MOC: 'Ocupação Controlada' };
 const EXC_K = ['ca_minimo', 'ca_basico', 'ca_maximo', 'to_maximo', 'gabarito_m', 'gabarito_sem_limite', 'recuo_frente_m', 'recuo_lateral_m', 'recuo_lateral_alto_m',
@@ -104,7 +108,7 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
   const [reg, setReg] = useState(false);
   /* "Zoneamento" do que falta na ficha: abre Registrar zonas, com o foco no lote */
   usePedido(['analise'], () => { abrirQuadroJa('terreno', 'indices'); if (edita) { setReg(true); focar('an-l'); } });
-  const sjc = d.base?.codigo === 'geosanja';
+  const sjc = d.base?.codigo === 'geosanja', um = !ehSP(f);
   const R = d.res;
   const merc = d.lz.filter((r) => r.tipo === 'mercado');
   /* lotes: os com inscrição pela ordem, a parte sem inscrição por último */
@@ -114,10 +118,10 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
   const pot = (k: string) => {
     const L = d.lz.filter((r) => r.tipo === k), na = L.filter((r) => r.parametro_id && r.permitido === false).map((r) => r.sigla), sem = L.filter((r) => r.permitido !== false && r.ca_maximo == null).map((r) => r.sigla);
     const v = R?.[`potencial_${k}_m2`];
-    return <div className="kv" key={k}><dt>Potencial {TIPO_N[k]}</dt><dd>{v != null ? <b>{m2(v)}</b> : <span className="ni">{na.length ? 'Não admitido em ' + [...new Set(na)].join(', ') : sem.length ? 'Falta o CA de ' + [...new Set(sem)].join(', ') : 'Não calculado'}</span>}</dd></div>;
+    return <div className="kv" key={k}><dt>Potencial{nomeTipo(um, k)}</dt><dd>{v != null ? <b>{m2(v)}</b> : <span className="ni">{na.length ? 'Não admitido em ' + [...new Set(na)].join(', ') : sem.length ? 'Falta o CA de ' + [...new Set(sem)].join(', ') : 'Não calculado'}</span>}</dd></div>;
   };
   const somaLotes = d.ins.reduce((s, i) => s + Number(i.area_cadastral_m2 || 0), 0), sobra = f.area && somaLotes && f.area - somaLotes > 1 ? f.area - somaLotes : null;
-  const fontes = [...new Map(d.lz.filter((r) => r.parametro_id).map((r) => [r.parametro_id, d.cat.get(r.parametro_id)] as [unknown, R | undefined]).filter((x) => x[1])).values()] as R[];
+  const fontes = [...new Map(d.lz.filter((r) => r.parametro_id && (!um || r.tipo === 'mercado')).map((r) => [r.parametro_id, d.cat.get(r.parametro_id)] as [unknown, R | undefined]).filter((x) => x[1])).values()] as R[];
   const sig = new Map(d.lz.map((r) => [r.zoneamento_id, r.sigla]));
   return (
     <Quadro aba="terreno" id="indices" primeiro titulo={<>Índices urbanísticos<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} aberto={reg || undefined}
@@ -128,11 +132,11 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
         {R && merc.length ? <>
           <dl className="kvl lz-res">
             <div className="kv"><dt>Zonas da área</dt><dd>{zonasArea.map(([s, v], i) => <span key={s}>{i ? ' · ' : ''}<b>{s}</b> {m2(v)}</span>)}</dd></div>
-            {TIPOS.map(([k]) => pot(k))}
+            {tiposDe(um).map(([k]) => pot(k))}
             <div className="kv"><dt>Sem outorga (CA básico)</dt><dd>{R.potencial_basico_m2 != null ? m2(R.potencial_basico_m2) : ni}</dd></div>
           </dl>
           {R.tem_parametro_a_validar ? <div className="hint">Há parâmetros a validar no catálogo.</div> : null}
-          <Panorama d={d} merc={merc} sjc={sjc} lotes={lotes} />
+          <Panorama d={d} merc={merc} sjc={sjc} um={um} lotes={lotes} />
           <details className="details lz-lotes" open={reg || undefined}><summary>Ver lote por lote ({lotes.length})</summary>
             {lotes.map((ins) => (
               <div className="lz-lote" key={ins ?? 'sem'}>
@@ -145,7 +149,7 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
           {d.vig?.observacoes ? <div className="hint">{d.vig.observacoes}</div> : null}
           {sobra && !lotes.includes(null) ? <div className="hint">A área adotada passa a soma das inscrições em {m2(sobra)}. Se essa parte não tem inscrição, registre a zona dela como "Parte sem inscrição".</div> : null}
           <details className="details lz-fontes"><summary>Regras e fontes</summary>
-            {fontes.map((p) => <div className="lz-fonte" key={p.id}><b>{sig.get(p.zoneamento_id)}</b>{p.uso ? ' · ' + p.uso : ''}{p.macrozona ? ' · ' + MACROS[p.macrozona] : ''} · {TIPO_N[p.tipo]}
+            {fontes.map((p) => <div className="lz-fonte" key={p.id}><b>{sig.get(p.zoneamento_id)}</b>{p.uso ? ' · ' + p.uso : ''}{p.macrozona ? ' · ' + MACROS[p.macrozona] : ''}{um ? '' : ' · ' + TIPO_N[p.tipo]}
               {p.regras ? <div className="muted">{p.regras}</div> : null}
               <div className="faint">{p.fonte_norma}{p.fonte_dispositivo ? ', ' + p.fonte_dispositivo : ''}{p.fonte_url ? <> · <a href={p.fonte_url} target="_blank" rel="noopener">texto da lei</a></> : null}</div></div>)}
           </details>
@@ -167,6 +171,7 @@ function CabLote({ d, ins }: { d: D; ins: string | null }) {
 /** uma zona no lote: os parâmetros comuns (os do primeiro tipo admitido) e o CA máximo e o potencial de cada tipo */
 function Zona({ f, d, z, sjc }: { f: Ficha; d: D; z: R; sjc: boolean }) {
   const { edita } = useSessao();
+  const um = !ehSP(f);
   const [ed, setEd] = useState(false);
   const Ls = Object.fromEntries(TIPOS.map(([k]) => [k, d.lz.find((r) => r.id === z.id && r.tipo === k) ?? null])) as Record<string, R | null>;
   const raw = d.az.find((a) => a.id === z.id) ?? {};
@@ -183,10 +188,10 @@ function Zona({ f, d, z, sjc }: { f: Ficha; d: D; z: R; sjc: boolean }) {
   const caTipo = (k: string) => {
     const x = Ls[k], q = x?.parametro_id ? d.cat.get(x.parametro_id) : null;
     const dica = [q && q.tipo !== k ? 'regra de mercado' : '', x?.potencial_maximo_m2 != null ? 'potencial ' + m2(x.potencial_maximo_m2) : ''].filter(Boolean).join(' · ');
-    return cel('CA máximo ' + TIPO_N[k], !q ? ni : x!.permitido === false ? <span className="ni">Não admitido</span> : <b>{V(x!.ca_maximo, '', 3)}</b>, x?.permitido === false ? '' : dica, 'ca_maximo');
+    return cel('CA máximo' + nomeTipo(um, k), !q ? ni : x!.permitido === false ? <span className="ni">Não admitido</span> : <b>{V(x!.ca_maximo, '', 3)}</b>, x?.permitido === false ? '' : dica, 'ca_maximo');
   };
   /* a mesma regra em texto nos três tipos aparece uma vez só */
-  const regras = Object.entries(TIPOS.reduce((o: Record<string, string[]>, [k]) => { const t = Ls[k]?.regras; if (t) (o[t] ||= []).push(TIPO_N[k]); return o; }, {}));
+  const regras = Object.entries(tiposDe(um).reduce((o: Record<string, string[]>, [k]) => { const t = Ls[k]?.regras; if (t) (o[t] ||= []).push(TIPO_N[k]); return o; }, {}));
   const ate = sjc ? 'até o 2º pavimento' : 'até 10 m de altura';
   const recLat = l.recuo_lateral_m == null && l.recuo_lateral_alto_m == null ? ni : l.recuo_lateral_alto_m == null ? metros(l.recuo_lateral_m) + ' m'
     : `${l.recuo_lateral_m == null || Number(l.recuo_lateral_m) === 0 ? 'Dispensado' : metros(l.recuo_lateral_m) + ' m'} ${ate}; ${metros(l.recuo_lateral_alto_m)} m acima`;
@@ -196,7 +201,7 @@ function Zona({ f, d, z, sjc }: { f: Ficha; d: D; z: R; sjc: boolean }) {
     : !TIPOS.some(([k]) => Ls[k]?.permitido) ? <div className="muted lz-sem">Uso residencial não admitido{p.regras ? ': ' + p.regras : ''}</div>
     : <>
       <dl className="lz-par">
-        {TIPOS.map(([k]) => caTipo(k))}
+        {tiposDe(um).map(([k]) => caTipo(k))}
         {cel('Taxa de ocupação', V(l.to_maximo, '', 2), p.to_corte_m2 ? `${num(p.to_maximo, 2)} em lote até ${num(p.to_corte_m2)} m²; ${num(p.to_lote_grande, 2)} acima${f.area == null ? ' (sem área adotada, vale a de lote grande)' : ''}` : '', 'to_maximo')}
         {cel('Gabarito', gab, '', alt.has('gabarito_sem_limite') ? 'gabarito_sem_limite' : 'gabarito_m')}
         {cel('Recuo de frente', V(l.recuo_frente_m, ' m'), '', 'recuo_frente_m')}
@@ -334,7 +339,7 @@ function FormZonas({ f, d, sjc, fechar }: { f: Ficha; d: D; sjc: boolean; fechar
 }
 
 /** os parâmetros de uma zona no lote em texto, para o panorama (os mesmos que Zona mostra) */
-function parZona(d: D, z: R, sjc: boolean): [string, string][] {
+function parZona(d: D, z: R, sjc: boolean, um = false): [string, string][] {
   const Ls = Object.fromEntries(TIPOS.map(([k]) => [k, d.lz.find((r) => r.id === z.id && r.tipo === k) ?? null])) as Record<string, R | null>;
   const k0 = TIPOS.map((t) => t[0]).find((k) => Ls[k]?.parametro_id && Ls[k]?.permitido) ?? 'mercado', l = Ls[k0];
   if (!l?.parametro_id || !TIPOS.some(([k]) => Ls[k]?.permitido)) return [];
@@ -343,7 +348,7 @@ function parZona(d: D, z: R, sjc: boolean): [string, string][] {
   const recLat = l.recuo_lateral_m == null && l.recuo_lateral_alto_m == null ? '—' : l.recuo_lateral_alto_m == null ? metros(l.recuo_lateral_m) + ' m'
     : `${l.recuo_lateral_m == null || Number(l.recuo_lateral_m) === 0 ? 'Dispensado' : metros(l.recuo_lateral_m) + ' m'} ${ate}; ${metros(l.recuo_lateral_alto_m)} m acima`;
   return [
-    ...TIPOS.map(([k, n]) => ['CA máximo ' + n, !Ls[k]?.parametro_id ? '—' : Ls[k]!.permitido === false ? 'Não admitido' : T(Ls[k]!.ca_maximo, '', 3)] as [string, string]),
+    ...tiposDe(um).map(([k]) => ['CA máximo' + nomeTipo(um, k), !Ls[k]?.parametro_id ? '—' : Ls[k]!.permitido === false ? 'Não admitido' : T(Ls[k]!.ca_maximo, '', 3)] as [string, string]),
     ['Taxa de ocupação', T(l.to_maximo, '', 2)],
     ['Gabarito', l.gabarito_sem_limite ? 'Sem limite' : l.gabarito_m != null ? metros(l.gabarito_m) + ' m' : '—'],
     ['Recuo de frente', T(l.recuo_frente_m, ' m')], ['Recuos laterais e fundo', recLat],
@@ -355,9 +360,9 @@ function parZona(d: D, z: R, sjc: boolean): [string, string][] {
 /** Panorama do terreno inteiro (pedido do Moisés, 9/nov/2026): cada parâmetro com todos os valores dos lotes e zonas,
  * separados por " / " (o título da célula diz de qual zona é cada um), e as demais camadas da prefeitura somadas;
  * o que nenhum lote toca aparece uma vez só, aqui. Lote por lote fica no "Ver lote por lote", logo abaixo. */
-function Panorama({ d, merc, sjc, lotes }: { d: D; merc: R[]; sjc: boolean; lotes: (string | null)[] }) {
+function Panorama({ d, merc, sjc, um, lotes }: { d: D; merc: R[]; sjc: boolean; um: boolean; lotes: (string | null)[] }) {
   const ordem: string[] = [], vals = new Map<string, Map<string, string[]>>();
-  for (const z of merc) for (const [k, v] of parZona(d, z, sjc)) {
+  for (const z of merc) for (const [k, v] of parZona(d, z, sjc, um)) {
     if (!vals.has(k)) { ordem.push(k); vals.set(k, new Map()); }
     const m = vals.get(k)!; (m.get(v) ?? m.set(v, []).get(v)!).push(z.sigla);
   }
