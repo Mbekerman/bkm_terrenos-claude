@@ -250,8 +250,12 @@ abas.
 
 - **Ficha em abas**: topo com código, nome, situação e data; abaixo, a barra das abas **presa no alto ao rolar**. A barra rola de
   lado como roleta (dedo, mouse arrastado com a mãozinha, Shift + roda, deslize do trackpad, com inércia); arrastar não troca
-  de aba; trocar traz a aba ativa para a vista com as vizinhas. No fim, setas de aba anterior/próxima e o **⋮ com o índice de
-  todas as abas**, a atual marcada.
+  de aba; trocar traz a aba ativa para a vista com as vizinhas. No fim, o **⋮ com o índice de
+  todas as abas**, a atual marcada (sem setas de aba anterior/próxima: a roleta já resolve, pedido do Moises de 10/nov/2026).
+- **Subabas**: um item da barra pode juntar várias abas (Estudos Técnicos = Estudos de massa, Estudos de viabilidade, Entorno e
+  Avaliação de infraestrutura). Aberto, mostra logo abaixo da barra uma linha de chips de filtro (raio 8, altura 32, contorno;
+  o ativo no contêiner secundário `#c2e7ff`, no escuro `#004a77`), que rola de lado se não couber; no ⋮, as subabas recuadas
+  sob o nome do grupo. Cada subaba tem o próprio endereço.
 - Uma aba de cada vez, e ela está no endereço (`/terrenos/A123/comercial`).
 - Dentro da aba, **cada quadro abre e fecha pela seta do título** e nasce fechado, menos o primeiro. A escolha vale na sessão.
   Editar, abrir formulário ou chegar a um item por link abre o quadro dele.
