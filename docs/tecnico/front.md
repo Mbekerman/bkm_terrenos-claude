@@ -105,7 +105,7 @@ apps/web/
 | Arquivo | Papel |
 | --- | --- |
 | `dados.ts` | `carregarFicha(empresa, codigo)`: tenta `app.ficha_dados` (uma chamada) e, se a função não existir no banco, cai nos pedidos separados (`semFuncao`, `dados.ts:105`). Monta o objeto `Ficha` (topo, linha do tempo, contagens, completude). A completude tem 11 itens; "Visita técnica" só entra com `INFRA_PORTADA = true`, a ligar quando a aba Infraestrutura for portada. Constantes de rótulo (`FONTE_AREA`, `ZONA`, `TEMP`, `TP_N`). |
-| `Ficha.tsx` | Topo (código, nome, fase · etapa · subetapa, temperatura), linha do tempo, barra de abas em "roleta" com inércia e ⋮, Visão geral (mini-mapa e Resumo), alerta do que falta. `useFicha` e `usePreCarregarFicha` (`Ficha.tsx:338`, `:345`). |
+| `Ficha.tsx` | Topo (código, nome, fase · etapa · subetapa, temperatura), linha do tempo, barra de abas em "roleta" com inércia e ⋮ (`BARRA`: o item Estudos Técnicos junta as abas `ESTUDOS`, que aparecem como chips `.fi-subabas` abaixo da barra; sem setas de anterior/próxima desde 10/nov/2026), Visão geral (mini-mapa e Resumo), alerta do que falta. `useFicha` e `usePreCarregarFicha` (`Ficha.tsx:338`, `:345`). |
 | `Gaveta.tsx` | A ficha na gaveta da direita da página Mapa (`/mapa/A123/ficha`), com largura arrastável; lembra aba, rolagem e quadros abertos por terreno (`lembrar.ts`). Passa `naGaveta` à `Ficha`, que então não repete código, nome, temperatura nem fase · etapa · subetapa no topo (os três primeiros vão no cabeçalho da gaveta; a fase fica em cima da linha do tempo). |
 | `lembrar.ts` | `lerPos`/`guardarPos`: onde a pessoa parou na gaveta de cada terreno, em `localStorage`, nos 50 terrenos mais recentes. |
 | `edicao.tsx` | Edição no lugar: `SECOES` (campos de cada quadro), `useSalvar` (fila de gravações por `app.salvar_terreno`), `useVivo`/`Vivo`/`CampoVivo`, `Quadro` (abre e fecha pela seta), `CamposEndereco`, `pedirCampo`/`focar`/`acender` (levar a um campo e acendê-lo). |
@@ -168,7 +168,7 @@ As rotas ficam em `src/App.tsx`. Todas moram dentro da `Moldura` (barra e menu).
 | `/mapa/A123/ficha` | Mapa com a ficha na gaveta da direita | A aba da gaveta **não** vai para o endereço (fica só na gaveta, como no protótipo). |
 | `/terrenos/novo` | Mapa com a janela do Novo terreno aberta | Fechar a janela volta para `/mapa`. |
 | `/terrenos/A123` | Ficha, aba Visão geral | O código é aceito em minúsculas (vira maiúsculas). |
-| `/terrenos/A123/<aba>` | Ficha na aba | Abas: `geral`, `terreno`, `comercial`, `massa`, `viabilidade`, `infra`, `entorno`, `jornada`, `documentos`. Links antigos (`cadastro`, `negociacao`, `urbanismo`, `parametros`, `fases`, `viabilidades`) viram a aba nova (`Ficha.tsx`, `ANTIGA`). |
+| `/terrenos/A123/<aba>` | Ficha na aba | Abas: `geral`, `terreno`, `comercial`, `massa`, `viabilidade`, `entorno`, `infra`, `jornada`, `documentos` (`massa` a `infra` são as subabas de Estudos Técnicos; `estudos` abre a última vista na sessão). Links antigos (`cadastro`, `negociacao`, `urbanismo`, `parametros`, `fases`, `viabilidades`) viram a aba nova (`Ficha.tsx`, `ANTIGA`). |
 | `/funil` | Funil, nível das fases | |
 | `/funil/<fase>` | Etapas da fase | Ex.: `/funil/novos_negocios` (o código da fase, de `fases_modelo.codigo`). |
 | `/funil/<fase>/<etapa>` | Subetapas da etapa | |
@@ -480,6 +480,7 @@ Tudo em `localStorage` (vale entre sessões, por navegador), salvo onde está di
 | `bkm-terrenos-painel` | painel lateral da ficha: aberto, aba (Ações, Tarefas, Logs), filtro de usuários e período dos logs | `Painel.tsx:19` |
 | `bkm-terrenos-entorno-concorrencia` | raio (1, 2, 3 km) e situações do quadro Concorrência no entorno | `Entorno.tsx:310` |
 | `bkm-terrenos-rasc:<terreno>:<formulário>` | rascunho de formulário não registrado | `Rascunho.tsx:114` |
+| `bkm-terrenos-ficha-estudos` (**sessionStorage**) | última subaba de Estudos Técnicos vista (`massa`, `viabilidade`, `entorno`, `infra`) | `Ficha.tsx` (`SUB_LEMBRA`) |
 | `bkm-terrenos-filtros-pag` (**sessionStorage**) | seleção de filtros de cada página (`mapa`, `kanban`) e a visão escolhida | `Filtros.tsx:17` |
 | `sb-<projeto>-auth-token` | sessão do Supabase (do supabase-js) | automático |
 

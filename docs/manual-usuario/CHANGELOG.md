@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
+- **Estudos Técnicos** (ficha do terreno): Estudos de massa, Estudos de viabilidade, Entorno e Avaliação de infraestrutura viram um item só na barra de abas, com os quatro botões logo abaixo; as setas de aba anterior e próxima saíram (a barra já rola). Ver [Visão geral](04-ficha-visao-geral.md). (#307)
 - **Concorrência mais suave e agrupada de longe** (Mapa): os quadrados da concorrência passam a tons pastel, na mesma ordem de faixas de R$/m². Até o zoom 13, empreendimentos próximos com a mesma situação e a mesma faixa viram uma bolha do tamanho das unidades; a dica mostra quantos empreendimentos e unidades, e o clique aproxima. Ver [Mapa](02-mapa.md#concorrência-empreendimentos-de-outras-empresas). (#305)
 - **Terrenos próximos agrupados** (página Mapa): etiquetas que se cobririam viram uma bolha com o número e o anel com as cores dos terrenos; o mouse parado mostra a lista, e o clique no número aproxima até elas se separarem. Ver [Mapa](02-mapa.md). (#304)
 - **Área total na proposta** (aba Comercial, Nova proposta): ao marcar as partes da proposta, aparece embaixo a soma das áreas delas, quantas partes de quantas e o valor por m². Ver [Comercial](06-ficha-comercial.md). (#303)

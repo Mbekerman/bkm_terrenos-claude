@@ -64,18 +64,20 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viab
 | Terreno | Disponível | [05](05-ficha-terreno.md) |
 | Comercial | Disponível | [06](06-ficha-comercial.md) |
 | Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
-| Entorno | Disponível | [08](08-ficha-entorno.md) |
-| Infraestrutura | Só o quadro **Relevo**, com o **Topográfico** fora de São Paulo (veja abaixo) | esta |
-| Estudos de massa, Viabilidades, Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
+| Estudos Técnicos › Estudos de massa, Estudos de viabilidade | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
+| Estudos Técnicos › Entorno | Disponível | [08](08-ficha-entorno.md) |
+| Estudos Técnicos › Avaliação de infraestrutura | Só o quadro **Relevo**, com o **Topográfico** fora de São Paulo (veja abaixo) | esta |
+| Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
+
+**Estudos Técnicos** junta quatro partes, nesta ordem: Estudos de massa, Estudos de viabilidade, Entorno e Avaliação de infraestrutura. Com ela aberta, aparecem logo abaixo da barra quatro botões, um para cada parte; o que está aberto fica em azul-claro. Clicar em Estudos Técnicos abre a parte que você viu por último na sessão (da primeira vez, Estudos de massa).
 
 **Como andar pelas abas:**
 
 - Clique na aba.
 - A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (com o mouse em cima, o cursor é o dedinho, como em qualquer botão; vira mão fechada enquanto você segura o botão do mouse). Solta com força, ela continua rodando e freia aos poucos.
-- As **setas** no fim da barra vão para a aba anterior e a próxima.
-- O **⋮ "Mais ações"** lista todas as abas, com a atual marcada.
+- O **⋮ "Mais ações"** (só quando a barra não cabe) lista todas as abas, com as quatro partes de Estudos Técnicos embaixo do nome dela e a atual marcada.
 
-Cada aba tem seu endereço (`/terrenos/A123/comercial`), então dá para mandar o link direto para uma aba.
+Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos Técnicos, o da parte, como `/terrenos/A123/entorno`), então dá para mandar o link direto para uma aba.
 
 ## Quadros que abrem e fecham
 
