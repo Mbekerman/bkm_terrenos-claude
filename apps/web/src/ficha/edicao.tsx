@@ -170,7 +170,7 @@ async function gravarTerreno(id: string, versao: number, dados: R, visto: R, qc:
   return true;
 }
 const ROT_EXTRA: Record<string, string> = { area_adotada_m2: 'área adotada', fonte_area_adotada: 'área adotada', area_documental_m2: 'área documental', area_cadastral_m2: 'área cadastral',
-  area_levantamento_m2: 'área de levantamento', testada_principal_m: 'testada', historico_uso: 'histórico de uso', visita_tecnica_em: 'data da visita', poligono_geojson: 'poligonal' };
+  area_levantamento_m2: 'área de levantamento', testada_principal_m: 'testada', historico_uso: 'histórico de uso', completude_dispensada: 'itens descartados do Falta preencher', visita_tecnica_em: 'data da visita', poligono_geojson: 'poligonal' };
 function rotuloCampos(ks: string[]) {
   const nomes = ks.map((k) => ROT_EXTRA[k] ?? Object.values(SECOES).flatMap((s) => s.campos).find((c) => c[0] === k)?.[1]?.toLowerCase()).filter(Boolean) as string[];
   const u = [...new Set(nomes)];

@@ -10,8 +10,8 @@ import { Ic } from '../components/Moldura';
 import { data as fd, hojeISO, milhoes, m2, somarDias } from '../lib/format';
 import type { Ficha, R } from './dados';
 import Temperatura from './Temperatura';
-import { lerNum, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido, Vivo } from './edicao';
-import { daParte, ptArea, useLotes } from './Partes';
+import { lerNum, num, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido, Vivo } from './edicao';
+import { copias, daParte, fracao, ptArea, useLotes, type Lotes } from './Partes';
 import { ComMencoes, MarcarPessoas, TextoMencao, useGente, type Gente, type Marcado } from '../components/Marcar';
 
 // Aba Comercial da ficha (proto.js › abaComercialFicha = abaGeral(t,'neg') + abaComercial + abaNegociacao; proto_lotes.js ›
@@ -211,8 +211,63 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
 }
 
 /* ---------- Partes: o pedido de cada parte na oferta de referência ---------- */
+/* as matrículas da parte em etiquetas que não se tiram, cada uma abrindo a janela com os SQLs dela, a área e o percentual
+   da parte (pedido do Moises, 10/nov/2026: só as matrículas, sem os SQLs na linha) */
+const pctTxt = (fr: { f: number; est: boolean }) => { const p = Math.round(fr.f * 1000) / 10; return `${num(p, p % 1 ? 1 : 0)}%${fr.est ? ' (estimado)' : ''}`; };
+function MatsParte({ L, pid, rot }: { L: Lotes; pid: string; rot: string }) {
+  const [ab, setAb] = useState<string | null>(null);
+  const ms = daParte(L, 'm', pid);
+  if (!ms.length) return <div className="faint">sem matrícula</div>;
+  const e = ms.find((m) => m.c.id === ab);
+  return (
+    <div className="ptcom-mats">
+      {ms.map(({ x, c }) => {
+        const fr = fracao(L, 'm', c), pz = Math.round(fr.f * 1000) / 10;
+        return (
+          <span key={c.id} className="etq m">
+            <span className={`etq-pz${fr.est ? ' est' : ''}`} style={{ '--p': pz, marginLeft: 8 } as any} aria-hidden="true" />
+            <button type="button" className="etq-n num" title={`Matrícula ${x.numero} · ${pctTxt(fr)} desta parte · clique para ver`} onClick={() => setAb(c.id)}>{x.numero}</button>
+          </span>
+        );
+      })}
+      {e && <JanelaMat L={L} x={e.x} c={e.c} rot={rot} fechar={() => setAb(null)} />}
+    </div>
+  );
+}
+function JanelaMat({ L, x, c, rot, fechar }: { L: Lotes; x: R; c: R; rot: string; fechar: () => void }) {
+  const fr = fracao(L, 'm', c), area = x.area_registrada_m2 != null ? +x.area_registrada_m2 : null;
+  const parte = L.partes.find((pa) => pa.id === c.parte_id)?.nome ?? '';
+  const outras = copias(L, 'm', x.id).filter((y) => y.id !== c.id && y.parte_id).map((y) => L.partes.find((pa) => pa.id === y.parte_id)?.nome).filter(Boolean);
+  /* os SQLs que estão nesta matrícula, nesta parte: área × % do SQL × % da matrícula, como a área da parte */
+  const sqls = L.ci.filter((y) => y.matricula_parte_id === c.id).map((y) => ({ i: L.insc.find((z) => z.id === y.inscricao_id), y })).filter((s) => s.i) as { i: R; y: R }[];
+  const linhas = sqls.map(({ i, y }) => {
+    const fs = fracao(L, 's', y), a = i.area_cadastral_m2 != null ? +i.area_cadastral_m2 : null;
+    return { i, fs, a, ap: a != null ? Math.round(a * fs.f * fr.f * 100) / 100 : null };
+  });
+  const totA = linhas.length && linhas.every((l) => l.ap != null) ? linhas.reduce((s, l) => s + l.ap!, 0) : null;
+  return (
+    <Dialogo titulo={`Matrícula ${x.numero}`} sub={[parte, x.cartorio].filter(Boolean).join(' · ')} onFechar={fechar}>
+      <div className="ptm-dlg">
+        <dl className="kvl">
+          <div className="kv"><dt>Área registrada</dt><dd>{area != null ? m2(area) : <span className="ni">Não informada</span>}</dd></div>
+          <div className="kv"><dt>Percentual da parte na matrícula</dt><dd>{pctTxt(fr)}</dd></div>
+          <div className="kv"><dt>Área da parte na matrícula</dt><dd><b>{area != null ? m2(Math.round(area * fr.f * 100) / 100) : '—'}</b></dd></div>
+          {outras.length > 0 && <div className="kv"><dt>Também em</dt><dd>{outras.join(', ')}</dd></div>}
+        </dl>
+        <h3 className="etq-h3">{rot === 'SQL' ? 'SQLs' : 'Inscrições'} nesta matrícula</h3>
+        {!linhas.length ? <div className="muted">Nenhum {rot} dentro desta matrícula nesta parte.</div> : (
+          <div className="tblwrap"><table className="mini-tbl"><thead><tr><th>{rot}</th><th className="r">Área do lote</th><th className="r">% da parte</th><th className="r">Área da parte</th></tr></thead><tbody>
+            {linhas.map((l) => <tr key={l.i.id}><td><b>{l.i.inscricao}</b></td><td className="r">{l.a != null ? m2(l.a) : '—'}</td><td className="r">{pctTxt(l.fs)}</td><td className="r">{l.ap != null ? m2(l.ap) : '—'}</td></tr>)}
+            {linhas.length > 1 && <tr><td><b>Total</b></td><td /><td /><td className="r"><b>{totA != null ? m2(Math.round(totA * 100) / 100) : '—'}</b></td></tr>}
+          </tbody></table></div>)}
+        {linhas.length > 0 && <div className="hint">Área da parte = área do lote × % da parte no lote × % da parte na matrícula.</div>}
+      </div>
+    </Dialogo>
+  );
+}
+
 function LinhaParte({ f, o, pa, um, area, zonas, nomeDet, mudar }: {
-  f: Ficha; o: R | null; pa: R; um: boolean; area: number | null; zonas: string; nomeDet: string;
+  f: Ficha; o: R | null; pa: R; um: boolean; area: number | null; zonas: string; nomeDet: ReactNode;
   mudar: (pa: R, valor: number | null, forma: string | null) => Promise<void>;
 }) {
   const { edita } = useSessao();
@@ -228,7 +283,7 @@ function LinhaParte({ f, o, pa, um, area, zonas, nomeDet, mudar }: {
   void f;
   return (
     <div className="ptcom-r">
-      <div className="ptcom-p"><b>{pa.nome}</b>{pa.pessoa_nome && <> <span className="faint">{pa.pessoa_nome}</span></>}<div className="faint">{nomeDet}</div></div>
+      <div className="ptcom-p"><b>{pa.nome}</b>{pa.pessoa_nome && <> <span className="faint">{pa.pessoa_nome}</span></>}{nomeDet}</div>
       <div className="ptcom-c">{L('Área adotada')}<span>{area != null ? m2(area) : '—'}</span></div>
       <div className="ptcom-c">{L('Zoneamento')}<span>{zonas || '—'}</span></div>
       <div className="ptcom-c field">{L('Valor pedido')}{ro ? <span>{valor != null ? brl(valor) : '—'}</span>
@@ -256,10 +311,7 @@ function SecPartesCom({ f, c, registrar }: { f: Ficha; c: Com; registrar: () => 
   // com uma parte só, ela é o terreno inteiro: vale a área adotada do terreno (sem ela, a das matrículas ou dos SQLs)
   const areaDe = (pid: string) => (um && f.area != null ? +f.area : ptArea(L, pid).area);
   const zonasDe = (pid: string) => [...new Set(daParte(L, 's', pid).map((e) => e.x).flatMap((i) => ((L.consultas[i.id]?.zonas ?? []) as R[]).map((z) => z.sigla)).filter(Boolean))].join(' / ');
-  const det = (pid: string) => {
-    const ms = daParte(L, 'm', pid).map((e) => e.x), is = daParte(L, 's', pid).map((e) => e.x);
-    return ms.length || is.length ? [ms.length && 'Mat. ' + ms.map((m) => m.numero).join(', '), is.length && rot + ' ' + is.map((i) => i.inscricao).join(', ')].filter(Boolean).join(' · ') : 'sem matrícula nem SQL';
-  };
+  const det = (pid: string) => <MatsParte L={L} pid={pid} rot={rot} />;
   async function mudar(pa: R, valor: number | null, forma: string | null) {
     if (!o) return;
     if (valor != null && valor <= 0) { toast('O valor pedido precisa ser maior que zero.', true); return; }

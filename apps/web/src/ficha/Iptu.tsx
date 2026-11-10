@@ -57,7 +57,8 @@ function Detalhe({ n }: { n: R }) {
 /** Panorama do terreno (pedido do Moises, 9/nov/2026): a soma de todos os SQLs. Os três valores venais em caixas como as
  * de Áreas e dimensões, três por linha mesmo na gaveta mais estreita; embaixo, em dupla, as áreas da Prefeitura e, por último
  * e em destaque, IPTU anual e mensal (impostos, valor do m², padrão, uso e vencimento saíram, pedido do Moises; ficam no Detalhe). SQL por SQL fica no "Ver SQL por SQL". */
-function Panorama({ linhas }: { linhas: { x: R; v: R | undefined }[] }) {
+function Panorama({ linhas, rot }: { linhas: { x: R; v: R | undefined }[]; rot: string }) {
+  const nome = (n: number) => (rot === 'SQL' ? `SQL${n > 1 ? 's' : ''}` : n > 1 ? 'inscrições' : 'inscrição');
   const vs = linhas.map((l) => l.v).filter((v): v is R => !!v);
   const ns = vs.map((v) => v.notificacao as R | null).filter((n): n is R => !!n);
   const sem = linhas.length - vs.filter((v) => v.situacao_iptu !== 'nao_informada').length;
@@ -65,7 +66,7 @@ function Panorama({ linhas }: { linhas: { x: R; v: R | undefined }[] }) {
   const juntos = (xs: (string | null | undefined)[]) => { const u = [...new Set(xs.filter((x): x is string => !!x && x !== '—'))]; return u.length ? u.join(' / ') : '—'; };
   const anual = somar(vs.map((v) => (v.situacao_iptu === 'isento' ? 0 : v.iptu_valor_anual)));
   const mensal = somar(vs.map((v) => (v.situacao_iptu === 'isento' ? 0 : v.iptu_mensal_informado ?? (v.iptu_valor_anual == null ? null : v.iptu_valor_anual / 10))));
-  const parcial = (xs: unknown[]) => (xs.length && xs.length < linhas.length ? `${xs.length} de ${linhas.length} SQLs` : '');
+  const parcial = (xs: unknown[]) => (xs.length && xs.length < linhas.length ? `${xs.length} de ${linhas.length} ${nome(linhas.length)}` : '');
   const area = (a: number | null) => (a == null ? '—' : m2(a));
   const venais: [string, string][] = [
     ['Valor venal do terreno', brl(somar(vs.map((v) => v.valor_venal_terreno)))],
@@ -83,7 +84,7 @@ function Panorama({ linhas }: { linhas: { x: R; v: R | undefined }[] }) {
   const pv = parcial(vs), pn = parcial(ns);
   return (
     <div className="iptu-pan">
-      <div className="geo-st">Panorama do terreno<span className="faint"> · {linhas.length} SQL{linhas.length > 1 ? 's' : ''}{ex !== '—' ? ` · exercício ${ex}` : ''}{pv ? ` · valores de ${pv}` : ''}{sem > 0 ? ` · ${sem} sem IPTU` : ''}</span></div>
+      <div className="geo-st">Panorama do terreno<span className="faint"> · {linhas.length} {nome(linhas.length)}{ex !== '—' ? ` · exercício ${ex}` : ''}{pv ? ` · valores de ${pv}` : ''}{sem > 0 ? ` · ${sem} sem IPTU` : ''}</span></div>
       <div className="areas iptu-venal">{venais.map((c, i) => cel(c, i === 2 ? ' iptu-tot' : ''))}</div>
       {pares.length > 0 && <div className="iptu-pares">{pares.flatMap((p) => p.map((c) => cel(c, ' iptu-k')))}</div>}
       {pn && pn !== pv ? <div className="hint">Áreas da Prefeitura de {pn}.</div> : null}
@@ -169,14 +170,15 @@ export default function SecIptu({ f }: { f: Ficha }) {
       acoes={podeBuscar ? <div className="qd-acoes"><button className="btn sm text" disabled={ocupado} onClick={() => buscar(insc)}><Ic n="search" s={16} />{busc ? 'Consultando a Prefeitura...' : insc.length > 1 ? 'Buscar todos de novo' : 'Buscar de novo'}</button></div> : undefined}>
       <div className="sec-b">
         {!q.data ? <div className="muted">{q.error ? 'Não foi possível carregar os SQLs.' : 'Carregando...'}</div>
-          : !insc.length ? <div className="muted">Sem SQL no terreno. Inclua os SQLs em Matrículas e SQLs.</div> : (
+          : !insc.length ? <div className="muted">{sp ? 'Sem SQL no terreno. Inclua os SQLs em Matrículas e SQLs.' : 'Sem inscrição no terreno. Inclua as inscrições em Matrículas e SQLs.'}</div> : (
             <div className={`iptu-corpo${carregando ? ' carregando' : ''}`} aria-busy={carregando || undefined}>
               {carregando && <div className="iptu-load" role="status"><span className="iptu-spin" aria-hidden="true" />
                 {pend.length ? `Buscando o IPTU na Prefeitura: ${insc.length - pend.length} de ${insc.length} SQL${insc.length > 1 ? 's' : ''}` : 'Carregando o IPTU...'}</div>}
-              <Panorama linhas={linhas} />
-              <details className="details lz-lotes"><summary>Ver SQL por SQL ({linhas.length})</summary>
+              <Panorama linhas={linhas} rot={sp ? 'SQL' : 'inscriç'} />
+              {/* fora de São Paulo o IPTU se digita aqui: a lista já vem aberta, com o Lançar em cada linha (pedido do Moises, 10/nov/2026) */}
+              <details className="details lz-lotes" open={!sp}><summary>Ver {sp ? 'SQL por SQL' : 'inscrição por inscrição'} ({linhas.length})</summary>
               <div className="tblwrap" style={{ marginTop: 8 }}><table className="mini-tbl"><thead><tr>
-                <th>SQL</th><th>Exercício</th><th className="r">Venal terreno</th><th className="r">Venal construção</th><th className="r">Venal total</th><th className="r">IPTU anual</th><th className="r">Mensal (anual ÷ 10)</th><th>Fonte</th>{acao && <th />}
+                <th>{sp ? 'SQL' : 'Inscrição'}</th><th>Exercício</th><th className="r">Venal terreno</th><th className="r">Venal construção</th><th className="r">Venal total</th><th className="r">IPTU anual</th><th className="r">Mensal (anual ÷ 10)</th><th>Fonte</th>{acao && <th />}
               </tr></thead><tbody>{linhas.map(({ x, v }) => {
                 const n = v?.notificacao as R | null | undefined, ab = aberto === x.id && !!n, s = sit[x.id];
                 return (
@@ -206,7 +208,7 @@ export default function SecIptu({ f }: { f: Ficha }) {
               })}</tbody></table></div>
               </details>
               <p className="hint" style={{ marginTop: 8 }}>
-                {sp ? 'Em São Paulo, o valor venal e o IPTU vêm sozinhos da notificação de lançamento da Prefeitura, ao incluir o SQL, e não se digitam. ' : 'Fora de São Paulo não há busca na Prefeitura: o IPTU se lança à mão, em Lançar ou Atualizar no SQL por SQL. '}
+                {sp ? 'Em São Paulo, o valor venal e o IPTU vêm sozinhos da notificação de lançamento da Prefeitura, ao incluir o SQL, e não se digitam. ' : 'Fora de São Paulo não há busca na Prefeitura: o valor venal e o IPTU se digitam em Lançar ou Atualizar, na linha de cada inscrição. '}
                 Mensal = IPTU anual ÷ 10. Só vale o exercício mais recente.
               </p>
             </div>

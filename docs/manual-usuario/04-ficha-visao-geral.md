@@ -32,6 +32,8 @@ A temperatura diz o quanto o terreno está promissor para a BKM. São 5 barras: 
 
 Mostra quanto dos 11 itens que importam para decidir a compra está preenchido. A bolinha vermelha diz quantos faltam. Clique para ver a lista; escolha um item e o sistema **abre a aba, abre o campo em edição e rola até ele**, que acende em verde-limão por um instante.
 
+Quem edita pode **descartar** um item que não se aplica àquele terreno: o **x** ao lado do item tira ele da lista e da conta do percentual, só neste terreno. O descarte fica no **Log** ("Descartado do Falta preencher: Testada"), e o fim do menu mostra **"Descartados (N)"** com **"Voltar a pedir"**. Ctrl+Z também desfaz.
+
 Os 11 itens:
 
 | Item | Onde se preenche |
@@ -163,6 +165,7 @@ Enquanto o terreno está excluído, a matrícula e os SQLs dele continuam presos
 - **Cotas**: do Google, um ponto a cada 5 m, com curvas de 1 em 1 m e mestra de 5 em 5 m. O erro típico é de 3 a 4 m: serve para estudo, não para projeto.
 - **Imagem por trás**: o satélite do Google com os nomes das ruas, para você reconhecer as ruas e a vizinhança.
 - O levantamento cobre o terreno e 30 m em volta.
+- **Lotes da quadra** (São José dos Campos): todos os lotes das quadras do terreno, montados pelo GeoSanja, desenhados e numerados pelo número do lote (no DXF, a inscrição inteira, na layer TEXTO_LOTES; os lotes na layer LOTES_PREFEITURA). A quadra já montada no mapa de lotes vem do sistema na hora; senão, o passo "Lotes da quadra" leva alguns segundos.
 
 **O que não dá hoje:**
 

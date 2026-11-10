@@ -115,6 +115,18 @@ select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"poligono_geoj
 select app.salvar_terreno(:'t1', :v2, '{"poligono_geojson":{"type":"Polygon","coordinates":[[[-46.65,-23.66],[-46.64,-23.66],[-46.64,-23.67],[-46.65,-23.66]]]}}') as v3 \gset
 select pg_temp.ok((select poligono_geojson is not null from app.terrenos where id = :'t1'), 'polígono válido aceito');
 select pg_temp.ok((select atualizado_por from app.terrenos where id = :'t1') = :'diretor', 'atualizado_por preenchido');
+-- itens descartados do "Falta preencher" (10/nov/2026)
+select pg_temp.falha(format($$select app.salvar_terreno(%L, %s, '{"completude_dispensada":["cor_do_muro"]}')$$, :'t1', :v3), 'item desconhecido não se descarta');
+select app.salvar_terreno(:'t1', :v3, '{"completude_dispensada":["testada","matricula","testada"]}') as v4 \gset
+select pg_temp.ok((select completude_dispensada from app.terrenos where id = :'t1') = array['matricula','testada'], 'descartados guardados sem repetir, em ordem');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terrenos' and registro_id = :'t1'
+  and depois->'completude_dispensada' is not null and depois->'completude_dispensada' <> coalesce(antes->'completude_dispensada', '[]'::jsonb)) >= 1, 'descartar fica na auditoria (log)');
+select app.salvar_terreno(:'t1', :v4, '{"completude_dispensada":[]}') as v4 \gset
+select pg_temp.ok((select completude_dispensada from app.terrenos where id = :'t1') = '{}', 'voltar a pedir tira o descarte');
+select app.salvar_terreno(:'t1', :v4, '{"completude_dispensada":["zona"]}') as v4 \gset
+select app.salvar_terreno(:'t1', :v4, '{"descricao":"x"}') as v4 \gset
+select pg_temp.ok((select completude_dispensada from app.terrenos where id = :'t1') = array['zona'], 'salvar outro campo não mexe nos descartados');
+select app.salvar_terreno(:'t1', :v4, '{"completude_dispensada":[]}') as v4 \gset
 
 -- ---------------------------------------------------------------------
 \echo '# matrícula, inscrição, valor venal e IPTU'
@@ -721,7 +733,9 @@ select app.zona_da_prefeitura(:'tm', 'sul') as zok \gset
 select pg_temp.ok(:'zok' and (select zona = 'sul' and zona_origem = 'prefeitura' from app.terrenos where id = :'tm'), 'GeoSampa preenche a zona vazia');
 select app.zona_da_prefeitura(:'tm', 'oeste') as zok \gset
 select pg_temp.ok(:'zok' and (select zona = 'oeste' and zona_origem = 'prefeitura' from app.terrenos where id = :'tm'), 'terreno mudou de lugar: troca a zona que veio do GeoSampa');
-select pg_temp.falha(format('select app.zona_da_prefeitura(%L, %L)', :'tm', 'sudeste'), 'GeoSampa só grava as 5 regiões oficiais');
+select app.zona_da_prefeitura(:'tm', 'sudeste') as zok \gset
+select pg_temp.ok(:'zok' and (select zona from app.terrenos where id = :'tm') = 'sudeste', 'Sudeste vale (região de São José dos Campos)');
+select pg_temp.falha(format('select app.zona_da_prefeitura(%L, %L)', :'tm', 'nordeste'), 'a prefeitura só grava as regiões oficiais');
 select versao as tmv from app.terrenos where id = :'tm' \gset
 select app.salvar_terreno(:'tm', :tmv, '{"zona":"centro"}') \gset
 select pg_temp.ok((select zona = 'centro' and zona_origem = 'digitado' from app.terrenos where id = :'tm'), 'usuário troca a zona: fica digitada');
