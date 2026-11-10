@@ -112,6 +112,7 @@ apps/web/
 | `Terreno.tsx` | Aba Terreno: identificação, localização, áreas (cinco fontes e a adotada). |
 | `Partes.tsx` | Partes, Matrículas e SQLs (1.192 linhas): etiquetas arrastáveis (uma a uma ou em grupo, pela seleção por retângulo ou Ctrl/Shift + clique), percentual por etiqueta, consulta do GeoSampa por SQL, "Escolher no mapa", proprietários por parte, refazer a poligonal pela soma dos lotes. |
 | `Comercial.tsx` | Aba Comercial: negociação, condições pedidas, partes da oferta, ofertas, corretores, propostas (com a área total das partes marcadas, por `ptArea`) e reuniões (registrar e editar, participantes por @, link digitado; sem Google Agenda). |
+| `Massa.tsx` | Aba Estudos de massa: lista com o válido, Solicitar estudo (com rascunho), ficha do estudo editada no lugar (tipologias numa fila que manda a lista inteira a `salvar_estudo_massa`), Ver pedido, Marcar como entregue / válido, Apagar e Criar estudo de viabilidade (`criar_viabilidade_da_massa`). |
 | `Contaminacao.tsx` | Popup "Ver detalhes" da contaminação: registros SIGAC e SVMA com todos os atributos e o recorte do mapa de lotes do GeoSampa (WMS) com o terreno e os registros. |
 | `Parametros.tsx` | Seção Parâmetros urbanísticos da aba Terreno (`SecParametros`, quadro `param` com os quadros `indices`, `rest` e `histuso` dentro, em `.qd-filhos`; desde 9/nov/2026): panorama do terreno (parâmetros de todos os lotes unidos por " / ", camadas somadas e o "não toca" uma vez só), zonas por lote (em "Ver lote por lote"), potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
 | `Entorno.tsx` + `entorno.ts` | Aba Entorno: pontos de interesse (busca no Google, rota a pé, excluir/restaurar), renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
@@ -280,6 +281,7 @@ A chave começa por um nome curto e depois o que a identifica. Invalidar pelo no
 | `['ficha-pessoas', ...]` | proprietários e contatos | `ficha/Partes.tsx` |
 | `['ficha-logs', ...]`, `['ficha-tarefas', terreno]` | painel lateral | `ficha/Painel.tsx` |
 | `['ficha-listas', empresa]` | equipe e eixos para os seletores (5 min) | `ficha/edicao.tsx` |
+| `['ficha-massa', terreno]` | estudos de massa, tipologias e viabilidades presas | `ficha/Massa.tsx` |
 | `['parametros', ...]`, `['entorno', ...]` | seção Parâmetros urbanísticos (aba Terreno) e aba Entorno | `ficha/Parametros.tsx`, `ficha/Entorno.tsx` |
 | `['funil', empresa]` | quadro do funil | `pages/Funil.tsx` |
 | `['filtros', empresa]`, `['visoes', ...]` | dados dos filtros e visões salvas | `filtros/Filtros.tsx` |
@@ -509,7 +511,8 @@ A primeira versão em uso é, por decisão do Moisés: login, mapa, novo terreno
 | Dashboard | não | |
 | Tarefas (Lista, Quadro, Cronograma, Calendário, Funil, cartão, modelos, automações, aprovação, pausa, recorrência) | não | A ficha só **lê** as tarefas abertas do quadro do terreno (`Painel.tsx`, aba Tarefas). As tarefas devem ir para um banco próprio (`bkm_tarefas`, ADR 0002). |
 | Configurações (Funil, Jornada, Fases, Campos, Viabilidade, Parâmetros, Topografia, Tarefas, Equipe, Notificações) | não | Ajuste urgente direto no banco, a pedido do Moisés. |
-| Abas da ficha Estudos de massa, Viabilidades, Jornada, Documentos | não | Mostram "Esta aba entra depois da primeira versão" (`Ficha.tsx`, fim). |
+| Aba Estudos de massa | sim | `ficha/Massa.tsx`, sem o envio do PDF e do DWG (entram com Documentos). |
+| Abas da ficha Viabilidades, Jornada, Documentos | não | Mostram "Esta aba entra depois da primeira versão" (`Ficha.tsx`, fim). |
 | Estudo de viabilidade (popup, DRE, modelos) | não | |
 | Topográfico preliminar fora de São Paulo | sim | `topo/gerar.ts` (porte de `proto_topo.js` sem laser, quadra inteira, calçadas nem larguras de via) e `topo/Topografico.tsx` (aba Infraestrutura, quadro Relevo); modelo do DXF em `topo/modelo.dxf` (cópia de `tools/prototipo/topo_modelo.dxf`, lido com `?raw`). Baixa na hora, sem gravar em Documentos. |
 | Topográfico em São Paulo (laser 2020, quadra inteira), relevo medido sozinho, visita técnica, viabilidades técnicas | não | O Resumo mostra o perfil se já estiver gravado (`topo_perfil`). |

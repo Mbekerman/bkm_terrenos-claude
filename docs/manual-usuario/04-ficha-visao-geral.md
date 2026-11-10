@@ -66,7 +66,8 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viab
 | Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
 | Entorno | Disponível | [08](08-ficha-entorno.md) |
 | Infraestrutura | Só o quadro **Relevo**, com o **Topográfico** fora de São Paulo (veja abaixo) | esta |
-| Estudos de massa, Viabilidades, Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
+| Estudos de massa | Disponível | [14](14-ficha-estudos-de-massa.md) |
+| Viabilidades, Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
 **Como andar pelas abas:**
 
@@ -175,7 +176,7 @@ Enquanto o terreno está excluído, a matrícula e os SQLs dele continuam presos
 
 ## O que não é possível na ficha hoje
 
-- As abas Estudos de massa, Viabilidades, Jornada e Documentos, e o resto da aba Infraestrutura (visita técnica, viabilidades técnicas).
+- As abas Viabilidades, Jornada e Documentos, e o resto da aba Infraestrutura (visita técnica, viabilidades técnicas).
 - Digitar o endereço (CEP, rua, bairro, município) direto: ele vem do mapa.
 - Ver a ficha em tema escuro.
 - Imprimir ou exportar a ficha.

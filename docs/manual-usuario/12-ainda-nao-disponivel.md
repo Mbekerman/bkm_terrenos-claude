@@ -20,7 +20,7 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 
 | Aba | Situação |
 |---|---|
-| **Estudos de massa** (pedido ao arquiteto, tipologias, CA, eficiência, estudo válido) | Só no protótipo |
+| **Estudos de massa: PDF e DWG** | Entram com a aba Documentos; o resto da aba já está no sistema ([14](14-ficha-estudos-de-massa.md)). |
 | **Viabilidades** (estudo de viabilidade estática, DRE, modelos, "Rentabilidade abaixo da mínima") | Só no protótipo. Por isso Unidades e VGV do Resumo ficam vazios. |
 | **Infraestrutura** (relevo em 7 perfis medido sozinho, visita técnica, viabilidades técnicas de energia, água, esgoto e gás) | Só no protótipo; a aba já tem o quadro Relevo com o Topográfico fora de São Paulo. Por isso "Perfil topográfico" fica vazio; a "Visita técnica" fica fora da completude até a aba chegar. |
 | **Jornada** (as fases do terreno, "Abrir antes da hora") | Só no protótipo |
