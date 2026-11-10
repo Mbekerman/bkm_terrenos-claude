@@ -234,16 +234,16 @@ function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar, gravarOb
   return (
     <div className="ptcom-r">
       <div className="ptcom-p"><b>{pa.nome}</b>{pa.pessoa_nome && <> <span className="faint">{pa.pessoa_nome}</span></>}{nomeDet}</div>
-      <div className="ptcom-c">{L(um ? 'Área adotada' : 'Área da parte')}<span>{area != null ? m2(Math.round(area * 100) / 100) : '—'}</span>{zonas && <span className="ptcom-zona" title="Zoneamento">{zonas}</span>}</div>
-      <div className="ptcom-c field">{L('Valor pedido')}{ro ? <span>{valor != null ? brl(valor) : '—'}</span>
+      <div className="ptcom-c ptcom-ar">{L(um ? 'Área adotada' : 'Área da parte')}<span>{area != null ? m2(Math.round(area * 100) / 100) : '—'}</span>{zonas && <span className="ptcom-zona" title="Zoneamento">{zonas}</span>}</div>
+      <div className="ptcom-c field ptcom-v">{L('Valor pedido')}{ro ? <span>{valor != null ? brl(valor) : '—'}</span>
         : <Adorno t="moeda"><input className="ptc-n" id={primeiro ? 'c-valor' : undefined} inputMode="decimal" data-fmt="moeda" value={vv} aria-label={`Valor pedido de ${pa.nome}`}
           onChange={(e) => { setVv(e.target.value); const n = lerNum(e.target.value); setVm(n != null && area ? numTxt(Math.round(n / area)) : ''); }}
           onBlur={() => gravarValor(lerNum(vv))} /></Adorno>}</div>
-      <div className="ptcom-c field">{L('Valor por m²')}{ro ? <span>{valor != null && area ? brl(valor / area) : '—'}</span>
+      <div className="ptcom-c field ptcom-m">{L('Valor por m²')}{ro ? <span>{valor != null && area ? brl(valor / area) : '—'}</span>
         : <Adorno t="moeda"><input className="ptc-n" inputMode="decimal" data-fmt="moeda" value={vm} placeholder={area ? 'por m²' : 'sem área'} disabled={!area} aria-label={`Valor por m² de ${pa.nome}`}
           onChange={(e) => { setVm(e.target.value); const n = lerNum(e.target.value); setVv(n != null && area ? numTxt(Math.round(n * area)) : ''); }}
           onBlur={() => { const n = lerNum(vm); gravarValor(n != null && area ? Math.round(n * area) : null); }} /></Adorno>}</div>
-      <div className="ptcom-c field">{L('Condição de pagamento')}{ro ? <span>{forma ? FORMA[forma] : '—'}</span>
+      <div className="ptcom-c field ptcom-f">{L('Condição de pagamento')}{ro ? <span>{forma ? FORMA[forma] : '—'}</span>
         : <select value={forma ?? ''} aria-label={`Condição de pagamento de ${pa.nome}`} onChange={(e) => mudar(pa, valor, e.target.value || null)}>
           <option value="">Não informada</option>{Object.entries(FORMA).map(([k, x]) => <option key={k} value={k}>{x}</option>)}</select>}</div>
       {/* informações gerais da parte, no lugar de Aceita permuta e Pagamento da oferta (pedido do Moises, 10/nov/2026) */}

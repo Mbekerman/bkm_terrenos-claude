@@ -40,6 +40,7 @@ Embaixo, uma linha por parte (ver [05](05-ficha-terreno.md#partes)), com:
 - a **área da parte** (pelos SQLs; sem eles, pelas matrículas). Com uma parte só, é a área adotada do terreno. Logo abaixo, em cinza claro, o zoneamento dos SQLs da parte;
 - o **valor pedido** e o **valor por m²**, que se calculam um pelo outro (digite um e o outro muda). Aceita "12 mi" e precisa ser maior que zero;
 - a **condição de pagamento**: Dinheiro, Permuta física, Permuta financeira, Permuta geral ou Permuta com torna;
+- No celular, a área e o valor por m² ficam lado a lado, e o valor pedido e a condição de pagamento ocupam a linha inteira.
 - **Informações gerais**, no fim de cada parte: um texto livre para o que o vendedor pediu (permuta, entrada, prazos). Grava ao sair do campo e vale para a parte, não para uma oferta só.
 
 Com duas ou mais partes, embaixo vem o **Total**, com "(faltam N)" enquanto alguma parte não tem valor.

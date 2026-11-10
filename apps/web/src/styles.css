@@ -4669,6 +4669,14 @@ html[data-tema="escuro"] .ptcom-zona { color: #8e918f }
   .ptcom-p { grid-column: 1 / -1 }
   .ptcom-c:empty { display: none }
   .ptcom-ml { display: block; margin-bottom: 2px }
+  .ptcom-c.field { align-self: end }
+}
+/* no celular: área e valor por m² lado a lado; valor pedido e condição na linha inteira, para caber 999 milhões e
+   "Permuta financeira" sem os rótulos desencontrarem (pedido do Moises, 10/nov/2026) */
+@container (max-width: 480px) {
+  .ptcom-r { grid-template-areas: "p p" "ar m" "v v" "f f" "o o" }
+  .ptcom-p { grid-area: p } .ptcom-ar { grid-area: ar } .ptcom-m { grid-area: m } .ptcom-v { grid-area: v } .ptcom-f { grid-area: f } .ptcom-obs { grid-area: o }
+  .ptcom-ar { align-self: end }
 }
 @media (max-width: 720px) {
   .pt2-g { grid-template-columns: minmax(0, 1fr) }
