@@ -22,7 +22,6 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 |---|---|
 | **Estudos de massa: PDF e DWG** | Entram com a aba Documentos; o resto de Estudos Técnicos › Estudos de massa já está no sistema ([14](14-ficha-estudos-de-massa.md)). |
 | **Estudos de viabilidade** (em Estudos Técnicos) | Em partes ([15](15-ficha-viabilidades.md)): já estão a lista, o Resumo da viabilidade, o estudo válido e a seção Tipologias. Faltam as seções Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE, os modelos de estudo e o vínculo com o estudo de massa. |
-| **Jornada** (as fases do terreno, "Abrir antes da hora") | Só no protótipo |
 | **Documentos** (envio com versão, pastas no Google Drive, planta e desenho do GeoSampa) | Só no protótipo; pastas no Drive no plano |
 
 ## Recursos dentro das telas já disponíveis

@@ -69,7 +69,8 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viab
 | Estudos Técnicos › Estudos de viabilidade | Disponível em parte: lista, Resumo da viabilidade e a seção Tipologias do estudo | [15](15-ficha-viabilidades.md) |
 | Estudos Técnicos › Entorno | Disponível | [08](08-ficha-entorno.md) |
 | Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico**), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
-| Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
+| Jornada | Disponível: linha do tempo e fases do terreno | [16](16-ficha-jornada.md) |
+| Documentos | **Ainda não disponível** (mostra "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
 **Estudos Técnicos** junta quatro partes, nesta ordem: Estudos de massa, Estudos de viabilidade, Entorno e Avaliação de infraestrutura. Com ela aberta, aparecem logo abaixo da barra quatro botões, um para cada parte; o que está aberto fica em azul-claro. Clicar em Estudos Técnicos abre a parte que você viu por último na sessão (da primeira vez, Estudos de massa).
 
@@ -227,7 +228,7 @@ O quadro **Relevo** mostra:
 
 ## O que não é possível na ficha hoje
 
-- Parte do estudo de viabilidade (ver [15](15-ficha-viabilidades.md)), o PDF e o DWG dos estudos de massa, as abas Jornada e Documentos, e guardar o PDF e o DXF do Topográfico em Documentos.
+- Parte do estudo de viabilidade (ver [15](15-ficha-viabilidades.md)), o PDF e o DWG dos estudos de massa, a aba Documentos, e guardar o PDF e o DXF do Topográfico em Documentos.
 - Digitar o endereço (CEP, rua, bairro, município) direto: ele vem do mapa.
 - Ver a ficha em tema escuro.
 - Imprimir ou exportar a ficha.

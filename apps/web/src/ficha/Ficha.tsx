@@ -18,6 +18,7 @@ import CartorioAuto from './CartorioAuto';
 import AbaInfra from '../topo/Topografico';
 import AbaViabilidade, { PopEstudo } from '../viab/Viabilidade';
 import AbaMassa from './Massa';
+import AbaJornada from './Jornada';
 import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
 import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
@@ -509,6 +510,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
     : aba === 'infra' ? <AbaInfra key={f.id} f={f} />
     : aba === 'viabilidade' ? <AbaViabilidade key={f.id} f={f} />
     : aba === 'massa' ? <AbaMassa key={f.id} f={f} irAba={irAba} />
+    : aba === 'jornada' ? <AbaJornada key={f.id} f={f} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
     <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main">
