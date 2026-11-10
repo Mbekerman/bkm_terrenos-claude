@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from 'react';
 import { carregarGoogle, gLib } from '../mapa/google';
-import { TOQUE, vGestos, type GestosPonto } from '../mapa/motor';
+import { TOQUE, arrastoComRoda, vGestos, type GestosPonto } from '../mapa/motor';
 import { MenuPonto } from '../mapa/MenuPonto';
 import { areaPoly, dentroPoly, fixa, m2, pinoNovo, type P } from '../novo/geo';
 import { useToast } from '../components/ui';
@@ -136,6 +136,7 @@ export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }:
       pin.innerHTML = `<span class="pin-b" style="background:${cor}"><b class="pin-d" style="background:${fg}"></b></span>`;
       const mk = new gLib.marker.AdvancedMarkerElement({ map: M, position: gLL(lat, lng), content: pin, zIndex: 2000 });
       pinMk.current = mk;
+      arrastoComRoda(M, mk);
       mk.addListener('dragend', () => { const q = mk.position; pinMovido.current = [typeof q.lat === 'function' ? q.lat() : q.lat, typeof q.lng === 'function' ? q.lng() : q.lng]; marca.current.toque = Date.now(); });
       if (poly) {
         const pg = new google.maps.Polygon({ map: M, paths: poly.map((p) => gLL(p[0], p[1])), strokeColor: '#0094fe', strokeWeight: 2, fillColor: '#0094fe', fillOpacity: 0.2, clickable: true });
@@ -169,6 +170,7 @@ export default function MiniMapa({ lat, lng, poly, cor, fg, abrirMapa, salvar }:
       const el = document.createElement('div');
       el.className = 'v-alvo'; el.innerHTML = `<span class="v-dot${vSel === i ? ' sel' : ''}"></span>`;
       const mk = new gLib.marker.AdvancedMarkerElement({ map: M, position: q, content: el, gmpDraggable: true, zIndex: vSel === i ? 1000 : 10 });
+      arrastoComRoda(M, mk);
       vGestos(el, i, gp);
       mk.addListener('drag', () => { const pp = p.slice(), [a, b] = ll(mk.position); pp[i] = gLL(a, b); poli.setPaths(pp); });
       mk.addListener('dragstart', () => gp.arrastando());

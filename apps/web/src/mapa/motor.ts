@@ -352,6 +352,7 @@ export class Motor {
       const el = document.createElement('div');
       el.className = 'v-alvo'; el.innerHTML = `<span class="v-dot${sel === i ? ' sel' : ''}"></span>`;
       const mk = new gLib.marker.AdvancedMarkerElement({ map: M, position: q, content: el, gmpDraggable: true, zIndex: sel === i ? 1000 : 10 });
+      arrastoComRoda(M, mk);
       vGestos(el, i, gp);
       mk.addListener('drag', () => { const pp = p.slice(), [a, b] = ll(mk.position); pp[i] = gLL(a, b); poli.setPath ? poli.setPath(pp) : poli.setPaths(pp); });
       mk.addListener('dragstart', () => gp.arrastando());
@@ -369,6 +370,7 @@ export class Motor {
     d.title = 'Arraste para mudar o pino de lugar';
     d.innerHTML = `<span class="pin-b" style="background:${cor}"><b class="pin-d" style="background:${fg}"></b></span>`;
     const mk = new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(pos[0], pos[1]), content: d, gmpDraggable: true, zIndex: 2000 });
+    arrastoComRoda(this.mapa, mk);
     d.addEventListener('click', (e) => e.stopPropagation());
     const fim = () => { const q = mk.position; if (q) arrastado(typeof q.lat === 'function' ? q.lat() : q.lat, typeof q.lng === 'function' ? q.lng() : q.lng); };
     mk.addListener('dragend', fim);
@@ -419,6 +421,7 @@ export class Motor {
       const el = document.createElement('div'); el.className = cls;
       const m = new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(p.lat, p.lng), content: el, title: soltar ? titulo + ': arraste para mudar' : titulo,
         gmpClickable: false, gmpDraggable: !!soltar, zIndex: soltar ? 960 : 950 });
+      if (soltar) arrastoComRoda(this.mapa, m);
       if (soltar) m.addListener('dragend', () => {
         const ps: any = m.position;
         const lat = typeof ps?.lat === 'function' ? ps.lat() : ps?.lat, lng = typeof ps?.lng === 'function' ? ps.lng() : ps?.lng;
@@ -518,4 +521,46 @@ function reguaRotulos(p: [number, number][], fechado: boolean) {
     if (ar) out.push({ ll: [p.reduce((s, q) => s + q[0], 0) / p.length, p.reduce((s, q) => s + q[1], 0) / p.length], t: reguaA(ar), c: 'rg-tot' });
   }
   return out;
+}
+
+/** Arrastando um ponto com o botão esquerdo, segurar a roda (botão do meio) arrasta o mapa em vez do ponto; soltar a roda volta
+ *  a mover o ponto (pedido do Moises, 10/nov/2026). Vale para todo marcador arrastável: chamar logo depois de criar o marcador,
+ *  antes dos outros ouvintes de 'drag', para que eles já leiam o ponto parado. Enquanto a roda está apertada o ponto fica no
+ *  mesmo lugar do mapa (o Google o levaria junto com o cursor) e o mapa anda com o cursor, sem animação. */
+export function arrastoComRoda(mapa: any, mk: any) {
+  let x = 0, y = 0, roda = false, preso: any = null;
+  const prende = (e: MouseEvent) => { roda = true; preso = mk.position; x = e.clientX; y = e.clientY; };
+  const anda = (dx: number, dy: number) => {
+    const pr = mapa.getProjection?.(), c = mapa.getCenter?.(), z = mapa.getZoom?.();
+    if (!pr || !c || typeof z !== 'number') { mapa.panBy(-dx, -dy); return; }
+    const s = Math.pow(2, z), w = pr.fromLatLngToPoint(c);
+    mapa.setCenter(pr.fromPointToLatLng(new window.google.maps.Point(w.x - dx / s, w.y - dy / s)));
+  };
+  const desce = (e: MouseEvent) => { if (e.button !== 1) return; e.preventDefault(); e.stopPropagation(); prende(e); };
+  const sobe = (e: MouseEvent) => { if (e.button === 1) { e.preventDefault(); roda = false; } };
+  const mexe = (e: MouseEvent) => {
+    if (!(e.buttons & 4)) { roda = false; return; }
+    if (!roda) { prende(e); return; }
+    const dx = e.clientX - x, dy = e.clientY - y;
+    x = e.clientX; y = e.clientY;
+    if (dx || dy) anda(dx, dy);
+  };
+  /* a roda solta no Linux cola o texto copiado e no Windows abre a rolagem automática: nada disso no meio do arraste */
+  const corta = (e: MouseEvent) => { if (e.button === 1) e.preventDefault(); };
+  const op = { capture: true } as const, opM = { capture: true, passive: false } as const;
+  const liga = () => {
+    window.addEventListener('pointermove', mexe, op);
+    window.addEventListener('mousedown', desce, opM); window.addEventListener('mouseup', sobe, opM);
+    window.addEventListener('auxclick', corta, opM);
+  };
+  const desliga = () => {
+    roda = false; preso = null;
+    window.removeEventListener('pointermove', mexe, op);
+    window.removeEventListener('mousedown', desce, opM); window.removeEventListener('mouseup', sobe, opM);
+    /* o auxclick vem depois do mouseup; tira na volta seguinte */
+    setTimeout(() => window.removeEventListener('auxclick', corta, opM), 0);
+  };
+  mk.addListener('dragstart', liga);
+  mk.addListener('drag', () => { if (roda && preso) mk.position = preso; });
+  mk.addListener('dragend', desliga);
 }
