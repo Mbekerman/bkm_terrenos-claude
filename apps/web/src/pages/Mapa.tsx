@@ -194,7 +194,7 @@ export default function Mapa() {
   const pinoDe = useCallback((t: TerrenoMapa): Pino | null => {
     if (t.lat == null || t.lng == null) return null;
     const k = info(fases, classe(fases, t, f, e), f, e);
-    return { id: t.id, nome: t.nome, lat: t.lat, lng: t.lng, poly: t.poly, cor: k[1], fg: k[3] };
+    return { id: t.id, nome: t.nome, lat: t.lat, lng: t.lng, poly: t.poly, cor: k[1], fg: k[3], codigo: t.codigo };
   }, [fases, f, e]);
 
   /* seleção no endereço: /mapa/A123; com a gaveta aberta, outro terreno troca a gaveta e o clique no vazio não fecha */

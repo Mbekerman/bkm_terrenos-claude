@@ -658,6 +658,15 @@ body.dash-fixo .dash { position: fixed; inset: 0; z-index: 30; overflow: auto; p
 /* ---- Google Maps ---- */
 .pin.g { position: relative; width: 30px; height: 40px }
 .pin.pin-ed { cursor: grab } .pin.pin-ed:active { cursor: grabbing }
+/* terreno no mapa: etiqueta com o código e o ponto no lugar exato (pedido do Moises, 10/nov/2026), para se destacar dos pinos do
+   Google; tudo em em, e de longe (zoom 14 ou menos, .z-longe no contêiner) a fonte sobe de 13 para 15 px e a etiqueta cresce junto */
+.pin.et { display: flex; flex-direction: column; align-items: center; font-size: 13px; cursor: pointer; transform: translateY(.42em) }
+.z-longe .pin.et { font-size: 15px }
+.pin.et .et-b { position: relative; padding: .3em .75em; border-radius: 1.1em; font-weight: 700; line-height: 1.2; letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap; border: 2.5px solid #fff; box-shadow: 0 0 0 1.5px #1f1f1f, 0 4px 10px rgba(0,0,0,.55) }
+.pin.et .et-b i { position: absolute; left: 50%; bottom: -.5em; width: .8em; height: .8em; transform: translateX(-50%) rotate(45deg); border-right: 2.5px solid #fff; border-bottom: 2.5px solid #fff; box-shadow: 2px 2px 0 0 #1f1f1f }
+.pin.et .et-c { width: .84em; height: .84em; margin-top: .55em; border-radius: 50%; background: #1f1f1f; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,.5) }
+.pin.et.sel .et-b { box-shadow: 0 0 0 1.5px #1f1f1f, 0 0 0 4.5px #0094fe, 0 4px 10px rgba(0,0,0,.55) }
+.pin.et.sel .et-c { background: #0094fe }
 .poi.g { position: relative; width: 14px; height: 14px; transform: translateY(50%) }
 .poi.g .poi-b { position: absolute; inset: 0 }
 .ent.g { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid #863d8f; color: #863d8f; font-size: 11px; font-weight: 700; display: grid; place-items: center; transform: translateY(50%); box-shadow: 0 1px 3px rgba(0,0,0,.3) }
