@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
+- **Nomes do GeoSanja com acento** (subsetor, setor, parques, núcleos...): a prefeitura entrega "S?o Jos?" no lugar de "São José"; o sistema troca pelas letras certas, também nas consultas já feitas. (#293)
 - **Topográfico em São José dos Campos com os lotes da quadra** (aba Infraestrutura): a folha e o DXF trazem todos os lotes das quadras do terreno, numerados. (#293)
 - **Partes na aba Comercial**: cada parte mostra só as suas matrículas, em etiquetas que não se tiram; o clique abre a janela da matrícula com a área, o percentual da parte e os SQLs dela, com a área de cada lote e a área da parte. (#293)
 - **Descartar item do "Falta preencher"** (topo da ficha): cada item da lista tem um x que o descarta neste terreno; ele sai da lista e da conta do percentual, e o descarte fica no Log. Embaixo, "Descartados (N)" com "Voltar a pedir". Ctrl+Z desfaz. (#293)

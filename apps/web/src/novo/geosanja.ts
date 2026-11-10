@@ -11,6 +11,7 @@ import { automatico, supabase } from '../lib/supabase';
 import { geoAneis, geoAreaAnel, digitos } from './geosampa';
 import { geoAreaZonas, geoDentro } from './consulta';
 import type { LinhaToca } from '../lib/camadas';
+import { consertarAcentos, consertarProps } from './acentosSjc';
 import type { P } from './geo';
 
 export const GSJ_BASE: string | null = (() => {
@@ -87,7 +88,7 @@ export async function gsjInfoBB(camada: string, bb: number[], ws = 'geoSJC', buf
   if (!r.ok) throw new Error('GeoSanja respondeu ' + r.status);
   const j = await r.json();
   if (!j || !Array.isArray(j.features)) throw new Error('Resposta inesperada do GeoSanja');
-  return j.features;
+  return j.features.map((f: any) => ({ ...f, properties: consertarProps(f.properties) }));
 }
 
 /* ---------- geometria: graus -> metros locais ---------- */
@@ -149,7 +150,8 @@ export async function consultarLoteSjc(inscricaoId: string, ic: string, auto = f
 export function gsjLinhas(camadas: Record<string, any[]>, erros: string[]): LinhaToca[] {
   return GSJ_CAMADAS.map(([k, pref, tema, fmt, grav], j) => ({
     tema, grav, erro: erros.includes(k + ':' + j), j, ficha: GSJ_FICHA.includes(pref),
-    vals: [...new Set((camadas[k + ':' + j] || []).map((x) => { try { return fmt(x) || null; } catch { return null; } }).filter(Boolean) as string[])],
+        /* as consultas guardadas antes do remendo dos acentos (10/nov/2026) se consertam na leitura */
+    vals: [...new Set((camadas[k + ':' + j] || []).map((x) => { try { const v = fmt(x); return v ? consertarAcentos(String(v)) : null; } catch { return null; } }).filter(Boolean) as string[])],
   })).filter((l) => l.j > 0).sort((a, b) => Number(b.ficha) - Number(a.ficha)).map(({ tema, grav, erro, vals }) => ({ tema, grav, erro, vals }));
 }
 
