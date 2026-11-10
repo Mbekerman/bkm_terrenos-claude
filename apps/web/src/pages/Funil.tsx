@@ -306,21 +306,21 @@ export default function Funil() {
       <Dialogo titulo={`Ainda não dá para ir para ${modal.nome}`} sub="Resolva o que falta. Gestor e diretor podem passar sem os requisitos, com justificativa." onFechar={fechar}
         rodape={<button className="btn primary" onClick={fechar}>Entendi</button>}><Itens itens={modal.itens} modal /></Dialogo>
     );
-    if (modal.k === 'forcar') return (
+    if (modal.k === 'forcar') { const exige = modal.itens.some((x) => x.justifica); return (
       <Dialogo titulo={`Ir para ${modal.nome} sem os requisitos?`} onFechar={fechar} rodape={rod('f-fc', 'Avançar')}>
         <ul className="pend">{modal.itens.map((x, i) => <li key={i}><Ic n="close" s={16} />{x.texto}</li>)}</ul>
         <form id="f-fc" onSubmit={async (ev) => { ev.preventDefault(); const j = val(ev, 'j'); const m = modal; setModal(null); await m.exec(true, j); }}>
-          <div className="field"><label htmlFor="fc-j">Justificativa (vai para o histórico)</label><textarea id="fc-j" name="j" required /></div>
+          <div className="field"><label htmlFor="fc-j">Justificativa{exige ? '' : ' (opcional)'}, vai para o histórico</label><textarea id="fc-j" name="j" required={exige} /></div>
         </form>
       </Dialogo>
-    );
+    ); }
     if (modal.k === 'voltar') return (
       <Dialogo titulo={`Voltar para ${modal.etapa.nome}?`} sub={D.ters[modal.p.t]?.nome} onFechar={fechar} rodape={rod('f-vt', 'Voltar')}>
         <form id="f-vt" onSubmit={async (ev) => {
           ev.preventDefault(); const c = val(ev, 'motivo'), m = modal;
-          if (await rodar(() => supabase.rpc('mover_para_etapa', { p_processo: m.p.id, p_etapa: m.etapa.k, p_comentario: c }), `${D.ters[m.p.t]?.nome}: ${m.etapa.nome}.`)) fechar();
+          if (await rodar(() => supabase.rpc('mover_para_etapa', { p_processo: m.p.id, p_etapa: m.etapa.k, p_comentario: c || null }), `${D.ters[m.p.t]?.nome}: ${m.etapa.nome}.`)) fechar();
         }}>
-          <div className="field"><label htmlFor="vt-m">Motivo (vai para o histórico)</label><textarea id="vt-m" name="motivo" required /></div>
+          <div className="field"><label htmlFor="vt-m">Motivo (opcional), vai para o histórico</label><textarea id="vt-m" name="motivo" /></div>
         </form>
       </Dialogo>
     );
@@ -329,10 +329,10 @@ export default function Funil() {
       <Dialogo titulo="Colocar em Stand By" sub={D.ters[m.p.t]?.nome} onFechar={fechar} rodape={rod('f-s', 'Colocar em Stand By')}>
         <form id="f-s" onSubmit={async (ev) => {
           ev.preventDefault();
-          if (await rodar(() => supabase.rpc('encerrar_processo', { p_processo: m.p.id, p_status: 'stand_by', p_retomar_em: val(ev, 'retomar'), p_detalhe: val(ev, 'detalhe') }), 'Em Stand By.')) fechar();
+          if (await rodar(() => supabase.rpc('encerrar_processo', { p_processo: m.p.id, p_status: 'stand_by', p_retomar_em: val(ev, 'retomar') || null, p_detalhe: val(ev, 'detalhe') || null }), 'Em Stand By.')) fechar();
         }}>
-          <div className="fields"><div className="field"><label htmlFor="sp-d">Retomar em</label><input id="sp-d" name="retomar" type="date" min={somarDias(hojeISO(), 1)} defaultValue={somarDias(hojeISO(), 30)} required /></div>
-            <div className="field full"><label htmlFor="sp-t">Justificativa</label><textarea id="sp-t" name="detalhe" required /></div></div>
+          <div className="fields"><div className="field"><label htmlFor="sp-d">Retomar em</label><input id="sp-d" name="retomar" type="date" min={somarDias(hojeISO(), 1)} defaultValue={somarDias(hojeISO(), 30)} /></div>
+            <div className="field full"><label htmlFor="sp-t">Justificativa</label><textarea id="sp-t" name="detalhe" /></div></div>
           {m.ap.length > 0 && <div className="banner blue" style={{ marginTop: 12 }}><Ic n="check" /><div>Vai como pedido de aprovação: {m.ap.map((x) => (x === 'gestor' ? 'Gestor' : x === 'diretor' ? 'Diretor' : x)).join(' e ')}.</div></div>}
         </form>
       </Dialogo>

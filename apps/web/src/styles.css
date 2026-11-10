@@ -5217,3 +5217,8 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 .nv-cf-t { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #c4c7c5; border-radius: 12px }
 .nv-cf-t > div { flex: 1; min-width: 0 }
 .nv-cf .df { flex-wrap: wrap }
+/* faixa do encerramento: lápis para completar depois o que ficou em branco (pedido do Moises, 10/nov/2026) */
+.sec-adv .banner .adv-enc-ed { flex: none; align-self: flex-start; margin: -6px -6px 0 auto; }
+.sec-adv .adv-enc-falta { font-size: 12px; margin-top: 4px; }
+.sec-adv .adv-enc-lk { background: none; border: 0; padding: 0; font: inherit; color: var(--m-primary, #0b57d0); cursor: pointer; }
+.sec-adv .adv-enc-lk:hover { text-decoration: underline; }

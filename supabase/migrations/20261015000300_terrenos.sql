@@ -486,6 +486,16 @@ create index on app.inscricao_partes (parte_id);
 create index on app.inscricao_partes (matricula_parte_id);
 create index on app.inscricao_partes (terreno_id);
 
+-- O SQL dentro de uma matrícula repetida (a mesma matrícula em várias partes) é um só (pedido do Moises, 10/nov/2026):
+-- aparece em todas as cópias da matrícula, e pôr, tirar ou mudar o percentual em qualquer uma vale para todas. O grupo do
+-- SQL é a matrícula em que ele está (o SQL fora de matrícula é um grupo sozinho). O percentual do SQL passa a ser quanto
+-- dele está dentro daquela matrícula, o mesmo nas cópias; quem divide a área entre as partes é o percentual de cada parte
+-- na matrícula (área da parte = área do SQL × % do SQL na matrícula × % da parte na matrícula).
+create or replace function app._grupo_sql(p_id uuid, p_matricula_parte uuid)
+returns uuid language sql stable security definer set search_path = '' as $$
+  select coalesce((select matricula_id from app.matricula_partes where id = p_matricula_parte), p_id)
+$$;
+
 -- A etiqueta é do terreno da matrícula ou do SQL, numa parte ativa dele, e os percentuais do mesmo lote
 -- não passam de 100%.
 create or replace function app.tg_etiqueta_parte()
@@ -499,7 +509,12 @@ begin
   else
     v_lote := new.inscricao_id;
     select terreno_id into v_terreno from app.inscricoes_municipais where id = v_lote;
-    select sum(percentual) into v_soma from app.inscricao_partes where inscricao_id = v_lote and id <> new.id;
+    -- o SQL dentro das cópias da mesma matrícula é um só (pedido do Moises, 10/nov/2026): cada matrícula conta uma vez
+    select sum(g.percentual) into v_soma from (
+      select distinct on (app._grupo_sql(x.id, x.matricula_parte_id)) x.percentual, app._grupo_sql(x.id, x.matricula_parte_id) as grupo
+        from app.inscricao_partes x where x.inscricao_id = v_lote and x.id <> new.id
+       order by app._grupo_sql(x.id, x.matricula_parte_id)) g
+     where g.grupo <> app._grupo_sql(new.id, new.matricula_parte_id);
     -- o SQL dentro de uma matrícula fica na parte dela; o SQL que entra numa parte (ou muda de parte) precisa de uma
     -- matrícula dela (pedido do Moises, 6/nov/2026); o SQL solto não fica preso a matrícula
     if new.matricula_parte_id is not null then
@@ -530,7 +545,12 @@ returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if tg_op = 'DELETE' then
     if coalesce(current_setting('app.apagando_terreno', true), '') = '1' then return old; end if;   -- deletar terreno: as etiquetas saem juntas
-    update app.inscricao_partes set matricula_parte_id = null, parte_id = null where matricula_parte_id = old.id;
+    -- a matrícula continua noutras cópias: os SQLs ficam lá, e só as linhas desta cópia saem
+    if exists (select 1 from app.matricula_partes where matricula_id = old.matricula_id and id <> old.id) then
+      delete from app.inscricao_partes where matricula_parte_id = old.id;
+    else
+      update app.inscricao_partes set matricula_parte_id = null, parte_id = null where matricula_parte_id = old.id;
+    end if;
     return old;
   end if;
   if new.parte_id is distinct from old.parte_id then
@@ -540,6 +560,82 @@ begin
 end $$;
 create trigger t_leva after update of parte_id on app.matricula_partes for each row execute function app.tg_matricula_leva_sqls();
 create trigger t_leva_del before delete on app.matricula_partes for each row execute function app.tg_matricula_leva_sqls();
+
+-- Espelho dos SQLs entre as cópias da mesma matrícula (pedido do Moises, 10/nov/2026). Só reage ao que a pessoa faz
+-- (profundidade 1 de trigger): o que os próprios triggers mudam não espelha de novo. app.sem_espelho = '1' desliga
+-- (excluir ou tirar uma parte apaga só as linhas dela). O que o espelho grava fica nos Logs como consequência.
+create unique index inscricao_partes_uma_por_matricula on app.inscricao_partes (matricula_parte_id, inscricao_id) where matricula_parte_id is not null;
+
+create or replace function app._espelhar_sql(p_inscricao uuid, p_matricula_parte uuid, p_percentual numeric)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_mat uuid; v_auto text := current_setting('app.automatico', true);
+begin
+  select matricula_id into v_mat from app.matricula_partes where id = p_matricula_parte;
+  if v_mat is null then return; end if;
+  perform set_config('app.automatico', '1', true);
+  insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id, percentual)
+  select c.empresa_id, c.terreno_id, p_inscricao, c.id, p_percentual
+    from app.matricula_partes c
+   where c.matricula_id = v_mat and c.id <> p_matricula_parte
+     and not exists (select 1 from app.inscricao_partes x where x.matricula_parte_id = c.id and x.inscricao_id = p_inscricao);
+  perform set_config('app.automatico', coalesce(v_auto, ''), true);
+end $$;
+
+create or replace function app._desespelhar_sql(p_id uuid, p_inscricao uuid, p_matricula_parte uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_mat uuid; v_auto text := current_setting('app.automatico', true);
+begin
+  select matricula_id into v_mat from app.matricula_partes where id = p_matricula_parte;
+  if v_mat is null then return; end if;
+  perform set_config('app.automatico', '1', true);
+  delete from app.inscricao_partes x using app.matricula_partes c
+   where c.id = x.matricula_parte_id and c.matricula_id = v_mat and x.inscricao_id = p_inscricao and x.id <> p_id;
+  perform set_config('app.automatico', coalesce(v_auto, ''), true);
+end $$;
+
+create or replace function app.tg_sql_espelho()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_auto text := current_setting('app.automatico', true);
+begin
+  if pg_trigger_depth() > 1 or coalesce(current_setting('app.sem_espelho', true), '') = '1' then return null; end if;
+  if tg_op = 'INSERT' then
+    perform app._espelhar_sql(new.inscricao_id, new.matricula_parte_id, new.percentual);
+  elsif tg_op = 'DELETE' then
+    perform app._desespelhar_sql(old.id, old.inscricao_id, old.matricula_parte_id);
+  elsif app._grupo_sql(old.id, old.matricula_parte_id) is distinct from app._grupo_sql(new.id, new.matricula_parte_id) then
+    -- mudou de matrícula: sai das cópias da antiga e entra nas da nova
+    perform app._desespelhar_sql(new.id, old.inscricao_id, old.matricula_parte_id);
+    perform app._espelhar_sql(new.inscricao_id, new.matricula_parte_id, new.percentual);
+  elsif new.percentual is distinct from old.percentual and new.matricula_parte_id is not null then
+    perform set_config('app.automatico', '1', true);
+    update app.inscricao_partes x set percentual = new.percentual
+      from app.matricula_partes c, app.matricula_partes m
+     where m.id = new.matricula_parte_id and c.matricula_id = m.matricula_id and x.matricula_parte_id = c.id
+       and x.inscricao_id = new.inscricao_id and x.id <> new.id and x.percentual is distinct from new.percentual;
+    perform set_config('app.automatico', coalesce(v_auto, ''), true);
+  end if;
+  return null;
+end $$;
+create trigger t_espelho after insert or update of matricula_parte_id, percentual or delete on app.inscricao_partes
+  for each row execute function app.tg_sql_espelho();
+
+-- A cópia nova da matrícula (Duplicar) nasce com os SQLs que estão nas outras cópias dela.
+create or replace function app.tg_matricula_copia_sqls()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_auto text := current_setting('app.automatico', true);
+begin
+  if coalesce(current_setting('app.sem_espelho', true), '') = '1' then return null; end if;
+  perform set_config('app.automatico', '1', true);
+  insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id, percentual)
+  select distinct on (x.inscricao_id) new.empresa_id, new.terreno_id, x.inscricao_id, new.id, x.percentual
+    from app.inscricao_partes x join app.matricula_partes c on c.id = x.matricula_parte_id
+   where c.matricula_id = new.matricula_id and c.id <> new.id
+     and not exists (select 1 from app.inscricao_partes y where y.matricula_parte_id = new.id and y.inscricao_id = x.inscricao_id)
+   order by x.inscricao_id;
+  perform set_config('app.automatico', coalesce(v_auto, ''), true);
+  return null;
+end $$;
+create trigger t_copia_sqls after insert on app.matricula_partes for each row execute function app.tg_matricula_copia_sqls();
 
 create table app.terreno_corretores (
   terreno_id  uuid not null references app.terrenos(id) on delete cascade,
@@ -1001,6 +1097,8 @@ create trigger t_aud after insert or update or delete on app.terreno_entorno_bus
 create trigger t_aud after insert or update or delete on app.consultas_lote for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.consultas_area for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.terreno_viabilidades_tecnicas for each row execute function app.tg_auditoria();
+-- itens da visita técnica (aba Infraestrutura no React, 10/nov/2026): cada mudança vai para os Logs
+create trigger t_aud after insert or update or delete on app.terreno_infraestrutura for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.topografia_config for each row execute function app.tg_auditoria();
 
 -- Partes: leitura para a empresa; escrita só pelas RPCs (salvar_parte, remover_parte).
