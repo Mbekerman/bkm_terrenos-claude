@@ -9,6 +9,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 ## 10/nov/2026
 
 - **CEP com máscara** (aba Terreno, Endereço e localização; também no Log e no endereço das áreas contaminadas): o CEP aparece como 00.000-000 (ex.: 12.228-323) em vez dos 8 números colados. A busca de cima acha o CEP digitado dos dois jeitos. (#297)
+- **Rolar a tela durante o retângulo de seleção:** a roda do mouse rola a tela e o retângulo continua preso ao ponto onde você clicou, sem soltar etiquetas que já tinha pegado. (#299)
 - **Janela movida fica aberta** (em todo o sistema): depois de arrastar uma janela pelo título, dá para usar a tela de baixo sem que ela feche; ela só fecha no X, no Esc ou nos botões dela. Ver [Entrar e se localizar](01-entrar-e-navegar.md#mover-as-janelas-pop-ups-pela-tela). (#296)
 - **Etiqueta do terreno menor de longe** (página Mapa): o tamanho na escala de bairro passa a ser o máximo; afastando mais o mapa, a etiqueta diminui junto com os ícones do Google. (#298)
 - **Terreno no mapa mais fácil de achar:** cada terreno agora aparece como uma etiqueta com o código (A112), na cor da fase ou etapa, com um ponto embaixo no lugar exato, no lugar do pino parecido com os do Google. Com o mapa mais afastado, a etiqueta fica um pouco maior. (#295)
