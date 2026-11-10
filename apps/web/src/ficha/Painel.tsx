@@ -195,13 +195,16 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
     case 'confrontacoes':
       return { txt: ins ? `Confrontação adicionada: ${o.tipo ?? ''}` : del ? `Confrontação removida: ${o.tipo ?? ''}` : 'Confrontação alterada', aba: 'terreno' };
     case 'ofertas': {
-      if (ins) return { txt: `Oferta registrada: ${milhoes(o.valor_pedido)}`, det: [o.forma_pagamento_pedida && FORMA[o.forma_pagamento_pedida] ? 'Forma: ' + FORMA[o.forma_pagamento_pedida] : null].filter(Boolean) as string[], aba: 'comercial', q: 'ofertas' };
+      if (ins) return { txt: o.valor_pedido != null ? `Oferta registrada: ${milhoes(o.valor_pedido)}` : `Oferta registrada${o.numero ? ` (nº ${o.numero})` : ''}`, det: [o.forma_pagamento_pedida && FORMA[o.forma_pagamento_pedida] ? 'Forma: ' + FORMA[o.forma_pagamento_pedida] : null].filter(Boolean) as string[], aba: 'comercial', q: 'ofertas' };
       if (del) return { txt: `Oferta removida: ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'ofertas' };
       const ks = mudou(x, d);
       if (!ks.length) return null;
       const det = ks.filter((k) => k === 'valor_pedido').map(() => `Valor: ${milhoes(x?.valor_pedido)} → ${milhoes(d?.valor_pedido)}`);
       return { txt: `Oferta alterada (${milhoes(o.valor_pedido)}): ${lista(ks)}`, det: det.length ? det : undefined, aba: 'comercial', q: 'cond' };
     }
+    case 'oferta_corretores':
+      /* vários corretores na oferta (card da oferta, 10/nov/2026); o primeiro, posto junto com a oferta, vai no log dela */
+      return ins ? { txt: 'Corretor incluído na oferta', aba: 'comercial', q: 'ofertas' } : del ? { txt: 'Corretor tirado da oferta', aba: 'comercial', q: 'ofertas' } : null;
     case 'oferta_partes': {
       const n = c.partes.get(o.parte_id) ?? 'parte';
       return { txt: del ? `Valor da parte removido: ${n}` : `Valor da parte (${n}): ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'cond' };

@@ -4224,6 +4224,29 @@ select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"X","email":"x@x.com","celular":"11999990000"}')$$, :'emp'), 'leitura não cria corretor');
 reset role;
 
+-- vários corretores na oferta (pedido do Moises, 10/nov/2026): Registrar oferta só com corretor e observação
+select pg_temp.como(:'analista');
+select app.criar_corretor(:'emp', '{"nome":"Ana Corretora","email":"ana@imob.com","celular":"11988887777"}') as cor2 \gset
+select (app.registrar_oferta(:'tta', null, p_corretor => :'cor1'))->>'oferta_id' as ofc \gset
+update app.ofertas set observacoes = 'Vendedor quer fechar até março' where id = :'ofc';
+insert into app.oferta_corretores (oferta_id, corretor_id, empresa_id) values (:'ofc', :'cor2', :'emp');
+select pg_temp.ok((select valor_pedido is null and corretor_id = :'cor1' and observacoes is not null from app.ofertas where id = :'ofc')
+  and (select count(*) from app.oferta_corretores where oferta_id = :'ofc') = 2
+  and exists (select 1 from app.terreno_corretores where terreno_id = :'tta' and corretor_id = :'cor2'),
+  'oferta sem valor, com observação e dois corretores; o primeiro é o principal e os dois constam no terreno');
+delete from app.oferta_corretores where oferta_id = :'ofc' and corretor_id = :'cor1';
+select pg_temp.ok((select corretor_id = :'cor2' from app.ofertas where id = :'ofc'), 'tirado o principal, o outro corretor passa a ser o principal');
+delete from app.oferta_corretores where oferta_id = :'ofc';
+select pg_temp.ok((select corretor_id is null from app.ofertas where id = :'ofc'), 'sem corretor na lista, a oferta fica sem corretor');
+update app.ofertas set corretor_id = :'cor1' where id = :'ofc';
+select pg_temp.ok(exists (select 1 from app.oferta_corretores where oferta_id = :'ofc' and corretor_id = :'cor1'), 'o corretor posto na oferta entra na lista');
+select pg_temp.ok((select bool_and(automatico) from app.auditoria where tabela = 'oferta_corretores' and depois->>'oferta_id' = :'ofc' and depois->>'corretor_id' = :'cor1')
+  and not (select automatico from app.auditoria where tabela = 'oferta_corretores' and depois->>'oferta_id' = :'ofc' and depois->>'corretor_id' = :'cor2'),
+  'nos Logs, o corretor que entra junto com a oferta é consequência; o incluído à mão é ação da pessoa');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into app.oferta_corretores (oferta_id, corretor_id, empresa_id) values (%L, %L, %L)$$, :'ofc', :'cor2', :'emp'), 'leitura não põe corretor na oferta');
+reset role;
+
 -- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
 -- e os catálogos sem empresa continuam legíveis por quem está logado.
 reset role;

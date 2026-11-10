@@ -5243,3 +5243,17 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 .sec-adv .adv-enc-falta { font-size: 12px; margin-top: 4px; }
 .sec-adv .adv-enc-lk { background: none; border: 0; padding: 0; font: inherit; color: var(--m-primary, #0b57d0); cursor: pointer; }
 .sec-adv .adv-enc-lk:hover { text-decoration: underline; }
+
+/* card da oferta (o "i" na lista de ofertas; pedido do Moises, 10/nov/2026) */
+.dialog:has(.of-card) { width: min(560px, 100%) }
+.of-card { display: flex; flex-direction: column; gap: 20px }
+.of-card .field > span { display: block; padding: 4px 0 }
+.of-card .of-t { font-size: 14px; font-weight: 500; margin-bottom: 8px }
+.of-card .of-cor { list-style: none; margin: 0; padding: 0 }
+.of-card .of-cor li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--contorno-suave, #e3e3e3) }
+.of-card .of-cor li .chip { margin-left: 8px }
+.of-card .of-add { margin-top: 12px }
+.of-card .mini-tbl { width: 100% }
+.of-card .of-tot td { border-top: 1px solid var(--contorno, #c4c7c5) }
+.mini-tbl .iconbtn.sm, .of-card .iconbtn.sm { width: 32px; height: 32px; margin: -4px 0 }
+#sec-ofertas .mini-tbl .chip { white-space: nowrap }
