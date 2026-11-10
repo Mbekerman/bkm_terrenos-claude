@@ -12,7 +12,7 @@ import { Ic } from '../components/Moldura';
 import { data as fd, hojeISO, milhoes, m2, somarDias } from '../lib/format';
 import type { Ficha, R } from './dados';
 import Temperatura from './Temperatura';
-import { lerNum, num, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido, Vivo } from './edicao';
+import { lerNum, num, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido } from './edicao';
 import { copias, daParte, fracao, ptArea, useLotes, type Lotes } from './Partes';
 import { ComMencoes, MarcarPessoas, TextoMencao, useGente, type Gente, type Marcado } from '../components/Marcar';
 
