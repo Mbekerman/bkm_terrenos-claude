@@ -247,6 +247,25 @@ function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar }: {
   );
 }
 
+/* número que encolhe a fonte até caber no bloco (pedido do Moises, 10/nov/2026: até R$ 999.000.000,00) */
+function Cabe({ className, children }: { className: string; children: ReactNode }) {
+  const r = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = r.current; if (!el) return;
+    const ajustar = () => {
+      el.style.fontSize = '';
+      const max = parseFloat(getComputedStyle(el).fontSize) || 24;
+      let t = max;
+      while (t > 12 && el.scrollWidth > el.clientWidth) { t -= 1; el.style.fontSize = t + 'px'; }
+    };
+    ajustar();
+    const ro = new ResizeObserver(ajustar); ro.observe(el);
+    return () => ro.disconnect();
+  });
+  return <div ref={r} className={className}>{children}</div>;
+}
+const lista = (xs: string[]) => (xs.length <= 1 ? xs.join('') : xs.slice(0, -1).join(', ') + ' e ' + xs[xs.length - 1]);
+
 function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registrar: () => void; primeiro: boolean }) {
   const { edita, empresa } = useSessao();
   const toast = useToast(), recarregar = useRecarregar();
@@ -320,11 +339,12 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
   return (
     <Quadro aba="comercial" id="cond" primeiro={primeiro} titulo="Condições pedidas" acoes={acoes}>
       <div className="sec-b">{o ? <>
-        <div className={`cond-res${um ? '' : ' tres'}`}>
-          <div className="cond-b"><div className="lbl">{um || antigo != null ? 'Valor pedido' : 'Valor pedido (soma das partes)'}</div><div className="big">{total != null ? brl(total) : ni('—')}</div></div>
-          <div className="cond-b"><div className="lbl">Por m²</div><div className="big">{porM2 != null ? brl(porM2) : ni('—')}</div></div>
-          {!um && <div className="cond-b"><div className="lbl">Partes com valor</div><div className="big">{nCom} de {P.length}</div></div>}
-        </div>
+        <div className="cond-resw"><div className="cond-res">
+          <div className="cond-b"><div className="lbl">{um ? 'Valor pedido' : 'Valor total'}</div><Cabe className="big">{total != null ? brl(total) : ni('—')}</Cabe></div>
+          <div className="cond-b"><div className="lbl">Por m²</div><Cabe className="big">{porM2 != null ? brl(porM2) : ni('—')}</Cabe>
+            {!um && vT != null && nCom < P.length && aCom > 0 && <div className="cond-sub">sobre {m2(Math.round(aCom * 100) / 100)} com valor</div>}</div>
+        </div></div>
+        {!um && nCom < P.length && antigo == null && <div className="cond-aviso"><Ic n="warn" s={16} />Falta o valor pedido {P.length - nCom === 1 ? 'de' : 'das partes'} {lista(P.filter((_, i) => vs[i] == null).map((x) => x.nome))}.</div>}
         {antigo != null && <div className="cond-aviso">O valor de {brl(antigo)} foi registrado para o terreno inteiro. Informe o valor de cada parte abaixo; o total passa a ser a soma delas.</div>}
         <dl className={`kvl${ed ? ' kvl-ed vivo' : ''}`}>
           {kv('Corretor', cp ? <span>{cp.nome}<span className="kv-2">{cp.imobiliaria}</span></span> : ni('—'),

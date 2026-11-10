@@ -25,9 +25,12 @@ Mostra o que o vendedor pede, na **oferta de referência** (a primeira, até alg
 
 **O valor pedido é sempre o de cada parte.** O total não se digita: os blocos do alto são o resumo das partes.
 
-- **Valor pedido**: com uma parte só, é o valor dela; com duas ou mais, a **soma das partes**.
-- **Por m²**: o valor pedido ÷ a área das partes que já têm valor (com uma parte só, a área adotada do terreno).
-- **Partes com valor** (só com duas ou mais partes): quantas já têm valor, por exemplo "2 de 3".
+- **Valor total** (com uma parte só, **Valor pedido**): a soma dos valores das partes.
+- **Por m²**: o valor total ÷ a área **só das partes que já têm valor** (com uma parte só, a área adotada do terreno). Enquanto falta alguma parte, embaixo aparece "sobre N m² com valor".
+
+O número diminui de tamanho quando não cabe no bloco, até valores de R$ 999 milhões. Em tela estreita (celular), os dois blocos ficam um embaixo do outro.
+
+Com duas ou mais partes, se alguma ainda não tem valor, aparece logo abaixo dos blocos o aviso amarelo **"Falta o valor pedido de Vendedor 3."** (ou "das partes …" quando são várias).
 
 Logo abaixo, o que vale para a oferta inteira:
 
