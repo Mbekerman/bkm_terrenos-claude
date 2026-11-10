@@ -33,7 +33,7 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 | **"O que esta etapa pede"** no quadro de avanço (perguntas da Jornada) | Só no protótipo |
 | **Olhinho e lixeira** nos Logs (prévia sem a alteração e desfazer uma alteração antiga) | Só no protótipo. Hoje, use o Ctrl+Z para o que acabou de fazer. |
 | Quadro de **negociação por parte** (cada parte com sua etapa e botão de avançar) | Só no protótipo |
-| **Topográfico preliminar em São Paulo** (cotas do laser da prefeitura, quadra inteira sem SQL) e guardar o PDF e o DXF em Documentos | Só no protótipo. Fora de São Paulo já está em Estudos Técnicos › Avaliação de infraestrutura. |
+| **Guardar o PDF e o DXF do Topográfico em Documentos** | Entra com a aba Documentos. Hoje o Topográfico (em São Paulo e fora) se baixa na hora, em Estudos Técnicos › Avaliação de infraestrutura. |
 | **Busca de cima por matrícula e SQL** | O texto do campo promete, mas hoje não busca. A fazer. |
 | **Aviso por e-mail** e preferências de e-mail no menu do avatar | Planejado (envio pela conta bkm@) |
 | **WhatsApp** | Planejado, depois do e-mail |
