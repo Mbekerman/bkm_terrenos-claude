@@ -8,7 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
-- **Janela movida fica aberta** (em todo o sistema): depois de arrastar uma janela pelo título, dá para usar a tela de baixo sem que ela feche; ela só fecha no X, no Esc ou nos botões dela. Ver [Entrar e se localizar](01-entrar-e-navegar.md#mover-as-janelas-pop-ups-pela-tela). (#PR)
+- **Janela movida fica aberta** (em todo o sistema): depois de arrastar uma janela pelo título, dá para usar a tela de baixo sem que ela feche; ela só fecha no X, no Esc ou nos botões dela. Ver [Entrar e se localizar](01-entrar-e-navegar.md#mover-as-janelas-pop-ups-pela-tela). (#296)
 - **Terreno no mapa mais fácil de achar:** cada terreno agora aparece como uma etiqueta com o código (A112), na cor da fase ou etapa, com um ponto embaixo no lugar exato, no lugar do pino parecido com os do Google. Com o mapa mais afastado, a etiqueta fica um pouco maior. (#295)
 - **Nomes do GeoSanja com acento** (subsetor, setor, parques, núcleos...): a prefeitura entrega "S?o Jos?" no lugar de "São José"; o sistema troca pelas letras certas, também nas consultas já feitas. (#293)
 - **Topográfico em São José dos Campos com os lotes da quadra** (aba Infraestrutura): a folha e o DXF trazem todos os lotes das quadras do terreno, numerados. (#293)
