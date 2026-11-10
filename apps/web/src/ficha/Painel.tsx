@@ -92,10 +92,13 @@ const ROT: Record<string, string> = {
   zona_fiscal: 'zona fiscal', endereco_prefeitura: 'endereço', origem: 'origem', nome: 'nome', pessoa_nome: 'pessoa principal', telefone: 'telefone', email: 'e-mail',
   documento: 'CPF/CNPJ', observacoes: 'observação', valor_pedido: 'valor', forma_pagamento_pedida: 'forma de pagamento', observacao_pagamento: 'condições', aceita_permuta: 'aceita permuta',
   comissao_pct: 'comissão', comissao_valor: 'comissão', corretor_id: 'corretor', validade: 'validade', status: 'status', data_oferta: 'data', forma_pagamento: 'condição', area_m2: 'área',
+  concessionaria: 'concessionária', solicitada_em: 'data do pedido', emitida_em: 'data da emissão', condicoes: 'condições', situacao: 'situação',
   inicio: 'data', link: 'link da reunião', pauta: 'pauta', resumo: 'o que foi tratado', encaminhamentos: 'encaminhamentos', modalidade: 'modalidade', local: 'local', duracao_min: 'duração',
 };
 const lista = (ks: string[]) => [...new Set(ks.map((k) => ROT[k] ?? k.replace(/_/g, ' ')))].join(', ');
 const PROP_ST: Record<string, string> = { rascunho: 'Rascunho', apresentada: 'Apresentada', em_analise: 'Em análise', aceita: 'Aceita', recusada: 'Recusada', expirada: 'Expirada', retirada: 'Retirada', substituida: 'Substituída' };
+const VT_DISP: Record<string, string> = { nao_verificado: 'Não verificado', sim: 'Sim', parcial: 'Parcial', nao: 'Não', nao_se_aplica: 'Não se aplica' };
+const VT_ITEM: Record<string, string> = { energia: 'Energia', agua: 'Água', esgoto: 'Esgoto', drenagem: 'Drenagem', gas: 'Gás canalizado', asfalto: 'Asfalto', iluminacao: 'Iluminação pública', calcada: 'Calçada' };
 const VT_SIT: Record<string, string> = { nao_solicitada: 'Não solicitada', solicitada: 'Solicitada', viavel: 'Viável', condicionada: 'Condicionada', nao_viavel: 'Não viável' };
 
 function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
@@ -124,6 +127,8 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
           continue;
         }
         if (k === 'historico_uso') { linhas.push('Histórico de uso alterado'); secs.add('histuso'); q0 ??= 'histuso'; continue; }
+        /* data da visita técnica: mora na aba Infraestrutura (ficha/Infra.tsx) */
+        if (k === 'visita_tecnica_em') { linhas.push(`Data da visita técnica: ${x?.[k] ? fd(x[k]) : '—'} → ${d?.[k] ? fd(d[k]) : '—'}`); secs.add('visita'); q0 ??= 'visita'; continue; }
         /* itens descartados do "Falta preencher" (10/nov/2026): o log diz quais saíram e quais voltaram a ser pedidos */
         if (k === 'completude_dispensada') {
           const av = new Set((x?.[k] as string[] | null) ?? []), dv = new Set((d?.[k] as string[] | null) ?? []);
@@ -144,7 +149,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       if (topoComp && !secs.size) return { txt: linhas.length === 1 ? linhas[0] : 'Falta preencher alterado', det: linhas.length > 1 ? linhas : undefined, topo: '.fi-comp-b' };
       const s1 = secs.size === 1 ? [...secs][0] : null;
       const txt = linhas.length === 1 ? linhas[0] : s1 && SECOES[s1] ? `${SECOES[s1].titulo} editado` : s1 === 'areas' ? 'Áreas e dimensões editadas' : 'Ficha editada';
-      return { txt, det: linhas.length > 1 ? linhas : undefined, aba: 'terreno', q: q0 };
+      return { txt, det: linhas.length > 1 ? linhas : undefined, aba: s1 === 'visita' ? 'infra' : 'terreno', q: q0 };
     }
     case 'matriculas':
       return { txt: ins ? `Matrícula adicionada: ${o.numero}` : del ? `Matrícula removida: ${o.numero}` : `Matrícula alterada (${o.numero}): ${lista(mudou(x, d))}`,
@@ -190,7 +195,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
     }
     case 'oferta_partes': {
       const n = c.partes.get(o.parte_id) ?? 'parte';
-      return { txt: del ? `Valor da parte removido: ${n}` : `Valor da parte (${n}): ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'partes-com' };
+      return { txt: del ? `Valor da parte removido: ${n}` : `Valor da parte (${n}): ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'cond' };
     }
     case 'propostas': {
       if (del) return { txt: `Proposta v${o.versao} excluída (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${milhoes(o.valor_total)}`, aba: 'comercial', q: 'propostas' };
@@ -217,8 +222,16 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
     }
     case 'documentos': return ins ? { txt: `Documento enviado: ${o.nome ?? o.tipo_documento}`, aba: 'documentos' } : null;
     case 'analises_urbanisticas': return ins ? { txt: `Análise urbanística registrada${o.fonte ? ` (${o.fonte})` : ''}`, aba: 'terreno', q: 'indices' } : null;
+    case 'terreno_infraestrutura': {
+      const nome = VT_ITEM[o.item] ?? o.item;
+      if (del) return null;
+      if ((x?.disponibilidade ?? 'nao_verificado') !== d?.disponibilidade) return { txt: `Visita técnica · ${nome}: ${VT_DISP[x?.disponibilidade] ?? 'Não verificado'} → ${VT_DISP[d?.disponibilidade] ?? d?.disponibilidade}`, aba: 'infra', q: 'visita' };
+      if ((x?.observacoes ?? null) !== (d?.observacoes ?? null)) return { txt: `Visita técnica · ${nome}: observação alterada`, det: d?.observacoes ? [d.observacoes] : undefined, aba: 'infra', q: 'visita' };
+      return null;
+    }
     case 'terreno_viabilidades_tecnicas':
-      return x?.situacao !== d?.situacao ? { txt: `Viabilidade técnica · ${o.servico}: ${VT_SIT[x?.situacao] ?? 'Não solicitada'} → ${VT_SIT[d?.situacao] ?? d?.situacao}`, aba: 'infra' } : null;
+      return x?.situacao !== d?.situacao ? { txt: `Viabilidade técnica · ${VT_ITEM[o.servico] ?? o.servico}: ${VT_SIT[x?.situacao] ?? 'Não solicitada'} → ${VT_SIT[d?.situacao] ?? d?.situacao}`, aba: 'infra', q: 'vtec' }
+        : mudou(x, d).length ? { txt: `Viabilidade técnica · ${VT_ITEM[o.servico] ?? o.servico}: ${lista(mudou(x, d))}`, aba: 'infra', q: 'vtec' } : null;
     case 'estudos_massa': {
       if (ins) return { txt: `Estudo de massa pedido: ${o.nome ?? ''}`, aba: 'massa' };
       if (del) return { txt: `Estudo de massa apagado: ${o.nome ?? ''}`, aba: 'massa' };

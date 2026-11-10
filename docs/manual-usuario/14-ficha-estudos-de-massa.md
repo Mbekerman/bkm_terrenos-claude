@@ -1,6 +1,6 @@
 # 14. Ficha: aba Estudos de massa
 
-**Disponível.** Ficha › aba **Estudos de massa** (endereço `/terrenos/A123/massa`).
+**Disponível.** Ficha › **Estudos Técnicos** › **Estudos de massa** (endereço `/terrenos/A123/massa`).
 
 ## Para que serve
 

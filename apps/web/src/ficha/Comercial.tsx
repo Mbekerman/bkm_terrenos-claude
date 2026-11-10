@@ -15,7 +15,7 @@ import { copias, daParte, fracao, ptArea, useLotes, type Lotes } from './Partes'
 import { ComMencoes, MarcarPessoas, TextoMencao, useGente, type Gente, type Marcado } from '../components/Marcar';
 
 // Aba Comercial da ficha (proto.js › abaComercialFicha = abaGeral(t,'neg') + abaComercial + abaNegociacao; proto_lotes.js ›
-// secPartesCom; proto_mod.js › secReunioes). Negociação, Condições pedidas, Partes (o pedido de cada parte, oferta_partes),
+// secPartesCom; proto_mod.js › secReunioes). Negociação, Condições pedidas com o pedido de cada parte (oferta_partes),
 // Ofertas recebidas, Corretores do terreno, Propostas e Reuniões, nos quadros que abrem e fecham.
 // Regras: oferta por app.registrar_oferta (abre a negociação), referência por app.definir_oferta_referencia, proposta por
 // app.registrar_proposta e app.atualizar_status_proposta; condições pedidas, partes da oferta, corretor principal e
@@ -79,7 +79,9 @@ let ofertaPedida: { codigo: string; msg?: string } | null = null;
 /** pede a janela de oferta na aba Comercial do terreno indicado (ela abre quando a aba aparecer) */
 export function pedirOferta(codigo: string, msg?: string) { ofertaPedida = { codigo, msg }; window.dispatchEvent(new Event('ficha-oferta')); }
 
-export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: R[]; fechar: () => void }) {
+export function JanelaOferta({ f, corretores, partes = [], fechar }: { f: Ficha; corretores: R[]; partes?: R[]; fechar: () => void }) {
+  /* com duas ou mais partes, o valor pedido é de cada parte e o da oferta é a soma (pedido do Moises, 10/nov/2026) */
+  const pts = partes.filter((p) => p.ativa !== false), varias = pts.length > 1;
   const toast = useToast(), recarregar = useRecarregar();
   const OF0 = { cid: '', valor: '', forma: '', validade: '', obs: '', aceita: '' }, kOf = `${f.id}:oferta`;
   const [v, setV] = useState<Record<string, string>>(() => comRasc(kOf, OF0));
@@ -90,12 +92,15 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
   const m = (k: string) => (ev: { target: { value: string } }) => setV((o) => ({ ...o, [k]: ev.target.value }));
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
-    const valor = lerNum(v.valor);
-    if (!valor || valor <= 0) { toast('Informe o valor pedido.', true); return; }
+    const porParte = pts.map((p) => ({ parte_id: p.id, valor: lerNum(v['p:' + p.id] ?? '') }));
+    if (porParte.some((x) => x.valor != null && x.valor <= 0)) { toast('O valor pedido precisa ser maior que zero.', true); return; }
+    const comValor = porParte.filter((x) => x.valor != null);
+    const valor = varias ? (comValor.length ? comValor.reduce((t, x) => t + x.valor!, 0) : null) : lerNum(v.valor);
+    if (!valor || valor <= 0) { toast(varias ? 'Informe o valor pedido de pelo menos uma parte.' : 'Informe o valor pedido.', true); focar(varias ? 'o-v-0' : 'o-v'); return; }
     setGrav(true);
     const { data, error } = await supabase.rpc('registrar_oferta', {
       p_terreno: f.id, p_valor: valor, p_forma: v.forma || null, p_corretor: v.cid || null, p_observacao_pagamento: v.obs.trim() || null,
-      p_aceita_permuta: v.aceita.trim() || null, p_validade: v.validade || null,
+      p_aceita_permuta: v.aceita.trim() || null, p_validade: v.validade || null, ...(varias ? { p_partes: comValor } : {}),
     });
     setGrav(false);
     if (error) { toast(error.message, true); return; }
@@ -109,7 +114,9 @@ export function JanelaOferta({ f, corretores, fechar }: { f: Ficha; corretores: 
       <form id="f-of" ref={fref} onSubmit={enviar}><div className="fields">
         <div className="field"><label htmlFor="o-c">Corretor</label><select id="o-c" value={v.cid} onChange={m('cid')}><option value="">Sem corretor / direto</option>
           {corretores.filter((c) => c.ativo !== false).map((c) => <option key={c.id} value={c.id}>{c.nome}{c.imobiliaria ? ' · ' + c.imobiliaria : ''}</option>)}</select></div>
-        <div className="field"><label htmlFor="o-v">Valor pedido</label><Adorno t="moeda"><input id="o-v" inputMode="decimal" data-fmt="moeda" required value={v.valor} onChange={m('valor')} /></Adorno></div>
+        {!varias ? <div className="field"><label htmlFor="o-v">Valor pedido</label><Adorno t="moeda"><input id="o-v" inputMode="decimal" data-fmt="moeda" required value={v.valor} onChange={m('valor')} /></Adorno></div>
+          : pts.map((p, i) => <div className="field" key={p.id}><label htmlFor={`o-v-${i}`}>Valor pedido · {p.nome}</label><Adorno t="moeda"><input id={`o-v-${i}`} inputMode="decimal" data-fmt="moeda" value={v['p:' + p.id] ?? ''} onChange={m('p:' + p.id)} /></Adorno></div>)}
+        {varias && <div className="field full hint">Total da oferta: <b>{(() => { const t = pts.reduce((a, p) => a + (lerNum(v['p:' + p.id] ?? '') ?? 0), 0); return t ? brl(t) : '—'; })()}</b> (soma das partes)</div>}
         <div className="field"><label htmlFor="o-f">Forma de pagamento pedida</label><select id="o-f" value={v.forma} onChange={m('forma')}><option value="">Não informada</option>
           {Object.entries(FORMA).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
         <div className="field"><label htmlFor="o-val">Validade</label><input id="o-val" type="date" value={v.validade} onChange={m('validade')} /></div>
@@ -147,69 +154,10 @@ function SecNegociacao({ f, c, cor }: { f: Ficha; c: Com; cor: string }) {
 }
 
 /* ---------- Condições pedidas (a oferta de referência; editar muda essa oferta) ----------
-   Editadas no lugar, sem Editar nem Salvar: cada campo grava ao sair dele ou ao escolher (pedido do Moisés, 6/nov/2026) */
-function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registrar: () => void; primeiro: boolean }) {
-  const { edita } = useSessao();
-  const toast = useToast(), recarregar = useRecarregar();
-  const o = c.ref;
-  const cp = c.corretores.find((x) => x.id === c.tcor.find((t) => t.principal)?.corretor_id);
-  const [valorEd, setValorEd] = useState<number | null>(o?.valor_pedido ?? null);
-  useEffect(() => setValorEd(o?.valor_pedido ?? null), [o?.valor_pedido]);
-  const ed = edita && !!o;
-  /* "Valor pedido" do que falta na ficha: o campo da oferta de referência; sem oferta, a janela de registrar oferta */
-  usePedido(['cond'], () => {
-    if (ed) { abrirQuadroJa('comercial', 'cond'); focar('c-valor'); } else if (edita) { registrar(); focar('o-v'); }
-  });
-  async function gravar(d: R) {
-    if (!o) return false;
-    const { error } = await supabase.from('ofertas').update(d).eq('id', o.id);
-    if (error) { toast(error.message, true); return false; }
-    /* corretor novo na oferta passa a constar no terreno (o primeiro vira principal), como no registro da oferta */
-    if (d.corretor_id && !c.tcor.some((t) => t.corretor_id === d.corretor_id)) {
-      const r = await supabase.from('terreno_corretores').upsert({ terreno_id: f.id, corretor_id: d.corretor_id, empresa_id: f.t.empresa_id, principal: !c.tcor.some((t) => t.principal) }, { ignoreDuplicates: true });
-      if (r.error) toast(r.error.message, true);
-    }
-    recarregar();
-    toast('Salvo.');
-    return true;
-  }
-  const gravarValor = (v: string) => {
-    const n = lerNum(v);
-    if (n != null && n <= 0) { toast('O valor pedido precisa ser maior que zero.', true); return false; }
-    return gravar({ valor_pedido: n });
-  };
-  const inp = (k: string, col: string, ini: string, extra: R = {}) => (
-    <Vivo ini={ini} gravar={(v) => gravar({ [col]: v.trim() || null })}>{(p) => <input className="inl-x" id={`c-${k}`} placeholder="Não informado" {...extra} {...p} />}</Vivo>
-  );
-  const sel = (k: string, col: string, ini: string, opts: [string, string][], vazio: string) => (
-    <Vivo ini={ini} imediato gravar={(v) => gravar({ [col]: v || null })}>{(p) =>
-      <select className="inl-x" id={`c-${k}`} {...p}><option value="">{vazio}</option>{opts.map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select>}</Vivo>
-  );
-  const area = f.area;
-  const acoes = !o && edita ? <div className="sec-acoes"><button className="btn sm" onClick={registrar}><Ic n="add" s={16} />Registrar oferta</button></div> : undefined;
-  const kv = (k: string, val: ReactNode, campo: () => ReactNode) => <div className="kv"><dt>{k}</dt><dd>{ed ? campo() : val}</dd></div>;
-  return (
-    <Quadro aba="comercial" id="cond" primeiro={primeiro} titulo="Condições pedidas" acoes={acoes}>
-      <div className="sec-b">{o ? <>
-        <div className={`cond2${ed ? ' vivo' : ''}`}>
-          <div><div className="lbl">Valor pedido</div><div className="big">{ed
-            ? <Adorno t="moeda"><Vivo ini={numTxt(o.valor_pedido)} gravar={gravarValor} aoMudar={(v) => setValorEd(lerNum(v))}>{(p) =>
-              <input className="inl-x" id="c-valor" inputMode="decimal" data-fmt="moeda" aria-label="Valor pedido" placeholder="Não informado" {...p} />}</Vivo></Adorno>
-            : o.valor_pedido ? milhoes(o.valor_pedido) : ni()}</div></div>
-          <div><div className="lbl">Por m²</div><div className="big">{(ed ? valorEd : o.valor_pedido) && area ? brl((ed ? valorEd! : o.valor_pedido) / area) : ni('—')}</div></div>
-        </div>
-        <dl className={`kvl${ed ? ' kvl-ed vivo' : ''}`}>
-          {kv('Forma de pagamento', o.forma_pagamento_pedida ? FORMA[o.forma_pagamento_pedida] : ni('Não informada'), () => sel('forma', 'forma_pagamento_pedida', o.forma_pagamento_pedida ?? '', Object.entries(FORMA), 'Não informada'))}
-          {kv('Corretor', cp ? <span>{cp.nome}<span className="kv-2">{cp.imobiliaria}</span></span> : ni('—'),
-            () => sel('cid', 'corretor_id', o.corretor_id ?? '', c.corretores.filter((x) => x.ativo !== false || x.id === o.corretor_id).map((x) => [x.id, `${x.nome}${x.imobiliaria ? ' · ' + x.imobiliaria : ''}`]), 'Sem corretor'))}
-          {kv('Aceita permuta', o.aceita_permuta || ni(), () => inp('aceita', 'aceita_permuta', o.aceita_permuta ?? '', { placeholder: 'Como o vendedor encara a permuta e em que condições' }))}
-          {kv('Pagamento', o.observacao_pagamento || ni(), () => inp('obs', 'observacao_pagamento', o.observacao_pagamento ?? '', { placeholder: 'Observação sobre a forma de pagamento' }))}
-        </dl>
-        {ed && <div className="hint" style={{ marginTop: 8 }}>Valores da oferta de {fd(o.data_oferta)}.</div>}</> : <div className="muted">Nenhuma oferta registrada.</div>}</div>
-    </Quadro>
-  );
-}
-
+   Um quadro só com as partes (pedido do Moises, 10/nov/2026: "Condições pedidas" e "Partes" eram o resumo um do outro).
+   O valor pedido nunca se digita no total: cada parte tem o seu e o topo é a soma, em blocos de resumo; com uma parte só,
+   o valor dela é o da oferta. Corretor, permuta e observação são da oferta, uma vez só. Cada campo grava ao sair dele ou
+   ao escolher (pedido do Moisés, 6/nov/2026). */
 /* ---------- Partes: o pedido de cada parte na oferta de referência ---------- */
 /* as matrículas da parte em etiquetas que não se tiram, cada uma abrindo a janela com os SQLs dela, a área e o percentual
    da parte (pedido do Moises, 10/nov/2026: só as matrículas, sem os SQLs na linha) */
@@ -266,8 +214,8 @@ function JanelaMat({ L, x, c, rot, fechar }: { L: Lotes; x: R; c: R; rot: string
   );
 }
 
-function LinhaParte({ f, o, pa, um, area, zonas, nomeDet, mudar }: {
-  f: Ficha; o: R | null; pa: R; um: boolean; area: number | null; zonas: string; nomeDet: ReactNode;
+function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar }: {
+  o: R | null; pa: R; um: boolean; primeiro: boolean; area: number | null; zonas: string; nomeDet: ReactNode;
   mudar: (pa: R, valor: number | null, forma: string | null) => Promise<void>;
 }) {
   const { edita } = useSessao();
@@ -280,14 +228,12 @@ function LinhaParte({ f, o, pa, um, area, zonas, nomeDet, mudar }: {
   const ro = !edita || !o;
   const L = (x: string) => <span className="lbl-f ptcom-ml">{x}</span>;
   const gravarValor = (n: number | null) => { if (n !== valor) mudar(pa, n, um ? forma : op ? op.forma_pagamento ?? null : null); };
-  void f;
   return (
     <div className="ptcom-r">
       <div className="ptcom-p"><b>{pa.nome}</b>{pa.pessoa_nome && <> <span className="faint">{pa.pessoa_nome}</span></>}{nomeDet}</div>
-      <div className="ptcom-c">{L('Área adotada')}<span>{area != null ? m2(area) : '—'}</span></div>
-      <div className="ptcom-c">{L('Zoneamento')}<span>{zonas || '—'}</span></div>
+      <div className="ptcom-c">{L(um ? 'Área adotada' : 'Área da parte')}<span>{area != null ? m2(Math.round(area * 100) / 100) : '—'}</span>{zonas && <span className="ptcom-zona" title="Zoneamento">{zonas}</span>}</div>
       <div className="ptcom-c field">{L('Valor pedido')}{ro ? <span>{valor != null ? brl(valor) : '—'}</span>
-        : <Adorno t="moeda"><input className="ptc-n" inputMode="decimal" data-fmt="moeda" value={vv} aria-label={`Valor pedido de ${pa.nome}`}
+        : <Adorno t="moeda"><input className="ptc-n" id={primeiro ? 'c-valor' : undefined} inputMode="decimal" data-fmt="moeda" value={vv} aria-label={`Valor pedido de ${pa.nome}`}
           onChange={(e) => { setVv(e.target.value); const n = lerNum(e.target.value); setVm(n != null && area ? numTxt(Math.round(n / area)) : ''); }}
           onBlur={() => gravarValor(lerNum(vv))} /></Adorno>}</div>
       <div className="ptcom-c field">{L('Valor por m²')}{ro ? <span>{valor != null && area ? brl(valor / area) : '—'}</span>
@@ -301,48 +247,102 @@ function LinhaParte({ f, o, pa, um, area, zonas, nomeDet, mudar }: {
   );
 }
 
-function SecPartesCom({ f, c, registrar }: { f: Ficha; c: Com; registrar: () => void }) {
+function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registrar: () => void; primeiro: boolean }) {
   const { edita, empresa } = useSessao();
   const toast = useToast(), recarregar = useRecarregar();
   const L = useLotes(f).data;
   const qc = useQueryClient();
-  if (!L) return null;
-  const P = L.partes, o = c.ref, um = P.length === 1, rot = L.base?.rotulo ?? 'Inscrição';
+  const o = c.ref, ed = edita && !!o;
+  const cp = c.corretores.find((x) => x.id === c.tcor.find((t) => t.principal)?.corretor_id);
+  /* "Valor pedido" do que falta na ficha: o valor da primeira parte; sem oferta, a janela de registrar oferta */
+  usePedido(['cond'], () => {
+    if (ed) { abrirQuadroJa('comercial', 'cond'); focar('c-valor'); } else if (edita) { registrar(); focar(c.partes.filter((p) => p.ativa !== false).length > 1 ? 'o-v-0' : 'o-v'); }
+  });
+  async function gravar(d: R) {
+    if (!o) return false;
+    const { error } = await supabase.from('ofertas').update(d).eq('id', o.id);
+    if (error) { toast(error.message, true); return false; }
+    /* corretor novo na oferta passa a constar no terreno (o primeiro vira principal), como no registro da oferta */
+    if (d.corretor_id && !c.tcor.some((t) => t.corretor_id === d.corretor_id)) {
+      const r = await supabase.from('terreno_corretores').upsert({ terreno_id: f.id, corretor_id: d.corretor_id, empresa_id: f.t.empresa_id, principal: !c.tcor.some((t) => t.principal) }, { ignoreDuplicates: true });
+      if (r.error) toast(r.error.message, true);
+    }
+    recarregar();
+    toast('Salvo.');
+    return true;
+  }
+  const inp = (k: string, col: string, ini: string, extra: R = {}) => (
+    <Vivo ini={ini} gravar={(v) => gravar({ [col]: v.trim() || null })}>{(p) => <input className="inl-x" id={`c-${k}`} placeholder="Não informado" {...extra} {...p} />}</Vivo>
+  );
+  const sel = (k: string, col: string, ini: string, opts: [string, string][], vazio: string) => (
+    <Vivo ini={ini} imediato gravar={(v) => gravar({ [col]: v || null })}>{(p) =>
+      <select className="inl-x" id={`c-${k}`} {...p}><option value="">{vazio}</option>{opts.map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select>}</Vivo>
+  );
+  const kv = (k: string, val: ReactNode, campo: () => ReactNode) => <div className="kv"><dt>{k}</dt><dd>{ed ? campo() : val}</dd></div>;
+  const acoes = !o ? (edita ? <div className="sec-acoes"><button className="btn sm" onClick={registrar}><Ic n="add" s={16} />Registrar oferta</button></div> : undefined)
+    : <span className="faint" style={{ fontSize: 12, marginLeft: 'auto' }}>oferta de {fd(o.data_oferta)}</span>;
+
+  const P = L?.partes ?? [], um = P.length <= 1, rot = L?.base?.rotulo ?? 'Inscrição';
   // com uma parte só, ela é o terreno inteiro: vale a área adotada do terreno (sem ela, a das matrículas ou dos SQLs)
-  const areaDe = (pid: string) => (um && f.area != null ? +f.area : ptArea(L, pid).area);
-  const zonasDe = (pid: string) => [...new Set(daParte(L, 's', pid).map((e) => e.x).flatMap((i) => ((L.consultas[i.id]?.zonas ?? []) as R[]).map((z) => z.sigla)).filter(Boolean))].join(' / ');
-  const det = (pid: string) => <MatsParte L={L} pid={pid} rot={rot} />;
+  const areaDe = (pid: string) => (um && f.area != null ? +f.area : L ? ptArea(L, pid).area : null);
+  // zoneamento da parte, discreto embaixo da área (pedido do Moises, 10/nov/2026)
+  const zonasDe = (pid: string) => (!L ? '' : [...new Set(daParte(L, 's', pid).map((e) => e.x).flatMap((i) => ((L.consultas[i.id]?.zonas ?? []) as R[]).map((z) => z.sigla)).filter(Boolean))].join(' / '));
+  const valorDe = (pid: string): number | null => (!o ? null : um ? o.valor_pedido ?? null : (o.oferta_partes ?? []).find((x: R) => x.parte_id === pid)?.valor_pedido ?? null);
   async function mudar(pa: R, valor: number | null, forma: string | null) {
     if (!o) return;
     if (valor != null && valor <= 0) { toast('O valor pedido precisa ser maior que zero.', true); return; }
     let error;
     if (um) ({ error } = await supabase.from('ofertas').update({ valor_pedido: valor, forma_pagamento_pedida: forma }).eq('id', o.id));
-    else if (valor == null && forma == null) ({ error } = await supabase.from('oferta_partes').delete().eq('oferta_id', o.id).eq('parte_id', pa.id));
-    else ({ error } = await supabase.from('oferta_partes').upsert({ oferta_id: o.id, parte_id: pa.id, empresa_id: empresa!.id, valor_pedido: valor, forma_pagamento: forma }));
+    else {
+      if (valor == null && forma == null) ({ error } = await supabase.from('oferta_partes').delete().eq('oferta_id', o.id).eq('parte_id', pa.id));
+      else ({ error } = await supabase.from('oferta_partes').upsert({ oferta_id: o.id, parte_id: pa.id, empresa_id: empresa!.id, valor_pedido: valor, forma_pagamento: forma }));
+      /* o valor da oferta passa a ser a soma das partes (é o que a lista, o funil e os filtros leem) */
+      if (!error) {
+        const vs = P.map((x) => (x.id === pa.id ? valor : valorDe(x.id)));
+        const soma = vs.some((v) => v != null) ? vs.reduce<number>((s, v) => s + (+(v ?? 0)), 0) : null;
+        if (soma !== (o.valor_pedido ?? null)) ({ error } = await supabase.from('ofertas').update({ valor_pedido: soma }).eq('id', o.id));
+      }
+    }
     if (error) { toast(error.message, true); return; }
     recarregar();
     qc.invalidateQueries({ queryKey: ['ficha-lotes', f.id] });
   }
-  const vs = P.map((pa) => (!o ? null : um ? o.valor_pedido : (o.oferta_partes ?? []).find((x: R) => x.parte_id === pa.id)?.valor_pedido ?? null));
-  const aT = P.reduce((s, pa) => s + (areaDe(pa.id) || 0), 0), vT = vs.some((v) => v != null) ? vs.reduce((s, v) => s + (+v || 0), 0) : null;
-  const aCom = P.filter((_, i) => vs[i] != null).reduce((s, pa) => s + (areaDe(pa.id) || 0), 0), falta = vs.filter((v) => v == null).length;
+  const vs = P.map((pa) => valorDe(pa.id));
+  const vT = vs.some((v) => v != null) ? vs.reduce<number>((s, v) => s + (+(v ?? 0)), 0) : null;
+  const aCom = P.filter((_, i) => vs[i] != null).reduce((s, pa) => s + (areaDe(pa.id) || 0), 0);
+  const nCom = vs.filter((v) => v != null).length;
+  const aT = P.reduce((s, pa) => s + (areaDe(pa.id) || 0), 0);
+  // valor antigo, gravado para o terreno inteiro antes de existir o valor por parte
+  const antigo = !um && o && vT == null && o.valor_pedido ? +o.valor_pedido : null;
+  const total = vT ?? antigo;
+  const porM2 = vT != null ? (aCom ? vT / aCom : null) : antigo && f.area ? antigo / +f.area : null;
   const Lb = (x: string) => <span className="lbl-f ptcom-ml">{x}</span>;
   return (
-    <Quadro aba="comercial" id="partes-com" titulo={<>Partes <span className="h-n">{P.length}</span></>}
-      acoes={o ? <span className="faint" style={{ fontSize: 12, marginLeft: 'auto' }}>oferta de {fd(o.data_oferta)}</span> : undefined}>
-      <div className="sec-b">
-        {!o && <div className="muted" style={{ marginBottom: 10 }}>Registre a oferta para informar o valor pedido de cada parte. {edita && <button className="btn sm" onClick={registrar}><Ic n="add" s={16} />Registrar oferta</button>}</div>}
-        <div className="ptcom">
-          <div className="ptcom-r ptcom-th"><span>Parte</span><span>Área adotada</span><span>Zoneamento</span><span>Valor pedido</span><span>Valor por m²</span><span>Condição de pagamento</span></div>
-          {P.map((pa) => <LinhaParte key={pa.id} f={f} o={o} pa={pa} um={um} area={areaDe(pa.id)} zonas={zonasDe(pa.id)} nomeDet={det(pa.id)} mudar={mudar} />)}
-          {P.length > 1 && (
-            <div className="ptcom-r ptcom-tot"><div className="ptcom-p"><b>Total</b></div><div className="ptcom-c">{Lb('Área adotada')}<span>{aT ? m2(aT) : '—'}</span></div><div className="ptcom-c" />
-              <div className="ptcom-c">{Lb('Valor pedido')}<span>{vT != null ? <>{brl(vT)}{falta ? <> <span className="faint">(faltam {falta})</span></> : null}</> : '—'}</span></div>
+    <Quadro aba="comercial" id="cond" primeiro={primeiro} titulo="Condições pedidas" acoes={acoes}>
+      <div className="sec-b">{o ? <>
+        <div className={`cond-res${um ? '' : ' tres'}`}>
+          <div className="cond-b"><div className="lbl">{um || antigo != null ? 'Valor pedido' : 'Valor pedido (soma das partes)'}</div><div className="big">{total != null ? brl(total) : ni('—')}</div></div>
+          <div className="cond-b"><div className="lbl">Por m²</div><div className="big">{porM2 != null ? brl(porM2) : ni('—')}</div></div>
+          {!um && <div className="cond-b"><div className="lbl">Partes com valor</div><div className="big">{nCom} de {P.length}</div></div>}
+        </div>
+        {antigo != null && <div className="cond-aviso">O valor de {brl(antigo)} foi registrado para o terreno inteiro. Informe o valor de cada parte abaixo; o total passa a ser a soma delas.</div>}
+        <dl className={`kvl${ed ? ' kvl-ed vivo' : ''}`}>
+          {kv('Corretor', cp ? <span>{cp.nome}<span className="kv-2">{cp.imobiliaria}</span></span> : ni('—'),
+            () => sel('cid', 'corretor_id', o.corretor_id ?? '', c.corretores.filter((x) => x.ativo !== false || x.id === o.corretor_id).map((x) => [x.id, `${x.nome}${x.imobiliaria ? ' · ' + x.imobiliaria : ''}`]), 'Sem corretor'))}
+          {kv('Aceita permuta', o.aceita_permuta || ni(), () => inp('aceita', 'aceita_permuta', o.aceita_permuta ?? '', { placeholder: 'Como o vendedor encara a permuta e em que condições' }))}
+          {kv('Pagamento', o.observacao_pagamento || ni(), () => inp('obs', 'observacao_pagamento', o.observacao_pagamento ?? '', { placeholder: 'Observação sobre a forma de pagamento' }))}
+        </dl>
+        {L && <div className="ptcom cond-pt">
+          <div className="ptcom-r ptcom-th"><span>{um ? 'Parte' : 'Por parte'}</span><span>{um ? 'Área adotada' : 'Área da parte'}</span><span>Valor pedido</span><span>Valor por m²</span><span>Condição de pagamento</span></div>
+          {P.map((pa, i) => <LinhaParte key={pa.id} o={o} pa={pa} um={um} primeiro={i === 0} area={areaDe(pa.id)} zonas={zonasDe(pa.id)} nomeDet={<MatsParte L={L} pid={pa.id} rot={rot} />} mudar={mudar} />)}
+          {!um && (
+            <div className="ptcom-r ptcom-tot"><div className="ptcom-p"><b>Total</b></div><div className="ptcom-c">{Lb('Área da parte')}<span>{aT ? m2(Math.round(aT * 100) / 100) : '—'}</span></div>
+              <div className="ptcom-c">{Lb('Valor pedido')}<span>{vT != null ? <>{brl(vT)}{nCom < P.length ? <> <span className="faint">(faltam {P.length - nCom})</span></> : null}</> : '—'}</span></div>
               <div className="ptcom-c">{Lb('Valor por m²')}<span>{vT != null && aCom ? brl(vT / aCom) : '—'}</span></div><div className="ptcom-c" /></div>
           )}
-        </div>
-        <div className="hint">Digite o total ou o valor por m²: o outro se calcula pela área da parte (soma das matrículas dela). Área e zoneamento vêm da aba Terreno. As propostas da BKM ficam no quadro Propostas.</div>
-      </div>
+        </div>}
+        {ed && <div className="hint">{um ? 'Digite o valor ou o valor por m²: o outro se calcula pela área adotada.' : 'Digite o valor ou o valor por m² de cada parte: o outro se calcula pela área da parte. O total é a soma das partes.'}</div>}
+      </> : <div className="muted">Nenhuma oferta registrada.</div>}</div>
     </Quadro>
   );
 }
@@ -732,12 +732,11 @@ export default function AbaComercial({ f, cor }: { f: Ficha; cor: string }) {
     <div className="stack">
       {c.proc && <SecNegociacao f={f} c={c} cor={cor} />}
       <SecCondicoes f={f} c={c} registrar={reg} primeiro={!c.proc} />
-      <SecPartesCom f={f} c={c} registrar={reg} />
       <SecOfertas f={f} c={c} registrar={reg} />
       <SecCorretores f={f} c={c} />
       {c.proc && <SecPropostas f={f} c={c} />}
       {c.proc && <SecReunioes f={f} c={c} />}
-      {janela && <JanelaOferta f={f} corretores={c.corretores} fechar={() => setJanela(false)} />}
+      {janela && <JanelaOferta f={f} corretores={c.corretores} partes={c.partes} fechar={() => setJanela(false)} />}
     </div>
   );
 }
