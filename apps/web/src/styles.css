@@ -5303,3 +5303,6 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 .cor-pop .mn-i.cor-novo { color: var(--m-primary, #0b57d0); border-top: 1px solid var(--m-outline-var, #e3e3e3) }
 .cor-pop .mn-a { margin-left: auto; color: var(--m-on-surface-var, #444746); font-size: 13px }
 .nv-rasc { margin: 0 0 16px; align-items: center; gap: 12px }
+.of-obs-p { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--m-outline-var, #c4c7c5) }
+#sec-ofertas .of-obs-p .of-obs-t { margin-top: 0 }
+.of-obs-pn { font-size: 13px; font-weight: 500; color: var(--m-on-surface-var, #444746) }

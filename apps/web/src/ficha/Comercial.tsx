@@ -369,6 +369,8 @@ function SecOfertas({ f, c, registrar }: { f: Ficha; c: Com; registrar: () => vo
     .sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0) || String(a.criado_em).localeCompare(b.criado_em));
   const trat = useTratativa(f.id);
   const [card, setCard] = useState<string | null>(null);
+  const temObs = (o: R) => !!o.observacoes || (o.oferta_partes ?? []).some((x: R) => x.observacoes);
+  const nomeParte = (id: string) => c.partes.find((p) => p.id === id)?.nome ?? 'Parte';
   const aCad = f.t.area_cadastral_m2 != null ? +f.t.area_cadastral_m2 : null;
   async function ativa(o: R) {
     const { error } = await supabase.rpc('definir_oferta_vigente', { p_oferta: o.id });
@@ -404,11 +406,15 @@ function SecOfertas({ f, c, registrar }: { f: Ficha; c: Com; registrar: () => vo
         </tbody></table></div>
       ) : <div className="muted">Nenhuma oferta.</div>}
       {/* o diretor vê as observações de todas as ofertas do terreno juntas (pedido do Moises, 10/nov/2026) */}
-      {dir && os.some((o) => o.observacoes) && <div className="of-obs-todas">
+      {dir && os.some(temObs) && <div className="of-obs-todas">
         <div className="of-t">Observações das ofertas</div>
-        {os.filter((o) => o.observacoes).sort((a, b) => (b.numero ?? 0) - (a.numero ?? 0)).map((o) => (
+        {os.filter(temObs).sort((a, b) => (b.numero ?? 0) - (a.numero ?? 0)).map((o) => (
           <div key={o.id} className="of-obs"><div className="of-obs-h"><b className="num">{f.codigo}-{o.numero}</b> · {fd(o.data_oferta)}{o.vigente && <span className="chip good sm">Ativa</span>}</div>
-            <div className="of-obs-t">{o.observacoes}</div></div>
+            {o.observacoes && <div className="of-obs-t">{o.observacoes}</div>}
+            {/* e as informações gerais da pedida de cada parte, com o nome dela (oferta_partes.observacoes, #318) */}
+            {(o.oferta_partes ?? []).filter((x: R) => x.observacoes).map((x: R) => (
+              <div key={x.parte_id} className="of-obs-p"><span className="of-obs-pn">{nomeParte(x.parte_id)}</span><span className="of-obs-t">{x.observacoes}</span></div>
+            ))}</div>
         ))}
       </div>}</div>
       {aberta && <CardOferta f={f} c={c} o={aberta} fechar={() => setCard(null)} />}
