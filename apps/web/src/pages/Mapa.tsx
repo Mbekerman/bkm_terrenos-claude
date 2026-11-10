@@ -194,10 +194,10 @@ export default function Mapa() {
   const pinoDe = useCallback((t: TerrenoMapa): Pino | null => {
     if (t.lat == null || t.lng == null) return null;
     const c = classe(fases, t, f, e), k = info(fases, c, f, e);
-    /* nas etiquetas que se cobrem, fica na frente a mais adiantada no funil (a última do nível); Stand By, Backlog, Perdido e Descartado por último */
+    /* na lista da bolha das etiquetas que se cobrem, a mais adiantada no funil (a última do nível) primeiro; Stand By, Backlog, Perdido e Descartado por último */
     const it = itens(fases, f, e), i = it.findIndex((x) => x.k === c), sit = ['stand_by', 'sem_negociacao', 'perdido', 'descartado'];
     const ordem = c && sit.includes(c) ? 1000 + i : it.length - i;
-    return { id: t.id, nome: t.nome, lat: t.lat, lng: t.lng, poly: t.poly, cor: k[1], fg: k[3], codigo: t.codigo, ordem };
+    return { id: t.id, nome: t.nome, lat: t.lat, lng: t.lng, poly: t.poly, cor: k[1], fg: k[3], codigo: t.codigo, ordem, rotulo: k[0] };
   }, [fases, f, e]);
 
   /* seleção no endereço: /mapa/A123; com a gaveta aberta, outro terreno troca a gaveta e o clique no vazio não fecha */

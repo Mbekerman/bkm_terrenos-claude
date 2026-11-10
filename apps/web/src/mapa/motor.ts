@@ -8,8 +8,10 @@ import { mkMarcaHtml, mkTitulo, type Emp } from './mercado';
 // o React desenha a página e entrega os dados; o motor mexe só dentro do contêiner do mapa.
 
 export interface Pino { id: string; nome: string; lat: number; lng: number; poly: [number, number][] | null; cor: string; fg: string; codigo?: string;
-  /** prioridade no agrupamento: menor fica na frente (a etiqueta que aparece com o "+N") */
-  ordem?: number }
+  /** ordem na lista da bolha: menor primeiro */
+  ordem?: number;
+  /** fase, etapa ou subetapa, na lista da bolha */
+  rotulo?: string }
 /** tamanho da etiqueta do terreno pelo zoom (pedidos do Moises, 10/nov/2026): 13 px de perto, 15 px no zoom 14, que é o máximo,
  *  e daí para longe diminui 20% a cada nível, como os ícones do Google, até 8 px */
 const ZOOM_MAX = 14;
@@ -110,9 +112,9 @@ export class Motor {
       g.menu(x, y, ll.lat(), ll.lng(), t);
     });
     M.addListener('dragstart', g.fecharMenu); M.addListener('zoom_changed', g.fecharMenu);
-    M.addListener('dragstart', () => this.fecharLeque()); M.addListener('zoom_changed', () => this.fecharLeque());
+    M.addListener('dragstart', () => this.fecharLista());
     M.addListener('idle', () => this.agrupar());
-    document.addEventListener('keydown', this.escLeque);
+    document.addEventListener('keydown', this.escLista);
     M.addListener('dragstart', () => g.movendo(true)); M.addListener('zoom_changed', () => g.movendo(true));
     /* dois cliques em qualquer ponto dentro da poligonal de um terreno editam a poligonal, não só sobre a linha (pedido do Moises,
        9/nov/2026): o Google nem sempre entrega o duplo clique do preenchimento ao polígono, então o mapa confere pela posição.
@@ -135,8 +137,8 @@ export class Motor {
     sv.addListener('visible_changed', () => g.streetView(sv.getVisible()));
     google.maps.event.addListenerOnce(M, 'tilesloaded', () => setTimeout(g.pronto, 300));
     M.addListener('click', (e: any) => {
-      if (Date.now() - this.lequeEm < 400) return;
-      if (this.fecharLeque()) return;
+      if (Date.now() - this.bolhaEm < 400) return;
+      if (this.fecharLista()) return;
       if (e.placeId) { e.stop(); if (!this.modo) { if (g.lugar?.(e.placeId, e.latLng.lat(), e.latLng.lng())) return; this.lugarAbrir(e.placeId, e.latLng); return; } }
       if (this.lugarFechar() && !this.modo) return;
       if (!e.latLng) return;
@@ -157,7 +159,6 @@ export class Motor {
   setBase(b: Base) { this.mapa.setMapTypeId(TIPO[b]); }
   /** pinos e poligonais na cor do item da legenda */
   desenhar(ps: Pino[], sel: string | null) {
-    this.fecharLeque();
     this.sel = sel;
     this.pinos.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null)));
     this.pinos = [];
@@ -171,7 +172,7 @@ export class Motor {
       d.dataset.terreno = t.id;
       d.innerHTML = `<span class="et-b" style="background:${t.cor};color:${t.fg}">${esc(t.codigo || '•')}<i style="background:${t.cor}"></i></span><span class="et-c"></span>`;
       const mk = new AdvancedMarkerElement({ map: this.mapa, position: gLL(t.lat, t.lng), content: d, title: t.nome, gmpClickable: !this.modo, zIndex: sel === t.id ? 10 : 1 });
-      mk.addEventListener('gmp-click', () => { if ((this.grp.get(t.id)?.length ?? 0) > 1) this.abrirLeque(t.id); else this.g.pino(t.id); });
+      mk.addEventListener('gmp-click', () => this.g.pino(t.id));
       d.addEventListener('pointerenter', () => this.g.passar?.(t.id));
       mk._terreno = t.id;
       this.pinos.push(mk);
@@ -185,86 +186,77 @@ export class Motor {
     }
     this.agrupar();
   }
-  /* ---------- etiquetas que se cobrem (opção B da simulação, escolhida pelo Moises em 10/nov/2026) ----------
-     Em qualquer zoom, as etiquetas que se encostam na tela viram uma só: fica a da frente (a selecionada, senão a mais
-     adiantada no funil) com "+N"; as outras se escondem. Aproximando, o grupo se desfaz assim que elas cabem separadas.
-     O clique na etiqueta com "+N" abre o leque: as etiquetas do grupo em volta do ponto, ligadas a ele por um fio. */
+  /* ---------- etiquetas que se cobrem (opção A da simulação, escolhida pelo Moises em 10/nov/2026) ----------
+     Em qualquer zoom, as etiquetas que se encostam na tela viram uma bolha com quantos são e um anel com a cor de cada um,
+     no centro deles; sem zoom fixo. A selecionada nunca entra num grupo. Com o mouse parado sobre a bolha, a lista dos
+     terrenos dali (o clique na linha abre a ficha); o clique na bolha aproxima até elas se separarem. Já de perto (zoom 19)
+     e ainda juntas, o clique fixa a lista aberta. */
   private sel: string | null = null;
-  /** líder → ids do grupo (o líder primeiro) */
-  private grp = new Map<string, string[]>();
+  private bolhas: any[] = [];
+  /** a bolha com a lista fixada pelo clique */
+  private fixa: HTMLElement | null = null;
+  private bolhaEm = 0;
   private agrT: ReturnType<typeof setTimeout> | undefined;
   agrupar() { clearTimeout(this.agrT); this.agrT = setTimeout(() => this.agruparJa(), 60); }
   private agruparJa() {
-    if (this.leque) return;
-    const ordem = new Map(this.ps.map((p) => [p.id, p.ordem ?? 0]));
-    const cod = new Map(this.ps.map((p) => [p.id, p.codigo ?? '']));
+    this.fecharLista();
+    this.bolhas.forEach((b) => (b.map = null)); this.bolhas = [];
+    const por = new Map(this.ps.map((p) => [p.id, p]));
     const mks = this.pinos.filter((m) => m._terreno && m.content)
       .map((m) => ({ m, id: m._terreno as string, r: (m.content as HTMLElement).getBoundingClientRect() }))
-      .sort((a, b) => Number(b.id === this.sel) - Number(a.id === this.sel) || ordem.get(a.id)! - ordem.get(b.id)! || cod.get(a.id)!.localeCompare(cod.get(b.id)!));
-    const lid: { id: string; r: DOMRect; g: string[] }[] = [];
+      .sort((a, b) => (por.get(a.id)?.ordem ?? 0) - (por.get(b.id)?.ordem ?? 0) || (por.get(a.id)?.codigo ?? '').localeCompare(por.get(b.id)?.codigo ?? ''));
     const cobre = (a: DOMRect, b: DOMRect) => a.width > 0 && b.width > 0 && a.left < b.right + 1 && b.left < a.right + 1 && a.top < b.bottom + 1 && b.top < a.bottom + 1;
-    const dono = new Map<string, string>();
+    /* junta por contato, em cadeia: A encosta em B e B em C = um grupo só */
+    const gs: { r: DOMRect[]; ids: string[]; m: any[] }[] = [];
     for (const x of mks) {
-      const l = lid.find((y) => cobre(y.r, x.r));
-      if (l) { l.g.push(x.id); dono.set(x.id, l.id); } else { lid.push({ id: x.id, r: x.r, g: [x.id] }); dono.set(x.id, x.id); }
+      if (x.id === this.sel) { x.m.style.visibility = ''; continue; }
+      const em = gs.filter((g) => g.r.some((r) => cobre(r, x.r)));
+      const g = em[0] ?? { r: [], ids: [], m: [] };
+      if (!em.length) gs.push(g);
+      for (const o of em.slice(1)) { g.r.push(...o.r); g.ids.push(...o.ids); g.m.push(...o.m); gs.splice(gs.indexOf(o), 1); }
+      g.r.push(x.r); g.ids.push(x.id); g.m.push(x.m);
     }
-    this.grp = new Map(lid.map((l) => [l.id, l.g]));
-    for (const x of mks) {
-      const lider = dono.get(x.id) === x.id, n = this.grp.get(x.id)?.length ?? 1;
-      x.m.style.visibility = lider ? '' : 'hidden';
-      const b = (x.m.content as HTMLElement).querySelector('.et-b')!;
-      let mais = b.querySelector('.et-mais');
-      if (lider && n > 1) { if (!mais) { mais = document.createElement('span'); mais.className = 'et-mais'; b.appendChild(mais); } mais.textContent = '+' + (n - 1); }
-      else mais?.remove();
-      x.m.title = lider && n > 1 ? `${n} terrenos aqui: clique para ver` : (this.ps.find((p) => p.id === x.id)?.nome ?? '');
+    for (const g of gs) {
+      const n = g.ids.length;
+      g.m.forEach((m) => (m.style.visibility = n > 1 ? 'hidden' : ''));
+      if (n > 1) this.bolha(g.ids.map((i) => por.get(i)!).sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0)));
     }
   }
-  private leque: any = null;
-  private lequeEm = 0;
-  private escLeque = (e: KeyboardEvent) => { if (e.key === 'Escape' && this.fecharLeque()) e.stopPropagation(); };
-  fecharLeque() {
-    if (!this.leque) return false;
-    this.leque.map = null; this.leque = null;
-    this.el.classList.remove('lq-aberto');
-    this.agruparJa();
-    return true;
-  }
-  private abrirLeque(id: string) {
-    const ids = this.grp.get(id) ?? [id];
-    const ps = ids.map((i) => this.ps.find((p) => p.id === i)).filter((p): p is Pino => !!p);
-    if (ps.length < 2) { this.g.pino(id); return; }
-    this.fecharLeque();
-    this.lequeEm = Date.now();
-    const n = ps.length, fs = parseFloat(getComputedStyle(this.el).getPropertyValue('--et-fs')) || 13;
-    /* até 5, em arco por cima do ponto; mais que isso, em volta dele; as etiquetas são largas, então a elipse é mais larga que alta */
-    const arco = n <= 5, ry = Math.max(4.2 * fs, (arco ? 1.1 : 0.62) * n * fs * 1.6), rx = ry * 1.45;
+  private bolha(ps: Pino[]) {
+    const n = ps.length, lat = ps.reduce((s, p) => s + p.lat, 0) / n, lng = ps.reduce((s, p) => s + p.lng, 0) / n;
+    const passo = 360 / n, anel = ps.map((p, i) => `${p.cor} ${(i * passo).toFixed(2)}deg ${((i + 1) * passo).toFixed(2)}deg`).join(',');
     const d = document.createElement('div');
-    d.className = 'leque';
-    let fios = '', ets = '';
-    ps.forEach((t, i) => {
-      const a = arco ? (n === 1 ? -Math.PI / 2 : Math.PI * (-0.92 + (0.84 * i) / (n - 1))) : -Math.PI / 2 + (2 * Math.PI * i) / n;
-      const x = Math.round(Math.cos(a) * rx), y = Math.round(Math.sin(a) * ry);
-      fios += `<line x1="0" y1="0" x2="${x}" y2="${y}" class="lq-f1"/><line x1="0" y1="0" x2="${x}" y2="${y}" class="lq-f2"/>`;
-      ets += `<div class="pin et${this.sel === t.id ? ' sel' : ''}" data-terreno="${esc(t.id)}" title="${esc(t.nome)}" style="left:${x}px;top:${y}px"><span class="et-b" style="background:${t.cor};color:${t.fg}">${esc(t.codigo || '•')}<i style="background:${t.cor}"></i></span><span class="et-c"></span></div>`;
+    d.className = 'gr';
+    d.innerHTML = `<div class="gr-b" style="--gr-d:${Math.min(44, 30 + n * 2)}px;background:conic-gradient(${anel})"><span>${n}</span></div>
+      <div class="gr-l" role="menu"><div class="gr-t">${n} terrenos aqui</div>${ps.map((p) => `<button type="button" class="gr-i" role="menuitem" data-terreno="${esc(p.id)}"><span class="pin-mini mp-cod" style="background:${p.cor};color:${p.fg}">${esc(p.codigo || '•')}</span><span class="gr-n">${esc(p.nome)}${p.rotulo ? `<small>${esc(p.rotulo)}</small>` : ''}</span></button>`).join('')}
+      <div class="gr-p">Clique no número para aproximar</div></div>`;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    d.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'mouse') return; clearTimeout(t); t = setTimeout(() => d.classList.add('ab'), 300); });
+    d.addEventListener('pointerleave', () => { clearTimeout(t); if (this.fixa !== d) d.classList.remove('ab'); });
+    d.addEventListener('pointerdown', (e) => { e.stopPropagation(); this.bolhaEm = Date.now(); });
+    d.querySelectorAll<HTMLElement>('.gr-i').forEach((b) => {
+      const id = b.dataset.terreno!;
+      b.addEventListener('pointerenter', () => this.g.passar?.(id));
+      b.addEventListener('click', (e) => { e.stopPropagation(); this.bolhaEm = Date.now(); this.fecharLista(); this.g.pino(id); });
     });
-    d.innerHTML = `<svg class="lq-fios" width="1" height="1" aria-hidden="true">${fios}<circle cx="0" cy="0" r="4.5" class="lq-c"/></svg>${ets}`;
-    d.querySelectorAll<HTMLElement>('.pin.et').forEach((el) => {
-      const tid = el.dataset.terreno!;
-      el.addEventListener('pointerdown', (e) => { e.stopPropagation(); this.lequeEm = Date.now(); });
-      el.addEventListener('pointerenter', () => this.g.passar?.(tid));
-      el.addEventListener('click', (e) => { e.stopPropagation(); this.lequeEm = Date.now(); this.fecharLeque(); this.g.pino(tid); });
+    d.querySelector('.gr-b')!.addEventListener('click', (e) => {
+      e.stopPropagation(); this.bolhaEm = Date.now();
+      if ((this.mapa.getZoom() ?? 0) >= 19) { this.fecharLista(); this.fixa = d; d.classList.add('ab'); return; }
+      this.enquadrar(ps.map((p) => gLL(p.lat, p.lng)), 21);
     });
-    const lider = this.pinos.find((m) => m._terreno === id);
-    if (lider) lider.style.visibility = 'hidden';
-    this.el.classList.add('lq-aberto');
-    this.leque = new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(ps[0].lat, ps[0].lng), content: d, zIndex: 2000 });
+    this.bolhas.push(new gLib.marker.AdvancedMarkerElement({ map: this.mapa, position: gLL(lat, lng), content: d, zIndex: 5, gmpClickable: false }));
+  }
+  private escLista = (e: KeyboardEvent) => { if (e.key === 'Escape' && this.fecharLista()) e.stopPropagation(); };
+  fecharLista() {
+    if (!this.fixa) return false;
+    this.fixa.classList.remove('ab'); this.fixa = null;
+    return true;
   }
   /** destaca o pino selecionado sem recriar os marcadores */
   marcar(sel: string | null) {
     this.sel = sel;
 
     this.pinos.forEach((m) => { if (m._terreno && m.content) { m.content.classList.toggle('sel', sel === m._terreno); m.zIndex = sel === m._terreno ? 10 : 1; } });
-    this.fecharLeque();
     this.agrupar();
   }
   enquadrar(pts: { lat: number; lng: number }[], maxZoom?: number) {
@@ -412,7 +404,7 @@ export class Motor {
     if (this.modo === on) return;
     this.modo = on;
     this.el.classList.toggle('modo', on);
-    if (on) { this.lugarFechar(); this.fecharLeque(); }
+    if (on) { this.lugarFechar(); this.fecharLista(); }
     this.pinos.forEach((o) => (o.setOptions ? o.setOptions({ clickable: !on }) : (o.gmpClickable = !on)));
     /* a concorrência são ~2 mil marcadores: refazer com gmpClickable novo é bem mais rápido que trocar um a um (desenhaMerc) */
     if (this.mercUlt) this.mercado(...this.mercUlt);
@@ -534,7 +526,7 @@ export class Motor {
     }
   }
   destruir() {
-    clearTimeout(this.agrT); document.removeEventListener('keydown', this.escLeque); if (this.leque) this.leque.map = null;
+    clearTimeout(this.agrT); document.removeEventListener('keydown', this.escLista); this.bolhas.forEach((b) => (b.map = null));
     this.rotaLimpar();
     if (this.pinEd) this.pinEd.map = null;
     this.rasc.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.merc.forEach((m) => (m.map = null)); if (this.mercDest) this.mercDest.map = null; this.pinos.forEach((o) => (o.setMap ? o.setMap(null) : (o.map = null))); this.el.innerHTML = ''; }
