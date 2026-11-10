@@ -129,7 +129,8 @@ Por isso, sair do formulário sem registrar (clicar noutro botão, trocar de aba
 
 Toda janela que abre por cima da tela (perguntas como "Trocar o endereço?", formulários, a tabela completa de um concorrente, o mapa de lotes da prefeitura) e os quadros que abrem sobre o mapa (setor censitário, card da concorrência, rota) podem ser **arrastados pelo título** para ver o que está atrás. O cursor vira uma mãozinha sobre o título; segure e arraste (no celular, segure o título com o dedo e arraste).
 
-- Enquanto você arrasta, o fundo escurecido some; solta a janela, ele fica bem mais claro, para enxergar o mapa ou a ficha atrás. Ele continua cobrindo a tela: clicar fora da janela ainda a fecha.
+- Enquanto você arrasta, o fundo escurecido some. Depois de movida, a janela fica flutuando: você pode usar a tela de baixo (clicar, rolar, mexer no mapa) e ela continua aberta. Ela só fecha no X, no Esc ou nos botões dela.
+- Sem mover, a janela continua como antes: o fundo escurecido cobre a tela e clicar fora dela a fecha.
 - O X de fechar nunca sai da tela.
 - **Dois cliques no título** devolvem a janela ao lugar de origem.
 - Cada janela abre sempre no lugar padrão; a posição não fica guardada.

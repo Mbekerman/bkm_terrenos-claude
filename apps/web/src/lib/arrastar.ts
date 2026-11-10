@@ -7,7 +7,8 @@
    Qualquer outro popup entra marcando o título com data-arrastar.
    O deslocamento vai na propriedade CSS `translate` (não mexe no `transform` de quem já usa) e
    o título nunca sai da tela (o X de fechar fica sempre à vista). Dois cliques no título voltam o popup ao lugar. Movido o pop-up
-   central, o fundo escurecido clareia (classe .movido no .scrim), para enxergar o que está atrás. */
+   central, ele flutua (classe .movido no .scrim, em app.css): o fundo escurecido some e deixa passar o mouse, então a página
+   de baixo responde e o clique nela não fecha o pop-up, que só fecha no X, no Esc ou nos botões dele (pedido do Moises, 10/nov/2026). */
 
 const POPUP = '.dialog, .cc-box, .mp-rt';
 const TITULO = '.dialog > .dh, .dialog .dh, .cc-box .cc-hd, .mp-rt .mp-rt-h, [data-arrastar]';
