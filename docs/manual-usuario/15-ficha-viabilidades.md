@@ -4,7 +4,7 @@
 
 Montar o **estudo de viabilidade estática** do terreno: quantas unidades cabem, por quanto se vendem, quanto custam o terreno, a obra e as despesas, e quanto sobra (lucro e margem). Um terreno pode ter vários estudos; um deles é o **válido**, o que vale para a negociação. É dele que saem as **Unidades** e o **VGV** do Resumo da Visão geral e o filtro "VGV estimado".
 
-O estudo está chegando ao sistema em partes. **Hoje:** a lista de estudos, o Resumo da viabilidade e, no estudo, os indicadores e todas as seções (Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE). Também os modelos de estudo. O vínculo com o estudo de massa chega na próxima entrega (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
+O estudo tem a lista de estudos, o Resumo da viabilidade, os indicadores, as oito seções (Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE), os modelos de estudo e o vínculo com o estudo de massa. Configurações › Viabilidade ainda não está no sistema (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
 
 ## Onde fica
 
@@ -109,6 +109,16 @@ Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascido
 
 O resultado do estudo, do VGV ao lucro, com o valor e o % da receita líquida de cada linha: receita bruta, permuta e comissão em unidades, deduções, receita líquida, terreno, obras, lucro bruto, comerciais, gerais, EBITDA, despesas financeiras, resultado e margem sem as taxas, taxas e lucro líquido. Cada grupo mostra o detalhe embaixo. Fora da diretoria, Financeiras e Taxas aparecem só pelo total. Só leitura: muda conforme as outras seções.
 
+### Vínculo com o estudo de massa
+
+No alto da seção Tipologias, quando o terreno tem estudo de massa entregue:
+
+- **Vincular a um estudo de massa**: escolha um estudo de massa entregue ou **Seguir o válido** (o estudo de massa válido do terreno; trocou o válido, o estudo troca junto). As tipologias (título, área privativa e quantidade) e a área construída de Obras passam a ser as do estudo de massa e ficam travadas; preços, permuta e comissão continuam sendo digitados aqui.
+- **Vinculada ao estudo de massa**: o mesmo seletor troca o estudo de massa (ou passa a seguir o válido).
+- **Quebrar vínculo**: solta na hora. As tipologias e a área construída ficam como estavam e voltam a se editar aqui. Vincular de novo volta os dados aos do estudo de massa.
+
+O estudo criado pelo botão **Criar estudo de viabilidade** da aba Estudos de massa já nasce vinculado e abre na hora.
+
 ## Modelos de estudo
 
 Um modelo guarda os valores e as bases de cálculo de um estudo (custo de obra por m², dedução do VGV, o que se deduz do VGV e os itens de cada seção) para começar um estudo novo já preenchido. Tipologias, permuta, mínimo garantido e pagamentos do terreno não entram: são de cada terreno.
@@ -127,5 +137,4 @@ Taxas e Despesas financeiras de um modelo só valem quando o modelo é da empres
 
 ## O que não é possível hoje
 
-- Ligar o estudo a um estudo de massa.
 - Configurações › Viabilidade (lista de itens, margem mínima, modelos da empresa).

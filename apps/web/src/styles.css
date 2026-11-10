@@ -5235,3 +5235,9 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 .vb-mod-r .opt-radio small { font-size: 12px; line-height: 16px; opacity: .8 }
 .vb-escopo { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px }
 .vb-escopo .opt-radio { border: 1px solid #c4c7c5 }
+/* vínculo do estudo de viabilidade com o estudo de massa (proto_viab.js › vbMassaSel) */
+.vb-ms { margin: 0 0 16px; max-width: 560px }
+.vb-ms .field { margin: 0; display: flex; flex-direction: column; gap: 4px }
+.vb-ms select { width: 100% }
+.vb-ms-l { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap }
+.vb-ms-l .field { flex: 1; min-width: 220px }

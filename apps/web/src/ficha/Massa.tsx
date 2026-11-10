@@ -16,6 +16,7 @@ import { data as fd, m2 } from '../lib/format';
 import { apagarRasc, comRasc, LimparRasc, useGuardarRasc } from '../components/Rascunho';
 import { lerNum, numStr, Quadro, useListas, Vivo } from './edicao';
 import type { Ficha, R } from './dados';
+import { abrirEstudo } from '../viab/Viabilidade';
 
 const SIT: Record<string, [string, string]> = { solicitado: ['Solicitado', 'warn'], em_elaboracao: ['Em elaboração', 'blue'], entregue: ['Entregue', 'good'] };
 const AREAS: [string, string][] = [['lazer_coberto_torre_m2', 'Lazer coberto na torre'], ['lazer_descoberto_torre_m2', 'Lazer descoberto na torre'],
@@ -55,7 +56,7 @@ function useMassa(f: Ficha) {
   });
 }
 
-export default function AbaMassa({ f, irAba }: { f: Ficha; irAba: (k: string) => void }) {
+export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void }) {
   const { edita } = useSessao();
   const toast = useToast(), qc = useQueryClient();
   const q = useMassa(f), L = useListas();
@@ -108,7 +109,7 @@ export default function AbaMassa({ f, irAba }: { f: Ficha; irAba: (k: string) =>
           )}
         </div>
       </Quadro>
-      {atual ? <FichaEstudo key={atual.id} m={atual} viabs={viabs} edita={edita} irAba={irAba} recarregar={recarregar}
+      {atual ? <FichaEstudo key={atual.id} m={atual} viabs={viabs} edita={edita} recarregar={recarregar}
         abrir={(t) => setJanela({ t, id: atual.id })} marcarValido={() => marcarValido(atual)} /> : null}
       {janela?.t === 'pedido' && ped ? <JanelaPedido m={ped} membros={membros} nome={nome} edita={edita} fechar={() => setJanela(null)} recarregar={recarregar} /> : null}
       {janela?.t === 'viab' && ped ? <JanelaViab m={ped} fechar={() => setJanela(null)} criado={() => { setJanela(null); recarregar(); }} /> : null}
@@ -161,8 +162,8 @@ function FormSolicitar({ f, membros, fechar, criado }: { f: Ficha; membros: R[];
 }
 
 /* ---------- a ficha do estudo (emsFicha): cada campo grava ao sair dele ---------- */
-function FichaEstudo({ m, viabs, edita, irAba, recarregar, abrir, marcarValido }: {
-  m: R; viabs: R[]; edita: boolean; irAba: (k: string) => void; recarregar: () => void;
+function FichaEstudo({ m, viabs, edita, recarregar, abrir, marcarValido }: {
+  m: R; viabs: R[]; edita: boolean; recarregar: () => void;
   abrir: (t: 'pedido' | 'viab' | 'apagar') => void; marcarValido: () => void;
 }) {
   const toast = useToast();
@@ -257,10 +258,10 @@ function FichaEstudo({ m, viabs, edita, irAba, recarregar, abrir, marcarValido }
   /* do válido, a janela pergunta se segue o válido; de outro estudo, já cria preso a ele (emsCriarViab) */
   async function criarViab() {
     if (m.valido) { abrir('viab'); return; }
-    const { error } = await supabase.rpc('criar_viabilidade_da_massa', { p_estudo: m.id, p_seguir_valido: false });
+    const { data, error } = await supabase.rpc('criar_viabilidade_da_massa', { p_estudo: m.id, p_seguir_valido: false });
     if (error) { toast(error.message, true); return; }
     toast('Estudo de viabilidade criado com as tipologias e a área construída deste estudo de massa.');
-    recarregar();
+    recarregar(); abrirEstudo(data as string);
   }
   const acoes = edita ? <>
     {m.situacao !== 'entregue' ? <button className="btn sm" onClick={entregar}>Marcar como entregue</button> : null}
@@ -312,7 +313,7 @@ function FichaEstudo({ m, viabs, edita, irAba, recarregar, abrir, marcarValido }
           <Vivo ini={m.observacoes ?? ''} gravar={(s) => ((m.observacoes ?? '') === s.trim() ? true : salvar({ observacoes: s.trim() || null }))}>
             {(x) => <textarea rows={2} disabled={!edita} {...x} />}</Vivo></label></div>
         <div className="ems-vbs"><span className="lbl-f">Estudos de viabilidade com este estudo de massa</span>
-          {vs.length ? vs.map((v, i) => <span key={v.id}>{i ? ' · ' : ''}<button className="linkbtn" onClick={() => irAba('viabilidade')}>{v.nome}</button>{v.segue_massa_valido ? <span className="faint"> (segue o válido)</span> : null}</span>)
+          {vs.length ? vs.map((v, i) => <span key={v.id}>{i ? ' · ' : ''}<button className="linkbtn" onClick={() => abrirEstudo(v.id)}>{v.nome}</button>{v.segue_massa_valido ? <span className="faint"> (segue o válido)</span> : null}</span>)
             : <span className="faint">Nenhum.</span>}</div>
         {m.entregue_em ? <div className="hint" style={{ marginTop: 12 }}>Entregue em {fd(m.entregue_em)}.</div> : null}
       </div>
@@ -374,11 +375,11 @@ function JanelaViab({ m, fechar, criado }: { m: R; fechar: () => void; criado: (
   const [grav, setGrav] = useState(false);
   async function criar() {
     setGrav(true);
-    const { error } = await supabase.rpc('criar_viabilidade_da_massa', { p_estudo: m.id, p_seguir_valido: !!m.valido && segue });
+    const { data, error } = await supabase.rpc('criar_viabilidade_da_massa', { p_estudo: m.id, p_seguir_valido: !!m.valido && segue });
     setGrav(false);
     if (error) { toast(error.message, true); return; }
     toast('Estudo de viabilidade criado com as tipologias e a área construída deste estudo de massa.');
-    criado();
+    criado(); abrirEstudo(data as string);
   }
   return (
     <Dialogo titulo="Criar estudo de viabilidade" sub={`Com as tipologias e a área construída do ${m.nome}.`} onFechar={fechar}

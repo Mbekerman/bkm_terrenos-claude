@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -166,6 +167,51 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
   );
 }
 
+/* ---------- vínculo com o estudo de massa (proto_viab.js › vbMassaSel): presa, título, área e quantidade das
+   tipologias e a área construída vêm do estudo de massa; "Quebrar vínculo" solta na hora (app.vincular_massa) ---------- */
+function MassaSel({ v, terreno, ro, aoMudar }: { v: Viab; terreno: string; ro: boolean; aoMudar: () => Promise<void> }) {
+  const toast = useToast(), qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ['viab-massas', terreno],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('estudos_massa').select('id,nome,situacao,valido').eq('terreno_id', terreno).order('ordem');
+      if (error) throw error;
+      return (data ?? []) as { id: string; nome: string; situacao: string; valido: boolean }[];
+    },
+  });
+  const todos = q.data ?? [];
+  const ms = todos.filter((m) => m.situacao === 'entregue'), val = todos.find((m) => m.valido) ?? null, m = todos.find((x) => x.id === v.estudo_massa_id) ?? null;
+  const [grav, setGrav] = useState(false);
+  if (!ms.length && !v.estudo_massa_id) return null;
+  const atual = v.segue_massa_valido ? 'valido' : v.estudo_massa_id ?? '';
+  const mudar = async (x: string) => {
+    if (grav || x === atual) return;
+    setGrav(true);
+    const { error } = await supabase.rpc('vincular_massa', { p_viab: v.id, p_estudo: x && x !== 'valido' ? x : null, p_seguir_valido: x === 'valido' });
+    setGrav(false);
+    if (error) { toast(erroTxt(error), true); return; }
+    await aoMudar(); qc.invalidateQueries({ queryKey: ['ficha-massa', terreno] });
+    const novo = x === 'valido' ? val : todos.find((y) => y.id === x);
+    toast(!x ? 'Vínculo quebrado: tipologias e área construída ficam e passam a se editar aqui.'
+      : v.estudo_massa_id ? `Trocado: tipologias e área construída do ${novo?.nome ?? 'estudo de massa'}.` : `Vinculada: tipologias e área construída voltaram às do ${novo?.nome ?? 'estudo de massa'}.`);
+  };
+  const ops = <>
+    <option value="valido" disabled={!val}>{val ? `Seguir o válido (${val.nome})` : 'Seguir o válido: nenhum ainda'}</option>
+    {ms.map((x) => <option key={x.id} value={x.id}>{x.nome}{x.valido ? ' · válido' : ''}</option>)}
+  </>;
+  if (!v.estudo_massa_id) return (
+    <div className="vb-ms"><label className="field"><span className="lbl-f">Vincular a um estudo de massa</span>
+      <select value="" disabled={ro || grav} onChange={(e) => mudar(e.target.value)}><option value="">Sem vínculo (tipologias e áreas digitadas aqui)</option>{ops}</select></label>
+      {!ro && <div className="hint">Vinculando, as tipologias e a área construída voltam a ser as do estudo de massa; preços, permuta e comissão ficam.</div>}</div>
+  );
+  return (
+    <div className="vb-ms"><div className="vb-ms-l"><label className="field"><span className="lbl-f">Vinculada ao estudo de massa</span>
+      <select value={atual} aria-label="Trocar o estudo de massa vinculado" disabled={ro || grav} onChange={(e) => mudar(e.target.value)}>{ops}</select></label>
+      {!ro && <button type="button" className="btn sm" disabled={grav} onClick={() => mudar('')}><Ic n="link" s={16} />Quebrar vínculo</button>}</div>
+      <div className="hint">Título, área e quantidade das tipologias e a área construída vêm do {m?.nome ?? 'estudo de massa'}{v.segue_massa_valido ? ' (o válido; trocou o válido, troca aqui)' : ''} e não se editam; aqui, preços, permuta e comissão.</div></div>
+  );
+}
+
 /* ---------- campo de número do estudo: formata ao digitar (máscara global), grava ao sair ---------- */
 function Num({ v, d = 2, fmt, aoMudar, aoSair, onFocus, ...rest }: {
   v: number | null; d?: number; fmt: string; aoMudar: (n: number | null) => void; aoSair: () => void;
@@ -206,6 +252,11 @@ export function PopEstudo({ f }: { f: Ficha }) {
     if (id && ordem >= 0) { if (loc.pathname !== `${base}/${ordem + 1}`) navegar(`${base}/${ordem + 1}`, { replace: true, state: loc.state }); }
     else if (/\/viabilidade\/\d+/.test(loc.pathname)) navegar(base, { replace: true, state: loc.state });
   }, [id, ordem]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* estudo criado fora desta lista (ex.: pela aba Estudos de massa): busca a lista de novo, uma vez por estudo */
+  const buscou = useRef<string | null>(null);
+  useEffect(() => {
+    if (id && lista && ordem < 0 && buscou.current !== id) { buscou.current = id; void q.refetch(); }
+  }, [id, ordem, lista]); // eslint-disable-line react-hooks/exhaustive-deps
   /* trocou de terreno (gaveta) ou saiu da ficha: fecha */
   useEffect(() => () => abrirEstudo(null), [f.id]);
   if (!id || !lista || ordem < 0) return null;
@@ -319,7 +370,8 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
             setTimeout(() => { const i = document.querySelector<HTMLInputElement>(`[data-tp="${t.id}"] .vb-nome input`); i?.focus(); i?.select(); }, 30);
           });
         }}><Ic n="add" s={16} />Adicionar tipologia</button> : null}>
-        {ab === 'tip' ? <Tipologias v={v} c={c} ro={ro} setV={setV} gravar={gravar} toast={toast} />
+        {ab === 'tip' ? <><MassaSel v={v} terreno={f.id} ro={ro} aoMudar={async () => { const x = await carregarEstudo(id); if (x) setV(x); recarregar(); }} />
+          <Tipologias v={v} c={c} ro={ro} setV={setV} gravar={gravar} toast={toast} /></>
           : ab === 'terreno' ? <SecTerreno x={ctx!} />
           : ab === 'obra' ? <SecObra x={ctx!} />
           : ab === 'res' ? <SecDre x={ctx!} />
