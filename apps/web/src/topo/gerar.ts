@@ -17,6 +17,8 @@ import { carregarGoogle } from '../mapa/google';
 import { geoAneis, geoAreaAnel, geoNoAnel, latLngUtm, utmLatLng } from '../novo/geosampa';
 import { GSJ_BASE, gsjInfoBB, gsjPoligono, gsjToken } from '../novo/geosanja';
 import { centroPoly, lotesUniao, type P } from '../novo/geo';
+import { quadrasSjc } from '../novo/lotesSjc';
+import { baseLotes } from '../novo/lotesBase';
 import MODELO from './modelo.dxf?raw';
 
 export const TOPO_FOLGA = 30;
@@ -27,7 +29,7 @@ const ext = (pts: number[][]) => pts.reduce((b, p) => [Math.min(b[0], p[0]), Mat
 const mapCoord = (c: any, f: (p: number[]) => number[]): any => (!c.length ? c : typeof c[0] === 'number' ? f(c) : c.map((x: any) => mapCoord(x, f)));
 const geoMapa = (g: any, f: (p: number[]) => number[]) => g && { ...g, coordinates: mapCoord(g.coordinates, f) };
 
-export interface TerrenoTopo { id: string; codigo: string; nome: string; municipio: string | null; uf: string | null; municipioId: string | null; poly: P[] | null }
+export interface TerrenoTopo { id: string; codigo: string; nome: string; municipio: string | null; uf: string | null; municipioId: string | null; poly: P[] | null; empresa?: string | null }
 export interface Resultado { pdf: Blob; zip: Blob; previa: string; nome: string; resumo: Resumo }
 export interface Resumo { contorno: string; cotas: string; imagem: string; curvas: string; area: number; min: number; max: number; dec: number | null; erros: string[]; escala: number; papel: string }
 type Passo = (t: string) => void;
@@ -256,9 +258,11 @@ function quadroDe(lev: number[]) {
   return { bb: [cx - gw / 2, cy - gh / 2, cx + gw / 2, cy + gh / 2], esc, pag, fx: pag.m, fy: pag.m, fw, fh, wi, hi: Math.round((wi * fh) / fw) };
 }
 const MM = (mm: number) => (mm / 25.4) * DPI;
-const COR = { lwT: MM(2), lwI: MM(0.75), lwM: MM(1), casca: 'rgba(0,0,0,.85)', terreno: '#00e5ff', folga: '#ffffff', inter: ['#00b81f', '#1ee81e', '#5cff3a', '#b2ff73'], mestra: '#b026ff', eixo: 'rgba(255,255,255,.9)', faixa: '#7fd3ff', curvaPref: 'rgba(255,170,60,.7)' };
+const COR = { lwT: MM(2), lwI: MM(0.75), lwM: MM(1), casca: 'rgba(0,0,0,.85)', terreno: '#00e5ff', folga: '#ffffff', inter: ['#00b81f', '#1ee81e', '#5cff3a', '#b2ff73'], mestra: '#b026ff', eixo: 'rgba(255,255,255,.9)', faixa: '#7fd3ff', curvaPref: 'rgba(255,170,60,.7)', lote: 'rgba(255,255,255,.75)' };
 /** intermediárias em tons: a mais alta entre duas mestras a mais escura, a mais baixa a mais clara (Moisés, 27/out/2026); 0 a 3 */
 const tomInter = (z: number, R: any) => { const n = Math.max(1, Math.round(R.mestra / R.iv) - 1), k = (((Math.round(z / R.iv) % (n + 1)) + n + 1) % (n + 1)); return n < 2 ? 0 : Math.round(((n - k) * 3) / (n - 1)); };
+/** "41.0024.0011.0000" → "0011" (com o sublote: "0011.0002"): a quadra vai na legenda */
+const rotLote = (ic: string) => { const s = String(ic).split('.'); return s.length === 4 ? (s[3] !== '0000' ? `${s[2]}.${s[3]}` : s[2]) : String(ic); };
 const nomeVia = (p: any) => (p ? String(p.nome_logra || p.logradouro || p.nome || p.rotulo || '').trim() : '');
 const fonteTxt = (fz: { n: number; res: number }) => `Google Elevation, ${num(fz.n)} pontos a cada ${PASSO_G} m; grade de origem de ${num(fz.res, 1)} m e erro típico de 3 a 4 m`;
 
@@ -278,6 +282,7 @@ function desenharPagina(R: any) {
   };
   linhas('CURSO_DAGUA_FAIXA', COR.faixa, 2, [10, 6], 'rgba(127,211,255,.12)');
   linhas('EIXO_VIAS', COR.eixo, 1.4, [18, 8, 4, 8]);
+  linhas('LOTES_PREFEITURA', COR.lote, 1.2);
   /* curvas: casca escura por baixo, intermediárias finas em tons, mestras grossas com a cota */
   R.curvas.forEach((c: any) => { caminho([c.pts]); g.strokeStyle = COR.casca; g.lineWidth = (c.mestra ? COR.lwM : COR.lwI) + 2.4; g.stroke(); });
   R.curvas.forEach((c: any) => { caminho([c.pts]); g.strokeStyle = c.mestra ? COR.mestra : COR.inter[tomInter(c.z, R)]; g.lineWidth = c.mestra ? COR.lwM : COR.lwI; g.stroke(); });
@@ -294,6 +299,13 @@ function desenharPagina(R: any) {
       acc += d;
       if (acc >= 320 && d > 8) { acc = 0; halo(num(c.z, 0), (X(a[0]) + X(b[0])) / 2, (Y(a[1]) + Y(b[1])) / 2, leg(Math.atan2(Y(b[1]) - Y(a[1]), X(b[0]) - X(a[0]))), 19, '#fff', 600); }
     }
+  });
+  /* número do lote (a quadra está na legenda) no meio de cada lote, se couber */
+  (R.cam.LOTES_PREFEITURA || []).forEach((f: any) => {
+    const r = geoAneis(f.g)[0]; if (!r || r.length < 3) return;
+    const xs = r.map((p) => p[0]), ys = r.map((p) => p[1]), lado = Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * pxm;
+    if (lado < 34) return;
+    halo(rotLote(f.p.ic), X(xs.reduce((a, b) => a + b, 0) / xs.length), Y(ys.reduce((a, b) => a + b, 0) / ys.length), 0, Math.min(16, lado / 3), '#fff', 500);
   });
   const vistos = new Set<string>();
   (R.cam.EIXO_VIAS || []).forEach((f: any) => {
@@ -341,7 +353,7 @@ function lateral(g: CanvasRenderingContext2D, R: any, F: string, pxm: number) {
   kv('Cotas no terreno', `mínima ${num(R.dz.min, 1)} m · máxima ${num(R.dz.max, 1)} m · desnível ${num(R.dz.max - R.dz.min, 1)} m` + (R.dec != null ? ` · declividade média ${num(R.dec, 1)}%` : ''));
   kv('Fonte das cotas', fonteTxt(R.fz)); kv('Curvas de nível', `de ${R.iv} em ${R.iv} m; mestra de ${R.mestra} em ${R.mestra} m (roxa, com a cota)`);
   kv('Imagem', R.im.fonte);
-  const extras = [R.cam.EIXO_VIAS?.length && 'eixos de via', R.cam.CURSO_DAGUA_FAIXA?.length && "faixa de curso d'água", R.cam.CURVAS_PREFEITURA?.length && 'curvas do IGC 1:10.000 (só no DXF)'].filter(Boolean);
+  const extras = [R.cam.LOTES_PREFEITURA?.length && `lotes da quadra ${[...new Set(R.cam.LOTES_PREFEITURA.map((f: any) => String(f.p.ic).slice(0, 7)))].join(', ')}`, R.cam.EIXO_VIAS?.length && 'eixos de via', R.cam.CURSO_DAGUA_FAIXA?.length && "faixa de curso d'água", R.cam.CURVAS_PREFEITURA?.length && 'curvas do IGC 1:10.000 (só no DXF)'].filter(Boolean);
   if (extras.length) kv('Do GeoSanja', extras.join(', ').replace(/^./, (c) => c.toUpperCase()));
   kv('Coordenadas', `SIRGAS 2000 / UTM ${R.zona}S (EPSG:${R.epsg}); cotas em metros, altitude ortométrica`);
   y += 4; g.fillStyle = '#c4c7c5'; g.fillRect(x0, y, lat, 1.5); y += 16; txt('Legenda', 16, '#1f1f1f', 500); y += 4;
@@ -352,6 +364,7 @@ function lateral(g: CanvasRenderingContext2D, R: any, F: string, pxm: number) {
   item(traco(COR.folga, 2, [8, 5]), `Limite do levantamento (${TOPO_FOLGA} m)`);
   item(() => { traco(COR.casca, COR.lwM + 2.4)(); traco(COR.mestra, COR.lwM)(); }, `Curva mestra (${R.mestra} m)`);
   item(() => { traco(COR.casca, COR.lwI + 2.4)(); COR.inter.forEach((c, i, a) => { g.save(); g.beginPath(); g.rect((i * 44) / a.length, -9, 44 / a.length, 18); g.clip(); traco(c, COR.lwI)(); g.restore(); }); }, `Curvas intermediárias (${R.iv} m; mais alta escura, mais baixa clara)`);
+  if (R.cam.LOTES_PREFEITURA?.length) item(traco(COR.lote, 1.2), 'Lotes da quadra (número do lote)');
   if (R.cam.EIXO_VIAS?.length) item(traco(COR.eixo, 1.4, [10, 4, 3, 4]), 'Eixo da via');
   if (R.cam.CURSO_DAGUA_FAIXA?.length) item(traco(COR.faixa, 2, [10, 6]), "Faixa de curso d'água (PDDI)");
   /* escala, norte, aviso e data no pé da coluna */
@@ -410,6 +423,7 @@ function dxfDe(R: any, arqImg: string, wi: number, hi: number) {
     const pol = /Polygon/.test(ft.g.type), z = ly === 'CURVAS_PREFEITURA' ? ft.p.avg_z : 0;
     geoAneis(ft.g).forEach((r) => poli(ly, pol && r.length > 1 && r[0][0] === r[r.length - 1][0] && r[0][1] === r[r.length - 1][1] ? r.slice(0, -1) : r, pol, z));
   }));
+  (R.cam.LOTES_PREFEITURA || []).forEach((ft: any) => { const r = geoAneis(ft.g)[0]; if (!r || r.length < 3) return; texto('TEXTO_LOTES', r.reduce((a, p) => a + p[0], 0) / r.length, r.reduce((a, p) => a + p[1], 0) / r.length, 0.8, ft.p.ic); });
   (R.cam.EIXO_VIAS || []).forEach((ft: any) => { const Lh = geoAneis(ft.g)[0], n = nomeVia(ft.p); if (!Lh || !n || Lh.length < 2) return; const m = Math.floor((Lh.length - 1) / 2), a = Lh[m], b = Lh[m + 1]; texto('TEXTO_VIAS', (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 2, n, angLeg(a, b)); });
   const Q = R.quadro.bb, ps = (Q[2] - Q[0]) / wi, psy = (Q[3] - Q[1]) / hi;
   let s = MODELO;
@@ -478,6 +492,16 @@ export async function gerarTopografico(t: TerrenoTopo, quem: string, passo: Pass
   const quadro = quadroDe(lev);
   passo(base === 'geosanja' ? 'Vias e cursos d’água do GeoSanja' : 'Camadas da prefeitura');
   const cam = await camadas(base, quadro.bb, l0);
+  /* os lotes das quadras do terreno, numerados pela inscrição (pedido do Moises, 10/nov/2026; como o de São Paulo sem SQL):
+     montados pelo GeoSanja, do banco quando a quadra já foi montada; falha não impede o topográfico */
+  if (base === 'geosanja' && GSJ_BASE && l0 === -45) {
+    passo('Lotes da quadra (GeoSanja)');
+    try {
+      const r = await quadrasSjc({ ter: P[0], andamento: (n) => av(`${n} lote${n > 1 ? 's' : ''}`), base: t.empresa ? baseLotes(t.empresa) : undefined });
+      const fs = r.lotes.map((l) => ({ g: recorte({ type: 'Polygon', coordinates: [l.an] }, quadro.bb), p: { ic: l.ic }, c: 'lotes' })).filter((x) => x.g);
+      if (fs.length) cam.camadas.LOTES_PREFEITURA = fs;
+    } catch (e) { console.warn('lotes da quadra', e); cam.erros.push('lotes da quadra'); }
+  }
   passo('Imagem de fundo');
   const im = await imagem(base, quadro.bb, quadro.wi, quadro.hi, l0, epsg);
   passo('PDF e DXF');

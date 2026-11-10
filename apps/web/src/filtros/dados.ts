@@ -22,7 +22,7 @@ export interface DadosFx { fases: FaseFx[]; ters: TerFx[]; corretores: [string, 
 export async function carregarFx(emp: string): Promise<DadosFx> {
   const [v, t, p, f, e, s, mat, ins, pes, inf, itI, cor, pts] = await Promise.all([
     supabase.from('v_terrenos').select('id,nome,codigo,uf,municipio,zona,bairro,logradouro,numero,temperatura,valor_pedido,area_adotada_m2,proposta_ativa_valor,vgv,corretor_ids,forma_pagamento_pedida,origem_cadastro,zonas_siglas,responsavel_id,data_identificacao').eq('empresa_id', emp),
-    supabase.from('terrenos').select('id,latitude,testada_principal_m,situacao_ocupacao').eq('empresa_id', emp),
+    supabase.from('terrenos').select('id,latitude,testada_principal_m,situacao_ocupacao,completude_dispensada').eq('empresa_id', emp),
     supabase.from('processos').select('terreno_id,fase,etapa_atual,subetapa_atual,status,data_inicio').eq('empresa_id', emp).is('parte_id', null).order('data_inicio'),
     supabase.from('fases_modelo').select('codigo,nome,ordem,ativo').eq('empresa_id', emp).order('ordem'),
     supabase.from('etapas_modelo').select('fase,codigo,nome,ordem').eq('empresa_id', emp).order('ordem'),
@@ -61,7 +61,7 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
     const r = tr[x.id] ?? {};
     const fic = { logradouro: x.logradouro, numero: x.numero, bairro: x.bairro, municipio: x.municipio, uf: x.uf, zona: x.zona, lat: r.latitude, area: x.area_adotada_m2, testada: r.testada_principal_m,
       ocupacao: r.situacao_ocupacao, qMat: qM[x.id] ?? 0, qInsc: qI[x.id] ?? 0, temProprietario: proprietariosCompletos((partesT[x.id] ?? []).map((y) => y.id), donosT[x.id] ?? []), zonas: zs(x.zonas_siglas).join(' / ') || null,
-      infraNV: qNV[x.id] ?? 0, valorPedido: x.valor_pedido, temp: x.temperatura } as unknown as Ficha;
+      infraNV: qNV[x.id] ?? 0, valorPedido: x.valor_pedido, temp: x.temperatura, t: { completude_dispensada: r.completude_dispensada } } as unknown as Ficha;
     return {
       id: x.id, nome: x.nome ?? '', codigo: x.codigo ?? null, uf: x.uf, cidade: x.municipio, zona: x.zona, bairro: x.bairro, temp: x.temperatura, pedido: x.valor_pedido == null ? null : +x.valor_pedido,
       area: x.area_adotada_m2 == null ? null : +x.area_adotada_m2, proposta: x.proposta_ativa_valor == null ? null : +x.proposta_ativa_valor,

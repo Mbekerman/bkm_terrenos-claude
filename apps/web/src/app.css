@@ -64,6 +64,13 @@
 .fi-comp-n { position: absolute; top: -8px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #b3261e; color: #fff; font-size: 11px; font-weight: 500; line-height: 18px; text-align: center }
 .fi-comp-m { display: block; left: 0; right: auto; top: calc(100% + 6px) }
 .fi-comp-t { padding: 6px 16px 4px; font-size: 12px; font-weight: 500; color: var(--m-on-var, #444746) }
+/* linha do "Falta preencher" com o x de descartar; descartados com "Voltar a pedir" (10/nov/2026) */
+.fi-comp-l { display: flex; align-items: center }
+.fi-comp-l > button[role=menuitem] { flex: 1; min-width: 0 }
+.adv-menu .fi-comp-x { width: 40px; min-height: 40px; padding: 0; justify-content: center; flex: none; margin-right: 4px; border-radius: 20px; color: var(--m-on-var, #444746) }
+.fi-comp-d { min-height: 40px; padding: 0 4px 0 16px; gap: 12px; font-size: 14px; color: var(--m-on-var, #444746) }
+.fi-comp-d > span { flex: 1; text-decoration: line-through }
+.adv-menu .fi-comp-v { width: auto; min-height: 36px; padding: 0 12px; border-radius: 18px; color: var(--m-primary, #0b57d0); font-weight: 500; flex: none }
 /* campo que o menu do que falta abriu acende um instante */
 /* verde-limão de marca-texto, fora da paleta para destacar: espera 0,3 s, pisca uma vez, fica 0,7 s e apaga em 1,2 s
    (pedido do Moisés, 6/nov/2026) */
@@ -413,3 +420,9 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
 :is(.mapa, .mini-mapa).modo.leaflet-dragging, :is(.mapa, .mini-mapa).modo.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive),
 .mapa.regua.leaflet-dragging, .mapa.regua.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive) { cursor: grabbing }
+
+/* matrículas da parte na aba Comercial: etiquetas sem x, que abrem a janela da matrícula (10/nov/2026) */
+.ptcom-mats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px }
+.ptcom-mats .etq { height: 28px; font-size: 13px; cursor: pointer }
+.ptcom-mats .etq-n { cursor: pointer; padding-right: 10px }
+.ptm-dlg { display: flex; flex-direction: column; gap: 12px }

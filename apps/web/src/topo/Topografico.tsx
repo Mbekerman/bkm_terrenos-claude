@@ -38,7 +38,7 @@ export default function AbaInfra({ f }: { f: Ficha }) {
 
 type Est = 'andando' | 'feito' | 'erro';
 function JanelaTopo({ f, sp, fechar }: { f: Ficha; sp: boolean; fechar: () => void }) {
-  const { usuario, membro } = useSessao() as any;
+  const { usuario, membro, empresa } = useSessao() as any;
   const [passos, setPassos] = useState<[string, Est, string?][]>([]);
   const [em, setEm] = useState(false), [erro, setErro] = useState<string | null>(null), [R, setR] = useState<Resultado | null>(FEITOS[f.id] ?? null);
   async function gerar() {
@@ -46,7 +46,7 @@ function JanelaTopo({ f, sp, fechar }: { f: Ficha; sp: boolean; fechar: () => vo
     const passo = (t: string) => setPassos((ps) => [...ps.map((p) => (p[1] === 'andando' ? [p[0], 'feito', p[2]] as [string, Est, string?] : p)), [t, 'andando']]);
     const av = (t: string) => setPassos((ps) => ps.map((p, i) => (i === ps.length - 1 ? [p[0], p[1], t] : p)));
     try {
-      const r = await gerarTopografico({ id: f.id, codigo: f.codigo, nome: f.nome, municipio: f.municipio, uf: f.uf, municipioId: f.t.municipio_id ?? null, poly: f.poly },
+      const r = await gerarTopografico({ id: f.id, codigo: f.codigo, nome: f.nome, municipio: f.municipio, uf: f.uf, municipioId: f.t.municipio_id ?? null, poly: f.poly, empresa: empresa?.id ?? null },
         usuario?.nome ?? membro?.nome ?? 'BKM', passo, av);
       FEITOS[f.id] = r; setR(r);
       setPassos((ps) => ps.map((p) => [p[0], 'feito', p[2]]));

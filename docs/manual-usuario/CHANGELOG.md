@@ -8,6 +8,14 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
+- **Nomes do GeoSanja com acento** (subsetor, setor, parques, núcleos...): a prefeitura entrega "S?o Jos?" no lugar de "São José"; o sistema troca pelas letras certas, também nas consultas já feitas. (#293)
+- **Topográfico em São José dos Campos com os lotes da quadra** (aba Infraestrutura): a folha e o DXF trazem todos os lotes das quadras do terreno, numerados. (#293)
+- **Partes na aba Comercial**: cada parte mostra só as suas matrículas, em etiquetas que não se tiram; o clique abre a janela da matrícula com a área, o percentual da parte e os SQLs dela, com a área de cada lote e a área da parte. (#293)
+- **Descartar item do "Falta preencher"** (topo da ficha): cada item da lista tem um x que o descarta neste terreno; ele sai da lista e da conta do percentual, e o descarte fica no Log. Embaixo, "Descartados (N)" com "Voltar a pedir". Ctrl+Z desfaz. (#293)
+- **Cartório e Zona automáticos em São José dos Campos** (aba Terreno, Endereço e localização): ao abrir a ficha, o GeoSanja informa o 1º ou 2º Registro de Imóveis e a região da cidade (Centro, Norte, Sul, Leste, Oeste ou Sudeste) pelo ponto do terreno; o que você digitar não é trocado. (#293)
+- **IPTU fora de São Paulo** (aba Terreno, quadro IPTU): a lista por inscrição já vem aberta, com Lançar ou Atualizar em cada linha, e na janela da inscrição o formulário do IPTU já vem aberto enquanto não há IPTU lançado. (#293)
+- **Índices urbanísticos fora de São Paulo** mostram um potencial e um CA máximo só, sem as linhas de Mercado, HIS e HMP. (#293)
+- **Cartório em São José dos Campos** (aba Terreno): o campo não fica mais "Buscando no GeoSampa..." enquanto o GeoSanja consulta as inscrições. Fora de São Paulo o cartório não vem sozinho; digite-o. O aviso do carregando nos Índices urbanísticos passa a dizer "Buscando no GeoSanja". Testada e Posição na quadra também não mostram mais o carregando fora de São Paulo. (#293)
 - **Mapa de lotes de São José dos Campos mais rápido na segunda vez:** cada quadra montada pelo GeoSanja fica guardada no sistema, e quem abrir o mapa na mesma quadra depois vê os lotes na hora. A quadra é montada de novo depois de 90 dias. (#290)
 - **Novo terreno em São José dos Campos** igual ao de São Paulo: **"Incluir por inscrição"** no passo 1 (a poligonal vira a soma dos lotes do GeoSanja) e o **mapa de lotes da prefeitura** logo depois da poligonal, com as quadras inteiras montadas pelo GeoSanja, o satélite do Google por baixo e o clique fora dos lotes para acrescentar o lote daquele ponto. Na ficha, "Escolher no mapa" em Matrículas e SQLs. (#289)
 - **Planta do loteamento** (aba Terreno, Endereço e localização, só São José dos Campos): baixa do GeoSanja a planta do loteamento aprovado onde o terreno está. (#289)
