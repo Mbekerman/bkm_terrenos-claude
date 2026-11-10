@@ -217,7 +217,7 @@ O quadro **Relevo** mostra:
 
 ## O que não é possível na ficha hoje
 
-- Parte do estudo de viabilidade (ver [15](15-ficha-viabilidades.md)), o PDF e o DWG dos estudos de massa, as abas Jornada e Documentos, e, em Avaliação de infraestrutura e o Topográfico de São Paulo.
+- Parte do estudo de viabilidade (ver [15](15-ficha-viabilidades.md)), o PDF e o DWG dos estudos de massa, as abas Jornada e Documentos, e, em Avaliação de infraestrutura, o Topográfico de São Paulo.
 - Digitar o endereço (CEP, rua, bairro, município) direto: ele vem do mapa.
 - Ver a ficha em tema escuro.
 - Imprimir ou exportar a ficha.
