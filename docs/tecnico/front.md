@@ -125,7 +125,7 @@ apps/web/
 | Arquivo | Papel |
 | --- | --- |
 | `google.ts` | Carrega o Maps JS uma vez (bootstrap oficial), com as bibliotecas `maps`, `marker`, `geometry`, `places`, `streetView`; detecta chave recusada (`gm_authFailure`). |
-| `motor.ts` | Classe `Motor`: tudo que mexe dentro do contêiner do mapa (pinos, poligonais, desenho, edição, régua, Street View, lugares do Google, ladrilhos dos setores, quadrados da concorrência). Imperativo, como no protótipo. `arrastoComRoda` faz a roda do mouse arrastar o mapa no meio do arraste de qualquer marcador arrastável (chamar logo depois de criar o marcador). |
+| `motor.ts` | Classe `Motor`: tudo que mexe dentro do contêiner do mapa (pinos, poligonais, desenho, edição, régua, Street View, lugares do Google, ladrilhos dos setores, quadrados da concorrência). Imperativo, como no protótipo. `arrastoComRoda` faz a roda do mouse arrastar o mapa no meio do arraste de qualquer marcador arrastável (chamar logo depois de criar o marcador). `agrupar` e `bolha` juntam as etiquetas que se cobrem na tela numa bolha com o número, a lista ao parar o mouse e o clique que aproxima. |
 | `dados.ts` | Funções puras da legenda e das cores (`itens`, `classe`, `info`, `apagado`, `corSub`) e `carregar(empresa)`, que lê `v_mapa`, fases, etapas, subetapas e processos. |
 | `setores.ts` + `CamadasSetor.tsx` | Camadas de renda e densidade por setor censitário (dados e marcação). |
 | `mercado.ts` + `Concorrencia.tsx` | Concorrência (monitor de mercado): dados, filtro, card, tabela completa. Cores das faixas de R$/m² (`MK_FX`, pastel) e agrupamento até o zoom 13 (`mkAgrupar`: mesma situação e mesma faixa a menos de 40 px; bolha do tamanho das unidades, `mkGrupoTam`), desenhado por `Motor.mercado`. |
