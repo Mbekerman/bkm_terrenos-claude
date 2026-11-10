@@ -4,7 +4,7 @@
 
 ## Para que serve
 
-Acompanhar a compra do terreno: o que o vendedor pede, quem trouxe o terreno, as propostas trocadas e as reuniões. Os quadros, nesta ordem: **Negociação**, **Condições pedidas**, **Partes** (com duas ou mais partes), **Ofertas recebidas**, **Corretores do terreno**, **Propostas** e **Reuniões**.
+Acompanhar a compra do terreno: o que o vendedor pede, quem trouxe o terreno, as propostas trocadas e as reuniões. Os quadros, nesta ordem: **Negociação**, **Condições pedidas** (com o valor de cada parte), **Ofertas recebidas**, **Corretores do terreno**, **Propostas** e **Reuniões**.
 
 **Regra:** a negociação só existe depois da **primeira oferta**. Terreno sem oferta está em **Backlog**: registre uma oferta para começar.
 
@@ -21,31 +21,32 @@ Para mover a negociação (avançar, Stand By, Perdido...), use o quadro de avan
 
 ## Condições pedidas
 
-Mostra o que o vendedor pede, na **oferta de referência** (a primeira, até alguém escolher outra em Ofertas recebidas). Tudo se edita no lugar e grava na própria oferta.
+Mostra o que o vendedor pede, na **oferta de referência** (a primeira, até alguém escolher outra em Ofertas recebidas), e quanto cada parte pede. Tudo se edita no lugar e grava na própria oferta.
+
+**O valor pedido é sempre o de cada parte.** O total não se digita: os blocos do alto são o resumo das partes.
+
+- **Valor pedido**: com uma parte só, é o valor dela; com duas ou mais, a **soma das partes**.
+- **Por m²**: o valor pedido ÷ a área das partes que já têm valor (com uma parte só, a área adotada do terreno).
+- **Partes com valor** (só com duas ou mais partes): quantas já têm valor, por exemplo "2 de 3".
+
+Logo abaixo, o que vale para a oferta inteira:
 
 | Campo | Observação |
 |---|---|
-| **Valor pedido** | Aceita "12 mi". Precisa ser maior que zero. |
-| **Por m²** | Valor pedido ÷ área adotada. |
-| **Forma de pagamento** | Dinheiro, Permuta física, Permuta financeira, Permuta geral ou Permuta com torna. |
 | **Corretor** | Quem trouxe a oferta, ou "Sem corretor / direto". |
 | **Aceita permuta** | E o texto "Como o vendedor encara a permuta e em que condições". |
 | **Pagamento** | "Observação sobre a forma de pagamento" (entrada, parcelas, torna, condição suspensiva). |
 
-## Partes
-
-Aparece quando o terreno tem **duas ou mais partes** (ver [05](05-ficha-terreno.md#partes)). Uma linha por parte, com:
+Por último, uma linha por parte (ver [05](05-ficha-terreno.md#partes)), com:
 
 - as **matrículas da parte**, em etiquetas amarelas com a mini pizza do percentual (os SQLs não aparecem na linha). A etiqueta não se tira daqui; o clique abre a janela da matrícula, com a área registrada, o percentual da parte, a área da parte nela e os SQLs (ou inscrições) que estão dentro dela, cada um com a área do lote, o % da parte e a área da parte;
+- a **área da parte** (pelos SQLs; sem eles, pelas matrículas). Com uma parte só, é a área adotada do terreno;
+- o **valor pedido** e o **valor por m²**, que se calculam um pelo outro (digite um e o outro muda). Aceita "12 mi" e precisa ser maior que zero;
+- a **condição de pagamento**: Dinheiro, Permuta física, Permuta financeira, Permuta geral ou Permuta com torna.
 
-- a **área da parte** (pelas matrículas; sem elas, pelos SQLs);
-- o **zoneamento**;
-- o **valor pedido** e o **valor por m²**, que se calculam um pelo outro (digite um e o outro muda);
-- a **condição de pagamento**.
+Com duas ou mais partes, embaixo vem o **Total**, com "(faltam N)" enquanto alguma parte não tem valor.
 
-Embaixo, o **Total**. Esses valores são da oferta de referência.
-
-Com uma parte só, o quadro não aparece: o valor é o da própria oferta e a área é a adotada do terreno.
+**Valor antigo para o terreno inteiro:** se a oferta foi registrada com um valor só antes de existir o valor por parte, os blocos mostram esse valor com o aviso "O valor de R$ … foi registrado para o terreno inteiro. Informe o valor de cada parte abaixo". Quando a primeira parte ganha valor, o total passa a ser a soma das partes.
 
 ## Ofertas recebidas
 
@@ -54,7 +55,7 @@ Com uma parte só, o quadro não aparece: o valor é o da própria oferta e a á
 **Como registrar uma oferta:**
 
 1. Clique em **"Registrar oferta"**.
-2. Preencha: **Corretor** (ou "Sem corretor / direto"), **Valor pedido**, **Forma de pagamento pedida**, **Validade**, observação e **Aceita permuta**.
+2. Preencha: **Corretor** (ou "Sem corretor / direto"), **Valor pedido**, **Forma de pagamento pedida**, **Validade**, observação e **Aceita permuta**. Com duas ou mais partes, em vez de um valor só, aparece um **Valor pedido** para cada parte, com o total somado embaixo; pelo menos uma precisa de valor.
 3. Clique em **Registrar**.
 
 A **primeira oferta abre a negociação** ("Oferta registrada. A negociação foi aberta."): o terreno sai do Backlog e entra na primeira etapa de Novos Negócios.
