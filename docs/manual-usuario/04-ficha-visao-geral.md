@@ -47,7 +47,7 @@ Os 12 itens:
 | Inscrição e IPTU | Terreno › Matrículas e SQLs |
 | Proprietário (cada parte com proprietários somando 100%) | Terreno › Partes (lápis da parte) |
 | Zoneamento | Terreno › Parâmetros urbanísticos › Registrar zonas (ou automático pelo GeoSampa) |
-| Valor pedido | Comercial › Condições pedidas (ou registrar oferta) |
+| Valor pedido | Comercial › Condições pedidas, no valor da primeira parte (ou registrar oferta) |
 | Temperatura | Topo da ficha |
 | Visita técnica | Infraestrutura › Visita técnica (os 8 itens verificados) |
 
