@@ -114,6 +114,8 @@ export interface OpcoesMontagem {
   andamento?: (n: number) => void;
   /** true no meio de um lote: devolve o que já tem, sem erro */
   parar?: () => boolean;
+  /** no fim da montagem, com todos os lotes achados (também os de quadra que não entrou na lista) */
+  aoTermino?: (s: { todos: LoteMontado[]; quadras: string[]; prontas: string[]; completo: boolean }) => void | Promise<void>;
   /** célula vazia (parque, rio) não é erro; na ficha, poligonal sem lote continua sendo */
   vazioOk?: boolean;
   maxLotes?: number;
@@ -263,5 +265,9 @@ export async function montarQuadras(o: OpcoesMontagem): Promise<ResultadoMontage
     fila = [...lotes.keys()].filter((ic) => daQuadra(ic) && !feitos.has(ic));
   }
   const completo = !interrompido && pontos < maxPontos && lotes.size < maxLotes;
+  if (o.aoTermino) await o.aoTermino({
+    todos: [...lotes].map(([ic, an]) => ({ ic, an, daBase: daBase.has(ic) })),
+    quadras, prontas, completo,
+  });
   return resultado(quadras, prontas, completo);
 }

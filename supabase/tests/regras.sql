@@ -3940,6 +3940,44 @@ select pg_temp.ok(not exists (select 1 from app.terrenos_apagados), 'só o admin
 select pg_temp.como(:'diretor');
 select app.limpeza_feita((select id from app.terrenos_apagados where terreno_id = :'tdl'));
 select pg_temp.ok((select limpo_em is not null from app.terrenos_apagados where terreno_id = :'tdl'), 'limpeza de fora marcada como feita');
+-- lotes da prefeitura guardados (São José: a quadra montada pelo GeoSanja, 10/nov/2026)
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.guardar_lotes_prefeitura(%L, 'geosanja', '[]')$$, :'emp'), 'leitura não grava lotes da prefeitura');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into app.lotes_prefeitura (empresa_id, base, inscricao_norm, quadra, anel, x0, y0, x1, y1) values (%L, 'geosanja', '410024', '410024', '[[0,0],[1,0],[1,1],[0,0]]', 0, 0, 1, 1)$$, :'emp'), 'lote da prefeitura não é gravado direto');
+select pg_temp.falha(format($$select app.guardar_lotes_prefeitura(%L, 'geosanja', '[{"inscricao":"41.0024.0011.0000","quadra":"410024","anel":[[0,0],[1,0]]}]')$$, :'emp'), 'desenho com menos de 4 pontos é recusado');
+select pg_temp.falha(format($$select app.guardar_lotes_prefeitura(%L, 'geosanja', '[{"inscricao":"41.0024.0011.0000","quadra":"410099","anel":[[0,0],[1,0],[1,1],[0,0]]}]')$$, :'emp'), 'inscrição de outra quadra é recusada');
+select pg_temp.falha(format($$select app.guardar_lotes_prefeitura(%L, 'geosanja', '[]')$$, :'emp2'), 'não grava na base de outra empresa');
+select pg_temp.ok(app.guardar_lotes_prefeitura(:'emp', 'geosanja',
+  '[{"inscricao":"41.0024.0011.0000","quadra":"410024","anel":[[400010,7430010],[400030,7430010],[400030,7430040],[400010,7430010]],"area_m2":300},
+    {"inscricao":"41.0024.0012.0000","quadra":"410024","anel":[[400030,7430010],[400050,7430010],[400050,7430040],[400030,7430010]],"area_m2":300},
+    {"inscricao":"41.0024.0013.0000","quadra":"410024","anel":[[400050,7430010],[400070,7430010],[400070,7430040],[400050,7430010]]}]',
+  array['410024']) = 3, 'analista guarda a quadra montada');
+select pg_temp.ok((select x0 = 400010 and y1 = 7430040 and area_m2 = 300 from app.lotes_prefeitura where inscricao_norm = '41002400110000')
+    and (select lotes = 3 and montada_por = :'analista'::uuid from app.quadras_prefeitura where empresa_id = :'emp' and quadra = '410024'),
+  'guarda o retângulo, a área e a quadra montada com quem montou');
+select app.guardar_lotes_prefeitura(:'emp', 'geosanja',
+  '[{"inscricao":"41.0024.0090.0000","quadra":"410024","anel":[[400070,7430010],[400090,7430010],[400090,7430040],[400070,7430010]]}]') as nlp \gset
+select pg_temp.ok(:nlp = 1 and (select count(*) from app.lotes_prefeitura where empresa_id = :'emp' and quadra = '410024') = 4,
+  'lote acrescentado sozinho entra sem mexer nos outros');
+reset role;
+update app.lotes_prefeitura set conferido_em = now() - interval '100 days' where inscricao_norm = '41002400120000';
+select pg_temp.como(:'analista');
+select app.guardar_lotes_prefeitura(:'emp', 'geosanja',
+  '[{"inscricao":"41.0024.0011.0000","quadra":"410024","anel":[[400010,7430010],[400030,7430010],[400030,7430045],[400010,7430010]]},
+    {"inscricao":"41.0024.0012.0000","quadra":"410024","da_base":true}]',
+  array['410024']) as nlp \gset
+select pg_temp.ok(:nlp = 1 and (select conferido_em < now() - interval '99 days' from app.lotes_prefeitura where inscricao_norm = '41002400120000'),
+  'lote que veio da própria base conta na quadra, mas não renova a conferência');
+select pg_temp.ok((select count(*) from app.lotes_prefeitura where empresa_id = :'emp' and quadra = '410024') = 2
+    and (select y1 = 7430045 from app.lotes_prefeitura where inscricao_norm = '41002400110000')
+    and (select lotes = 2 from app.quadras_prefeitura where empresa_id = :'emp' and quadra = '410024'),
+  'quadra montada de novo: desenho atualizado e lote que sumiu do cadastro sai');
+select pg_temp.como(:'leitor');
+select pg_temp.ok((select count(*) from app.lotes_prefeitura where quadra = '410024') = 2, 'leitura vê os lotes guardados');
+select pg_temp.como(:'intruso');
+select pg_temp.ok(not exists (select 1 from app.lotes_prefeitura) and not exists (select 1 from app.quadras_prefeitura), 'outra empresa não vê');
+reset role;
 -- todos os terrenos dos testes, com tudo o que os outros testes criaram, apagam sem erro
 reset role;
 select count(*) as napag from (select app._apagar_terreno(id, null) from app.terrenos) x \gset
@@ -3961,7 +3999,7 @@ set role anon;
 select pg_temp.falha(format($$select * from app.varredura_sjc_relatorio(%L)$$, :'emp'), 'anon não vê o relatório da varredura');
 reset role;
 set role service_role;
-select pg_temp.ok(app.varredura_sjc_tabelas_lotes() = false, 'sem a migration dos lotes, a varredura avisa');
+select pg_temp.ok(app.varredura_sjc_tabelas_lotes(), 'as tabelas de lote do mapa existem e a varredura pode gravar');
 select app.varredura_sjc_garantir_celulas(:'emp', '[
   {"id":"c1","ordem":2,"x0":0,"y0":0,"x1":200,"y1":200,"lat":-23.1,"lng":-45.8,"densidade":1000},
   {"id":"c0","ordem":1,"x0":200,"y0":0,"x1":400,"y1":200,"lat":-23.2,"lng":-45.9,"densidade":8000}
@@ -3985,68 +4023,44 @@ select app.varredura_sjc_fechar_execucao(:ex2, 'horario', 14, 1, 0, 0, 1, 2, 'te
 reset role;
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select pct_celulas = 100 and celulas_feitas = 2 and celulas_total = 2 and motivo = 'horario' and consultas = 14
-    and lotes_na_base is null and (select count(*) from app.varredura_sjc_relatorio(:'emp') where motivo = 'queda') = 1
+    and lotes_na_base > 0 and (select count(*) from app.varredura_sjc_relatorio(:'emp') where motivo = 'queda') = 1
   from app.varredura_sjc_relatorio(:'emp') limit 1),
-  'o relatório traz a noite, o porcento da grade e o lote nulo enquanto a tabela não existe');
+  'o relatório traz a noite, o porcento da grade e os lotes já guardados');
 select pg_temp.ok((select count(*) from app.varredura_sjc_celulas) = 2, 'membro lê as células da própria empresa');
 reset role;
 
--- tabelas de lote iguais às do PR 290, só neste teste, enquanto aquela migration não está na develop
-create table if not exists app.lotes_prefeitura (
-  empresa_id uuid not null references app.empresas(id) on delete cascade,
-  base text not null references app.bases_cadastrais(codigo),
-  inscricao_norm text not null check (inscricao_norm ~ '^\d+$'),
-  quadra text not null check (quadra ~ '^\d+$'),
-  anel jsonb not null check (jsonb_typeof(anel) = 'array' and jsonb_array_length(anel) >= 4),
-  x0 numeric(12,2) not null, y0 numeric(12,2) not null, x1 numeric(12,2) not null, y1 numeric(12,2) not null,
-  area_m2 numeric(12,2) check (area_m2 > 0),
-  visto_em timestamptz not null default now(),
-  conferido_em timestamptz not null default now(),
-  check (x0 <= x1 and y0 <= y1),
-  check (left(inscricao_norm, length(quadra)) = quadra),
-  primary key (empresa_id, base, inscricao_norm)
-);
-create table if not exists app.quadras_prefeitura (
-  empresa_id uuid not null references app.empresas(id) on delete cascade,
-  base text not null references app.bases_cadastrais(codigo),
-  quadra text not null check (quadra ~ '^\d+$'),
-  montada_em timestamptz not null default now(),
-  montada_por uuid references auth.users(id) default auth.uid(),
-  lotes int not null default 0 check (lotes >= 0),
-  primary key (empresa_id, base, quadra)
-);
-alter table app.lotes_prefeitura enable row level security;
-alter table app.quadras_prefeitura enable row level security;
-
+-- quadra só deste teste, para não mexer nos lotes da 41.0024 deixados pelo teste do mapa
 set role service_role;
-select pg_temp.ok(app.varredura_sjc_tabelas_lotes(), 'com as tabelas de lote, a varredura pode gravar');
 select pg_temp.ok((app.varredura_sjc_guardar(:'emp', 'geosanja',
-  '[{"inscricao":"41.0024.0011.0000","quadra":"410024","anel":[[100,100],[110,100],[110,110],[100,110],[100,100]],"area_m2":100}]'::jsonb, '{}')
+  '[{"inscricao":"41.9999.0001.0000","quadra":"419999","anel":[[100,100],[110,100],[110,110],[100,110],[100,100]],"area_m2":100}]'::jsonb, '{}')
   ->> 'novos') = '1', 'lote novo entra na base');
 select pg_temp.ok((app.varredura_sjc_guardar(:'emp', 'geosanja',
-  '[{"inscricao":"41.0024.0011.0000","quadra":"410024","anel":[[100,100],[120,100],[120,110],[100,110],[100,100]],"area_m2":200}]'::jsonb, '{}')
+  '[{"inscricao":"41.9999.0001.0000","quadra":"419999","anel":[[100,100],[120,100],[120,110],[100,110],[100,100]],"area_m2":200}]'::jsonb, '{}')
   ->> 'atualizados') = '1', 'o mesmo lote na segunda vez é atualização');
 reset role;
 update app.lotes_prefeitura set conferido_em = now() - interval '10 days'
-  where empresa_id = :'emp' and inscricao_norm = '41002400110000';
+  where empresa_id = :'emp' and inscricao_norm = '41999900010000';
 set role service_role;
 select pg_temp.ok((app.varredura_sjc_guardar(:'emp', 'geosanja',
-  '[{"inscricao":"41.0024.0011.0000","quadra":"410024","da_base":true}]'::jsonb, '{410024}')->>'gravados') = '0',
+  '[{"inscricao":"41.9999.0001.0000","quadra":"419999","da_base":true}]'::jsonb, '{419999}')->>'gravados') = '0',
   'lote marcado da base não é regravado');
 reset role;
-select pg_temp.ok((select conferido_em < now() - interval '9 days' and area_m2 = 200 from app.lotes_prefeitura where inscricao_norm = '41002400110000')
-  and (select lotes = 1 and montada_em > now() - interval '1 minute' from app.quadras_prefeitura where quadra = '410024'),
+select pg_temp.ok((select conferido_em < now() - interval '9 days' and area_m2 = 200 from app.lotes_prefeitura where inscricao_norm = '41999900010000')
+  and (select lotes = 1 and montada_em > now() - interval '1 minute' from app.quadras_prefeitura where quadra = '419999'),
   'a conferência antiga fica, e a quadra fica montada');
 set role service_role;
-select pg_temp.ok((app.varredura_sjc_guardar(:'emp', 'geosanja', '[]'::jsonb, '{410024}')->>'apagados') = '1',
+select pg_temp.ok((app.varredura_sjc_guardar(:'emp', 'geosanja', '[]'::jsonb, '{419999}')->>'apagados') = '1',
   'quadra montada de novo apaga o lote que saiu do cadastro');
 reset role;
-select pg_temp.ok(not exists (select 1 from app.lotes_prefeitura where inscricao_norm = '41002400110000'), 'o lote apagado saiu da base');
+select pg_temp.ok(not exists (select 1 from app.lotes_prefeitura where inscricao_norm = '41999900010000')
+  and exists (select 1 from app.lotes_prefeitura where inscricao_norm = '41002400110000'),
+  'o lote da varredura saiu; os lotes do teste do mapa ficam');
 set role service_role;
 select pg_temp.falha(format($$select app.varredura_sjc_guardar(%L, 'geosanja', '[{"inscricao":"x","quadra":"1","anel":[]}]'::jsonb, '{}')$$, :'emp'),
   'lote inválido é recusado');
 reset role;
 select pg_temp.como(:'diretor');
-select pg_temp.ok((select lotes_na_base = 0 from app.varredura_sjc_relatorio(:'emp') limit 1), 'o relatório conta os lotes da base quando a tabela existe');
+select pg_temp.ok((select lotes_na_base = (select count(*) from app.lotes_prefeitura where empresa_id = :'emp' and base = 'geosanja')
+  from app.varredura_sjc_relatorio(:'emp') limit 1), 'o relatório conta os lotes da base');
 
 \echo 'TODOS OS TESTES PASSARAM'

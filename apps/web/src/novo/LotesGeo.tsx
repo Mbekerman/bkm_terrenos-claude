@@ -16,6 +16,7 @@ import { Ic } from '../components/Moldura';
 import { areaPoly, lotesUniao, m2, type P } from './geo';
 import { digitos, geoAneis, geoAreaAnel, geoNoAnel, geoTit, geoWfs, geoWkt, latLngUtm, nomeVia, utmLatLng, type LoteSql } from './geosampa';
 import { abrirLotes, atualizarNv, listaSql, novoEstado, poligonal, type Lotes } from './estado';
+import { baseLotes } from './lotesBase';
 import { gsjNoPonto, quadraDe, quadrasSjc } from './lotesSjc';
 import { gsjLote } from './geosanja';
 import { GMAPS_KEY } from '../lib/config';
@@ -102,7 +103,7 @@ function fundoGoogle(bb: number[]): Dados['fundo'] {
 async function carregarSjc(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: string, proprio: string | undefined, andamento: (n: number) => void): Promise<Dados> {
   let ter: An | null = null;
   if (L.modo !== 'sql') { ter = ter0!.map(([la, ln]) => latLngUtm(la, ln)); ter.push(ter[0]); }
-  const r = await quadrasSjc(ter ? { ter, andamento } : { ics: L.ics || [], andamento });
+  const base = baseLotes(empresa), r = await quadrasSjc(ter ? { ter, andamento, base } : { ics: L.ics || [], andamento, base });
   const outro = await emOutro(r.lotes.map((l) => digitos(l.ic)), empresa, proprio);
   const lotes = r.lotes.map((l) => loteSjc(l.ic, l.an, ter, outro.get(digitos(l.ic)), ja.has(digitos(l.ic))));
   if (!lotes.length) throw new Error('Nenhum lote do cadastro nessas quadras no GeoSanja.');
@@ -247,6 +248,7 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
       if (an[0][0] !== an[an.length - 1][0] || an[0][1] !== an[an.length - 1][1]) an.push(an[0]);
       const ou = (await emOutro([digitos(ic)], empresa, L.ficha?.codigo)).get(digitos(ic)), l = loteSjc(ic, an, d.ter, ou, false, ou === undefined);
       d.lotes.push(l); setVer((v) => v + 1);
+      void baseLotes(empresa).guardar([{ ic, an }], [], quadraDe, geoAreaAnel);
       if (l.trava) toast(l.trava, true);
     } catch (e: any) { toast(e?.message === 'BANCO' ? 'O banco do sistema está demorando para responder.' : 'O GeoSanja não respondeu. Tente de novo.', true); }
     finally { setBuscaPt(false); }

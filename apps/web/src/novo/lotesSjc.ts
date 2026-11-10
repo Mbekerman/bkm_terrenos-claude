@@ -8,9 +8,10 @@
 //    entra e é varrido também, o de outra quadra fica de fora e a rua não responde, o que faz a busca parar sozinha nas ruas.
 // Tudo em UTM 23S (metros), como o mapa de lotes de São Paulo (LotesGeo.tsx).
 // A varredura (grade, vizinhos a 1,5 m, parada na rua) mora em lotesSjcPuro.ts, compartilhada com o job
-// tools/geosanja/varredura. Aqui ficam o token, o paralelo de 8 e as plantas.
+// tools/geosanja/varredura. Aqui ficam o token, o paralelo de 8, o cache de 90 dias (lotesBase.ts) e as plantas.
 import { GSJ_BASE, gsjLote, gsjToken } from './geosanja';
-import { anelUtm, montarQuadras, quadraDe, type Anel } from './lotesSjcPuro';
+import { anelUtm, bbDe, geoAreaAnel, montarQuadras, quadraDe, type Anel } from './lotesSjcPuro';
+import type { BaseLotes } from './lotesBase';
 
 export { quadraDe };
 export interface LoteGsj { ic: string; an: Anel }
@@ -34,10 +35,22 @@ async function anelDe(ic: string): Promise<Anel | null> {
  * Os lotes das quadras que a poligonal ocupa (ter, UTM fechado) ou das quadras das inscrições dadas (ics), cada quadra inteira.
  * andamento(n): quantos lotes já achou.
  */
-export async function quadrasSjc(o: { ter?: Anel | null; ics?: string[]; andamento?: (n: number) => void }): Promise<{ lotes: LoteGsj[]; quadras: string[] }> {
+export async function quadrasSjc(o: { ter?: Anel | null; ics?: string[]; andamento?: (n: number) => void; base?: BaseLotes }): Promise<{ lotes: LoteGsj[]; quadras: string[] }> {
   if (!GSJ_BASE) throw new Error('A busca no GeoSanja funciona na versão publicada.');
+  let conhecidos: { ic: string; an: Anel }[] | undefined;
+  if (o.base && o.ter) {
+    const [x0, y0, x1, y1] = bbDe(o.ter);
+    conhecidos = await o.base.perto([x0 - 30, y0 - 30, x1 + 30, y1 + 30]);
+    o.andamento?.(conhecidos.filter((l) => l.an?.length >= 4).length);
+  }
   const r = await montarQuadras({
-    ter: o.ter, ics: o.ics, andamento: o.andamento,
+    ter: o.ter, ics: o.ics, andamento: o.andamento, conhecidos,
+    filtrarProntas: o.base ? (qs) => o.base!.quadras(qs) : undefined,
+    aoTermino: o.base ? (s) => {
+      const novas = s.completo ? s.quadras.filter((k) => !s.prontas.includes(k)) : [];
+      const ls = s.todos.filter((l) => (novas.includes(quadraDe(l.ic)) || !l.daBase) && !(l.daBase && s.prontas.includes(quadraDe(l.ic))));
+      void o.base!.guardar(ls, novas, quadraDe, geoAreaAnel);
+    } : undefined,
     cliente: { noPonto: (lat, lng) => gsjNoPonto(lat, lng), anel: (ic) => anelDe(ic) },
   });
   return { lotes: r.lotes.map(({ ic, an }) => ({ ic, an })), quadras: r.quadras };
