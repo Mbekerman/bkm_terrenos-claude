@@ -62,8 +62,28 @@ function faseAtual(f: F): { k: string; p: ProcF | null } | null {
   return { k, p: f.procs.filter((p) => p.fase === k).slice(-1)[0] ?? null };
 }
 
+/** encolhe a linha do tempo quando os nomes não cabem (opção A do Moises, 10/nov/2026): 0 = todos os nomes; 1 = as
+ *  concluídas só com o ✓; 2 = também as futuras só com o número, menos a próxima; 3 = só a atual com nome (cortada
+ *  com reticências se nem assim couber). Mede de novo a cada mudança de largura (gaveta arrastada, painel recolhido) */
+function useEncolher(dep: unknown) {
+  const ref = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const nav = ref.current, ol = nav?.querySelector('ol');
+    if (!nav || !ol) return;
+    const medir = () => {
+      for (let n = 0; n <= 3; n++) { nav.dataset.nivel = String(n); if (ol.scrollWidth <= ol.clientWidth + 1) break; }
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, [dep]);
+  return ref;
+}
+
 /** linha do tempo do topo: na entrada, as etapas da negociação; depois, as fases */
 function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
+  const ref = useEncolher(f);
   const a = faseAtual(f), ent = f.fases.find((x) => x.entrada);
   const ck = <Ic n="check" s={14} />;
   if (!a || a.k === ent?.k) {
@@ -76,13 +96,13 @@ function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
     };
     const sub = n.sub ? ets[idx]?.subs.find((s) => s.k === n.sub)?.nome : null;
     return (
-      <nav className="tl-topo" aria-label="Etapas da negociação">{rotulo && ent && <div className="tl-fase">{ent.nome}</div>}<ol className="stepper">
+      <nav ref={ref} className="tl-topo" aria-label="Etapas da negociação">{rotulo && ent && <div className="tl-fase">{ent.nome}</div>}<ol className="stepper">
         {ets.map((s, i) => {
           const st = i < idx || fim ? 'done' : i === idx ? 'cur' : 'fut', em = i <= idx ? entrou(s.k) : null;
           return (
-            <li key={s.k} className={`step ${st}`} aria-current={i === idx && !fim ? 'step' : undefined}>
+            <li key={s.k} className={`step ${st}${i === idx + 1 && !fim ? ' prox' : ''}`} title={s.nome} aria-current={i === idx && !fim ? 'step' : undefined}>
               <span className="dot">{st === 'done' ? ck : i + 1}</span>
-              <span className="sl-w"><span className="sl" title={s.nome}>{s.nome}</span>{em && <span className="sd">{st === 'cur' && sub ? sub + ' · ' : ''}{fd(em)}</span>}</span>
+              <span className="sl-w"><span className="sl">{s.nome}</span>{em && <span className="sd">{st === 'cur' && sub ? sub + ' · ' : ''}{fd(em)}</span>}</span>
             </li>
           );
         })}
@@ -91,16 +111,20 @@ function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
     );
   }
   const teve = (k: string) => f.procs.some((p) => p.fase === k);
+  const lista = f.fases.filter((x) => x.ativo || teve(x.k)).map((x) => {
+    const p = f.procs.filter((q) => q.fase === x.k).slice(-1)[0], fim = p?.status === 'concluido', cur = x.k === a.k && !fim;
+    return { x, p, fim, cur, st: fim ? 'done' : cur || aberto(p) ? 'cur' : 'fut' };
+  });
+  /* a próxima: a primeira futura depois da última aberta */
+  const ultCur = lista.map((l) => l.st).lastIndexOf('cur'), prox = lista.findIndex((l, i) => i > ultCur && l.st === 'fut');
   return (
-    <nav className="tl-topo" aria-label="Fases do terreno"><ol className="stepper">
-      {f.fases.filter((x) => x.ativo || teve(x.k)).map((x, i) => {
-        const p = f.procs.filter((q) => q.fase === x.k).slice(-1)[0], fim = p?.status === 'concluido', cur = x.k === a.k && !fim;
-        const st = fim ? 'done' : cur || aberto(p) ? 'cur' : 'fut';
+    <nav ref={ref} className="tl-topo" aria-label="Fases do terreno"><ol className="stepper">
+      {lista.map(({ x, p, fim, cur, st }, i) => {
         const sd = !p ? '' : cur || aberto(p) ? f.etapasPorFase[x.k]?.find((e) => e.k === p.etapa)?.nome ?? '' : fim ? fd(p.encerrado) : '';
         return (
-          <li key={x.k} className={`step ${st}`} aria-current={cur ? 'step' : undefined}>
+          <li key={x.k} className={`step ${st}${i === prox ? ' prox' : ''}`} title={sd ? `${x.nome} · ${sd}` : x.nome} aria-current={cur ? 'step' : undefined}>
             <span className="dot">{st === 'done' ? ck : i + 1}</span>
-            <span className="sl-w"><span className="sl" title={x.nome}>{x.nome}</span>{sd && <span className="sd" title={sd}>{sd}</span>}</span>
+            <span className="sl-w"><span className="sl">{x.nome}</span>{sd && <span className="sd">{sd}</span>}</span>
           </li>
         );
       })}
