@@ -30,11 +30,11 @@ A temperatura diz o quanto o terreno está promissor para a BKM. São 5 barras: 
 
 ## "Ficha N% completa"
 
-Mostra quanto dos 11 itens que importam para decidir a compra está preenchido. A bolinha vermelha diz quantos faltam. Clique para ver a lista; escolha um item e o sistema **abre a aba, abre o campo em edição e rola até ele**, que acende em verde-limão por um instante.
+Mostra quanto dos 12 itens que importam para decidir a compra está preenchido. A bolinha vermelha diz quantos faltam. Clique para ver a lista; escolha um item e o sistema **abre a aba, abre o campo em edição e rola até ele**, que acende em verde-limão por um instante.
 
 Quem edita pode **descartar** um item que não se aplica àquele terreno: o **x** ao lado do item tira ele da lista e da conta do percentual, só neste terreno. O descarte fica no **Log** ("Descartado do Falta preencher: Testada"), e o fim do menu mostra **"Descartados (N)"** com **"Voltar a pedir"**. Ctrl+Z também desfaz.
 
-Os 11 itens:
+Os 12 itens:
 
 | Item | Onde se preenche |
 |---|---|
@@ -49,10 +49,11 @@ Os 11 itens:
 | Zoneamento | Terreno › Parâmetros urbanísticos › Registrar zonas (ou automático pelo GeoSampa) |
 | Valor pedido | Comercial › Condições pedidas (ou registrar oferta) |
 | Temperatura | Topo da ficha |
+| Visita técnica | Infraestrutura › Visita técnica (os 8 itens verificados) |
 
 Quando você rola e o topo sai da vista, a barra das abas mostra um **botão de alerta** com a bolinha vermelha, que abre a mesma lista.
 
-**Visita técnica** não entra na conta enquanto a aba Infraestrutura não existir no sistema real (ela só está no protótipo): antes, ela deixava toda ficha presa abaixo de 100% sem ter onde preencher. Volta para a lista quando a aba for portada.
+**Visita técnica** conta como preenchida quando os 8 itens da visita (energia, água, esgoto, drenagem, gás, asfalto, iluminação e calçada) saem de "Não verificado". Clicar nela abre a aba Infraestrutura no primeiro item que falta. Se o terreno não precisa da visita, use o x do item para descartá-lo.
 
 ## Barra das abas
 
@@ -65,7 +66,7 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viab
 | Comercial | Disponível | [06](06-ficha-comercial.md) |
 | Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
 | Entorno | Disponível | [08](08-ficha-entorno.md) |
-| Infraestrutura | Só o quadro **Relevo**, com o **Topográfico** fora de São Paulo (veja abaixo) | esta |
+| Infraestrutura | **Relevo** (com o **Topográfico** fora de São Paulo), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
 | Estudos de massa, Viabilidades, Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
 **Como andar pelas abas:**
@@ -149,6 +150,27 @@ Só para **diretor** e **administrador**: no topo da ficha, à direita do respon
 
 Enquanto o terreno está excluído, a matrícula e os SQLs dele continuam presos a ele: tentar incluí-los em outro terreno mostra "está num terreno excluído". Para usar o número noutro terreno, o administrador restaura ou deleta o excluído.
 
+## Visita técnica (aba Infraestrutura)
+
+**Para que serve:** registrar o que se viu no terreno: se há energia, água, esgoto, drenagem, gás canalizado, asfalto, iluminação pública e calçada.
+
+1. Abra a aba **Infraestrutura** e o quadro **Visita técnica**. O título mostra quantos itens ainda estão "não verificados".
+2. Preencha a **Data da visita**. Se você marcar um item antes da data, a data da visita fica sendo a de hoje (você pode trocar).
+3. Em cada item, escolha **Sim**, **Parcial**, **Não** ou **Não se aplica**. Grava na hora.
+4. Ao lado, escreva uma **observação** se precisar (por exemplo: "calçada só na frente da rua principal"). Grava quando você sai do campo.
+
+Cada mudança aparece nos Logs. Quem tem papel de Leitura só vê.
+
+## Viabilidades técnicas (aba Infraestrutura)
+
+**Para que serve:** acompanhar o pedido de viabilidade a cada concessionária (Energia, Água, Esgoto e Gás) e saber quando ela vence.
+
+1. No quadro **Viabilidades técnicas**, troque a situação do serviço: **Não solicitada**, **Solicitada**, **Viável**, **Condicionada** ou **Não viável**.
+2. Ao sair de "Não solicitada", aparecem a **Concessionária** e a data em que foi **Pedida**. Marcando "Solicitada", a data do pedido já vem como hoje.
+3. Com a resposta da concessionária (Viável, Condicionada ou Não viável), aparecem **Emitida em** (já vem como hoje) e **Validade**. Na Condicionada, escreva as **Condições**; nas outras, uma **Observação**.
+
+**Avisos:** com a validade já passada, o serviço mostra "Vencida em …" em vermelho e o título do quadro conta quantas venceram; nos 30 dias antes, "Vence em …" em amarelo. A validade não pode ser antes da emissão.
+
 ## Topográfico preliminar (aba Infraestrutura)
 
 **Para que serve:** ter uma planta com as curvas de nível do terreno e da vizinhança para o estudo, antes do levantamento de campo.
@@ -175,7 +197,7 @@ Enquanto o terreno está excluído, a matrícula e os SQLs dele continuam presos
 
 ## O que não é possível na ficha hoje
 
-- As abas Estudos de massa, Viabilidades, Jornada e Documentos, e o resto da aba Infraestrutura (visita técnica, viabilidades técnicas).
+- As abas Estudos de massa, Viabilidades, Jornada e Documentos, e, na aba Infraestrutura, a medição automática do perfil topográfico e o Topográfico de São Paulo.
 - Digitar o endereço (CEP, rua, bairro, município) direto: ele vem do mapa.
 - Ver a ficha em tema escuro.
 - Imprimir ou exportar a ficha.

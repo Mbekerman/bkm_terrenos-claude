@@ -1001,6 +1001,8 @@ create trigger t_aud after insert or update or delete on app.terreno_entorno_bus
 create trigger t_aud after insert or update or delete on app.consultas_lote for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.consultas_area for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.terreno_viabilidades_tecnicas for each row execute function app.tg_auditoria();
+-- itens da visita técnica (aba Infraestrutura no React, 10/nov/2026): cada mudança vai para os Logs
+create trigger t_aud after insert or update or delete on app.terreno_infraestrutura for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.topografia_config for each row execute function app.tg_auditoria();
 
 -- Partes: leitura para a empresa; escrita só pelas RPCs (salvar_parte, remover_parte).
