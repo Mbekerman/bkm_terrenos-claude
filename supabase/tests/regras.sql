@@ -3940,6 +3940,44 @@ select pg_temp.ok(not exists (select 1 from app.terrenos_apagados), 'só o admin
 select pg_temp.como(:'diretor');
 select app.limpeza_feita((select id from app.terrenos_apagados where terreno_id = :'tdl'));
 select pg_temp.ok((select limpo_em is not null from app.terrenos_apagados where terreno_id = :'tdl'), 'limpeza de fora marcada como feita');
+-- lotes da prefeitura guardados (São José: a quadra montada pelo GeoSanja, 10/nov/2026)
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.guardar_lotes_prefeitura(%L, 'geosanja', '[]')$$, :'emp'), 'leitura não grava lotes da prefeitura');
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$insert into app.lotes_prefeitura (empresa_id, base, inscricao_norm, quadra, anel, x0, y0, x1, y1) values (%L, 'geosanja', '410024', '410024', '[[0,0],[1,0],[1,1],[0,0]]', 0, 0, 1, 1)$$, :'emp'), 'lote da prefeitura não é gravado direto');
+select pg_temp.falha(format($$select app.guardar_lotes_prefeitura(%L, 'geosanja', '[{"inscricao":"41.0024.0011.0000","quadra":"410024","anel":[[0,0],[1,0]]}]')$$, :'emp'), 'desenho com menos de 4 pontos é recusado');
+select pg_temp.falha(format($$select app.guardar_lotes_prefeitura(%L, 'geosanja', '[{"inscricao":"41.0024.0011.0000","quadra":"410099","anel":[[0,0],[1,0],[1,1],[0,0]]}]')$$, :'emp'), 'inscrição de outra quadra é recusada');
+select pg_temp.falha(format($$select app.guardar_lotes_prefeitura(%L, 'geosanja', '[]')$$, :'emp2'), 'não grava na base de outra empresa');
+select pg_temp.ok(app.guardar_lotes_prefeitura(:'emp', 'geosanja',
+  '[{"inscricao":"41.0024.0011.0000","quadra":"410024","anel":[[400010,7430010],[400030,7430010],[400030,7430040],[400010,7430010]],"area_m2":300},
+    {"inscricao":"41.0024.0012.0000","quadra":"410024","anel":[[400030,7430010],[400050,7430010],[400050,7430040],[400030,7430010]],"area_m2":300},
+    {"inscricao":"41.0024.0013.0000","quadra":"410024","anel":[[400050,7430010],[400070,7430010],[400070,7430040],[400050,7430010]]}]',
+  array['410024']) = 3, 'analista guarda a quadra montada');
+select pg_temp.ok((select x0 = 400010 and y1 = 7430040 and area_m2 = 300 from app.lotes_prefeitura where inscricao_norm = '41002400110000')
+    and (select lotes = 3 and montada_por = :'analista'::uuid from app.quadras_prefeitura where empresa_id = :'emp' and quadra = '410024'),
+  'guarda o retângulo, a área e a quadra montada com quem montou');
+select app.guardar_lotes_prefeitura(:'emp', 'geosanja',
+  '[{"inscricao":"41.0024.0090.0000","quadra":"410024","anel":[[400070,7430010],[400090,7430010],[400090,7430040],[400070,7430010]]}]') as nlp \gset
+select pg_temp.ok(:nlp = 1 and (select count(*) from app.lotes_prefeitura where empresa_id = :'emp' and quadra = '410024') = 4,
+  'lote acrescentado sozinho entra sem mexer nos outros');
+reset role;
+update app.lotes_prefeitura set conferido_em = now() - interval '100 days' where inscricao_norm = '41002400120000';
+select pg_temp.como(:'analista');
+select app.guardar_lotes_prefeitura(:'emp', 'geosanja',
+  '[{"inscricao":"41.0024.0011.0000","quadra":"410024","anel":[[400010,7430010],[400030,7430010],[400030,7430045],[400010,7430010]]},
+    {"inscricao":"41.0024.0012.0000","quadra":"410024","da_base":true}]',
+  array['410024']) as nlp \gset
+select pg_temp.ok(:nlp = 1 and (select conferido_em < now() - interval '99 days' from app.lotes_prefeitura where inscricao_norm = '41002400120000'),
+  'lote que veio da própria base conta na quadra, mas não renova a conferência');
+select pg_temp.ok((select count(*) from app.lotes_prefeitura where empresa_id = :'emp' and quadra = '410024') = 2
+    and (select y1 = 7430045 from app.lotes_prefeitura where inscricao_norm = '41002400110000')
+    and (select lotes = 2 from app.quadras_prefeitura where empresa_id = :'emp' and quadra = '410024'),
+  'quadra montada de novo: desenho atualizado e lote que sumiu do cadastro sai');
+select pg_temp.como(:'leitor');
+select pg_temp.ok((select count(*) from app.lotes_prefeitura where quadra = '410024') = 2, 'leitura vê os lotes guardados');
+select pg_temp.como(:'intruso');
+select pg_temp.ok(not exists (select 1 from app.lotes_prefeitura) and not exists (select 1 from app.quadras_prefeitura), 'outra empresa não vê');
+reset role;
 -- todos os terrenos dos testes, com tudo o que os outros testes criaram, apagam sem erro
 reset role;
 select count(*) as napag from (select app._apagar_terreno(id, null) from app.terrenos) x \gset
