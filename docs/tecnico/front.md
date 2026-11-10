@@ -105,13 +105,14 @@ apps/web/
 | Arquivo | Papel |
 | --- | --- |
 | `dados.ts` | `carregarFicha(empresa, codigo)`: tenta `app.ficha_dados` (uma chamada) e, se a função não existir no banco, cai nos pedidos separados (`semFuncao`, `dados.ts:105`). Monta o objeto `Ficha` (topo, linha do tempo, contagens, completude). A completude tem 12 itens, com a "Visita técnica" (os 8 itens da visita verificados; `INFRA_PORTADA = true` desde que a aba Infraestrutura tem a visita). Constantes de rótulo (`FONTE_AREA`, `ZONA`, `TEMP`, `TP_N`). |
-| `Ficha.tsx` | Topo (código, nome, fase · etapa · subetapa, temperatura), linha do tempo, barra de abas em "roleta" com inércia e ⋮, Visão geral (mini-mapa e Resumo), alerta do que falta. `useFicha` e `usePreCarregarFicha` (`Ficha.tsx:338`, `:345`). |
+| `Ficha.tsx` | Topo (código, nome, fase · etapa · subetapa, temperatura), linha do tempo (encolhe pela largura com `useEncolher`: `data-nivel` 0 a 3 tira os nomes das concluídas, das futuras menos a próxima e, no fim, de todas menos a atual), barra de abas em "roleta" com inércia e ⋮ (`BARRA`: o item Estudos Técnicos junta as abas `ESTUDOS`, que aparecem como chips `.fi-subabas` abaixo da barra; sem setas de anterior/próxima desde 10/nov/2026), Visão geral (mini-mapa e Resumo), alerta do que falta. `useFicha` e `usePreCarregarFicha` (`Ficha.tsx:338`, `:345`). |
 | `Gaveta.tsx` | A ficha na gaveta da direita da página Mapa (`/mapa/A123/ficha`), com largura arrastável; lembra aba, rolagem e quadros abertos por terreno (`lembrar.ts`). Passa `naGaveta` à `Ficha`, que então não repete código, nome, temperatura nem fase · etapa · subetapa no topo (os três primeiros vão no cabeçalho da gaveta; a fase fica em cima da linha do tempo). |
 | `lembrar.ts` | `lerPos`/`guardarPos`: onde a pessoa parou na gaveta de cada terreno, em `localStorage`, nos 50 terrenos mais recentes. |
 | `edicao.tsx` | Edição no lugar: `SECOES` (campos de cada quadro), `useSalvar` (fila de gravações por `app.salvar_terreno`), `useVivo`/`Vivo`/`CampoVivo`, `Quadro` (abre e fecha pela seta), `CamposEndereco`, `pedirCampo`/`focar`/`acender` (levar a um campo e acendê-lo). |
 | `Terreno.tsx` | Aba Terreno: identificação, localização, áreas (cinco fontes e a adotada). |
 | `Partes.tsx` | Partes, Matrículas e SQLs (1.192 linhas): etiquetas arrastáveis (uma a uma ou em grupo, pela seleção por retângulo ou Ctrl/Shift + clique), percentual por etiqueta, consulta do GeoSampa por SQL, "Escolher no mapa", proprietários por parte, refazer a poligonal pela soma dos lotes. |
 | `Comercial.tsx` | Aba Comercial: negociação, condições pedidas (um quadro com o valor de cada parte, `oferta_partes`, e a soma no alto, regravada em `ofertas.valor_pedido`), ofertas, corretores, propostas (com a área total das partes marcadas, por `ptArea`) e reuniões (registrar e editar, participantes por @, link digitado; sem Google Agenda). |
+| `Massa.tsx` | Aba Estudos de massa: lista com o válido, Solicitar estudo (com rascunho), ficha do estudo editada no lugar (tipologias numa fila que manda a lista inteira a `salvar_estudo_massa`), Ver pedido, Marcar como entregue / válido, Apagar e Criar estudo de viabilidade (`criar_viabilidade_da_massa`). |
 | `Contaminacao.tsx` | Popup "Ver detalhes" da contaminação: registros SIGAC e SVMA com todos os atributos e o recorte do mapa de lotes do GeoSampa (WMS) com o terreno e os registros. |
 | `Parametros.tsx` | Seção Parâmetros urbanísticos da aba Terreno (`SecParametros`, quadro `param` com os quadros `indices`, `rest` e `histuso` dentro, em `.qd-filhos`; desde 9/nov/2026): panorama do terreno (parâmetros de todos os lotes unidos por " / ", camadas somadas e o "não toca" uma vez só), zonas por lote (em "Ver lote por lote"), potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
 | `Entorno.tsx` + `entorno.ts` | Aba Entorno: pontos de interesse (busca no Google, rota a pé, excluir/restaurar), renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
@@ -169,7 +170,7 @@ As rotas ficam em `src/App.tsx`. Todas moram dentro da `Moldura` (barra e menu).
 | `/mapa/A123/ficha` | Mapa com a ficha na gaveta da direita | A aba da gaveta **não** vai para o endereço (fica só na gaveta, como no protótipo). |
 | `/terrenos/novo` | Mapa com a janela do Novo terreno aberta | Fechar a janela volta para `/mapa`. |
 | `/terrenos/A123` | Ficha, aba Visão geral | O código é aceito em minúsculas (vira maiúsculas). |
-| `/terrenos/A123/<aba>` | Ficha na aba | Abas: `geral`, `terreno`, `comercial`, `massa`, `viabilidade`, `infra`, `entorno`, `jornada`, `documentos`. Links antigos (`cadastro`, `negociacao`, `urbanismo`, `parametros`, `fases`, `viabilidades`) viram a aba nova (`Ficha.tsx`, `ANTIGA`). |
+| `/terrenos/A123/<aba>` | Ficha na aba | Abas: `geral`, `terreno`, `comercial`, `massa`, `viabilidade`, `entorno`, `infra`, `jornada`, `documentos` (`massa` a `infra` são as subabas de Estudos Técnicos; `estudos` abre a última vista na sessão). Links antigos (`cadastro`, `negociacao`, `urbanismo`, `parametros`, `fases`, `viabilidades`) viram a aba nova (`Ficha.tsx`, `ANTIGA`). |
 | `/funil` | Funil, nível das fases | |
 | `/funil/<fase>` | Etapas da fase | Ex.: `/funil/novos_negocios` (o código da fase, de `fases_modelo.codigo`). |
 | `/funil/<fase>/<etapa>` | Subetapas da etapa | |
@@ -184,7 +185,7 @@ Como funciona:
 - **Páginas com sub-rotas** usam `path="mapa/*"` e leem `useParams()['*']` e dividem por `/` (`Mapa.tsx`, `Funil.tsx`, `FichaPagina.tsx`).
 - **De onde veio**: abrir a ficha pelo Funil passa `state: { de: 'funil', volta: <caminho> }`; o botão de voltar da ficha usa isso (`FichaPagina.tsx`).
 - **Filtros** ficam depois do `#`, como `#f=<json>`, sem entrar no histórico (`history.replaceState`).
-- A especificação (CLAUDE.md, "Endereço de cada tela") lista mais endereços (`/terrenos`, `/tarefas/...`, `/dashboard`, `/configuracoes/...`, `/terrenos/A123/viabilidade/2`, `/terrenos/A123/gaveta`); eles existem só no protótipo por enquanto.
+- A especificação (CLAUDE.md, "Endereço de cada tela") lista mais endereços (`/terrenos`, `/tarefas/...`, `/dashboard`, `/configuracoes/...`, `/terrenos/A123/gaveta`); eles existem só no protótipo por enquanto.
 
 ---
 
@@ -281,6 +282,7 @@ A chave começa por um nome curto e depois o que a identifica. Invalidar pelo no
 | `['ficha-pessoas', ...]` | proprietários e contatos | `ficha/Partes.tsx` |
 | `['ficha-logs', ...]`, `['ficha-tarefas', terreno]` | painel lateral | `ficha/Painel.tsx` |
 | `['ficha-listas', empresa]` | equipe e eixos para os seletores (5 min) | `ficha/edicao.tsx` |
+| `['ficha-massa', terreno]` | estudos de massa, tipologias e viabilidades presas | `ficha/Massa.tsx` |
 | `['parametros', ...]`, `['entorno', ...]` | seção Parâmetros urbanísticos (aba Terreno) e aba Entorno | `ficha/Parametros.tsx`, `ficha/Entorno.tsx` |
 | `['funil', empresa]` | quadro do funil | `pages/Funil.tsx` |
 | `['filtros', empresa]`, `['visoes', ...]` | dados dos filtros e visões salvas | `filtros/Filtros.tsx` |
@@ -481,6 +483,7 @@ Tudo em `localStorage` (vale entre sessões, por navegador), salvo onde está di
 | `bkm-terrenos-painel` | painel lateral da ficha: aberto, aba (Ações, Tarefas, Logs), filtro de usuários e período dos logs | `Painel.tsx:19` |
 | `bkm-terrenos-entorno-concorrencia` | raio (1, 2, 3 km) e situações do quadro Concorrência no entorno | `Entorno.tsx:310` |
 | `bkm-terrenos-rasc:<terreno>:<formulário>` | rascunho de formulário não registrado | `Rascunho.tsx:114` |
+| `bkm-terrenos-ficha-estudos` (**sessionStorage**) | última subaba de Estudos Técnicos vista (`massa`, `viabilidade`, `entorno`, `infra`) | `Ficha.tsx` (`SUB_LEMBRA`) |
 | `bkm-terrenos-filtros-pag` (**sessionStorage**) | seleção de filtros de cada página (`mapa`, `kanban`) e a visão escolhida | `Filtros.tsx:17` |
 | `sb-<projeto>-auth-token` | sessão do Supabase (do supabase-js) | automático |
 
@@ -510,8 +513,10 @@ A primeira versão em uso é, por decisão do Moisés: login, mapa, novo terreno
 | Dashboard | não | |
 | Tarefas (Lista, Quadro, Cronograma, Calendário, Funil, cartão, modelos, automações, aprovação, pausa, recorrência) | não | A ficha só **lê** as tarefas abertas do quadro do terreno (`Painel.tsx`, aba Tarefas). As tarefas devem ir para um banco próprio (`bkm_tarefas`, ADR 0002). |
 | Configurações (Funil, Jornada, Fases, Campos, Viabilidade, Parâmetros, Topografia, Tarefas, Equipe, Notificações) | não | Ajuste urgente direto no banco, a pedido do Moisés. |
-| Abas da ficha Estudos de massa, Viabilidades, Jornada, Documentos | não | Mostram "Esta aba entra depois da primeira versão" (`Ficha.tsx`, fim). |
-| Estudo de viabilidade (popup, DRE, modelos) | não | |
+| Aba Estudos de massa | sim | `ficha/Massa.tsx`, sem o envio do PDF e do DWG (entram com Documentos). |
+| Abas da ficha Jornada, Documentos | não | Mostram "Esta aba entra depois da primeira versão" (`Ficha.tsx`, fim). |
+| Estudos de viabilidade: Resumo da viabilidade, lista, popup com indicadores e Tipologias | sim | `viab/Viabilidade.tsx`, `viab/calc.ts`, `viab/dados.ts`; o popup abre por `abrirEstudo(id)` de qualquer lugar da ficha e fica em `/terrenos/A123/viabilidade/N` na página. |
+| Estudo de viabilidade: seções Terreno, Comercial, Obras, Gerais, Financeiras, Taxas, DRE; modelos; vínculo com estudo de massa | não | Próximos PRs do porte. |
 | Visita técnica e Viabilidades técnicas | sim | `ficha/Infra.tsx` (porte de `proto_infra.js` › `vtSecao`, `vtecSecao`), na aba Infraestrutura depois do Relevo. |
 | Topográfico preliminar fora de São Paulo | sim | `topo/gerar.ts` (porte de `proto_topo.js` sem laser, quadra inteira, calçadas nem larguras de via) e `topo/Topografico.tsx` (aba Infraestrutura, quadro Relevo); modelo do DXF em `topo/modelo.dxf` (cópia de `tools/prototipo/topo_modelo.dxf`, lido com `?raw`). Baixa na hora, sem gravar em Documentos. |
 | Topográfico em São Paulo (laser 2020, quadra inteira), relevo medido sozinho, visita técnica, viabilidades técnicas | não | O Resumo mostra o perfil se já estiver gravado (`topo_perfil`). |
