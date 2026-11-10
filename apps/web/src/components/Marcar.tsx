@@ -28,8 +28,8 @@ export interface Gente {
 /** pessoa escolhida no campo; `id` é o do participante já gravado; sem k na lista = nome digitado */
 export interface Marcado { k: string; nome: string; user_id?: string; pessoa_id?: string; email?: string; lado: Lado; id?: string }
 
-const norm = (x: string) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-function nota(nome: string, arroba: string, q: string): number | null {
+export const norm = (x: string) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+export function nota(nome: string, arroba: string, q: string): number | null {
   if (!q) return 1;
   const n = norm(nome), a = arroba || '', ws = n.split(/\s+/);
   if ((a && a.startsWith(q)) || n.startsWith(q)) return 0;

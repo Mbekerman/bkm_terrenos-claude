@@ -19,7 +19,8 @@ export interface Nv {
   sobre: Sobre[] | null;          // sempre []: a sobreposição se decide ao cadastrar (conflitos)
   ignorados?: Sobre[];
   origem?: string;                // origem do cadastro (passo 2)
-  corretor?: string;              // corretor da primeira oferta (passo 2)
+  corretor?: string;              // corretor da primeira oferta (passo 2; só com a origem Corretor)
+  obs?: string;                   // observação sobre a primeira oferta (passo 2): impressões sobre o corretor, firmeza da proposta
   conflitos?: Conflito[] | null;  // a janela da sobreposição, aberta ao cadastrar
   local: Local | null; frentes: Frente[] | null; buscando: boolean;
   nome?: string;
@@ -37,7 +38,21 @@ interface Estado { aberto: boolean; kmz: ItemKml[] | null; nv: Nv | null; sql: L
 
 let E: Estado = { aberto: false, kmz: null, nv: null, sql: null, lotes: null, desenho: null };
 const ouvintes = new Set<() => void>();
-const mudar = (p: Partial<Estado>) => { E = { ...E, ...p }; ouvintes.forEach((f) => f()); };
+/* rascunho do cadastro (pedido do Moises, 10/nov/2026): sem origem (e corretor, quando a origem é Corretor) o cadastro não
+   se conclui; a poligonal, os lotes e o que foi preenchido no passo 2 ficam guardados no navegador e o passo 1 oferece
+   "Continuar o cadastro". Sai ao cadastrar ou em Descartar. */
+const RASC = 'bkm-terrenos-novo-rasc';
+export interface RascNv { nv: Nv; em: string }
+export function lerRascNv(): RascNv | null {
+  try { const r = JSON.parse(localStorage.getItem(RASC) || 'null') as RascNv | null; return r?.nv?.poly?.length ? r : null; } catch { return null; }
+}
+export function limparRascNv() { try { localStorage.removeItem(RASC); } catch { /* sem armazenamento */ } }
+function guardarRascNv(nv: Nv) {
+  try { const { conflitos: _c, ...resto } = nv; localStorage.setItem(RASC, JSON.stringify({ nv: { ...resto, buscando: false }, em: new Date().toISOString() })); } catch { /* sem armazenamento */ }
+}
+const mudar = (p: Partial<Estado>) => { E = { ...E, ...p }; if (E.nv && !E.nv.buscando) guardarRascNv(E.nv); ouvintes.forEach((f) => f()); };
+/** volta ao passo 2 com o rascunho guardado */
+export const continuarRascNv = () => { const r = lerRascNv(); if (r) mudar({ aberto: true, kmz: null, sql: null, lotes: null, nv: { ...r.nv, conflitos: null } }); };
 export const useNovo = () => useSyncExternalStore((f) => { ouvintes.add(f); return () => ouvintes.delete(f); }, () => E);
 export const novoEstado = () => E;
 

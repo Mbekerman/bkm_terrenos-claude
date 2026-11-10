@@ -70,6 +70,7 @@ Um dono com várias matrículas é **uma** negociação. Vários donos que negoc
 - **Parte perdida ou descartada** trava a compra: ou sai do terreno (`remover_parte`, com motivo; parte essencial só com gestor ou diretor, e tornar uma parte dispensável também), ou o terreno se encerra. Parte comprada não sai.
 - **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
 - **Proposta** é feita a uma ou mais partes ativas do terreno (`proposta_partes`; pedido do Moises, 9/nov/2026): com uma parte só ela entra sozinha, com duas ou mais escolher é obrigatório, na negociação de uma parte é a dela. Nenhuma proposta muda o status de outra: com duas em aberto e parte em comum a ficha avisa, e quem edita muda o status de qualquer uma, exclui uma (`app.excluir_proposta`) ou deixa as duas; nos resumos vale a de maior versão. 
+- **Oferta** tem um ou mais corretores (`oferta_corretores`; `ofertas.corretor_id` é o principal, o primeiro posto) e uma observação livre (`observacoes`); Registrar oferta pede só o corretor e a observação, e o valor e a forma de pagamento vêm por parte em Condições pedidas.
 - **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço e a condição de pagamento de cada uma quando informados); a negociação da parte usa como referência a oferta mais recente que a cobre. Na aba Comercial, o quadro Partes lista cada parte com a área adotada (soma dos lotes), o zoneamento, o valor pedido e o valor por m² (digitar um calcula o outro) e a condição de pagamento; só a oferta, sem proposta.
 - `v_partes`: cada parte com donos, corretores, matrículas, negociação (etapa, subetapa, prazo, status), preço pedido e última proposta. A temperatura é uma só, a do terreno (`terrenos.temperatura`, decisão do Moises, 9/nov/2026: vale também sem negociação, no Backlog).
 
@@ -542,6 +543,8 @@ erDiagram
   processos ||--|| negociacoes : "dados da negociacao"
   processos |o--o{ processos : "negociacao de cada parte"
   terreno_partes |o--o{ processos : "negocia"
+  ofertas ||--o{ oferta_corretores : corretores
+  corretores ||--o{ oferta_corretores : traz
   ofertas ||--o{ oferta_partes : cobre
   terreno_partes ||--o{ oferta_partes : "preco da parte"
   ofertas |o--o{ negociacoes : "oferta de referencia"
