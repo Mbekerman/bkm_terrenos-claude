@@ -65,7 +65,8 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viab
 | Terreno | Disponível | [05](05-ficha-terreno.md) |
 | Comercial | Disponível | [06](06-ficha-comercial.md) |
 | Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
-| Estudos Técnicos › Estudos de massa, Estudos de viabilidade | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
+| Estudos Técnicos › Estudos de massa | Disponível | [14](14-ficha-estudos-de-massa.md) |
+| Estudos Técnicos › Estudos de viabilidade | **Ainda não disponível** (mostra "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 | Estudos Técnicos › Entorno | Disponível | [08](08-ficha-entorno.md) |
 | Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico** fora de São Paulo), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
 | Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
@@ -199,7 +200,7 @@ Cada mudança aparece nos Logs. Quem tem papel de Leitura só vê.
 
 ## O que não é possível na ficha hoje
 
-- Estudos de massa e Estudos de viabilidade (em Estudos Técnicos), as abas Jornada e Documentos, e, em Avaliação de infraestrutura, a medição automática do perfil topográfico e o Topográfico de São Paulo.
+- Estudos de viabilidade (em Estudos Técnicos), o PDF e o DWG dos estudos de massa, as abas Jornada e Documentos, e, em Avaliação de infraestrutura, a medição automática do perfil topográfico e o Topográfico de São Paulo.
 - Digitar o endereço (CEP, rua, bairro, município) direto: ele vem do mapa.
 - Ver a ficha em tema escuro.
 - Imprimir ou exportar a ficha.

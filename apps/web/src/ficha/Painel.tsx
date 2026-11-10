@@ -232,7 +232,23 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
     case 'terreno_viabilidades_tecnicas':
       return x?.situacao !== d?.situacao ? { txt: `Viabilidade técnica · ${VT_ITEM[o.servico] ?? o.servico}: ${VT_SIT[x?.situacao] ?? 'Não solicitada'} → ${VT_SIT[d?.situacao] ?? d?.situacao}`, aba: 'infra', q: 'vtec' }
         : mudou(x, d).length ? { txt: `Viabilidade técnica · ${VT_ITEM[o.servico] ?? o.servico}: ${lista(mudou(x, d))}`, aba: 'infra', q: 'vtec' } : null;
-    case 'estudos_massa': return ins ? { txt: `Estudo de massa pedido: ${o.nome ?? ''}`, aba: 'massa' } : null;
+    case 'estudos_massa': {
+      if (ins) return { txt: `Estudo de massa pedido: ${o.nome ?? ''}`, aba: 'massa' };
+      if (del) return { txt: `Estudo de massa apagado: ${o.nome ?? ''}`, aba: 'massa' };
+      if (!x || !d) return null;
+      /* salvar_estudo_massa grava em dois passos (os dados, depois os totais das tipologias): o que não mudou nada não entra */
+      const mud = Object.keys(d).filter((k) => !['atualizado_em', 'eficiencia_pct', 'entregue_em'].includes(k) && JSON.stringify(d[k]) !== JSON.stringify(x[k]));
+      if (!mud.length) return null;
+      if (mud.every((k) => k === 'area_privativa_m2' || k === 'unidades')) return { txt: `${d.nome}: tipologias atualizadas`, aba: 'massa' };
+      if (x.situacao !== 'entregue' && d.situacao === 'entregue') return { txt: `${d.nome} entregue`, aba: 'massa' };
+      if (!x.valido && d.valido) return { txt: `${d.nome} é o estudo de massa válido`, aba: 'massa' };
+      if (x.valido && !d.valido) return null; // a troca do válido aparece pelo novo válido
+      if (x.nome !== d.nome) return { txt: `Estudo de massa renomeado: ${x.nome} → ${d.nome}`, aba: 'massa' };
+      if (x.arquiteto_id !== d.arquiteto_id) return { txt: `${d.nome}: arquiteto ${c.nomes.get(d.arquiteto_id) ?? 'trocado'}`, aba: 'massa' };
+      if (x.briefing !== d.briefing || x.prazo !== d.prazo) return { txt: `${d.nome}: pedido alterado`, aba: 'massa' };
+      if (x.observacoes !== d.observacoes) return { txt: `${d.nome}: observações alteradas`, aba: 'massa' };
+      return { txt: `${d.nome}: dados do arquiteto atualizados`, aba: 'massa' };
+    }
     default: return null;
   }
 }
