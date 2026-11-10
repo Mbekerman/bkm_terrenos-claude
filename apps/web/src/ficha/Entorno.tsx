@@ -86,18 +86,19 @@ export function EntornoAuto({ f }: { f: Ficha }) {
   return null;
 }
 
-/** aba Mercado (pedido do Moises, 10/nov/2026): pontos de interesse, renda, perfil da população e
-    concorrência, cada um num chip; o Entorno de Estudos Técnicos saiu */
+/** aba Mercado (pedido do Moises, 10/nov/2026): concorrência, renda, perfil da população e
+    pontos de interesse, cada um num chip; o Entorno de Estudos Técnicos saiu */
 export default function AbaMercado({ f }: { f: Ficha }) {
   /* um raio para cada quadro (pedido do Moisés, 6/nov/2026: antes era o mesmo nos dois) */
   const [raioR, setRaioR] = useState<Raio>(1000), [raioP, setRaioP] = useState<Raio>(1000);
   if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Localização) para ver o mercado.</div></section>;
   return (
     <div className="stack">
-      <SecPontos f={f} />
+      {/* ordem pedida pelo Moises (10/nov/2026): Concorrência primeiro, Pontos de interesse por último */}
+      <SecConcorrencia f={f} />
       <SecRenda f={f} raio={raioR} setRaio={setRaioR} />
       <SecPerfil f={f} raio={raioP} setRaio={setRaioP} />
-      <SecConcorrencia f={f} />
+      <SecPontos f={f} />
     </div>
   );
 }
@@ -176,7 +177,7 @@ function SecPontos({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="mercado" id="ent" primeiro chip="Pontos de interesse" titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
+    <Quadro aba="mercado" id="ent" chip="Pontos de interesse" titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
       <div className="sec-b">{corpo}</div>
     </Quadro>
   );
@@ -378,7 +379,7 @@ function SecConcorrencia({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="mercado" id="mk" chip="Concorrência" titulo="Concorrência no entorno">
+    <Quadro aba="mercado" id="mk" primeiro chip="Concorrência" titulo="Concorrência no entorno">
       <div className="sec-b mk-sec">{corpo}</div>
     </Quadro>
   );

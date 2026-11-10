@@ -69,7 +69,7 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mer
 | Estudos Técnicos › Estudos de viabilidade | Disponível em parte: lista, Resumo da viabilidade e a seção Tipologias do estudo | [15](15-ficha-viabilidades.md) |
 | Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico**), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
 | Estudos Técnicos › Restrições e entorno e › Histórico de uso | Disponível | [07](07-ficha-parametros.md) |
-| Mercado | Disponível: Pontos de interesse, Renda e população, Perfil da população e Concorrência | [08](08-ficha-entorno.md) |
+| Mercado | Disponível: Concorrência, Renda e população, Perfil da população e Pontos de interesse | [08](08-ficha-entorno.md) |
 | Jornada | Disponível: linha do tempo e fases do terreno | [16](16-ficha-jornada.md) |
 | Documentos | **Ainda não disponível** (mostra "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
