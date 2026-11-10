@@ -4143,6 +4143,87 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select lotes_na_base = (select count(*) from app.lotes_prefeitura where empresa_id = :'emp' and base = 'geosanja')
   from app.varredura_sjc_relatorio(:'emp') limit 1), 'o relatório conta os lotes da base');
 
+-- ---------------------------------------------------------------------
+\echo '# cadastro como oferta e tratativa de imóvel sobreposto (10/nov/2026)'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Tratativa A', :'analista', :'sp', pg_temp.quadra(-44.301, -21.301)) returning id as tta \gset
+insert into app.ofertas (empresa_id, terreno_id) values (:'emp', :'tta') returning id as ofa1 \gset
+insert into app.ofertas (empresa_id, terreno_id) values (:'emp', :'tta') returning id as ofa2 \gset
+select pg_temp.ok((select numero = 1 and vigente from app.ofertas where id = :'ofa1') and (select numero = 2 and not vigente from app.ofertas where id = :'ofa2'),
+  'a primeira oferta do terreno é a ativa, e cada oferta tem o número no terreno');
+select pg_temp.falha(format($$update app.ofertas set vigente = true where id = %L$$, :'ofa2'), 'a oferta ativa não muda por escrita direta');
+select pg_temp.falha(format($$insert into app.ofertas (empresa_id, terreno_id, status) values (%L, %L, 'aguardando')$$, :'emp', :'tta'), 'oferta aguardando não entra por escrita direta');
+select app.definir_oferta_vigente(:'ofa2');
+select pg_temp.ok((select vigente from app.ofertas where id = :'ofa2') and not (select vigente from app.ofertas where id = :'ofa1'), 'o responsável troca a oferta ativa');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'tta', '701.001.0001-1'), (:'emp', :'tta', '701.001.0002-1');
+select pg_temp.falha(format($$update app.terrenos set em_espera_de = %L where id = %L$$, :'tta', :'tta'), 'esconder o terreno só pelas regras da tratativa');
+
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format('select app.definir_oferta_vigente(%L)', :'ofa1'), 'quem não é o responsável nem diretor não troca a oferta ativa');
+select pg_temp.ok((select count(*) = 1 and bool_and(mesmos_lotes and not vencida and not sou_responsavel and por = 'lotes')
+  from app.conflitos_cadastro(:'emp', null, array['70100100011','701.001.0002-1'])), 'mesmos lotes: o imóvel já existe, tratativa em andamento');
+select pg_temp.ok((select not mesmos_lotes and comuns = '{70100100011}' and so_novo = '{70100100031}' and so_existente = '{70100100021}'
+  from app.conflitos_cadastro(:'emp', null, array['70100100011','70100100031'])), 'basta um lote em comum: sobreposição parcial com os lotes de cada lado');
+select pg_temp.falha(format($$select app.registrar_oferta_cadastro(%L, 'vigente')$$, :'tta'), 'outro analista não toma a tratativa em andamento');
+select (app.registrar_oferta_cadastro(:'tta', 'aguardando')->>'oferta_id') as ofa3 \gset
+select pg_temp.ok((select status = 'aguardando' and not vigente and numero = 3 from app.ofertas where id = :'ofa3'), 'a oferta fica aguardando, escondida');
+select pg_temp.falha(format('select app.assumir_oferta(%L)', :'ofa3'), 'não assume antes de a outra tratativa vencer');
+
+-- 100 dias sem ação de ninguém
+reset role;
+set session_replication_role = replica;   -- sem os triggers (criado_em é protegido)
+update app.terrenos set criado_em = criado_em - interval '100 days' where id = :'tta';
+set session_replication_role = origin;
+update app.auditoria set em = em - interval '100 days' where empresa_id = :'emp'
+  and (registro_id = :'tta' or depois->>'terreno_id' = :'tta' or antes->>'terreno_id' = :'tta');
+select pg_temp.ok(app.tratativa_vencida(:'tta'), 'vence com 90 dias sem ação de uma pessoa (o que o sistema grava não conta)');
+select app.avisar_tratativas() as nav \gset
+select pg_temp.ok(:nav >= 1 and exists (select 1 from app.notificacoes where destinatario_id = :'gestor' and tipo = 'tratativa' and origem_id = :'ofa3'),
+  'quem espera é avisado quando a tratativa vence');
+select pg_temp.ok(app.avisar_tratativas() = 0, 'e avisado uma vez só');
+select pg_temp.como(:'gestor');
+select app.assumir_oferta(:'ofa3');
+reset role;
+select pg_temp.ok((select vigente and status = 'ativa' from app.ofertas where id = :'ofa3') and (select responsavel_id = :'gestor' from app.terrenos where id = :'tta')
+  and exists (select 1 from app.notificacoes where destinatario_id = :'analista' and tipo = 'tratativa' and terreno_id = :'tta'),
+  'assumir: a oferta vira a ativa, quem assumiu vira o responsável e o anterior é avisado');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(not app.tratativa_vencida(:'tta'), 'assumir conta como ação: a tratativa volta a correr');
+
+-- lotes diferentes: terreno novo ligado ao existente
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Tratativa B', :'analista', :'sp', pg_temp.quadra(-44.401, -21.401)) returning id as ttb \gset
+select pg_temp.falha(format($$insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (%L, %L, '701.001.0001-1')$$, :'emp', :'ttb'),
+  'o lote de outro terreno não entra sem a ligação');
+select pg_temp.falha(format($$select app.vincular_tratativa(%L, array[%L]::uuid[], 'ativa')$$, :'ttb', :'tta'), 'com a outra tratativa ativa, o novo não toma o lugar');
+select app.vincular_tratativa(:'ttb', array[:'tta']::uuid[], 'espera');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'ttb', '701.001.0001-1'), (:'emp', :'ttb', '701.001.0003-1');
+select pg_temp.ok((select em_espera_de = :'tta' from app.terrenos where id = :'ttb') and not exists (select 1 from app.v_mapa where id = :'ttb')
+  and exists (select 1 from app.v_mapa where id = :'tta'), 'o novo fica salvo e escondido; o mapa mostra só a tratativa ativa');
+select pg_temp.ok((select (x->>'escondido')::boolean and not (x->>'pode_assumir')::boolean and jsonb_array_length(x->'ligados') = 1 from app.tratativa_terreno(:'ttb') x),
+  'a ficha do escondido sabe por quem espera e que ainda não pode assumir');
+select pg_temp.ok(not exists (select 1 from app.conflitos_cadastro(:'emp', null, array['70100100031'])),
+  'o terreno escondido não bloqueia outro cadastro');
+select pg_temp.como(:'diretor');
+select app.assumir_tratativa(:'ttb');
+reset role;
+select pg_temp.ok((select em_espera_de is null from app.terrenos where id = :'ttb') and (select em_espera_de = :'ttb' from app.terrenos where id = :'tta')
+  and exists (select 1 from app.notificacoes where destinatario_id = :'gestor' and tipo = 'tratativa' and terreno_id = :'tta' and origem_tabela = 'terrenos'),
+  'o diretor troca a tratativa à mão, e o responsável do outro é avisado');
+
+-- novo corretor
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"Zé","celular":"11999990000"}')$$, :'emp'), 'corretor sem e-mail não entra');
+select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"Zé","email":"ze@x.com","celular":"999"}')$$, :'emp'), 'corretor sem celular com DDD não entra');
+select app.criar_corretor(:'emp', '{"nome":"Zé Corretor","email":"ZE@Imob.com","celular":"(11) 99999-0000","creci":"123","cnpj":"11.222.333/0001-81","rg":"12.345.678-9","apelido":"Zezinho"}') as cor1 \gset
+select pg_temp.ok((select p.email = 'ze@imob.com' and p.telefone = '11999990000' and c.cnpj_imobiliaria = '11222333000181' and c.rg = '12.345.678-9' and c.apelido = 'Zezinho'
+  from app.corretores c join app.pessoas p on p.id = c.pessoa_id where c.id = :'cor1'), 'novo corretor com nome, e-mail e celular');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"X","email":"x@x.com","celular":"11999990000"}')$$, :'emp'), 'leitura não cria corretor');
+reset role;
+
 -- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
 -- e os catálogos sem empresa continuam legíveis por quem está logado.
 reset role;

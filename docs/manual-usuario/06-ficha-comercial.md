@@ -4,7 +4,7 @@
 
 ## Para que serve
 
-Acompanhar a compra do terreno: o que o vendedor pede, quem trouxe o terreno, as propostas trocadas e as reuniões. Os quadros, nesta ordem: **Negociação**, **Condições pedidas** (com o valor de cada parte), **Ofertas recebidas**, **Corretores do terreno**, **Propostas** e **Reuniões**.
+Acompanhar a compra do terreno: o que o vendedor pede, quem trouxe o terreno, as propostas trocadas e as reuniões. Os quadros, nesta ordem: **Negociação**, **Condições pedidas** (com o valor de cada parte), **Propostas**, **Reuniões** e **Ofertas** (o corretor fica dentro de cada oferta).
 
 **Regra:** a negociação só existe depois da **primeira oferta**. Terreno sem oferta está em **Backlog**: registre uma oferta para começar.
 
@@ -32,44 +32,19 @@ O número diminui de tamanho quando não cabe no bloco, até valores de R$ 999 m
 
 Com duas ou mais partes, se alguma ainda não tem valor, aparece logo abaixo dos blocos o aviso amarelo **"Falta o valor pedido de Vendedor 3."** (ou "das partes …" quando são várias).
 
-Logo abaixo, o que vale para a oferta inteira:
+O corretor fica em cada oferta (ver Ofertas recebidas); Aceita permuta e Pagamento saíram deste quadro.
 
-| Campo | Observação |
-|---|---|
-| **Corretor** | Quem trouxe a oferta, ou "Sem corretor / direto". |
-| **Aceita permuta** | E o texto "Como o vendedor encara a permuta e em que condições". |
-| **Pagamento** | "Observação sobre a forma de pagamento" (entrada, parcelas, torna, condição suspensiva). |
-
-Por último, uma linha por parte (ver [05](05-ficha-terreno.md#partes)), com:
+Embaixo, uma linha por parte (ver [05](05-ficha-terreno.md#partes)), com:
 
 - as **matrículas da parte**, em etiquetas amarelas com a mini pizza do percentual (os SQLs não aparecem na linha). A etiqueta não se tira daqui; o clique abre a janela da matrícula, com a área registrada, o percentual da parte, a área da parte nela e os SQLs (ou inscrições) que estão dentro dela, cada um com a área do lote, o % da parte e a área da parte;
 - a **área da parte** (pelos SQLs; sem eles, pelas matrículas). Com uma parte só, é a área adotada do terreno. Logo abaixo, em cinza claro, o zoneamento dos SQLs da parte;
 - o **valor pedido** e o **valor por m²**, que se calculam um pelo outro (digite um e o outro muda). Aceita "12 mi" e precisa ser maior que zero;
-- a **condição de pagamento**: Dinheiro, Permuta física, Permuta financeira, Permuta geral ou Permuta com torna.
+- a **condição de pagamento**: Dinheiro, Permuta física, Permuta financeira, Permuta geral ou Permuta com torna;
+- **Informações gerais**, no fim de cada parte: um texto livre para o que o vendedor pediu (permuta, entrada, prazos). Grava ao sair do campo e vale para a parte, não para uma oferta só.
 
 Com duas ou mais partes, embaixo vem o **Total**, com "(faltam N)" enquanto alguma parte não tem valor.
 
 **Valor antigo para o terreno inteiro:** se a oferta foi registrada com um valor só antes de existir o valor por parte, os blocos mostram esse valor com o aviso "O valor de R$ … foi registrado para o terreno inteiro. Informe o valor de cada parte abaixo". Quando a primeira parte ganha valor, o total passa a ser a soma das partes.
-
-## Ofertas recebidas
-
-**Para que serve:** guardar cada oferta que chega, inclusive o mesmo terreno oferecido por outro corretor ou por outro valor.
-
-**Como registrar uma oferta:**
-
-1. Clique em **"Registrar oferta"**.
-2. Preencha: **Corretor** (ou "Sem corretor / direto"), **Valor pedido**, **Forma de pagamento pedida**, **Validade**, observação e **Aceita permuta**. Com duas ou mais partes, em vez de um valor só, aparece um **Valor pedido** para cada parte, com o total somado embaixo; pelo menos uma precisa de valor.
-3. Clique em **Registrar**.
-
-A **primeira oferta abre a negociação** ("Oferta registrada. A negociação foi aberta."): o terreno sai do Backlog e entra na primeira etapa de Novos Negócios.
-
-Na lista, a primeira oferta tem o selo **"Primeira"** e a de referência, **"Referência"**. **"Usar como referência"** troca a oferta cujas condições a ficha mostra.
-
-**Dica:** o "Valor pedido na entrada" do Resumo é sempre a **primeira** oferta, para comparar com o que veio depois.
-
-## Corretores do terreno
-
-Lista os corretores que trouxeram ofertas deste terreno. Eles "entram automaticamente quando apresentam uma oferta". A **estrela** marca o **principal** ("Marcar como principal"), que aparece no Resumo da Visão geral.
 
 ## Propostas
 
@@ -130,6 +105,28 @@ Na lista, a reunião online com link mostra **"Entrar na reunião"** (agendada) 
 Uma reunião **Agendada** ganha o botão **"Marcar realizada"** quando acontece.
 
 **Regra:** reunião realizada não pode ter data futura.
+
+## Ofertas
+
+**Para que serve:** guardar cada oferta que chega, inclusive o mesmo terreno oferecido por outro corretor ou por outro valor. O cadastro do terreno já é a primeira oferta.
+
+A lista mostra, para cada oferta: o número (**A112-1**, **A112-2**...), a data, o **corretor** (nome, apelido, imobiliária e Creci), o valor, a forma de pagamento e a situação.
+
+**Oferta ativa:** o terreno tem uma só oferta ativa, marcada com o selo **"Oferta ativa"**; as Condições pedidas mostram as dela. O responsável pelo terreno ou o diretor troca em **"Marcar como ativa"**.
+
+**Oferta aguardando:** quando outra pessoa cadastrou o mesmo imóvel enquanto a tratativa estava em andamento, a oferta dela fica **"Aguardando"**, vista só por quem a registrou e pelo diretor. Quando a tratativa vence, aparece **"Assumir"**: a oferta vira a ativa, quem assumiu vira o responsável e o anterior é avisado.
+
+**Como registrar uma oferta:**
+
+1. Clique em **"Registrar oferta"**.
+2. Preencha: **Corretor** (escolha um dos cadastrados, **"Sem corretor / direto"** ou **"+ Novo corretor..."**), **Valor pedido**, **Forma de pagamento pedida**, **Validade**, observação e **Aceita permuta**. Com duas ou mais partes, em vez de um valor só, aparece um **Valor pedido** para cada parte, com o total somado embaixo; pelo menos uma precisa de valor.
+3. Clique em **Registrar**.
+
+**Dica:** o "Valor pedido na entrada" do Resumo é sempre a **primeira** oferta, para comparar com o que veio depois.
+
+### Novo corretor
+
+Em qualquer lista de corretor, **"+ Novo corretor..."** abre o cadastro: **Nome**, **E-mail** e **Celular** são obrigatórios (celular com DDD); **Apelido**, CPF, RG, Creci, Nome da imobiliária, Creci jurídico, CNPJ e Endereço são opcionais. Cadastrado, ele já fica escolhido. Leitura não cadastra corretor. Na lista, o corretor aparece como "Nome (Apelido)".
 
 ## Avisos
 

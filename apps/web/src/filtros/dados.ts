@@ -2,6 +2,7 @@
    filtros, quem passa e as contagens. Funções puras sobre TerFx, que carregarFx monta de app.v_terrenos, dos processos e
    do que a completude da ficha pede. Dentro de um filtro as opções somam (ou); entre filtros, todos valem (e). Faixa com
    mínimo ou máximo deixa de fora quem não tem o dado, salvo "Incluir sem informação". */
+import { escondidos } from '../lib/escondidos';
 import { supabase } from '../lib/supabase';
 import { FORMA, ORIGEM, data as fd, milhoes } from '../lib/format';
 import { completude, proprietariosCompletos, TEMP, type Ficha } from '../ficha/dados';
@@ -52,7 +53,8 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
   const tr = Object.fromEntries((t.data as R[]).map((x) => [x.id, x]));
   const procs: Record<string, ProcFx[]> = {};
   for (const x of p.data as R[]) (procs[x.terreno_id] ??= []).push({ fase: x.fase, etapa: x.etapa_atual, sub: x.subetapa_atual, status: x.status });
-  const vs = v.data as R[];
+  const esc = await escondidos(emp);
+  const vs = (v.data as R[]).filter((x) => !esc.has(x.id));
   const ids = [...new Set(vs.map((x) => x.responsavel_id).filter(Boolean))];
   const us = ids.length ? await supabase.from('usuarios').select('user_id,nome,email').in('user_id', ids) : { data: [], error: null };
   if (us.error) throw us.error;

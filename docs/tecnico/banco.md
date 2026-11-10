@@ -234,6 +234,15 @@ Pedido do Moises. **Excluir** (diretor ou administrador, `app.excluir_terreno`) 
 
 Travas que deixam passar com `app.apagando_terreno = '1'` (só `_apagar_terreno` liga, dentro da transação): `tg_inscricao_historico`, `tg_analise_substituida`, `tg_matricula_leva_sqls`, `tg_inscricao_area`, `fluxo.tg_automacao_apagar`, `fluxo.tg_tarefa_item`, `fluxo.tg_aprovadores`. O teste final de `regras.sql` apaga todos os terrenos criados pelos outros testes, para pegar chave ou trava nova que impeça deletar.
 
+## Tratativa de imóvel sobreposto (10/nov/2026)
+
+Migration `20261015002000_tratativas.sql` (idempotente; é também o SQL avulso do banco real). Ver o resumo em [modelo.md](../modelo.md). Pontos de atenção para quem mexe:
+
+- `ofertas.vigente` e o status `aguardando` só mudam pelas RPCs: o gatilho `t_tratativa` recusa a escrita direta, a não ser com `app.tratativa = '1'` (ligado por `set_config` dentro das funções; conferido por `app._tratativa_rpc()`). O mesmo vale para `terrenos.em_espera_de` (`tg_terreno_espera`).
+- SQL e matrícula repetidos: os índices únicos por empresa saíram; `tg_inscricao_repetida` e `tg_matricula_repetida` recusam o repetido fora dos terrenos ligados em `terreno_sobreposicoes`, com `pg_advisory_xact_lock` para duas gravações ao mesmo tempo.
+- `app.ultima_acao_terreno` segue o filtro dos Logs do front (`ficha/Painel.tsx`): ignora `automatico`, ofertas aguardando e updates do terreno que só mexem em `em_espera_de`, `espera_avisada_em`, `versao` e `atualizado_*`.
+- Esconder é filtro (`v_mapa`, Funil, filtros), não RLS: a ficha do escondido abre pelo link.
+
 ## Auditoria e histórico
 
 ### `app.auditoria`: o log de tudo
