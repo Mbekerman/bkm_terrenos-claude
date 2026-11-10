@@ -33,6 +33,8 @@ No alto da lista ficam o total (**"N terrenos · m²"**, com **"N sem localizaç
 
 Cada terreno aparece como uma **etiqueta com o código** (A112), na cor da fase, da etapa ou da subetapa, com contorno branco e preto e um **ponto embaixo** que marca o lugar exato. O formato é diferente dos pinos redondos do Google, para o terreno se destacar logo de cara. A etiqueta fica um pouco maior com o mapa na escala de bairro, que é o tamanho máximo dela; afastando mais, ela diminui junto com os ícones do Google. O terreno selecionado ganha um anel azul em volta da etiqueta e o ponto fica azul.
 
+**Terrenos muito perto um do outro.** Quando as etiquetas se encostariam na tela (mapa afastado, ou terrenos vizinhos de lote), elas viram uma **bolha com o número** de terrenos, no meio deles. O anel em volta da bolha tem uma fatia na cor de cada terreno. Aproximando o mapa, a bolha se desfaz sozinha assim que as etiquetas cabem separadas. O terreno selecionado (pela lista, por exemplo) nunca entra na bolha. Com o mouse parado sobre a bolha, abre a lista dos terrenos dali (código, nome e etapa); clique numa linha para abrir a ficha. Clicar no número aproxima o mapa até as etiquetas se separarem. Se já estiver bem de perto e elas continuarem juntas (terrenos no mesmo ponto), o clique deixa a lista aberta; clicar fora, arrastar o mapa ou apertar Esc fecha.
+
 ### Selecionar um terreno
 
 - Clique na **linha** da lista, no **pino** ou na **poligonal**: o terreno fica selecionado (a etiqueta ganha o anel azul e a linha se destaca; a lista rola até ela).
