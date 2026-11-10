@@ -544,6 +544,7 @@ alter table app.corretores add column if not exists rg text;
 alter table app.corretores add column if not exists creci_juridico text;
 alter table app.corretores add column if not exists cnpj_imobiliaria text check (cnpj_imobiliaria is null or cnpj_imobiliaria ~ '^\d{14}$');
 alter table app.corretores add column if not exists endereco text;
+alter table app.corretores add column if not exists apelido text;
 
 create or replace function app.criar_corretor(p_empresa uuid, p_dados jsonb)
 returns uuid language plpgsql security definer set search_path = '' as $$
@@ -566,9 +567,9 @@ begin
   elsif exists (select 1 from app.corretores where empresa_id = p_empresa and pessoa_id = v_pessoa) then
     raise exception 'Já existe um corretor com este CPF' using errcode = '23505';
   end if;
-  insert into app.corretores (empresa_id, pessoa_id, creci, imobiliaria, rg, creci_juridico, cnpj_imobiliaria, endereco)
+  insert into app.corretores (empresa_id, pessoa_id, creci, imobiliaria, rg, creci_juridico, cnpj_imobiliaria, endereco, apelido)
   values (p_empresa, v_pessoa, nullif(trim(p_dados->>'creci'), ''), nullif(trim(p_dados->>'imobiliaria'), ''), nullif(trim(p_dados->>'rg'), ''),
-          nullif(trim(p_dados->>'creci_juridico'), ''), v_cnpj, nullif(trim(p_dados->>'endereco'), ''))
+          nullif(trim(p_dados->>'creci_juridico'), ''), v_cnpj, nullif(trim(p_dados->>'endereco'), ''), nullif(trim(p_dados->>'apelido'), ''))
   returning id into v_id;
   return v_id;
 end $$;

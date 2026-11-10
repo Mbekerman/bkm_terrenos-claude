@@ -4151,8 +4151,8 @@ select pg_temp.ok((select em_espera_de is null from app.terrenos where id = :'tt
 select pg_temp.como(:'analista');
 select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"Zé","celular":"11999990000"}')$$, :'emp'), 'corretor sem e-mail não entra');
 select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"Zé","email":"ze@x.com","celular":"999"}')$$, :'emp'), 'corretor sem celular com DDD não entra');
-select app.criar_corretor(:'emp', '{"nome":"Zé Corretor","email":"ZE@Imob.com","celular":"(11) 99999-0000","creci":"123","cnpj":"11.222.333/0001-81","rg":"12.345.678-9"}') as cor1 \gset
-select pg_temp.ok((select p.email = 'ze@imob.com' and p.telefone = '11999990000' and c.cnpj_imobiliaria = '11222333000181' and c.rg = '12.345.678-9'
+select app.criar_corretor(:'emp', '{"nome":"Zé Corretor","email":"ZE@Imob.com","celular":"(11) 99999-0000","creci":"123","cnpj":"11.222.333/0001-81","rg":"12.345.678-9","apelido":"Zezinho"}') as cor1 \gset
+select pg_temp.ok((select p.email = 'ze@imob.com' and p.telefone = '11999990000' and c.cnpj_imobiliaria = '11222333000181' and c.rg = '12.345.678-9' and c.apelido = 'Zezinho'
   from app.corretores c join app.pessoas p on p.id = c.pessoa_id where c.id = :'cor1'), 'novo corretor com nome, e-mail e celular');
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"X","email":"x@x.com","celular":"11999990000"}')$$, :'emp'), 'leitura não cria corretor');

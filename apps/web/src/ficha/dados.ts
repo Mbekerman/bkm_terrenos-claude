@@ -205,7 +205,7 @@ export const dispensados = (f: Pick<Ficha, 't'>): string[] => ((f.t as R | undef
 /** rótulo de cada item, para o log ("Descartado do Falta preencher: Testada") */
 export const ITEM_COMPLETUDE: Record<string, string> = { endereco: 'Endereço completo', zona: 'Zona', ponto: 'Ponto no mapa', area: 'Área adotada',
   testada: 'Testada', matricula: 'Matrícula', inscricao: 'Inscrição e IPTU', proprietario: 'Proprietário', zoneamento: 'Zoneamento',
-  visita: 'Visita técnica', valor: 'Valor pedido', temperatura: 'Temperatura' };
+  visita: 'Visita técnica', origem: 'Origem do cadastro', corretor: 'Corretor da oferta', valor: 'Valor pedido', temperatura: 'Temperatura' };
 export interface Completude { pct: number; faltam: Falta[]; chaves: string[]; descartados: { k: string; rot: string }[] }
 export function completude(f: Ficha): Completude {
   const c0: [string, boolean, ...Falta][] = [
@@ -222,6 +222,10 @@ export function completude(f: Ficha): Completude {
     /* Visita técnica fica de fora enquanto a aba Infraestrutura não existe no sistema real (só no protótipo):
        contá-la deixava a ficha presa abaixo de 100% sem ter onde preencher. Volta com o porte da aba (INFRA_PORTADA). */
     ...(INFRA_PORTADA ? [['visita', f.infraNV === 0, 'Visita técnica', 'infra'] as [string, boolean, ...Falta]] : []),
+    /* cadastrar é receber a primeira oferta (pedido do Moises, 10/nov/2026): a origem do cadastro e o corretor da oferta
+       entram no que falta; sem corretor conta como feito quando a oferta veio direto do proprietário ou da prospecção */
+    ['origem', !!f.t.origem_cadastro && f.t.origem_cadastro !== 'nao_informado', 'Origem do cadastro', 'terreno', 'ident', 'origem_cadastro'],
+    ['corretor', !!f.corretor || ['proprietario', 'prospeccao'].includes(f.t.origem_cadastro), 'Corretor da oferta', 'comercial', 'cond', 'cid'],
     ['valor', !!f.valorPedido, 'Valor pedido', 'comercial', 'cond', 'valor'],
     ['temperatura', !!f.temp, 'Temperatura', 'geral', 'temp'],
   ];
