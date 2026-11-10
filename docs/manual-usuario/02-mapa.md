@@ -33,6 +33,8 @@ No alto da lista ficam o total (**"N terrenos · m²"**, com **"N sem localizaç
 
 Cada terreno aparece como uma **etiqueta com o código** (A112), na cor da fase, da etapa ou da subetapa, com contorno branco e preto e um **ponto embaixo** que marca o lugar exato. O formato é diferente dos pinos redondos do Google, para o terreno se destacar logo de cara. A etiqueta fica um pouco maior com o mapa na escala de bairro, que é o tamanho máximo dela; afastando mais, ela diminui junto com os ícones do Google. O terreno selecionado ganha um anel azul em volta da etiqueta e o ponto fica azul.
 
+**Terrenos muito perto um do outro.** Quando as etiquetas se encostariam na tela (mapa afastado, ou terrenos vizinhos de lote), elas viram uma **bolha com o número** de terrenos, no meio deles. O anel em volta da bolha tem uma fatia na cor de cada terreno. Aproximando o mapa, a bolha se desfaz sozinha assim que as etiquetas cabem separadas. O terreno selecionado (pela lista, por exemplo) nunca entra na bolha. Com o mouse parado sobre a bolha, abre a lista dos terrenos dali (código, nome e etapa); clique numa linha para abrir a ficha. Clicar no número aproxima o mapa até as etiquetas se separarem. Se já estiver bem de perto e elas continuarem juntas (terrenos no mesmo ponto), o clique deixa a lista aberta; clicar fora, arrastar o mapa ou apertar Esc fecha.
+
 ### Selecionar um terreno
 
 - Clique na **linha** da lista, no **pino** ou na **poligonal**: o terreno fica selecionado (a etiqueta ganha o anel azul e a linha se destaca; a lista rola até ela).
@@ -133,6 +135,10 @@ Abre ao clicar ou ao parar o mouse sobre ele por 0,75 s; fecha 1 s depois que o 
 **De onde vem:** do monitor de mercado da BKM, que coleta os dados do **Órulo**. Não há cadastro manual de concorrência.
 
 **No mapa:** cada empreendimento é um quadrado na cor da faixa de **R$/m²** (média das unidades à venda: soma dos preços ÷ soma das áreas), com um desenho da situação dentro: **estrela** no lançamento, **guindaste** em obras, **prédio** no pronto.
+
+As cores são suaves (tons pastel, do lilás nos preços mais baixos ao rosa nos mais altos, passando por azul, verde, creme e salmão), para os terrenos da BKM continuarem sendo o que mais chama a atenção.
+
+**Bolhas (de longe):** até o zoom 13 (de mais ou menos a cidade inteira até uns 20 km de largura na tela), empreendimentos próximos que têm **a mesma situação e a mesma faixa de R$/m²** viram uma bolha redonda, na cor da faixa e com o desenho da situação. O tamanho da bolha cresce com a soma das unidades. Parando o mouse sobre ela aparece, por exemplo, "Lançamento · R$/m² 11 a 13 mil · 8 empreendimentos · 1.640 unidades". O clique na bolha aproxima o mapa até mostrar os empreendimentos dela separados. Do zoom 14 para perto, cada empreendimento aparece sozinho, com o seu quadrado. Quem está sozinho na região continua como quadrado em qualquer zoom.
 
 **Card do empreendimento** (clique no quadrado):
 
