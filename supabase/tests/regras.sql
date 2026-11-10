@@ -3562,6 +3562,60 @@ delete from app.matricula_partes where id = :'lc4';
 select pg_temp.ok((select parte_id is null and matricula_parte_id is null from app.inscricao_partes where inscricao_id = :'lim'), 'a matrícula sai da parte: o SQL dela fica solto');
 insert into app.matricula_partes (id, empresa_id, terreno_id, matricula_id, parte_id) values (:'lc4', :'emp', :'tl', :'lm4', :'lp3');
 update app.inscricao_partes set matricula_parte_id = :'lc4' where inscricao_id = :'lim';
+-- matrícula repetida em várias partes: os SQLs dela são os mesmos em todas as cópias (pedido do Moises, 10/nov/2026)
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
+values (:'emp', 'Matrícula de três vendedores', :'analista', 'corretor', :'sp', 'Brás', pg_temp.quadra(-46.8400, -23.7000, 40)) returning id as tmr \gset
+select id as mp1 from app.terreno_partes where terreno_id = :'tmr' \gset
+select app.salvar_parte(:'tmr', null, '{"nome":"Vendedor 2"}') as mp2 \gset
+select app.salvar_parte(:'tmr', null, '{"nome":"Vendedor 3"}') as mp3 \gset
+insert into app.matriculas (empresa_id, terreno_id, numero, area_registrada_m2) values (:'emp', :'tmr', '757.575', 1000) returning id as mmr \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tmr', '115.142.0025-1', 600) returning id as ms1 \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tmr', '115.142.0045-6', 400) returning id as ms2 \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tmr', '115.142.0046-4', 100) returning id as ms3 \gset
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tmr', :'mmr', :'mp1') returning id as mc1 \gset
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id) values (:'emp', :'tmr', :'ms1', :'mc1'), (:'emp', :'tmr', :'ms2', :'mc1');
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tmr', :'mmr', :'mp2') returning id as mc2 \gset
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tmr', :'mmr', :'mp3') returning id as mc3 \gset
+select pg_temp.ok((select count(*) = 2 from app.inscricao_partes where matricula_parte_id = :'mc2' and parte_id = :'mp2')
+                  and (select count(*) = 2 from app.inscricao_partes where matricula_parte_id = :'mc3' and parte_id = :'mp3'),
+  'a cópia da matrícula nasce com os SQLs da original, na parte da cópia');
+select pg_temp.ok((select sum(area_partes_m2) between 999.9 and 1000.1 from app.v_partes where terreno_id = :'tmr'),
+  'sem percentual, a matrícula se divide igual e a soma das partes é a área dos SQLs (não conta três vezes)');
+update app.matricula_partes set percentual = 50 where id = :'mc1';
+update app.matricula_partes set percentual = 30 where id = :'mc2';
+update app.matricula_partes set percentual = 20 where id = :'mc3';
+select pg_temp.ok((select area_partes_m2 = 500 from app.v_partes where id = :'mp1') and (select area_partes_m2 = 300 from app.v_partes where id = :'mp2')
+                  and (select area_partes_m2 = 200 from app.v_partes where id = :'mp3'), 'cada parte fica com o % dela na matrícula (50, 30 e 20% de 1.000 m²)');
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id) values (:'emp', :'tmr', :'ms3', :'mc2');
+select pg_temp.ok((select count(*) = 3 from app.inscricao_partes where inscricao_id = :'ms3'), 'SQL posto numa cópia entra nas três');
+select pg_temp.ok(exists (select 1 from app.auditoria where tabela = 'inscricao_partes' and depois->>'inscricao_id' = :'ms3' and automatico)
+                  and exists (select 1 from app.auditoria where tabela = 'inscricao_partes' and depois->>'inscricao_id' = :'ms3' and not automatico),
+  'nos Logs, a cópia nas outras matrículas fica como consequência da ação');
+delete from app.inscricao_partes where inscricao_id = :'ms3' and matricula_parte_id = :'mc3';
+select pg_temp.ok((select count(*) = 0 from app.inscricao_partes where inscricao_id = :'ms3'), 'SQL tirado de uma cópia sai das três');
+update app.inscricao_partes set matricula_parte_id = null, parte_id = null where inscricao_id = :'ms1' and matricula_parte_id = :'mc1';
+select pg_temp.ok((select count(*) = 1 from app.inscricao_partes where inscricao_id = :'ms1' and matricula_parte_id is null and parte_id is null)
+                  and (select count(*) = 1 from app.inscricao_partes where inscricao_id = :'ms1'), 'SQL levado para fora da matrícula sai das três e fica solto');
+update app.inscricao_partes set matricula_parte_id = :'mc3' where inscricao_id = :'ms1';
+select pg_temp.ok((select count(*) = 3 from app.inscricao_partes where inscricao_id = :'ms1'), 'o SQL solto posto de volta numa cópia volta às três');
+update app.inscricao_partes set percentual = 80 where inscricao_id = :'ms1' and matricula_parte_id = :'mc2';
+select pg_temp.ok((select bool_and(percentual = 80) from app.inscricao_partes where inscricao_id = :'ms1'), 'o % do SQL na matrícula é o mesmo nas três cópias');
+select pg_temp.ok((select area_partes_m2 = 440 from app.v_partes where id = :'mp1'), 'área da parte = (600 × 80% + 400) × 50%');
+insert into app.matriculas (empresa_id, terreno_id, numero, area_registrada_m2) values (:'emp', :'tmr', '757.576', 200) returning id as mmr2 \gset
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tmr', :'mmr2', :'mp1') returning id as mc4 \gset
+select pg_temp.falha(format($$insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id, percentual) values (%L, %L, %L, %L, 30)$$, :'emp', :'tmr', :'ms1', :'mc4'),
+  'o SQL dividido entre duas matrículas não passa de 100% (as cópias da mesma matrícula contam uma vez)');
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id, percentual) values (:'emp', :'tmr', :'ms1', :'mc4', 20);
+select pg_temp.ok((select area_partes_m2 = 560 from app.v_partes where id = :'mp1'), 'o resto do SQL na outra matrícula entra inteiro na parte dela (440 + 600 × 20%)');
+select pg_temp.falha(format($$insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id) values (%L, %L, %L, %L)$$, :'emp', :'tmr', :'ms2', :'mc1'),
+  'o mesmo SQL não entra duas vezes na mesma matrícula');
+delete from app.matricula_partes where id = :'mc3';
+select pg_temp.ok((select count(*) = 2 from app.inscricao_partes where inscricao_id = :'ms2') and not exists (select 1 from app.inscricao_partes where parte_id = :'mp3'),
+  'tirar a matrícula de uma parte não mexe nos SQLs das outras cópias');
+insert into app.matricula_partes (id, empresa_id, terreno_id, matricula_id, parte_id, percentual) values (:'mc3', :'emp', :'tmr', :'mmr', :'mp3', 20);
+select pg_temp.ok((select count(*) = 2 from app.inscricao_partes where matricula_parte_id = :'mc3'), 'a matrícula que volta à parte (Ctrl+Z) volta com os SQLs');
+select app.excluir_parte(:'mp2');
+select pg_temp.ok((select count(*) = 2 from app.inscricao_partes where matricula_parte_id = :'mc1'), 'excluir uma parte não tira os SQLs das cópias das outras');
 -- pessoas da parte: relação e participação (pedido do Moises, 6/nov/2026)
 insert into app.pessoas (empresa_id, nome_razao_social) values (:'emp', 'Ana Bresser') returning id as pana \gset
 insert into app.pessoas (empresa_id, nome_razao_social) values (:'emp', 'João Bresser') returning id as pjoao \gset
