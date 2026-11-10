@@ -104,7 +104,9 @@ Se o GeoSampa não responder, aparece o erro com **"Tentar de novo"** e **"Segui
 - **Acesso principal**: aparece quando há duas ou mais ruas em volta da poligonal. Uma opção por rua, com os metros de frente; a mais longa vem marcada. O nome sugerido acompanha a escolha enquanto você não escreveu outro. As outras ruas entram como frentes do terreno.
 - **SQLs** (ou **inscrições**, em São José dos Campos): mostra os lotes escolhidos, com **"Trocar SQLs"** (ou **"Escolher SQLs"**; em São José, **"Trocar inscrições"** ou **"Escolher inscrições"**).
 - **Município \***: só aparece quando a localização falhou ("Não deu para saber pela localização").
-- **Origem do cadastro** e **Corretor da oferta**: opcionais aqui, mas entram no "Falta preencher" da ficha. O corretor se escolhe entre os cadastrados ou em **"+ Novo corretor..."** (ver [06](06-ficha-comercial.md#novo-corretor)).
+- **Origem da oferta** (obrigatória): de onde veio a oferta. Com a origem **Corretor**, aparece o campo **Corretor** (também obrigatório): digite parte do nome, do apelido ou da imobiliária e a lista mostra os que combinam (sem precisar de acento nem do nome inteiro), ou clique na seta para ver todos em ordem alfabética; **"+ Novo corretor..."** fica no fim da lista (ver [06](06-ficha-comercial.md#novo-corretor)). Trocar a origem para outra tira o corretor.
+- **Informações gerais**: texto livre, opcional, com as impressões sobre o corretor, a firmeza da proposta etc. Vai para a primeira oferta do terreno (a que aparece no card da oferta, na aba Comercial). É diferente das informações gerais da pedida de cada parte, que ficam em Condições pedidas.
+- **Rascunho:** sem a origem (ou sem o corretor, quando a origem é Corretor) o cadastro não se conclui. Se você fechar a janela antes de cadastrar, a poligonal, os lotes e o que já preencheu ficam guardados neste navegador, e a próxima vez que abrir **Novo terreno** aparece **Cadastro em rascunho** com **Continuar** e **Descartar**.
 
 Clique em **"Cadastrar terreno"**.
 
