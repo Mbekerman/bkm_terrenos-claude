@@ -40,7 +40,7 @@ const chaveRua = (s: string) => normRua(nomeRef(s)).replace(/^(r|av|al|tv|estr|e
 const MEDIDA = new Map<string, string>();     // terreno → poligonal já medida nesta sessão (ou em curso)
 export async function atualizarFrentes(id: string): Promise<Medicao | null> {
   if (!GEO_BASE) return null;
-  const med = await buscando(id, 'frentes', medirEGravar(id));
+  const med = await medirEGravar(id);
   if (med?.frentes.length) window.dispatchEvent(new CustomEvent('frentes-medidas', { detail: id }));
   return med;
 }
@@ -55,6 +55,10 @@ async function medirEGravar(id: string): Promise<Medicao | null> {
   const chave = JSON.stringify(g.coordinates);
   if (MEDIDA.get(id) === chave) return null;
   MEDIDA.set(id, chave);
+  /* o carregando de Testada e Posição na quadra só depois de saber que é São Paulo: fora dela não se mede (10/nov/2026) */
+  return buscando(id, 'frentes', gravarMedicao(id, t, poly));
+}
+async function gravarMedicao(id: string, t: any, poly: P[]): Promise<Medicao> {
   let med: Medicao;
   try { med = await medirFrentesSP(poly); } catch (e) { MEDIDA.delete(id); throw e; }
   if (!med.frentes.length) return med;
