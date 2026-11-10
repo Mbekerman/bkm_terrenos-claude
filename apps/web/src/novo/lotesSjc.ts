@@ -7,8 +7,11 @@
 // 3. cada quadra é montada inteira pelos vizinhos: pontos a 1,5 m para fora de cada borda dos lotes achados; o da mesma quadra
 //    entra e é varrido também, o de outra quadra fica de fora e a rua não responde, o que faz a busca parar sozinha nas ruas.
 // Tudo em UTM 23S (metros), como o mapa de lotes de São Paulo (LotesGeo.tsx).
+// Com a base (lotesBase.ts), o que já está guardado no banco entra antes de perguntar: os lotes guardados cobrem os pontos da
+// grade, a quadra já montada não é varrida de novo, e o que veio da prefeitura desta vez é guardado no fim.
 import { GSJ_BASE, gsjLote, gsjToken } from './geosanja';
 import { geoAneis, geoAreaAnel, geoNoAnel, latLngUtm, utmLatLng } from './geosampa';
+import type { BaseLotes } from './lotesBase';
 
 type An = number[][];
 export interface LoteGsj { ic: string; an: An }
@@ -52,9 +55,10 @@ function fracao(an: An, ter: An) {
  * Os lotes das quadras que a poligonal ocupa (ter, UTM fechado) ou das quadras das inscrições dadas (ics), cada quadra inteira.
  * andamento(n): quantos lotes já achou.
  */
-export async function quadrasSjc(o: { ter?: An | null; ics?: string[]; andamento?: (n: number) => void }): Promise<{ lotes: LoteGsj[]; quadras: string[] }> {
+export async function quadrasSjc(o: { ter?: An | null; ics?: string[]; andamento?: (n: number) => void; base?: BaseLotes }): Promise<{ lotes: LoteGsj[]; quadras: string[] }> {
   if (!GSJ_BASE) throw new Error('A busca no GeoSanja funciona na versão publicada.');
-  const lotes = new Map<string, An>(), vazios: number[][] = [], fora = new Set<string>();
+  const lotes = new Map<string, An>(), vazios: number[][] = [], fora = new Set<string>(), daBase = new Set<string>();
+  const doBanco = (ls: { ic: string; an: An }[]) => ls.forEach((l) => { if (!lotes.has(l.ic) && l.an?.length >= 4) { lotes.set(l.ic, l.an); daBase.add(l.ic); } });
   let pontos = 0;
   const cobre = (p: number[]) => [...lotes.values()].some((an) => { const b = bbDe(an); return p[0] >= b[0] && p[0] <= b[2] && p[1] >= b[1] && p[1] <= b[3] && geoNoAnel(p, an); });
   const perto = (p: number[]) => vazios.some((v) => Math.hypot(v[0] - p[0], v[1] - p[1]) < 1.2);
@@ -75,10 +79,11 @@ export async function quadrasSjc(o: { ter?: An | null; ics?: string[]; andamento
     o.andamento?.(lotes.size);
   }
 
-  let quadras: string[];
+  let quadras: string[], prontas: string[] = [];
   if (o.ter) {
-    /* 1. a grade na poligonal: passo pelo tamanho (4 a 15 m), sempre pulando o que já caiu num lote */
+    /* 1. a grade na poligonal: passo pelo tamanho (4 a 15 m), sempre pulando o que já caiu num lote (inclusive os guardados) */
     const ter = o.ter, area = geoAreaAnel(ter), [x0, y0, x1, y1] = bbDe(ter), s = Math.max(4, Math.min(15, Math.sqrt(area / 250)));
+    if (o.base) { doBanco(await o.base.perto([x0 - 30, y0 - 30, x1 + 30, y1 + 30])); o.andamento?.(lotes.size); }
     const grade: number[][] = [];
     for (let x = x0 + s / 2; x < x1; x += s) for (let y = y0 + s / 2; y < y1; y += s) if (geoNoAnel([x, y], ter)) grade.push([x, y]);
     if (!grade.length) grade.push([(x0 + x1) / 2, (y0 + y1) / 2]);
@@ -99,16 +104,21 @@ export async function quadrasSjc(o: { ter?: An | null; ics?: string[]; andamento
     quadras = quadras.slice(0, 8);
   } else {
     const ics = [...new Set(o.ics || [])];
-    await trazer(ics);
+    if (o.base) { const b = await o.base.quadras([...new Set(ics.map(quadraDe))]); doBanco(b.lotes); prontas = b.prontas; }
+    await trazer(ics.filter((ic) => !lotes.has(ic)));
     quadras = [...new Set([...lotes.keys()].map(quadraDe))].slice(0, 8);
     if (!quadras.length) throw new Error('O GeoSanja não achou o lote destas inscrições.');
   }
 
+  /* a quadra montada há pouco vem inteira do banco e não é varrida */
+  if (o.base && o.ter) { const b = await o.base.quadras(quadras); doBanco(b.lotes); prontas = b.prontas; }
+  o.andamento?.(lotes.size);
+
   /* 2. cada quadra inteira pelos vizinhos: pontos a 1,5 m para fora de cada borda, a cada 8 m no máximo */
   /* os lotes de outras quadras ficam guardados só para não perguntar de novo pelos pontos deles; saem no fim */
   const daQuadra = (ic: string) => quadras.includes(quadraDe(ic));
-  let fila = [...lotes.keys()].filter(daQuadra);
-  const feitos = new Set<string>();
+  const feitos = new Set<string>([...lotes.keys()].filter((ic) => prontas.includes(quadraDe(ic))));
+  let fila = [...lotes.keys()].filter((ic) => daQuadra(ic) && !feitos.has(ic));
   while (fila.length && pontos < MAX_PONTOS && lotes.size < MAX_LOTES) {
     const pts: number[][] = [];
     fila.forEach((ic) => {
@@ -127,6 +137,13 @@ export async function quadrasSjc(o: { ter?: An | null; ics?: string[]; andamento
     const novas = (await sondar(pts)).filter((ic) => !fora.has(ic));
     if (novas.length) await trazer(novas);
     fila = [...lotes.keys()].filter((ic) => daQuadra(ic) && !feitos.has(ic));
+  }
+  /* guarda o que veio da prefeitura; a quadra só conta como montada quando a varredura não parou no limite */
+  if (o.base) {
+    const completo = pontos < MAX_PONTOS && lotes.size < MAX_LOTES, novas = completo ? quadras.filter((k) => !prontas.includes(k)) : [];
+    const ls = [...lotes].filter(([ic]) => (novas.includes(quadraDe(ic)) || !daBase.has(ic)) && !(daBase.has(ic) && prontas.includes(quadraDe(ic))))
+      .map(([ic, an]) => ({ ic, an, daBase: daBase.has(ic) }));
+    void o.base.guardar(ls, novas, quadraDe, geoAreaAnel);
   }
   return { lotes: [...lotes].filter(([ic]) => daQuadra(ic)).map(([ic, an]) => ({ ic, an })), quadras };
 }

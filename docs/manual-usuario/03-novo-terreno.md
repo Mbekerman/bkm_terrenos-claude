@@ -87,7 +87,7 @@ Botões:
 
 Se o GeoSampa não responder, aparece o erro com **"Tentar de novo"** e **"Seguir sem lotes"**.
 
-**Em São José dos Campos** o mapa também abre logo depois da poligonal, com os lotes do **GeoSanja**. O GeoSanja não entrega a quadra pronta: o sistema descobre os lotes ponto a ponto, primeiro os que a poligonal ocupa e depois os vizinhos, até chegar às ruas. Por isso leva alguns segundos (a tela mostra quantos lotes já achou). Diferenças para São Paulo:
+**Em São José dos Campos** o mapa também abre logo depois da poligonal, com os lotes do **GeoSanja**. O GeoSanja não entrega a quadra pronta: o sistema descobre os lotes ponto a ponto, primeiro os que a poligonal ocupa e depois os vizinhos, até chegar às ruas. Por isso leva alguns segundos (a tela mostra quantos lotes já achou). Cada quadra montada fica guardada no sistema: da próxima vez que alguém abrir o mapa na mesma quadra, os lotes aparecem na hora. Depois de 90 dias a quadra é montada de novo, para pegar mudança no loteamento. Diferenças para São Paulo:
 
 - Por baixo dos lotes aparece a **imagem de satélite do Google com os nomes das ruas** (o GeoSanja não dá o nome da rua).
 - Cada lote mostra **"L 0011"** (o número do lote na inscrição). Parando o mouse, aparece a inscrição e a área **pelo desenho**. O GeoSanja não dá área cadastral, endereço nem número de porta.
