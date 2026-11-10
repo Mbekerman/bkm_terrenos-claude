@@ -243,6 +243,11 @@ Migration `20261015002000_tratativas.sql` (idempotente; é também o SQL avulso 
 - `app.ultima_acao_terreno` segue o filtro dos Logs do front (`ficha/Painel.tsx`): ignora `automatico`, ofertas aguardando e updates do terreno que só mexem em `em_espera_de`, `espera_avisada_em`, `versao` e `atualizado_*`.
 - Esconder é filtro (`v_mapa`, Funil, filtros), não RLS: a ficha do escondido abre pelo link.
 
+
+## Vários corretores por oferta (10/nov/2026)
+
+`app.oferta_corretores` (`20261015002100_oferta_corretores.sql`, #322) guarda os corretores de cada oferta (único por oferta e corretor). `ofertas.corretor_id` continua sendo o **principal**, lido pelo resto do sistema (Resumo, filtros, funil, completude): o corretor posto na oferta entra na lista (`tg_oferta_corretor_principal`); o primeiro posto numa oferta sem corretor vira o principal; tirado o principal, o mais antigo que sobrou passa a ser (`tg_oferta_corretor_sync`), e todo corretor da oferta entra em `terreno_corretores`. O que os gatilhos gravam por consequência vai como automático na auditoria. Escrita direta (oferta é tabela sem regra): leitura pela empresa, inserir e apagar por quem edita. A observação livre da oferta é `ofertas.observacoes`.
+
 ## Auditoria e histórico
 
 ### `app.auditoria`: o log de tudo
