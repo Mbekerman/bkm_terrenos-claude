@@ -657,12 +657,12 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     } catch (e: any) { toast(e?.message ?? String(e), true); } finally { setGrav(false); }
   }
   /* "Escolher no mapa": os marcados entram sem parte (origem mapa_prefeitura), os desmarcados das quadras abertas saem,
-     menos os que têm IPTU lançado; depois a consulta do GeoSampa nos novos e a poligonal pela soma dos lotes */
+     menos os que têm IPTU lançado; depois a consulta do GeoSampa (ou do GeoSanja, em São José) nos novos e a poligonal pela soma dos lotes */
   async function incluirMapa(marc: LoteSql[], quadras: string[]) {
     setLg(false);
     const ja = new Set(L.insc.map((i) => i.inscricao_norm)), marcD = new Set(marc.map((x) => digitos(x.sql)));
     const novos = marc.filter((x) => !ja.has(digitos(x.sql)));
-    const tirar = L.insc.filter((i) => !marcD.has(i.inscricao_norm) && quadras.includes(i.inscricao_norm.slice(0, 3) + '.' + i.inscricao_norm.slice(3, 6)) && !(i.inscricao_valores ?? []).length);
+    const tirar = L.insc.filter((i) => !marcD.has(i.inscricao_norm) && quadras.includes(sjc ? i.inscricao_norm.slice(0, 2) + '.' + i.inscricao_norm.slice(2, 6) : i.inscricao_norm.slice(0, 3) + '.' + i.inscricao_norm.slice(3, 6)) && !(i.inscricao_valores ?? []).length);
     try {
       let ins: R[] = [];
       if (novos.length) {
@@ -672,10 +672,11 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
         ins = (r.data ?? []) as R[];
       }
       if (tirar.length) { const r = await supabase.from('inscricoes_municipais').delete().in('id', tirar.map((i) => i.id)); if (r.error) throw r.error; }
-      if (!novos.length && !tirar.length) { toast('Nada mudou nos SQLs.'); return; }
-      toast([novos.length && `${novos.length} SQL${novos.length > 1 ? 's' : ''} incluído${novos.length > 1 ? 's' : ''}`, tirar.length && `${tirar.length} tirado${tirar.length > 1 ? 's' : ''}`].filter(Boolean).join(', ') + '.');
+      if (!novos.length && !tirar.length) { toast(sjc ? 'Nada mudou nas inscrições.' : 'Nada mudou nos SQLs.'); return; }
+      const nn = novos.length > 1, nt = tirar.length > 1;
+      toast([novos.length && (sjc ? `${novos.length} inscriç${nn ? 'ões incluídas' : 'ão incluída'}` : `${novos.length} SQL${nn ? 's' : ''} incluído${nn ? 's' : ''}`), tirar.length && `${tirar.length} tirad${sjc ? 'a' : 'o'}${nt ? 's' : ''}`].filter(Boolean).join(', ') + '.');
       recarregar();
-      if (ins.length) { await consultarTerreno(f.id, null, ins.map((x) => ({ id: x.id, sql: x.inscricao })), toast); recarregar(); }
+      if (ins.length) { await consultarTerreno(f.id, null, ins.map((x) => ({ id: x.id, sql: x.inscricao })), toast, sjc ? 'geosanja' : 'geosampa'); recarregar(); }
       await refazerPoligonal(f, 'mapa de lotes da prefeitura', toast);
       recarregar('tudo');
     } catch (e: any) { toast(e?.message ?? String(e), true); }
@@ -850,7 +851,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
                     <input id="es-sql" required autoComplete="off" inputMode={base ? 'numeric' : 'text'} placeholder={base?.mascara ?? 'Como está no carnê do IPTU'} value={sql}
                       onChange={(e) => setSql(base ? mascarar(e.target.value, base.mascara) : e.target.value)} /></div>
                   <button className="btn sm" disabled={grav}><Ic n="add" s={16} />{grav ? 'Incluindo…' : 'Incluir'}</button>
-                  {sp && GEO_BASE && f.poly && <button type="button" className="btn sm text" onClick={() => setLg(true)}><Ic n="layers" s={16} />Escolher no mapa</button>}
+                  {((sp && GEO_BASE) || (sjc && GSJ_BASE)) && f.poly && <button type="button" className="btn sm text" onClick={() => setLg(true)}><Ic n="layers" s={16} />Escolher no mapa</button>}
                   <LimparRasc chave={kS} mostrar={!!sql.trim()} limpar={() => setSql('')} />
                 </form>
               )}
@@ -912,7 +913,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
       {lg && f.poly && (
         <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setLg(false)}>
           <div className="dialog" role="dialog" aria-modal="true">
-            <LotesGeo empresa={empresa!.id} L={{ modo: 'ficha', ficha: { codigo: f.codigo, nome: f.nome, poly: f.poly, sqls: L.insc.map((i) => i.inscricao_norm), fechar: () => setLg(false), incluir: incluirMapa } }} />
+            <LotesGeo empresa={empresa!.id} L={{ modo: 'ficha', sjc, ficha: { codigo: f.codigo, nome: f.nome, poly: f.poly, sqls: L.insc.map((i) => i.inscricao_norm), fechar: () => setLg(false), incluir: incluirMapa } }} />
           </div>
         </div>
       )}

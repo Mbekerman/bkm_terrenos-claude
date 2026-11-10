@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import PlantaLoteamento, { MUN_SJC } from './PlantaSjc';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
@@ -58,7 +59,7 @@ function SecGenerica({ f, id, primeiro }: { f: Ficha; id: 'ident' | 'loc' | 'fis
   const vis = s.campos.filter((c) => !['latitude', 'longitude'].includes(c[0]));
   return (
     <Quadro aba="terreno" id={id} primeiro={primeiro} titulo={s.titulo}
-      acoes={edita && id === 'loc' ? <div className="qd-acoes"><LapisMapa codigo={f.codigo} id="f-end-mapa" className="btn sm text" rotulo="Editar no mapa" /></div> : undefined}>
+      acoes={id === 'loc' && (edita || f.t.municipio_id === MUN_SJC) ? <div className="qd-acoes">{f.t.municipio_id === MUN_SJC && <PlantaLoteamento f={f} />}{edita && <LapisMapa codigo={f.codigo} id="f-end-mapa" className="btn sm text" rotulo="Editar no mapa" />}</div> : undefined}>
       <div className="sec-b"><div className={`kvg${edita ? ' kvg-ed vivo' : ''}`}>{vis.map((c) => {
         /* o endereço não se edita na ficha: muda pelo mapa, com a poligonal e o pino (pedido do Moises, 6/nov/2026) */
         const so = id === 'loc' && END_MAPA.includes(c[0]);

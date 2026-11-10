@@ -519,7 +519,7 @@ A primeira versão em uso é, por decisão do Moisés: login, mapa, novo terreno
 | Menção com @, notificações por e-mail, "Configurar notificações" | parcial | @ nas reuniões (participantes e textos; `components/Marcar.tsx`); nas tarefas, não. O sino entra; e-mail depois. |
 | Tema escuro e Automático | não | |
 | Menu do avatar com "Entrar como" | não | Só no protótipo (é para testar papéis). |
-| GeoSanja (São José dos Campos) | não | Só GeoSampa está no React. |
+| GeoSanja (São José dos Campos) | sim | Consulta da inscrição na ficha (#288), "Incluir por inscrição", mapa de lotes pelo `bycoord` e "Planta do loteamento" (`novo/lotesSjc.ts`, `ficha/PlantaSjc.tsx`). |
 | Mapa alternativo Leaflet sem Google | não | Ver [seção 8](#8-mapa). |
 | Planta (PDF) e desenho (DXF) do lote em Documentos | não | Depende da aba Documentos. |
 | "Usar a poligonal dos lotes" com a comparação lado a lado | a conferir | O React refaz a poligonal pela soma dos lotes em `Partes.tsx` (`refazerPoligonal`) e no mapa de lotes; a tela de comparação do protótipo não foi encontrada. |
