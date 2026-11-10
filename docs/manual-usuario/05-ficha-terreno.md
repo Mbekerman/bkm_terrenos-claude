@@ -82,6 +82,8 @@ O quadro tem duas metades:
 - **Matrículas**: digite o **Nº da matrícula**, confira o **Cartório** (já vem preenchido) e a **Área registrada**, e clique em **Incluir**. Vira uma etiqueta **amarela**.
 - **SQLs** (ou o nome da inscrição na sua cidade): digite e clique em **Incluir**, ou use **"Escolher no mapa"**. Vira uma etiqueta **roxa**.
 
+**Em São José dos Campos**, a inscrição imobiliária é consultada sozinha no **GeoSanja** assim que é incluída: vêm a poligonal do lote, a zona com a área no lote, a macrozona e as restrições (centralidade, setor, riscos, parques, linha de transmissão...), e a poligonal do terreno é refeita pela soma dos lotes, como em São Paulo. A janela da etiqueta tem **"Buscar no GeoSanja"** (ou **"Buscar de novo"**). O GeoSanja **não traz** área cadastral, endereço e número, testada, valor venal, IPTU nem cartório: esses você digita (na janela da etiqueta e na aba Terreno).
+
 Cada etiqueta mostra o número e um **x**. Em tela estreita, as duas metades ficam uma sobre a outra e cada uma recolhe pela seta.
 
 Embaixo vem **um quadro por parte**, numa grade, com a seta que abre e fecha a linha inteira.

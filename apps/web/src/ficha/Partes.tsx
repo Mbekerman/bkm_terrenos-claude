@@ -12,6 +12,7 @@ import { data as fd, m2 } from '../lib/format';
 import { centroPoly, fixa, geojson, lotesUniao, type P } from '../novo/geo';
 import { digitos, GEO_BASE, loteDoSql } from '../novo/geosampa';
 import { consultarLote, consultarTerreno, useConsultaGeo } from '../novo/consulta';
+import { GSJ_BASE, consultarLoteSjc, gsjPoligono } from '../novo/geosanja';
 import type { Ficha, R } from './dados';
 import { lerNum, num, Quadro } from './edicao';
 import { buscando } from '../lib/buscando';
@@ -130,7 +131,7 @@ function useRecarregar(f: Ficha) {
 /** refaz a poligonal pela soma dos lotes dos SQLs (São Paulo); sem SQL com lote, volta a desenhada */
 let refazendo = false;
 export async function refazerPoligonal(f: Ficha, como: string, aviso: (m: string, erro?: boolean) => void) {
-  if (refazendo || !GEO_BASE) return;
+  if (refazendo || (!GEO_BASE && !GSJ_BASE)) return;
   refazendo = true;
   try {
     const [{ data: ins }, { data: cs }, { data: t, error }] = await Promise.all([
@@ -143,7 +144,8 @@ export async function refazerPoligonal(f: Ficha, como: string, aviso: (m: string
     for (const i of (ins ?? []) as R[]) {
       const c = ((cs ?? []) as R[]).find((x) => x.inscricao_id === i.id && x.poligono_geojson);
       let p: P[] | null = c ? (c.poligono_geojson.coordinates[0] as number[][]).slice(0, -1).map(([ln, la]) => [la, ln] as P) : null;
-      if (!p) try { p = (await loteDoSql(i.inscricao_norm)).poly; } catch { p = null; }
+      /* sem consulta guardada: o lote direto na prefeitura (SQL de São Paulo com 11 dígitos; inscrição de SJC com 14) */
+      if (!p) try { p = i.inscricao_norm.length === 14 ? (GSJ_BASE ? await gsjPoligono(i.inscricao) : null) : GEO_BASE ? (await loteDoSql(i.inscricao_norm)).poly : null; } catch { p = null; }
       if (p) polys.push(p); else fora.push(i.inscricao);
     }
     const salvar = async (d: R) => {
@@ -448,7 +450,9 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     /* sem o terreno na resposta: está num terreno excluído (a leitura esconde), que ainda segura o número */
     return x ? x.terrenos ?? { excluido: true } : null;
   }
-  const P = L.partes, base = L.base, rot = base?.rotulo ?? 'Inscrição', sp = base?.codigo === 'geosampa';
+  const P = L.partes, base = L.base, rot = base?.rotulo ?? 'Inscrição', sp = base?.codigo === 'geosampa', sjc = base?.codigo === 'geosanja';
+  /* a cidade tem prefeitura para consultar nesta versão (São Paulo pelo GeoSampa, São José dos Campos pelo GeoSanja) */
+  const pref = (sp && !!GEO_BASE) || (sjc && !!GSJ_BASE);
   const crisSel = f.t.cartorio && !CRIS.includes(f.t.cartorio) ? [f.t.cartorio, ...CRIS] : CRIS;
   const LR = useRef(L);
   LR.current = L;
@@ -591,7 +595,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     if (error) { toast(error.message, true); return; }
     toast(`${nome(e)} excluída.`);
     recarregar();
-    if (e.tipo === 's' && sp) { await refazerPoligonal(f, `${e.x.inscricao} excluído`, toast); recarregar('tudo'); }
+    if (e.tipo === 's' && (sp || sjc)) { await refazerPoligonal(f, `${e.x.inscricao} excluído`, toast); recarregar('tudo'); }
   }
   /** o X da etiqueta: se o lote está em mais de uma parte, só sai desta; senão o lote sai do terreno */
   const apagar = (k: string) => { const e = achar(k); if (e?.tipo === 's' && (e.x.inscricao_valores ?? []).length) setConf(k); else excluir(k); };
@@ -644,8 +648,8 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
       setSql('');
       recarregar();
       setTimeout(() => document.getElementById('es-sql')?.focus(), 30);
-      if (sp && GEO_BASE) {
-        await consultarTerreno(f.id, null, [{ id: data.id, sql: data.inscricao }], toast);
+      if (pref) {
+        await consultarTerreno(f.id, null, [{ id: data.id, sql: data.inscricao }], toast, base!.codigo);
         recarregar();
         await refazerPoligonal(f, `${data.inscricao} incluído`, toast);
         recarregar('tudo');
@@ -816,7 +820,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
           onClick={() => { if (fe) RECOLHIDOS.delete(t); else RECOLHIDOS.add(t); setRec((x) => x + 1); }}><Ic n="chev" s={18} />{conteudo}</button>
       : <div className="etq-ct">{conteudo}</div>;
   };
-  const andamento = cons && cons.terreno === f.id ? <span className="chip blue lg-cons">Consultando o GeoSampa: {cons.feitos} de {cons.total}</span> : null;
+  const andamento = cons && cons.terreno === f.id ? <span className="chip blue lg-cons">Consultando o {cons.nome ?? 'GeoSampa'}: {cons.feitos} de {cons.total}</span> : null;
   const confE = conf ? achar(conf) : null;
   return (
     <div ref={sec} style={{ display: 'contents' }}>
@@ -1096,12 +1100,18 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
       </Dialogo>
     );
   }
-  const cg = L.consultas[x.id], sp = L.base?.codigo === 'geosampa';
+  const cg = L.consultas[x.id], sp = L.base?.codigo === 'geosampa', sjc = L.base?.codigo === 'geosanja', pref = sp || sjc;
+  const nomeBase = sjc ? 'GeoSanja' : 'GeoSampa', urlBase = sjc ? GSJ_BASE : GEO_BASE;
   const vs = ((x.inscricao_valores ?? []) as R[]).filter((y) => y.vigente).sort((a, b) => b.exercicio - a.exercicio), vv = vs[0];
   const venal = vv ? (vv.valor_venal_imovel ?? (vv.valor_venal_terreno != null && vv.valor_venal_construcao != null ? +vv.valor_venal_terreno + +vv.valor_venal_construcao : vv.valor_venal_terreno)) : null;
   async function buscar() {
     setBusc(true);
-    try { const ok = await buscando(f.id, 'geosampa', consultarLote(x!.id, x!.inscricao)); toast(ok ? 'GeoSampa consultado.' : 'O GeoSampa não achou o lote deste SQL.', !ok); recarregar(); }
+    try {
+      const ok = await buscando(f.id, 'geosampa', sjc ? consultarLoteSjc(x!.id, x!.inscricao) : consultarLote(x!.id, x!.inscricao));
+      toast(ok ? `${nomeBase} consultado.` : `O ${nomeBase} não achou o lote ${sjc ? 'desta inscrição' : 'deste SQL'}.`, !ok); recarregar();
+      /* em SJC a poligonal do lote só chega pela consulta: refaz a do terreno pela soma dos lotes */
+      if (ok && sjc) { await refazerPoligonal(f, `${x!.inscricao} consultada`, toast); recarregar('tudo'); }
+    }
     catch (e: any) { toast(e?.message ?? String(e), true); } finally { setBusc(false); }
   }
   return (
@@ -1111,14 +1121,14 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
         {parte}
       </div>
       {partesLote}
-      {sp && (
+      {pref && (
         <div className="etq-geo">
           {cg ? (
-            <div className="geo-h"><span><b>GeoSampa</b> <span className="muted">consultado em {fd(cg.consultado_em)}{(cg.zonas ?? []).length ? ` · ${(cg.zonas as R[]).map((z) => z.sigla).join(' / ')}` : ''}{x.cib ? ` · CIB ${x.cib}` : ''}{x.zona_fiscal ? ` · ${x.zona_fiscal}` : ''}</span></span>
-              {edita && GEO_BASE && <button className="btn sm text" disabled={busc} onClick={buscar}><Ic n="search" s={16} />{busc ? 'Consultando...' : 'Buscar de novo'}</button>}</div>
+            <div className="geo-h"><span><b>{nomeBase}</b> <span className="muted">consultado em {fd(cg.consultado_em)}{(cg.zonas ?? []).length ? ` · ${(cg.zonas as R[]).map((z) => z.sigla).join(' / ')}` : ''}{x.cib ? ` · CIB ${x.cib}` : ''}{x.zona_fiscal ? ` · ${x.zona_fiscal}` : ''}</span></span>
+              {edita && urlBase && <button className="btn sm text" disabled={busc} onClick={buscar}><Ic n="search" s={16} />{busc ? 'Consultando...' : 'Buscar de novo'}</button>}</div>
           ) : (
-            <div className="geo-vazio">{edita && GEO_BASE && <button className="btn sm" disabled={busc} onClick={buscar}><Ic n="search" s={16} />{busc ? 'Consultando...' : 'Buscar no GeoSampa'}</button>}
-              <span className="hint">{GEO_BASE ? 'Ainda não consultado.' : 'A busca no GeoSampa funciona na versão publicada.'}</span></div>
+            <div className="geo-vazio">{edita && urlBase && <button className="btn sm" disabled={busc} onClick={buscar}><Ic n="search" s={16} />{busc ? 'Consultando...' : `Buscar no ${nomeBase}`}</button>}
+              <span className="hint">{urlBase ? 'Ainda não consultado.' : `A busca no ${nomeBase} funciona na versão publicada.`}</span></div>
           )}
         </div>
       )}
@@ -1133,6 +1143,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
         </tbody></table></div>
       ) : <div className="muted">Sem IPTU lançado.</div>}
       {edita && !sp && <details className="details"><summary>{vv ? 'Atualizar IPTU' : 'Lançar IPTU'}</summary><FormIptu f={f} x={x} vv={vv} /></details>}
+      {sjc && <div className="hint">O GeoSanja traz só a poligonal do lote, a zona e as restrições. A área cadastral, o endereço, a testada, o valor venal, o IPTU e o cartório não vêm de lá: digite-os aqui e na aba Terreno.</div>}
       {sp && <div className="hint">Em São Paulo, o valor venal e o IPTU vêm sozinhos da Prefeitura e não se digitam (seção IPTU da aba Terreno).</div>}
     </Dialogo>
   );

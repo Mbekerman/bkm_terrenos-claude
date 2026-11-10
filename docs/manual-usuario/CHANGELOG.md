@@ -6,6 +6,11 @@ Quem desenvolve: toda mudança que o usuário vê ganha uma linha aqui, na data 
 
 Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era testado no protótipo. Este registro começa no porte das telas para o sistema real.
 
+## 10/nov/2026
+
+- **GeoSanja em São José dos Campos** (aba Terreno, Matrículas e SQLs): a inscrição imobiliária incluída é consultada sozinha no GeoSanja e traz a poligonal do lote, a zona com a área, a macrozona e as restrições; a poligonal do terreno é refeita pela soma dos lotes. Na janela da etiqueta, "Buscar no GeoSanja". O que o GeoSanja não traz (área cadastral, endereço, testada, valor venal, IPTU, cartório) continua para digitar, com o aviso na janela. (#NNN)
+- **"Adicionar ponto" de interesse** saiu da lista do que falta: não vai para o sistema (decisão de 10/nov). (#NNN)
+
 ## 9/nov/2026
 
 - **Rota a partir do ponto** (Mapa, clique direito): a opção virou "Traçar rota a partir daqui" e a rota vai do ponto do clique direito até o ponto escolhido, com o botão ⇅ para inverter o sentido. Os dois pontos se arrastam (o cursor vira o dedo e o ponto cresce), e a chegada é um pino quadriculado preto e branco. (#287)

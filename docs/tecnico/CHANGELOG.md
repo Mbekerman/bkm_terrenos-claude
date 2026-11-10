@@ -2,6 +2,10 @@
 
 Toda mudança que entra na `develop` ganha uma linha aqui, no mesmo PR (ver [como-manter.md](como-manter.md)). Do mais recente ao mais antigo. O que aconteceu antes de 8/nov/2026 está resumido em [historico.md](historico.md).
 
+## 2026-11-10
+
+- #NNN GeoSanja no React (pedido do Moises, 10/nov/2026): `novo/geosanja.ts` (porte de `proto_geosanja.js`, sem planta e DXF); `consultarTerreno` ganha o parâmetro `base` ('geosanja': só lotes, sem `consultarArea` nem `filaIptu`) e o andamento leva o nome da base; `geoDentro` e `geoAreaZonas` de `novo/consulta.ts` passam a ser exportados; `ficha/Partes.tsx` consulta ao incluir a inscrição de SJC, "Buscar no GeoSanja" na etiqueta, `refazerPoligonal` aceita SJC (lote da consulta guardada ou `gsjPoligono` para inscrição de 14 dígitos); `ficha/Parametros.tsx` mostra as camadas de SJC por `gsjLinhas`. Conferido ao vivo com a inscrição 41.0024.0011.0000: ZM2 com 412,91 m², macrozona MC. Sem mudança no banco (`registrar_consulta_lote` já aceitava a base `geosanja`) nem no Caddy. Segurança: nenhum caminho novo no repasse `/geosanja`; os dados do GeoSanja chegam pelo navegador como os do GeoSampa e o banco confere a coerência. Também: "Adicionar ponto" de interesse e o mapa reserva sem Google (Leaflet) saem do porte (decisões do Moises, 10/nov/2026; `CLAUDE.md` e manual do usuário).
+
 ## 2026-11-09
 
 - #287 Rota a partir do ponto (pedidos do Moises, 9/nov/2026): menu "Traçar rota a partir daqui"; em `mapa/Rota.tsx` o ponto do clique direito vira estado (`fixo`, arrastável, nome pelo `Geocoder`), `inv` (padrão true) decide o sentido e o botão ⇅ inverte; `motor.rota` passa a receber `{ soltarO, soltarD, enquadrar }` e a chegada pode faltar; `.rt-o`/`.rt-d` com cursor `pointer` e escala no hover; chegada em pino quadriculado (SVG embutido). Sem mudança no banco nem em permissão; sem API nova; sem impacto de segurança.

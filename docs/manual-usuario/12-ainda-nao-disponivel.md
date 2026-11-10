@@ -34,7 +34,6 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 | **"O que esta etapa pede"** no quadro de avanço (perguntas da Jornada) | Só no protótipo |
 | **Olhinho e lixeira** nos Logs (prévia sem a alteração e desfazer uma alteração antiga) | Só no protótipo. Hoje, use o Ctrl+Z para o que acabou de fazer. |
 | Quadro de **negociação por parte** (cada parte com sua etapa e botão de avançar) | Só no protótipo |
-| **"Adicionar ponto"** de interesse marcado no mapa | Só no protótipo |
 | **Topográfico preliminar** (PDF e DXF com curvas de nível) | Só no protótipo |
 | **Busca de cima por matrícula e SQL** | O texto do campo promete, mas hoje não busca. A fazer. |
 | **Aviso por e-mail** e preferências de e-mail no menu do avatar | Planejado (envio pela conta bkm@) |
