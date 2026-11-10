@@ -39,10 +39,10 @@ import { BarraChips, SecoesChips } from './Chips';
     infraestrutura, Restrições e entorno e Histórico de uso (os dois últimos vindos da aba Terreno), que viram as subabas dela (pedido do Moises, 10/nov/2026). O endereço continua o da subaba
     (`/terrenos/A123/infra`), e `/terrenos/A123/estudos` abre a última subaba vista na sessão. */
 export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['viabilidade', 'Estudos de viabilidade'], ['infra', 'Avaliação de infraestrutura'], ['restricoes', 'Restrições e entorno'], ['historico-uso', 'Histórico de uso']];
-/** Mercado e Demografia: pontos de interesse, renda, perfil da população e concorrência; o Entorno saiu (pedido do Moises,
+/** Mercado (antes Mercado e Demografia): pontos de interesse, renda, perfil da população e concorrência; o Entorno saiu (pedido do Moises,
     10/nov/2026), e o link antigo `/entorno` cai aqui */
 export const BARRA: [string, string, [string, string][]?][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'],
-  ['estudos', 'Estudos Técnicos', ESTUDOS], ['mercado', 'Mercado e Demografia'], ['jornada', 'Jornada'], ['documentos', 'Documentos'], ['historico', 'Histórico']];
+  ['estudos', 'Estudos Técnicos', ESTUDOS], ['mercado', 'Mercado'], ['jornada', 'Jornada'], ['documentos', 'Documentos'], ['historico', 'Histórico']];
 /** Histórico só sem o painel (a classe o esconde onde o painel aparece) */
 const HIST = (k: string) => (k === 'historico' ? 'tab-hist' : undefined);
 /** as abas de conteúdo, na ordem (cada subaba é uma aba própria no endereço) */

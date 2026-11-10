@@ -57,7 +57,7 @@ Quando você rola e o topo sai da vista, a barra das abas mostra um **botão de 
 
 ## Barra das abas
 
-As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mercado e Demografia, Jornada, Documentos**.
+As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mercado, Jornada, Documentos**.
 
 | Aba | Situação | Seção do manual |
 |---|---|---|
@@ -69,7 +69,7 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mer
 | Estudos Técnicos › Estudos de viabilidade | Disponível em parte: lista, Resumo da viabilidade e a seção Tipologias do estudo | [15](15-ficha-viabilidades.md) |
 | Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico**), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
 | Estudos Técnicos › Restrições e entorno e › Histórico de uso | Disponível | [07](07-ficha-parametros.md) |
-| Mercado e Demografia | Disponível: Pontos de interesse, Renda e população, Perfil da população e Concorrência | [08](08-ficha-entorno.md) |
+| Mercado | Disponível: Pontos de interesse, Renda e população, Perfil da população e Concorrência | [08](08-ficha-entorno.md) |
 | Jornada | Disponível: linha do tempo e fases do terreno | [16](16-ficha-jornada.md) |
 | Documentos | **Ainda não disponível** (mostra "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
@@ -134,7 +134,7 @@ Cada linha tem uma **seta** que leva à aba onde o dado mora.
 | **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Terreno › Parâmetros urbanísticos (a seta abre a seção em Índices). |
 | **Área adotada** | Área e a fonte | O seletor de **fonte** troca a área adotada ali mesmo (a Cadastral aparece sempre; as outras, quando preenchidas). |
 | **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido (unidades somadas das tipologias e VGV bruto) | Estudos Técnicos › Estudos de viabilidade (a seta leva lá); vazias enquanto nenhum estudo for o válido. Ver [15](15-ficha-viabilidades.md). |
-| **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Mercado e Demografia, Pontos de interesse). |
+| **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Mercado, Pontos de interesse). |
 | **Valor pedido na entrada** | Valor da **primeira** oferta, com a data | Aba Comercial. |
 | **Perfil topográfico** | Plano, Inclinado, Acidentado... e o desnível | Medido sozinho (veja Relevo, abaixo); enquanto mede, "medindo...". A seta leva a Estudos Técnicos › Avaliação de infraestrutura. |
 | **Corretor** | Corretor principal e imobiliária | Aba Comercial. |

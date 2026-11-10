@@ -116,7 +116,7 @@ apps/web/
 | `Massa.tsx` | Aba Estudos de massa: lista com o válido, Solicitar estudo (com rascunho), ficha do estudo editada no lugar (tipologias numa fila que manda a lista inteira a `salvar_estudo_massa`), Ver pedido, Marcar como entregue / válido, Apagar e Criar estudo de viabilidade (`criar_viabilidade_da_massa`). |
 | `Contaminacao.tsx` | Popup "Ver detalhes" da contaminação: registros SIGAC e SVMA com todos os atributos e o recorte do mapa de lotes do GeoSampa (WMS) com o terreno e os registros. |
 | `Parametros.tsx` | Índices da aba Terreno (`SecParametros`, quadro `indices`) e, desde #324, as subabas Restrições e entorno (`AbaRestricoes`, quadro `rest`) e Histórico de uso (`AbaHistUso`, quadro `histuso`) de Estudos Técnicos: panorama do terreno (parâmetros de todos os lotes unidos por " / ", camadas somadas e o "não toca" uma vez só), zonas por lote (em "Ver lote por lote"), potencial construtivo de Mercado/HIS/HMP, alterar valores no lote, Restrições e entorno, histórico de uso. |
-| `Entorno.tsx` + `entorno.ts` | `AbaMercado` (aba Mercado e Demografia, desde #324, no lugar da aba Entorno): pontos de interesse (busca no Google, rota a pé, excluir/restaurar), renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
+| `Entorno.tsx` + `entorno.ts` | `AbaMercado` (aba Mercado, desde #324, no lugar da aba Entorno): pontos de interesse (busca no Google, rota a pé, excluir/restaurar), renda e perfil da população por raio, concorrência no entorno. `entorno.ts` tem a busca e a matriz de rotas. |
 | `Painel.tsx` | Painel lateral: quadro de avanço no topo e as abas Ações, Tarefas e Logs (sem olhinho nem lixeira). Os logs automáticos (`auditoria.automatico`) ficam recolhidos dentro da última ação da mesma pessoa (`agrupar`, janela de 30 min); a aba conta só ações. Gravação feita pelo sistema como consequência leva `automatico(...)` (`lib/supabase.ts`). |
 | `Avanco.tsx` | Quadro de avanço: subetapa, prazo, pendências, Avançar / Pedir aprovação / Concluir, Stand By / Perdido / Descartado, aprovar e recusar. Só por RPC. |
 | `MiniMapa.tsx` | Mini-mapa da Visão geral, com edição da poligonal no lugar. |
@@ -284,7 +284,7 @@ A chave começa por um nome curto e depois o que a identifica. Invalidar pelo no
 | `['ficha-logs', ...]`, `['ficha-tarefas', terreno]` | painel lateral | `ficha/Painel.tsx` |
 | `['ficha-listas', empresa]` | equipe e eixos para os seletores (5 min) | `ficha/edicao.tsx` |
 | `['ficha-massa', terreno]` | estudos de massa, tipologias e viabilidades presas | `ficha/Massa.tsx` |
-| `['parametros', ...]`, `['entorno', ...]` | seção Parâmetros urbanísticos (aba Terreno) e aba Mercado e Demografia | `ficha/Parametros.tsx`, `ficha/Entorno.tsx` |
+| `['parametros', ...]`, `['entorno', ...]` | seção Parâmetros urbanísticos (aba Terreno) e aba Mercado | `ficha/Parametros.tsx`, `ficha/Entorno.tsx` |
 | `['funil', empresa]` | quadro do funil | `pages/Funil.tsx` |
 | `['filtros', empresa]`, `['visoes', ...]` | dados dos filtros e visões salvas | `filtros/Filtros.tsx` |
 | `['avisos', usuário, empresa]` | sino (recarrega a cada 60 s e pelo Realtime) | `components/Moldura.tsx` |

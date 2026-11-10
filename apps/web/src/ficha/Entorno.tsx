@@ -86,12 +86,12 @@ export function EntornoAuto({ f }: { f: Ficha }) {
   return null;
 }
 
-/** aba Mercado e Demografia (pedido do Moises, 10/nov/2026): pontos de interesse, renda, perfil da população e
+/** aba Mercado (pedido do Moises, 10/nov/2026): pontos de interesse, renda, perfil da população e
     concorrência, cada um num chip; o Entorno de Estudos Técnicos saiu */
 export default function AbaMercado({ f }: { f: Ficha }) {
   /* um raio para cada quadro (pedido do Moisés, 6/nov/2026: antes era o mesmo nos dois) */
   const [raioR, setRaioR] = useState<Raio>(1000), [raioP, setRaioP] = useState<Raio>(1000);
-  if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Localização) para ver o mercado e a demografia.</div></section>;
+  if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Localização) para ver o mercado.</div></section>;
   return (
     <div className="stack">
       <SecPontos f={f} />
