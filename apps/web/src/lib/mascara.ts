@@ -6,7 +6,7 @@
      data-fmt="num"    até 3 casas          data-fmt="int"   inteiro
      data-fmt="m"      metros, até 2 casas; ao sair, completa as 2 (pedido do Moisés, 6/nov/2026)
      data-fmt="tel"    (11) 98765-4321      data-fmt="doc"   CPF ou CNPJ, pelo número de dígitos
-     data-fmt="cep"    00000-000            data-fmt="none"  não mexe (coordenadas, filtros com "12 mi")
+     data-fmt="cep"    00.000-000           data-fmt="none"  não mexe (coordenadas, filtros com "12 mi")
    Sem data-fmt, o tipo sai do rótulo: "R$" vira moeda, "%" vira pct, "(m)" ou "metros" vira m, o resto num.
    O valor é trocado pelo setter nativo do campo, para o React ver a mudança e
    chamar o onChange com o texto já formatado; lerNum lê os dois jeitos. */
@@ -59,8 +59,14 @@ function digitos(v: string, c: number, m: string): [string, number] {
 const MASC = {
   tel: (d: number) => (d > 10 ? '(00) 00000-0000' : '(00) 0000-0000'),
   doc: (d: number) => (d > 11 ? '00.000.000/0000-00' : '000.000.000-00'),
-  cep: () => '00000-000',
+  cep: () => '00.000-000', // pedido do Moisés, 10/nov/2026 (o banco guarda só os 8 dígitos)
 };
+
+/** CEP para mostrar: 00.000-000 (pedido do Moisés, 10/nov/2026); o que não tem 8 dígitos fica como está */
+export function fmtCep(v: unknown): string {
+  const s = v == null ? '' : String(v), d = s.replace(/\D/g, '');
+  return d.length === 8 ? `${d.slice(0, 2)}.${d.slice(2, 5)}-${d.slice(5)}` : s;
+}
 
 export function formatar(v: string, c: number, t: string, el?: HTMLInputElement): [string, number] {
   if (t in DEC) return numero(v, c, el?.dataset.dec != null ? +el.dataset.dec : DEC[t], el?.dataset.neg != null);

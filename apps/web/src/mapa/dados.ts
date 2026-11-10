@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { fmtCep } from '../lib/mascara';
 
 // Porte das regras do mapa do protótipo (tools/prototipo/proto_mod.js: SIT, COR_FASE, RAMPA, mpItens, mpClasse,
 // mpInfo, mpApagado, mpCorSub, mpSubNome, mpNivelItens; proto_fases.js: faseAtual, procDaFase). Funções puras:
@@ -175,7 +176,7 @@ export async function carregar(empresa: string): Promise<{ fases: Fase[]; terren
     })),
   }));
   const procs = (p.data as R[]).map((x) => ({ t: x.terreno_id as string, fase: x.fase, etapa: x.etapa_atual, sub: x.subetapa_atual, status: x.status }));
-  const end = Object.fromEntries((te.data as R[]).map((x) => [x.id, [x.logradouro, x.numero, x.cep].filter(Boolean).join(' ')]));
+  const end = Object.fromEntries((te.data as R[]).map((x) => [x.id, [x.logradouro, x.numero, x.cep, x.cep && fmtCep(x.cep)].filter(Boolean).join(' ')]));
   const porTer = (rs: R[], k: string) => { const o: Record<string, string[]> = {}; for (const r of rs) if (r[k]) (o[r.terreno_id] ??= []).push(String(r[k])); return o; };
   const mats = porTer(ma.data as R[], 'numero'), sqls = porTer(si.data as R[], 'inscricao');
   const terrenos: TerrenoMapa[] = (m.data as R[]).map((x) => ({

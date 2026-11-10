@@ -8,6 +8,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Dialogo } from '../components/ui';
 import { GEO_BASE, geoAneis, geoWfs, latLngUtm } from '../novo/geosampa';
 import { num } from './edicao';
+import { fmtCep } from '../lib/mascara';
 
 export const CONT_KS = ['area_contaminada_reabilitada_svma', 'GEOSAMPA_area_contaminada_sigac', 'area_contaminada_reabilitada_svma@30', 'GEOSAMPA_area_contaminada_sigac@30'];
 
@@ -50,7 +51,7 @@ function linhas(r: Reg): [string, ReactNode][] {
     ['Código na prefeitura', p.cd_area ?? p.cd_identificador_area_contaminada_sigac],
   ] : [
     ['Classificação', p.dc_classificacao_area_contaminada],
-    ['Endereço', [p.tx_endereco_area_contaminada, p.cd_cep_area_contaminada ? 'CEP ' + String(p.cd_cep_area_contaminada).replace(/^(\d{5})(\d{3})$/, '$1-$2') : null].filter(Boolean).join(' · ') || null],
+    ['Endereço', [p.tx_endereco_area_contaminada, p.cd_cep_area_contaminada ? 'CEP ' + fmtCep(p.cd_cep_area_contaminada) : null].filter(Boolean).join(' · ') || null],
     ['Contaminantes', p.tx_contaminante],
     ['Uso anterior', p.dc_uso_anterior_geral],
     ['Uso pretendido', p.dc_uso_pretendido_geral],

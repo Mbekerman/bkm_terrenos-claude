@@ -6,7 +6,7 @@ import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { carregarGoogle, gLib } from '../mapa/google';
 import { data as fd, m2 } from '../lib/format';
-import { Adorno, metros } from '../lib/mascara';
+import { Adorno, fmtCep, metros } from '../lib/mascara';
 import { empilhar } from '../components/Desfazer';
 import type { Ficha, R } from './dados';
 import { Busca, FONTE_CAMPO } from '../lib/buscando';
@@ -36,7 +36,7 @@ export const SECOES: Record<string, { titulo: string; campos: Campo[] }> = {
   ident: { titulo: 'Identificação', campos: [['nome', 'Nome de referência', 'txt', null, 'full'], ['descricao', 'Descrição', 'area', null, 'full'], ['prioridade', 'Prioridade', 'sel', 'prioridade'],
     ['responsavel_id', 'Responsável', 'user', null], ['origem_cadastro', 'Origem do cadastro', 'sel', 'origem'], ['data_identificacao', 'Identificado em', 'date', null],
     ['observacoes', 'Observações gerais', 'area', null, 'full']] },
-  loc: { titulo: 'Endereço e localização', campos: [['cep', 'CEP', 'txt', null], ['logradouro', 'Logradouro', 'txt', null], ['numero', 'Número', 'txt', null], ['complemento', 'Complemento', 'txt', null],
+  loc: { titulo: 'Endereço e localização', campos: [['cep', 'CEP', 'cep', null], ['logradouro', 'Logradouro', 'txt', null], ['numero', 'Número', 'txt', null], ['complemento', 'Complemento', 'txt', null],
     ['bairro', 'Bairro', 'txt', null], ['municipio_id', 'Município', 'mun', null], ['zona', 'Zona', 'sel', 'zona'],
     ['cartorio', 'Cartório de registro de imóveis', 'cri', null], ['referencia_localizacao', 'Referência', 'txt', null, 'full'], ['latitude', 'Latitude', 'dec', null],
     ['longitude', 'Longitude', 'dec', null]] },
@@ -87,6 +87,7 @@ export function fmtCampo(f: Ficha, [k, , tipo, opt]: Campo, listas?: { membros: 
     case 'm2': return m2(v);
     case 'm': return metros(v) + ' m';
     case 'dec': return num(v, 6);
+    case 'cep': return fmtCep(v);
     case 'url': return <a href={v} target="_blank" rel="noopener">{String(v).replace(/^https?:\/\//, '').slice(0, 48)}</a>;
     case 'user': return listas?.membros.find((x) => x.user_id === v)?.nome ?? (f.resp?.nome || '—');
     case 'eixo': return listas?.eixos.find((x) => x.id === v)?.nome ?? '—';
@@ -98,7 +99,7 @@ export function fmtCampo(f: Ficha, [k, , tipo, opt]: Campo, listas?: { membros: 
 /** valores iniciais do formulário (texto) das colunas pedidas */
 export function valoresDe(t: R, ks: string[]): Record<string, string> {
   const o: Record<string, string> = {};
-  for (const k of ks) o[k] = ['latitude', 'longitude'].includes(k) ? decStr(t[k]) : ['desnivel_estimado_m', 'testada_principal_m'].includes(k) ? metros(t[k]) : /_m2$/.test(k) ? numStr(t[k]) : t[k] == null ? '' : String(t[k]);
+  for (const k of ks) o[k] = ['latitude', 'longitude'].includes(k) ? decStr(t[k]) : ['desnivel_estimado_m', 'testada_principal_m'].includes(k) ? metros(t[k]) : /_m2$/.test(k) ? numStr(t[k]) : k === 'cep' ? fmtCep(t[k]) : t[k] == null ? '' : String(t[k]);
   return o;
 }
 
@@ -110,6 +111,7 @@ export function dadosDe(vals: Record<string, string>, campos: Campo[]): R {
     const v = vals[k].trim();
     if (['m2', 'm', 'dec'].includes(tipo)) d[k] = lerNum(v);
     else if (tipo === 'sel') d[k] = v || (opt && NI_DE[opt]) || null;
+    else if (tipo === 'cep') d[k] = v.replace(/\D/g, '') || null;
     else d[k] = v || null;
   }
   return d;
@@ -247,6 +249,7 @@ export function CampoInp({ f, c, vals, mudar, listas, inl, p }: { f: Ficha; c: C
     : <input id={id} value={v} onChange={on} placeholder={p ? ph : '1º CRI'} {...x} />;
   else if (tipo === 'mun') h = <input id={id} value={[f.municipio, f.uf].filter(Boolean).join(' · ')} readOnly title="Preenchido pela busca de endereço" />;
   else if (tipo === 'm2' || tipo === 'm') h = <Adorno t={tipo}><input id={id} inputMode="decimal" data-fmt={tipo === 'm' ? 'm' : undefined} value={v} onChange={on} placeholder={ph} {...x} /></Adorno>;
+  else if (tipo === 'cep') h = <input id={id} inputMode="numeric" data-fmt="cep" value={v} onChange={on} placeholder={ph} {...x} />;
   else if (tipo === 'dec') h = <input id={id} inputMode="decimal" data-fmt="none" value={v} onChange={on} placeholder={ph} {...x} />;
   else h = <input id={id} type={tipo === 'url' ? 'url' : undefined} value={v} onChange={on} required={k === 'nome'} placeholder={ph} {...x} />;
   /* inl: no mesmo lugar e na mesma altura da leitura, só com a linha embaixo (pedido do Moisés, 5/nov/2026) */
@@ -397,7 +400,7 @@ export function CamposEndereco({ f, vals, mudar, mun, setMun, soBusca, aoEscolhe
           const o: Record<string, string> = {};
           const m = (k: string, v: string) => { o[k] = v; mudarR.current(k, v); };
           const set = (k: string, v: string) => { if (v) m(k, v); };
-          set('cep', comp('postal_code')); set('logradouro', comp('route')); m('numero', comp('street_number')); if (comp('subpremise')) m('complemento', comp('subpremise'));
+          set('cep', fmtCep(comp('postal_code'))); set('logradouro', comp('route')); m('numero', comp('street_number')); if (comp('subpremise')) m('complemento', comp('subpremise'));
           set('bairro', comp('sublocality_level_1') || comp('sublocality') || comp('neighborhood'));
           const cidade = comp('administrative_area_level_2') || comp('locality'), uf = comp('administrative_area_level_1', true);
           if (cidade) setMunR.current({ cidade, uf });
@@ -429,7 +432,7 @@ export function CamposEndereco({ f, vals, mudar, mun, setMun, soBusca, aoEscolhe
       <div className="end-auto">
         {auto.map(([k, l]) => (
           <div key={k} className={`field auto-l ${k === 'logradouro' ? 'largo' : ''}`}><label htmlFor={`f-${k}`}>{l}</label>
-            <input id={`f-${k}`} value={vals[k] ?? ''} onChange={(e) => mudar(k, e.target.value)} readOnly={trava} className={trava ? 'auto-v' : ''} placeholder={trava ? '—' : ''} /></div>
+            <input id={`f-${k}`} {...(k === 'cep' ? { inputMode: 'numeric' as const, 'data-fmt': 'cep' } : {})} value={vals[k] ?? ''} onChange={(e) => mudar(k, e.target.value)} readOnly={trava} className={trava ? 'auto-v' : ''} placeholder={trava ? '—' : ''} /></div>
         ))}
         <div className="field auto-l largo"><label htmlFor="f-municipio">Município</label><input id="f-municipio" value={munTxt} readOnly className={trava ? 'auto-v' : ''} title="Preenchido pela busca de endereço" /></div>
       </div>

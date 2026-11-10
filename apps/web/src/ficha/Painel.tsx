@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { metros } from '../lib/mascara';
+import { fmtCep, metros } from '../lib/mascara';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -75,6 +75,7 @@ function valTxt(k: string, v: unknown, c: Ctx): string {
   if (tipo === 'm2') return m2(Number(v));
   if (tipo === 'm') return metros(v) + ' m';
   if (tipo === 'date') return fd(String(v));
+  if (tipo === 'cep') return fmtCep(v);
   if (tipo === 'eixo') return 'alterado';
   if (typeof v === 'boolean') return v ? 'sim' : 'não';
   return curto(v);
