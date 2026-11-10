@@ -1,39 +1,97 @@
 name: CI
+# Roda só no PR para develop ou main (o push no branch e o merge repetiam o mesmo teste),
+# numa máquina só (cada máquina é cobrada por 1 minuto no mínimo) e só a parte que mudou.
+# Mudança só em documentação não roda nada. Decisão do Moisés, 7/nov/2026.
 on:
-  push:
   pull_request:
+    branches: [develop, main]
+    paths:
+      - 'apps/web/**'
+      - 'supabase/**'
+      - 'services/**'
+      - 'tools/**'
+      - 'docs/prototipo.html'
+      - '.github/workflows/**'
   workflow_dispatch:
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
-  web:
-    name: Front (typecheck + build)
+  ci:
+    name: CI
     runs-on: ubuntu-24.04
-    defaults: { run: { working-directory: apps/web } }
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
+      - name: O que mudou
+        id: mudou
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "web=true" >> "$GITHUB_OUTPUT"; echo "banco=true" >> "$GITHUB_OUTPUT"; echo "prototipo=true" >> "$GITHUB_OUTPUT"; echo "iptu=true" >> "$GITHUB_OUTPUT"; echo "varredura=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[].filename' > mudou.txt
+          cat mudou.txt
+          tem() { grep -qE "$1" mudou.txt && echo true || echo false; }
+          echo "web=$(tem '^(apps/web/|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
+          echo "banco=$(tem '^(supabase/|tools/(parametros|setores|viabilidade)/.*\.json$|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
+          echo "iptu=$(tem '^(services/iptu/|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
+          echo "varredura=$(tem '^(tools/geosanja/varredura/|apps/web/src/novo/lotesSjcPuro\\.ts$|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
+          echo "prototipo=$(tem '^(docs/prototipo\.html|tools/prototipo/|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: npm install --no-audit --no-fund
-      - run: npm run typecheck
-      - run: npm run build
+        if: steps.mudou.outputs.web == 'true' || steps.mudou.outputs.prototipo == 'true' || steps.mudou.outputs.iptu == 'true' || steps.mudou.outputs.varredura == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            services/iptu/package-lock.json
+            tools/geosanja/varredura/package-lock.json
+
+      - name: Front (typecheck + build)
+        if: steps.mudou.outputs.web == 'true'
+        working-directory: apps/web
         env:
           VITE_SUPABASE_URL: https://exemplo.supabase.co
-          VITE_SUPABASE_ANON_KEY: chave-de-ci
+          VITE_SUPABASE_KEY: chave-de-ci
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm run build
 
-  banco:
-    name: Banco (migrations + regras)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-16-postgis-3
-      - run: bash supabase/tests/run.sh
+      - name: Varredura do GeoSanja
+        if: steps.mudou.outputs.varredura == 'true'
+        working-directory: tools/geosanja/varredura
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
 
-  prototipo:
-    name: Protótipo (sintaxe do script)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: |
+      - name: Serviço do IPTU (leitura da notificação)
+        if: steps.mudou.outputs.iptu == 'true'
+        working-directory: services/iptu
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+
+      - name: Banco (migrations + regras)
+        if: steps.mudou.outputs.banco == 'true'
+        timeout-minutes: 10
+        run: |
+          sudo apt-get update -qq -o Acquire::Retries=3
+          sudo apt-get install -y -qq postgresql-16-postgis-3
+          bash supabase/tests/run.sh
+
+      - name: Protótipo (sintaxe do script)
+        if: steps.mudou.outputs.prototipo == 'true'
+        run: |
           node -e "const s=require('fs').readFileSync('docs/prototipo.html','utf8');const i=s.lastIndexOf('<script>');new Function(s.slice(i+8,s.lastIndexOf('</script>')));console.log('ok')"

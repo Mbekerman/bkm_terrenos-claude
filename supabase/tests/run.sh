@@ -20,3 +20,19 @@ for f in supabase/migrations/*.sql; do
   $PSQL -f "$f"
 done
 $PSQL -f supabase/tests/regras.sql 2>&1 | sed "s/^psql:[^ ]* NOTICE:  //" | grep -E "^(ok |# |FALHOU|TODOS)|ERROR"
+
+# carga da BKM: roda duas vezes (não duplica) e o primeiro login de cada um pega o papel combinado
+$PSQL -f supabase/carga/bkm.sql
+$PSQL -f supabase/carga/bkm.sql
+$PSQL -t -A -c "
+insert into auth.users values
+  ('10000000-0000-0000-0000-000000000004', 'arnon.cugola@bkm.com.br', '{\"full_name\":\"Arnon\"}', now()),
+  ('10000000-0000-0000-0000-000000000001', 'moises@bkm.com.br', '{\"full_name\":\"Moisés Bekerman\"}', now()),
+  ('10000000-0000-0000-0000-000000000003', 'cecilia.scheydegger@bkm.com.br', '{}', now()),
+  ('10000000-0000-0000-0000-000000000005', 'outra.pessoa@bkm.com.br', '{}', now());
+select case when (select count(*) from app.empresas where nome = 'BKM') = 1
+  and (select string_agg(u.email || ':' || m.papel || ':' || m.administrador || ':' || coalesce(s.email, '-'), ' ' order by u.email)
+       from app.membros m join app.usuarios u on u.user_id = m.user_id left join app.usuarios s on s.user_id = m.superior_id
+       where m.empresa_id = (select id from app.empresas where nome = 'BKM'))
+     = 'arnon.cugola@bkm.com.br:analista:false:cecilia.scheydegger@bkm.com.br cecilia.scheydegger@bkm.com.br:gestor:false:moises@bkm.com.br moises@bkm.com.br:diretor:true:- outra.pessoa@bkm.com.br:basico:false:-'
+  then 'CARGA DA BKM OK' else 'FALHOU: carga da BKM' end" | tee /dev/stderr | grep -q "CARGA DA BKM OK"

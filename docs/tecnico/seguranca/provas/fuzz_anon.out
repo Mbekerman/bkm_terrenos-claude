@@ -1,0 +1,45 @@
+ set_config 
+------------
+ 
+(1 row)
+
+ERR INV app._viab_soma: [42501] permission denied for table viabilidade_linhas
+RET INV app._viab_valor: <null>
+RET INV app.arrobas_no_texto: {}
+ERR INV app.concorrencia_resumo: [42501] permission denied for table concorrencia_empreendimentos
+ERR INV app.concorrencia_tipologias_em: [42501] permission denied for table concorrencia_tipologias
+ERR SD app.configurar_notificacao: [42501] Só o administrador muda a configuração
+ERR INV app.densidade_faixa: [42501] permission denied for table densidade_faixas
+ERR INV app.estatisticas_area: [42501] permission denied for view setores_renda
+ERR INV app.estatisticas_raio: [42501] permission denied for view setores_renda
+ERR INV app.estatisticas_terreno: [42501] permission denied for table terrenos
+ERR INV app.ficha_dados: [42501] permission denied for view v_terrenos
+ERR SD app.marcar_notificacao_lida: [42501] Faça login primeiro
+ERR INV app.perfil_area: [42501] permission denied for table setores_censitarios
+ERR INV app.perfil_terreno: [42501] permission denied for table terrenos
+ERR INV app.renda_faixa: [42501] permission denied for table renda_faixas
+ERR SD app.salvar_preferencia_notificacao: [42501] Sem acesso a esta empresa
+ERR INV app.setor_soma: [42501] permission denied for table setor_valores
+ERR INV app.setores_no_retangulo: [42501] permission denied for view setores_renda
+RET INV app.viab_fixo: false
+RET INV app.viab_restrito: false
+RET INV app.viab_secao: despesas
+RET INV app.viab_tipos: {pct_vgv,pct_obra_total,pct_lucro,verba}
+RET SD fluxo._condicoes_ok: true
+RET SD fluxo._dono_vale: false
+RET SD fluxo._lista_auto: <null>
+RET INV fluxo.agenda_hoje: false
+ERR SD fluxo.apertar_botao: [42501] Só quem edita o cartão aperta o botão
+RET SD fluxo.aprova_linha_base: false
+RET SD fluxo.aprova_pausa: false
+RET SD fluxo.botoes_cartao: 0 linhas
+ERR INV fluxo.copiar_tarefa: [42501] permission denied for table tarefas
+RET SD fluxo.dia_util: false
+RET SD fluxo.duracao_dias: 1
+RET SD fluxo.edita_modelo: false
+RET SD fluxo.inicio_cedo: <null>
+RET INV fluxo.nivel_cartao: 0
+RET SD fluxo.nivel_pausa: 2
+RET INV fluxo.proxima_ocorrencia: <null>
+RET SD fluxo.somar_dias: 2026-11-09
+RET SD fluxo.usa_dias_uteis: false

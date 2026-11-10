@@ -1,0 +1,124 @@
+# Registro de mudanças
+
+O que mudou **para quem usa** o BKM Terrenos, do mais recente ao mais antigo. Cada linha diz o que mudou, onde, e o número do PR (o mesmo que aparece no selo "PR #N" do ambiente de desenvolvimento).
+
+Quem desenvolve: toda mudança que o usuário vê ganha uma linha aqui, na data do merge, no mesmo PR que a faz (ver [Como manter](README.md#como-manter-este-manual-para-quem-desenvolve)).
+
+Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era testado no protótipo. Este registro começa no porte das telas para o sistema real.
+
+## 10/nov/2026
+
+- **Produção atualizada** (endereço de produção): o protótipo de produção passa a ser o mesmo do ambiente de desenvolvimento. O sistema real continua só no ambiente de desenvolvimento até ser ligado em produção. (#301)
+- **Arrastar o mapa enquanto arrasta um ponto** (página Mapa e mini-mapa da ficha): segurando um ponto ou pino com o botão esquerdo, aperte e segure a roda do mouse para arrastar o mapa; soltando a roda, volta a mover o ponto. Ver [Mapa](02-mapa.md#editar-a-poligonal-de-um-terreno). (#300)
+- **CEP com máscara** (aba Terreno, Endereço e localização; também no Log e no endereço das áreas contaminadas): o CEP aparece como 00.000-000 (ex.: 12.228-323) em vez dos 8 números colados. A busca de cima acha o CEP digitado dos dois jeitos. (#297)
+- **Rolar a tela durante o retângulo de seleção:** a roda do mouse rola a tela e o retângulo continua preso ao ponto onde você clicou, sem soltar etiquetas que já tinha pegado. (#299)
+- **Janela movida fica aberta** (em todo o sistema): depois de arrastar uma janela pelo título, dá para usar a tela de baixo sem que ela feche; ela só fecha no X, no Esc ou nos botões dela. Ver [Entrar e se localizar](01-entrar-e-navegar.md#mover-as-janelas-pop-ups-pela-tela). (#296)
+- **Etiqueta do terreno menor de longe** (página Mapa): o tamanho na escala de bairro passa a ser o máximo; afastando mais o mapa, a etiqueta diminui junto com os ícones do Google. (#298)
+- **Terreno no mapa mais fácil de achar:** cada terreno agora aparece como uma etiqueta com o código (A112), na cor da fase ou etapa, com um ponto embaixo no lugar exato, no lugar do pino parecido com os do Google. Com o mapa mais afastado, a etiqueta fica um pouco maior. (#295)
+- **Selecionar várias etiquetas com um retângulo** (aba Terreno, Matrículas e SQLs): clique no vazio e arraste para desenhar um retângulo; as matrículas e SQLs que ele toca ficam selecionados e se arrastam juntos para uma parte, uma matrícula ou de volta para cima. Ctrl ou Shift + clique soma etiquetas; Ctrl+Z desfaz o grupo inteiro. (#294)
+- **Nomes do GeoSanja com acento** (subsetor, setor, parques, núcleos...): a prefeitura entrega "S?o Jos?" no lugar de "São José"; o sistema troca pelas letras certas, também nas consultas já feitas. (#293)
+- **Topográfico em São José dos Campos com os lotes da quadra** (aba Infraestrutura): a folha e o DXF trazem todos os lotes das quadras do terreno, numerados. (#293)
+- **Partes na aba Comercial**: cada parte mostra só as suas matrículas, em etiquetas que não se tiram; o clique abre a janela da matrícula com a área, o percentual da parte e os SQLs dela, com a área de cada lote e a área da parte. (#293)
+- **Descartar item do "Falta preencher"** (topo da ficha): cada item da lista tem um x que o descarta neste terreno; ele sai da lista e da conta do percentual, e o descarte fica no Log. Embaixo, "Descartados (N)" com "Voltar a pedir". Ctrl+Z desfaz. (#293)
+- **Cartório e Zona automáticos em São José dos Campos** (aba Terreno, Endereço e localização): ao abrir a ficha, o GeoSanja informa o 1º ou 2º Registro de Imóveis e a região da cidade (Centro, Norte, Sul, Leste, Oeste ou Sudeste) pelo ponto do terreno; o que você digitar não é trocado. (#293)
+- **IPTU fora de São Paulo** (aba Terreno, quadro IPTU): a lista por inscrição já vem aberta, com Lançar ou Atualizar em cada linha, e na janela da inscrição o formulário do IPTU já vem aberto enquanto não há IPTU lançado. (#293)
+- **Índices urbanísticos fora de São Paulo** mostram um potencial e um CA máximo só, sem as linhas de Mercado, HIS e HMP. (#293)
+- **Cartório em São José dos Campos** (aba Terreno): o campo não fica mais "Buscando no GeoSampa..." enquanto o GeoSanja consulta as inscrições. Fora de São Paulo o cartório não vem sozinho; digite-o. O aviso do carregando nos Índices urbanísticos passa a dizer "Buscando no GeoSanja". Testada e Posição na quadra também não mostram mais o carregando fora de São Paulo. (#293)
+- **Mapa de lotes de São José dos Campos mais rápido na segunda vez:** cada quadra montada pelo GeoSanja fica guardada no sistema, e quem abrir o mapa na mesma quadra depois vê os lotes na hora. A quadra é montada de novo depois de 90 dias. (#290)
+- **Novo terreno em São José dos Campos** igual ao de São Paulo: **"Incluir por inscrição"** no passo 1 (a poligonal vira a soma dos lotes do GeoSanja) e o **mapa de lotes da prefeitura** logo depois da poligonal, com as quadras inteiras montadas pelo GeoSanja, o satélite do Google por baixo e o clique fora dos lotes para acrescentar o lote daquele ponto. Na ficha, "Escolher no mapa" em Matrículas e SQLs. (#289)
+- **Planta do loteamento** (aba Terreno, Endereço e localização, só São José dos Campos): baixa do GeoSanja a planta do loteamento aprovado onde o terreno está. (#289)
+- **GeoSanja em São José dos Campos** (aba Terreno, Matrículas e SQLs): a inscrição imobiliária incluída é consultada sozinha no GeoSanja e traz a poligonal do lote, a zona com a área, a macrozona e as restrições; a poligonal do terreno é refeita pela soma dos lotes. Na janela da etiqueta, "Buscar no GeoSanja". O que o GeoSanja não traz (área cadastral, endereço, testada, valor venal, IPTU, cartório) continua para digitar, com o aviso na janela. (#288)
+- **Topográfico preliminar fora de São Paulo** (aba Infraestrutura, quadro Relevo, botão Topográfico): gera a planta A3 em PDF e o ZIP com o DXF, com curvas de nível do Google (1 em 1 m, mestra de 5 em 5 m) sobre a imagem de satélite do Google com os nomes das ruas; em São José dos Campos o contorno vem dos lotes do GeoSanja. Os arquivos se baixam na hora (ainda não ficam em Documentos). Em São Paulo, que usa o laser da prefeitura, entra depois. (#288)
+- **"Adicionar ponto" de interesse** saiu da lista do que falta: não vai para o sistema (decisão de 10/nov). (#288)
+
+## 9/nov/2026
+
+- **Rota a partir do ponto** (Mapa, clique direito): a opção virou "Traçar rota a partir daqui" e a rota vai do ponto do clique direito até o ponto escolhido, com o botão ⇅ para inverter o sentido. Os dois pontos se arrastam (o cursor vira o dedo e o ponto cresce), e a chegada é um pino quadriculado preto e branco. (#287)
+- **Temperatura do terreno** (topo da ficha, cabeçalho da gaveta do Mapa e aba Comercial): a temperatura passou a ser do terreno e aparece sempre, também no Backlog (terreno sem oferta), onde antes sumia. A que já existia continua. A mudança aparece nos Logs como "Temperatura: antes → depois". (#281)
+- **Completude: Proprietário** só conta como preenchido quando cada parte do terreno tem proprietários somando 100% de participação. (#279)
+- **Arrastar a saída da rota** (Mapa › Traçar rota até aqui): a bolinha da saída se arrasta com o mouse (mãozinha); ao soltar, a rota é recalculada do lugar novo. (#275)
+- **Janelas que se movem** (em todo o sistema): toda janela que abre por cima da tela e os quadros sobre o mapa (setor, concorrência, rota) se arrastam pelo título para ver o que está atrás; o fundo escurecido clareia depois de mover, e dois cliques no título devolvem a janela ao lugar. Ver [Entrar e se localizar](01-entrar-e-navegar.md#mover-as-janelas-pop-ups-pela-tela). (#269)
+- **Cursor ao marcar pontos no mapa** (Mapa e mini-mapa da Visão geral): ao desenhar ou editar a poligonal ou escolher a saída da rota no mapa, o cursor é o **dedo indicador**, não mais a mãozinha aberta de arrastar nem a mira. Na régua continua a seta. Arrastando o mapa, continua a mão fechada. (#276)
+- **Área adotada** (Terreno › Áreas e dimensões): todo terreno nasce com a **Cadastral** como adotada, e só a **Topográfica** (antes "Levantamento") toma o lugar sozinha, ao ser digitada; escolher outra continua pelo clique no cartão, e apagar a escolhida volta para a Cadastral. A **área estimada saiu**. Os cartões ficam na ordem Documental, Cadastral, Topográfica e Poligonal, os quatro lado a lado quando cabem, senão em dois pares. (#280)
+- **Logs só com as ações de quem usa** (painel da ficha): as atualizações que o sistema faz por consequência (consulta do GeoSampa, zona fiscal do SQL, frentes e testada) ficam recolhidas dentro da ação, em "N atualizações automáticas"; o número da aba conta só as ações; vários SQLs incluídos de uma vez viram uma linha só. (#253)
+- **Excluir e deletar terreno** (ficha, botão ⋮ no topo; só diretor e administrador): **Excluir** tira o terreno de todos os lugares (lista, mapa, funil, busca, tarefas, sino) e o guarda por 180 dias, com **Restaurar** pelo administrador; depois disso ele é apagado de vez sozinho. **Deletar de vez** (só administrador) apaga tudo na hora, depois do aviso de ação irreversível e do nome do terreno digitado. Lista dos excluídos no menu do avatar, **Terrenos excluídos** (só administrador). (#284)
+- **Zona automática em São Paulo** (Visão geral › Resumo e Terreno › Endereço e localização): ao abrir a ficha, a Zona vem sozinha do GeoSampa, pela região oficial da prefeitura (Centro, Norte, Sul, Leste ou Oeste) da subprefeitura onde fica a maior parte da poligonal, com o círculo girando enquanto busca e a marca "do GeoSampa". Continua editável: trocada à mão, o GeoSampa não sobrescreve. Mooca, Vila Prudente e Penha saem como Leste e Ipiranga e Vila Mariana como Sul, que é a divisão da prefeitura. (#278)
+- **Ordenar a lista do Mapa também por código, etapa e subetapa** (Mapa › Filtros › Ordenação). Etapa e subetapa seguem a ordem do funil, pela fase mais adiante que está aberta; terreno sem fase aberta (Backlog, Perdido, Descartado, Comprado) fica no fim. (#283)
+- **Ordenar a lista do Mapa** (Mapa › Filtros › Ordenação): nova aba na gaveta de filtros para ordenar a lista de terrenos pelos campos da tabela de Terrenos (Terreno, Cidade, Região, Imóvel, Projeto, Negociação, Corretor, Temperatura, Responsável). Um clique crescente, dois decrescente, três tira; vários campos em sequência. O navegador guarda a ordenação e o Mapa sempre abre com ela. Ver [11](11-filtros-e-visoes.md#ordenação-só-no-mapa). (#282)
+- **IPTU** (Terreno › IPTU): o quadro nasce fechado, como os outros da aba; abre pela seta do título. Os três valores venais cabem numa linha também na gaveta da ficha, com o total em destaque. O panorama mostra só os venais, as áreas e o IPTU anual e mensal: impostos, valor do m², padrão, uso e vencimento ficam no Detalhe de cada SQL. A busca automática, que não saía, passou a funcionar. (#277)
+- **Editar a poligonal com dois cliques** (Mapa e mini-mapa da Visão geral): vale em qualquer ponto dentro da poligonal, não só exatamente sobre a linha. Sobre o pino, os dois cliques continuam sem editar. (#270)
+- **IPTU** (Terreno › IPTU): em São Paulo o IPTU vem sozinho da Prefeitura ao cadastrar o terreno e a cada SQL incluído, por trás, sem travar o cadastro; enquanto não chega, a seção fica carregando. Em São Paulo o venal e o IPTU não se digitam mais; fora de São Paulo, sem busca, se lançam na própria seção ou na janela do SQL. IPTU mensal = anual ÷ 10 (antes ÷ 12). Valores venais em três caixas como as de Áreas e o resto em duplas, com IPTU anual e mensal em destaque. (#268)
+- **Cores do mapa no satélite** (Mapa, pinos, poligonais, legenda e bolinhas da lista): Backlog passou de cinza para amarelo-claro, Obras de azul-marinho para lavanda, Entregue de cinza para verde-menta e Descartado de cinza-escuro para cinza-claro. Nos quatro, o ponto do pino e o código ficam escuros. Antes, esses terrenos sumiam sobre a imagem de satélite. (#267)
+- **Proprietário da parte** (Terreno › Partes › lápis): só o **nome** e a **% de participação** são obrigatórios. Telefone, e-mail e CPF/CNPJ são opcionais e não contam como pendência. (#274)
+- **Pessoas da parte** (Terreno › Partes › Pessoas): o botão **Limpar dados** saiu de cima do Incluir e fica ao lado do título da janela ("Pessoas · Vendedor 1"). O **Incluir** passou a ser o botão azul e o **Concluir** ficou branco. (#273)
+- **Campos que vêm de fora mostram que estão buscando**: a ficha abre na hora com o que já tem e, enquanto o GeoSampa ou o Google ainda respondem, aparece um círculo girando no campo ou no quadro (cartório, posição na quadra, testada, Áreas e dimensões, Índices urbanísticos, Restrições e entorno, Pontos de interesse), com "Buscando no GeoSampa..." quando o campo ainda está vazio. Quando a busca termina, a ficha se atualiza sozinha. O **cartório** de São Paulo agora vem também sem SQL, pela poligonal. Corrigida a ficha que ficava carregando depois de uma gravação recusada por edição simultânea. (#272)
+- **Ficha logo depois do cadastro**: um campo escolhido enquanto o GeoSampa ainda preenchia o terreno (por exemplo a **Zona**) podia ser recusado sem a tela mostrar, e continuava contando como faltando. Agora a gravação passa quando ninguém mexeu naquele campo, a ficha se atualiza sozinha à medida que o GeoSampa responde (o cartório aparece na hora) e, se uma gravação for recusada, o campo volta ao valor gravado. (#271)
+- **IPTU** (Terreno › IPTU): o botão **PDF** de cada SQL aparece mesmo antes de o valor ser trazido da Prefeitura (exercício do ano). A Senha Web da Prefeitura pode ser de CPF ou de CNPJ. (#266)
+- **Detalhes da contaminação** (Terreno › Parâmetros urbanísticos, em Restrições e entorno e Histórico de uso): "Ver detalhes" abre uma janela com o mapa de lotes do GeoSampa (terreno em azul, registros numerados em vermelho) e tudo o que a prefeitura guarda de cada registro: lote, atividade, origem e data do cadastro, processo; na área contaminada, classificação, endereço, contaminantes e restrições. (#263)
+- **Parâmetros urbanísticos viraram seção da aba Terreno**, logo depois de Endereço e localização (a aba Parâmetros saiu; o link antigo abre a aba Terreno). Dentro, três quadros: **Índices urbanísticos** (zonas, potencial, panorama e lote por lote), **Restrições e entorno** e **Histórico de uso**. Nos índices saíram CA básico, CA mínimo, lote mínimo, frente mínima e outorga onerosa (também do "Alterar valores", menos o CA básico); no potencial saiu o "CA máx." ao lado, que já aparece logo abaixo. (#263)
+- **Rota: saída escolhida no mapa** (Mapa › Traçar rota até aqui): além de digitar, clique num ponto, num lugar do Google, noutro terreno ou num concorrente para escolher de onde sai a rota; a mira ao lado do campo liga a escolha de novo. (#264)
+
+- **Barra de cima em tela grande**: o logo da BKM e o avatar não vão mais para o meio em monitores largos. O logo fica sempre alinhado com o menu lateral e o avatar no canto direito, com a mesma margem. Com o menu aberto, a página também ocupa a largura toda (antes ficava centrada com sobra dos dois lados). (#265)
+- **IPTU** (aba Terreno, depois de Áreas e dimensões): quadro novo com o valor venal, o IPTU anual e o mensal do terreno e de cada SQL. Em São Paulo, **Buscar na Prefeitura** traz o venal e o IPTU da notificação de lançamento (2ª via), com o detalhe do cálculo e o PDF. (#262)
+- **Propostas por parte** (Comercial › Propostas): toda proposta diz para qual parte foi feita (uma, várias ou todas). Com uma parte, ela já vem marcada; com mais de uma, é obrigatório escolher. A lista mostra as partes de cada proposta, Nenhuma proposta recusa ou substitui outra sozinha: com duas em aberto para a mesma parte, o quadro avisa e você muda o status de qualquer uma, exclui uma (lixeira) ou deixa as duas; nos resumos vale a mais recente. (#255)
+
+- **Concorrência no Mapa**: o empreendimento aberto deixa de ficar preto com anel azul para sempre; qualquer clique fora dele (no mapa ou em outra parte da tela) tira o destaque e o quadrado volta à cor dele. (#261)
+- **Reuniões** (Comercial): participantes marcados com **@** (colegas da BKM, avisados no sino, e pessoas de fora do terreno com e-mail, só registradas); @ na pauta, no que foi tratado e nos encaminhamentos; campo **Link da reunião** na online, com "Entrar na reunião"; clicar na reunião abre a edição, com a situação Cancelada e logs de cada mudança. (#256)
+- **Gaveta da ficha no Mapa**: o topo da ficha não repete mais o cabeçalho. Código e nome ficam só no cabeçalho, que ganha a temperatura; "Abrir página" virou um ícone; a linha "fase · etapa · subetapa" saiu (o nome da fase fica em cima da linha do tempo; no celular continua). Na página própria da ficha nada muda. (#259)
+- **Restrições e entorno** (Parâmetros, São Paulo): a classificação viária da CET lista só as ruas que são frente do terreno, uma linha por rua (antes vinham todas as ruas a até 30 m e a mesma rua repetida por trecho); "Vila a até 20 m" virou **Vila ou rua sem saída**; melhoramento viário e faixa não edificável mostram quanto do terreno atingem; córrego, vila, alta tensão e ferrovia mostram a distância. Vale para consultas novas: clique em "Consultar de novo". (#260)
+- **Perfil da população do entorno** (aba Entorno) ganhou a **densidade demográfica** (habitantes por km²) e a **idade média** estimada. (#258)
+- **Gaveta da ficha no Mapa lembra onde você parou**, por terreno: a aba, a rolagem e os quadros abertos e fechados voltam como estavam ao reabrir, também depois de fechar o navegador (últimos 50 terrenos, neste navegador). (#257)
+- **Traçar rota até aqui** (Mapa): o clique direito traz a opção de traçar a rota de um endereço, um lugar ou da sua localização até o ponto clicado, de carro, moto, a pé, de bicicleta ou de transporte público, com tempo, distância e "Abrir no Google Maps". Sobre um terreno já cadastrado, o clique direito não mostra mais "Novo terreno aqui". Leitura também usa a rota. (#254)
+
+- **Panorama do terreno** (Parâmetros › Parâmetros urbanísticos): os parâmetros de todos os lotes juntos, com os valores diferentes separados por barra, e as restrições do terreno inteiro; o "Não toca" aparece uma vez só, para todos os lotes, e o lote por lote fica atrás de "Ver lote por lote". (#252)
+- **Potencial construtivo** (Parâmetros › Parâmetros urbanísticos): o rótulo "maior CA" virou "CA máx.". (#251)
+- **Rascunho dos formulários**: sair de um formulário de inclusão sem registrar (matrícula, SQL, IPTU, pessoa da parte, oferta, proposta, reunião, zonas) não mostra mais o aviso "Você não registrou …"; o que foi digitado continua guardado no navegador e volta ao reabrir. (#250)
+- **Barra de abas da ficha**: com o mouse em cima, o cursor é o dedinho (antes, a mão aberta); a mão fechada só aparece enquanto o botão do mouse está apertado, para arrastar a barra. (#249)
+- **Testada principal em São Paulo** deixou de ser campo digitável (Terreno › Áreas e dimensões): é sempre a frente do acesso principal medida pela poligonal. Saiu o aviso de testada diferente da medida. Nas outras cidades continua digitada. (#248)
+- **Área cadastral em São Paulo** não se digita mais: é sempre a soma das áreas dos SQLs. (#248)
+- **Busca da barra de cima** procura de fato por matrícula, SQL e endereço (rua, número, CEP), com ou sem pontuação e sem ligar para acento; digitada fora do Mapa, leva ao Mapa com o texto. (#247)
+- **Completude da ficha** chega a 100%: a "Visita técnica" saiu da conta enquanto a aba Infraestrutura não existe no sistema real. (#247)
+
+## 8/nov/2026
+
+- **Posição na quadra e frentes** (Terreno › Áreas e dimensões, São Paulo): medidas sozinhas pela poligonal e pelos lotes e ruas da prefeitura; uma linha por rua com os metros de frente; a testada principal vazia passa a vir da medição. (#246)
+- Manual do usuário (esta pasta) e três roteiros de vídeo de onboarding. Sem mudança na tela. (#244)
+
+## 6/nov/2026
+
+- **Cartão da parte** (Terreno › Partes): lápis e lixeira só com ícone, na linha do título. (#242)
+- **Rascunho dos formulários** da ficha (oferta, proposta, reunião, zonas, matrícula, SQL, IPTU, pessoas) fica guardado no navegador e volta ao reabrir; botão "Limpar dados". (#241)
+- **Matrícula vira subquadro da parte**; o SQL entra sempre dentro de uma matrícula; as pessoas da parte (nome, telefone, e-mail, CPF/CNPJ, %, Relação) ficam numa janela pelo lápis da parte; a seção Proprietários e contatos saiu da aba Terreno. (#240)
+- **Mapa de lotes**: "Usar N lotes" passou a funcionar com um SQL digitado e não incluído; aviso quando o banco demora mais de 20 s. (#238, #239)
+- **Ficha mais rápida**: carrega num pedido só e já começa a carregar quando o mouse para sobre o terreno no Mapa; GeoSampa com prazo de 30 s. (#236, #237)
+- **Duplicar etiqueta** é um item só no menu, e a cópia nasce no mesmo lugar da original. (#235)
+- **Selo do ambiente** de desenvolvimento mostra "PR #N · dia hora" do que está no ar. (#234)
+- **Número do endereço** editável, com o aviso "Número diferente do cadastro da prefeitura"; cópias de etiqueta soltas para distribuir depois. (#233)
+- **Área cadastral** passa a ser a soma das áreas dos SQLs, até alguém digitar outro valor. **Endereço só pelo mapa**: o lápis "Editar no mapa" abre a edição da poligonal; o pino se arrasta; "Trocar o endereço?" quando a rua muda. **Etiquetas com percentual** (mini pizza e barra). Saíram Precisão da localização e Eixo comercial. (#232)
+- **Etiquetas em mais de uma parte**, com percentual opcional; a área de **Levantamento** vira a adotada ao ser digitada; saiu **Características físicas**; o formato do campo aparece em cinza enquanto se digita. (#230)
+- **Ficha na gaveta do Mapa**: borda de arrastar a largura visível. Campo que falta rola até a altura dos olhos e acende em verde-limão. (#226, #227, #228, #229)
+- **Alerta do que falta** na barra das abas quando o topo da ficha sai da vista; as abas deixaram de ter número. (#225)
+- **Sino de avisos**: ao vivo, com terreno, data e autor; o clique marca como lido e abre a ficha na aba certa. (#224)
+- **Filtros de terrenos** no Mapa e no Funil, com chips, Limpar e visões salvas, e a seleção própria de cada página. (#223)
+- **Selecionar lotes** na edição da poligonal troca os SQLs do terreno pelos marcados, com Ctrl+Z. (#222)
+- **Edição da poligonal** no Mapa e no mini-mapa da ficha, com o menu do ponto, salvar no clique fora, Ctrl+Z e Ctrl+Y. (#221)
+
+## 5/nov/2026
+
+- **Comercial**: com uma parte só, a área da parte é a adotada do terreno. **Entorno**: "Ver tabela completa" no empreendimento. Clicar num campo seleciona o conteúdo. (#220)
+- **Entorno**: "Empreendimentos no entorno" com raio e botões de situação guardados; raio da renda e do perfil independentes. (#219)
+- **Funil** no sistema real: fases, etapas e subetapas, com arrastar. (#218)
+- Aviso **"Você não registrou…"** nos formulários; **abas da ficha em roleta** com inércia; o mapa abre em **Satélite**; fonte da alteração do lote opcional. (#217)
+- **Ficha**: abas **Parâmetros** e **Entorno**. (#215)
+- Ajustes da ficha para telas estreitas (máscaras, tabelas) e barra de abas com o ⋮ fixo. (#214)
+- **Quadro de avanço e painel** (Ações, Tarefas, Logs) na ficha. (#213)
+- **Aba Comercial**: negociação, condições pedidas, partes, ofertas, corretores, propostas e reuniões; "Escolher no mapa" e oferta pela matrícula de outro terreno. (#212)
+- Título do quadro aberto preso abaixo das abas. (#211)
+- **Edição no lugar**, sem Editar nem Salvar; área adotada pelo clique no cartão; o que falta num menu; Ctrl+Z na ficha. (#210)
+- **Aba Terreno**: identificação, endereço, partes, matrículas e SQLs, áreas; lápis do Resumo. (#209)
+- **Ficha do terreno**: topo, abas e Visão geral, na página e na gaveta do Mapa. (#208)
+- **Régua** do mapa com cursor de seta; Esc igual ao Del. (#205, #206, #207)
+- **Novo terreno**: mapa de lotes da prefeitura e consulta do GeoSampa por SQL. (#205, #206)
+- **Mapa**: legenda, menu de três pontinhos e busca abrem com o mouse parado; quadros fecham sozinhos; camada de renda e filtro da concorrência guardados por 30 min. (#200 a #204)
+- **Novo terreno** no sistema real, inclusive "Incluir por SQL"; acesso principal e nome padrão "Bairro - Rua". (#199, #202)
+- **Mapa** no sistema real: lista, legenda, busca, camadas, concorrência. (#198)

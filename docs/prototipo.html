@@ -1809,6 +1809,13 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .mapa-area:has(.mp-modo:not(:empty)) .leaflet-control-scale { display: none }
 }
 .mp-modo .mp-q { opacity: .75; white-space: nowrap }
+/* desenho no desktop: só o mapa, a busca e a barra Cancelar/Concluir no canto de baixo à direita (opção 5 do Moises, 5/nov/2026) */
+.mapa-area:has(.mp-modo > .mp-fina:not(.rg-b)) :is(.mp-legenda, #mp-ctrl, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+/* régua: o botão dela, no canto, continua à mostra (é ele que desliga) */
+.mapa-area:has(.mp-modo > .rg-b) :is(.mp-legenda, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+.mp-modo:has(> .mp-fina) { top: auto !important; bottom: 28px; left: auto !important; right: 12px; transform: none; flex-wrap: nowrap; max-width: none; padding: 4px 4px 4px 16px !important; gap: 4px !important; border-radius: 22px !important; font-size: 13px; line-height: 18px }
+.mp-modo:has(> .mp-fina) > .mp-fina { flex: 0 0 auto; margin-right: 8px }
+.mp-modo:has(> .mp-fina) .btn { height: 32px; min-height: 32px !important; border-radius: 16px !important }
 /* edição da poligonal no celular: só os dois botões, sem a faixa escura (decisão do Moisés, 24/out/2026) */
 .mp-modo:not(:has(> span)):not(:empty) { background: transparent !important; box-shadow: none !important; padding: 0 !important; gap: 8px !important; justify-content: flex-end; pointer-events: none }
 .mp-modo:not(:has(> span)) .btn { pointer-events: auto; height: 40px; min-height: 40px !important; padding: 0 20px !important; border-radius: 20px !important; box-shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 8px rgba(0,0,0,.15) !important }
@@ -2301,14 +2308,18 @@ html[data-tema="escuro"] body.dnd .col[data-col]:not(.origem), html[data-tema="e
 html[data-tema="escuro"] .col.sobre, html[data-tema="escuro"] .tk-col.sobre { background: rgba(128,132,139,0.18) !important; outline-color: rgba(149,153,160,0.9) !important }
 
 /* Mapa: botões do canto (minha localização, tela cheia), X do cartão do terreno e tela cheia (23/out/2026) */
-.mp-ctrl { position: absolute; right: 10px; bottom: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; transition: bottom .15s }
-.mp-cb { width: 40px; height: 40px; border-radius: 20px; border: 0; display: grid; place-items: center; cursor: pointer; background: #fff; color: #444746; box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.15) }
-.mp-cb:hover { color: #0b57d0; background: #f0f4f9 }
+.mp-ctrl { position: absolute; right: 10px; bottom: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; transition: bottom .15s }
+/* no jeito dos botões do Google Maps atual: pequenos, escuros e discretos (pedido do Moisés, 5/nov/2026) */
+.mp-cb { width: 32px; height: 32px; border-radius: 8px; border: 0; display: grid; place-items: center; cursor: pointer; background: rgba(32,33,36,.9); color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3) }
+.mp-cb svg { width: 18px; height: 18px }
+.mp-cb:hover { color: #fff; background: #3c4043 }
+.mapa-area .gm-svpc { width: 32px !important; height: 32px !important; margin-left: 8px !important; border-radius: 8px !important; background-color: rgba(32,33,36,.9) !important; box-shadow: 0 1px 4px rgba(0,0,0,.3) !important }
+.mapa-area .gm-svpc img { max-width: 20px; max-height: 20px }
 .mp-cb:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
 .mp-cb.busca svg { animation: mp-pulso 1s ease-in-out infinite }
 @keyframes mp-pulso { 50% { opacity: .35 } }
-:root[data-tema="escuro"] .mp-cb { background: #1a1a1b; color: #c1d9ff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 6px 16px rgba(0,0,0,.5) }
-:root[data-tema="escuro"] .mp-cb:hover { background: #29292b }
+:root[data-tema="escuro"] .mp-cb { background: rgba(32,33,36,.9); color: #fff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 1px 4px rgba(0,0,0,.5) }
+:root[data-tema="escuro"] .mp-cb:hover { background: #3c4043 }
 .mapa-area.sv-on .mp-cb[data-a="mp-eu"] { display: none }
 .eu-dot { width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2), 0 1px 4px rgba(0,0,0,.35); transform: translateY(50%) }
 .mp-it.cartao { grid-template-columns: auto minmax(0, 1fr) auto auto; column-gap: 4px; padding-right: 4px }
@@ -2515,7 +2526,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 
 /* ---------- Setores do IBGE: camadas de renda e densidade no mapa e quadro "Renda e população do entorno" na ficha ---------- */
 .lg-i .ds-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
-.lg-i .rd-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.lg-i .rd-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#feb600 0 25%, #d32f2f 0 50%, #97d6ff 0 75%, #43a047 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .rd-leg { position: absolute; z-index: 1000; right: 10px; top: 64px; width: 200px; max-height: calc(100% - 160px); overflow-y: auto; overscroll-behavior: contain; background: #fff; color: #1f1f1f; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 2px 8px rgba(0,0,0,.12); font-size: 12px; line-height: 16px }
 .rd-leg summary { cursor: pointer; list-style: none; padding: 8px 12px; font-size: 13px; font-weight: 500 }
 .rd-leg summary::-webkit-details-marker { display: none }
@@ -2536,10 +2547,10 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .mp-cam-m button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 16px; border: 0; background: none; font: inherit; font-size: 14px; color: inherit; text-align: left; cursor: pointer }
 .mp-cam-m button:hover { background: rgba(31,31,31,.06) } .mp-cam-m button[aria-checked="true"] { background: #c2e7ff; color: #001d35; font-weight: 500 }
 .mp-cam-m :is(.rd-ic, .ds-ic, .cam-off) { display: block; flex: none; width: 16px; height: 16px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
-.mp-cam-m .rd-ic { background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0) } .mp-cam-m .ds-ic { background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0) } .mp-cam-m .cam-off { box-shadow: inset 0 0 0 1px #747775 }
+.mp-cam-m .rd-ic { background: conic-gradient(#feb600 0 25%, #d32f2f 0 50%, #97d6ff 0 75%, #43a047 0) } .mp-cam-m .ds-ic { background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0) } .mp-cam-m .cam-off { box-shadow: inset 0 0 0 1px #747775 }
 :root[data-tema="escuro"] .mp-cam-m { background: #1a1a1b; color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 10px 28px rgba(0,0,0,.55) }
 :root[data-tema="escuro"] .mp-cam-m button:hover { background: rgba(149,153,160,0.12) } :root[data-tema="escuro"] .mp-cam-m button[aria-checked="true"] { background: rgba(128,132,139,0.22); color: #c1d9ff }
-.mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#feb600 0 25%, #d32f2f 0 50%, #97d6ff 0 75%, #43a047 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 :root[data-tema="escuro"] .mp-renda-b { background: rgba(25,25,26,0.72); color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.35) }
 :root[data-tema="escuro"] .mp-renda-b[aria-pressed="true"] { background: rgba(128,132,139,0.22); color: #c1d9ff; box-shadow: 0 0 0 1px rgba(149,153,160,0.5) }
 :root[data-tema="escuro"] :is(.rd-esc-m, .rd-esc-u) { color: #c4c7c5 }
@@ -3007,6 +3018,9 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .mp-legenda summary::after { content: "" !important; width: 18px; height: 18px; margin-left: auto; transition: transform .15s;
   background: no-repeat center/18px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
 .mp-legenda[open] summary::after { transform: rotate(180deg) }
+/* o título fica no topo enquanto a lista rola por baixo (pedido do Moisés, 5/nov/2026) */
+.mp-legenda[open] summary { position: sticky; top: 0; z-index: 2; background-color: #f8fafd !important }
+:root[data-tema="escuro"] .mp-legenda[open] summary { background-color: #1e1f20 !important }
 :root[data-tema="escuro"] .mp-legenda summary { color: #e3e3e3 !important }
 :root[data-tema="escuro"] .mp-legenda summary::after { filter: invert(.85) }
 .lg-r { display: grid !important; grid-template-columns: minmax(0, 1fr) 32px }
@@ -5593,11 +5607,11 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 /* ---------- Lista do mapa redimensionável e bolinha com o código (pedido do Moisés, 4/nov/2026) ---------- */
 @media (min-width: 900px) {
   .mapa-pg { grid-template-columns: var(--mp-w, 360px) 16px minmax(0, 1fr); gap: 0 }
-  .mp-redim { position: relative; cursor: grab; touch-action: none; outline: none }
+  .mp-redim { position: relative; cursor: col-resize; touch-action: none; outline: none }
   .mp-redim::after { content: ""; position: absolute; left: 6px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: #c4c7c5; transition: background .15s, height .15s, margin .15s }
   .mp-redim:hover::after, .mp-redim:focus-visible::after, body.mp-arrastando .mp-redim::after { background: #0b57d0; height: 72px; margin-top: -36px }
   .mp-redim:focus-visible { box-shadow: inset 0 0 0 2px #0b57d0; border-radius: 8px }
-  body.mp-arrastando, body.mp-arrastando * { cursor: grabbing !important; user-select: none !important }
+  body.mp-arrastando, body.mp-arrastando * { cursor: col-resize !important; user-select: none !important }
   /* estreita: só as bolinhas com o código, uma embaixo da outra */
   .mp-estreita .mapa-lado { padding-right: 0; overflow-x: hidden }
   .mp-estreita .mapa-lado > :not(#mp-lista), .mp-estreita #mp-lista > :not(.mp-lst) { display: none !important }
@@ -5624,10 +5638,74 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .lg-sb:hover { background: rgba(31,31,31,.06) } :root[data-tema="escuro"] .lg-sb:hover { background: rgba(227,227,227,.08) }
 .lg-sb:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
 .lg-msit[aria-pressed="false"] .mk-b { filter: grayscale(1); opacity: .5 }
+.lg-sub { padding: 8px 8px 2px 36px; font-size: 12px; line-height: 16px; color: var(--m-on-surface-variant, #444746) }
+:root[data-tema="escuro"] .lg-sub { color: #c4c7c5 }
 .lg-msit[disabled] { opacity: .5; cursor: default }
 /* legenda: item desligado (ele ou o ramo de cima) fica apagado; a bolinha e o número de um ramo ligam e desligam tudo dentro */
 #mp-leg .lg-i.lg-off .pin-mini { filter: grayscale(1); opacity: .45 } #mp-leg .lg-i.lg-off { color: var(--m-on-surface-variant, #444746) }
-#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini, #mp-leg .n.lg-tg:hover { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
+#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
+
+/* três pontinhos da barra do mapa: filtros da concorrência e dos terrenos e o tipo de mapa (pedido do Moisés, 5/nov/2026) */
+.mp-maisw { position: relative; flex: none; pointer-events: auto }
+.mp-mais { width: 40px; padding: 0 !important; justify-content: center; position: relative }
+.mp-mais .mf-n { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; font-size: 11px; padding: 0 5px }
+.mp-mais-m { min-width: 248px }
+.mp-mais-m .mm-l { flex: 1 }
+.mp-mais-m .mm-t { padding: 10px 16px 4px; margin-top: 6px; border-top: 1px solid #e3e3e3; font-size: 12px; font-weight: 500; color: #444746 }
+.mp-mais-m .mm-ck { display: inline-flex; width: 18px } .mp-mais-m [aria-checked="false"] .mm-ck { visibility: hidden }
+.mp-mais-m button .ic { color: #444746 } .mp-mais-m button[aria-checked="true"] .ic { color: inherit }
+:root[data-tema="escuro"] .mp-mais-m .mm-t { border-color: #444746; color: #c4c7c5 }
+:root[data-tema="escuro"] .mp-mais-m button .ic { color: #c4c7c5 }
+
+/* olhinho ao lado do título da legenda: fixa a legenda aberta (sem ele, fecha sozinha em 3 s; pedido do Moisés, 5/nov/2026) */
+.mp-legenda .lg-fixar { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 14px; background: none; color: #747775; cursor: pointer }
+.mp-legenda .lg-fixar:hover { background: rgba(31,31,31,.08) }
+.mp-legenda .lg-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mp-legenda .lg-fixar { color: #c4c7c5 }
+:root[data-tema="escuro"] .mp-legenda .lg-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
+
+/* busca do mapa recolhida no botão redondo da lupa; aberta, a seta à direita fecha (pedido do Moisés, 5/nov/2026) */
+.mapa-area .mp-busca { transition: max-width .2s ease }
+.mp-busca .mp-busca-i { display: grid; place-items: center; padding: 0; border: 0; background: none; border-radius: 20px; cursor: default; pointer-events: none; z-index: 1 }
+.mp-busca-x { flex: none; display: grid; place-items: center; width: 36px; height: 36px; margin-right: 2px; padding: 0; border: 0; border-radius: 18px; background: none; color: var(--m-on-var, #444746); cursor: pointer }
+.mp-busca-x:hover { background: rgba(31,31,31,.08) }
+.mp-busca input { padding-right: 4px !important }
+.mapa-area .mp-busca.fechada { flex: none !important; width: 40px; max-width: 40px !important; margin-right: auto; order: 0 !important }
+.mapa-area .mp-busca.fechada input, .mapa-area .mp-busca.fechada .mp-busca-x, .mapa-area .mp-busca.fechada .mp-res { display: none !important }
+.mapa-area .mp-busca.fechada .mp-busca-i { position: static; width: 40px; height: 40px; pointer-events: auto; cursor: pointer }
+.mapa-area .mp-busca.fechada .mp-busca-i:hover { background: rgba(31,31,31,.06) }
+:root[data-tema="escuro"] .mp-busca-x { color: #c4c7c5 } :root[data-tema="escuro"] .mp-busca-x:hover { background: rgba(149,153,160,0.12) }
+.mapa-area .mp-busca input:focus-visible { outline: none } .mapa-area .mp-busca:has(input:focus-visible) { outline: 2px solid #0b57d0; outline-offset: 0 }
+:root[data-tema="escuro"] .mapa-area .mp-busca:has(input:focus-visible) { outline-color: #a8c7fa }
+/* olhinho do card da concorrência: fixa o card aberto (pedido do Moisés, 5/nov/2026) */
+.mk-box .mk-fixar { color: #747775 }
+.mk-box .mk-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mk-box .mk-fixar { color: #c4c7c5 }
+:root[data-tema="escuro"] .mk-box .mk-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
+
+/* Régua do mapa (menu dos três pontinhos; pedido do Moisés, 5/nov/2026) */
+.rg-w { position: relative; width: 0; height: 0 }
+.rg-pt { position: absolute; left: 0; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid #0b57d0; transform: translate(-50%, -50%); box-sizing: border-box }
+.rg-pt.rg-ini { width: 16px; height: 16px; cursor: pointer; background: #0b57d0; box-shadow: 0 0 0 3px rgba(11,87,208,.25) }
+.rg-rot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; background: #fff; color: #1f1f1f; border: 1px solid #c4c7c5; border-radius: 6px; padding: 1px 6px; font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,.2) }
+.rg-rot.rg-tot { background: #0b57d0; color: #fff; border-color: #0b57d0; font-weight: 500; transform: translate(-50%, calc(-100% - 10px)) }
+/* no desenho, na edição e na régua o clique passa pelos pinos do mapa (terrenos e concorrência) e marca o ponto ali */
+:is(.mapa, .mini-mapa).modo gmp-advanced-marker:not(:has(.v-alvo, .rg-pt)) { pointer-events: none !important }
+.rg-pt { pointer-events: auto }
+/* régua como botão do canto, acima da localização (pedido do Moisés, 5/nov/2026): ligada, fica azul */
+.mp-cb.mp-rg[aria-pressed="true"], .mp-cb.mp-rg[aria-pressed="true"]:hover { background: #0b57d0; color: #fff }
+.mapa-area.sv-on .mp-cb.mp-rg { display: none }
+/* a busca a 12 px da borda esquerda, a mesma distância dos três pontinhos à direita (pedido do Moisés, 5/nov/2026);
+   no Leaflet fica depois do + e − do zoom */
+.mapa-area:not(:has(.leaflet-container)) .mp-barra { left: 12px !important }
+/* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
+
+/* ⋮ das abas da ficha: índice fixo com todas as abas, a atual marcada (pedido do Moisés, 6/nov/2026) */
+.fi-mais .adv-menu button.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35); font-weight: 500 }
+.fi-mais .adv-menu button.atual::after { content: '✓'; margin-left: auto; font-weight: 500 }
+html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; color: #c2e7ff }
+.fi-abas { touch-action: pan-y }
 </style>
 <header class="top">
   <div class="top-in">
@@ -5683,7 +5761,7 @@ const $=s=>document.querySelector(s);
 const uid=()=>Math.random().toString(36).slice(2,9);
 const P={
   search:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',download:'M12 4v11M7 10l5 5 5-5M5 20h14',
-  home:'M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z',layers:'M12 4 3 9l9 5 9-5zM3 14l9 5 9-5',
+  home:'M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z',layers:'M12 4 3 9l9 5 9-5zM3 14l9 5 9-5',regua:'M3.5 16 16 3.5l4.5 4.5L8 20.5zM7.5 12l2 2M10.5 9l2 2M13.5 6l2 2',
   notas:'M4 6h16M4 12h16M4 18h10',board:'M4 5h4v14H4zM10 5h4v9h-4zM16 5h4v12h-4z',doc:'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4',
   add:'M12 5v14M5 12h14',back:'M19 12H5M11 6l-6 6 6 6',check:'M5 12.5 10 17 19 7',
   warn:'M12 4 2.5 20h19zM12 10v4.5M12 17.2v.1',clock:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.5 2.5',
@@ -6041,7 +6119,7 @@ const optSel=(name,map,val,extra='')=>`<select id="f-${name}" name="${name}" ${e
 
 /* seções editáveis genéricas */
 const SECOES={
-  ident:{titulo:'Identificação',campos:[['nome','Nome de referência','txt',null,'full'],['descricao','Descrição','area',null,'full'],['prioridade','Prioridade','sel','prioridade'],['resp','Responsável','user'],['origem','Origem do cadastro','sel','origem'],['dataIdent','Identificado em','date'],['url','Link da origem','url',null,'full'],['obs','Observações gerais','area',null,'full']]},
+  ident:{titulo:'Identificação',campos:[['nome','Nome de referência','txt',null,'full'],['descricao','Descrição','area',null,'full'],['prioridade','Prioridade','sel','prioridade'],['resp','Responsável','user'],['origem','Origem do cadastro','sel','origem'],['dataIdent','Identificado em','date'],['obs','Observações gerais','area',null,'full']]},
   loc:{titulo:'Endereço e localização',campos:[['cep','CEP','txt'],['logradouro','Logradouro','txt'],['numero','Número','txt'],['complemento','Complemento','txt'],['bairro','Bairro','txt'],['municipio','Município','mun'],['zona','Zona','sel','zona'],['eixo','Eixo comercial','eixo'],['cri','Cartório de registro de imóveis','cri'],['referencia','Referência','txt',null,'full'],['lat','Latitude','dec'],['lng','Longitude','dec'],['precisao','Precisão da localização','sel','precisao']]},
   fis:{titulo:'Características físicas',campos:[['desnivel','Desnível estimado','m'],['posicao','Posição na quadra','sel','posicao'],['formato','Formato','sel','formato'],['ocupacao','Ocupação','sel','ocupacao'],['uso','Uso atual','txt'],['aConst','Área construída existente','m2'],['aDemolir','Área construída a demolir','m2'],['demolicao','Necessidade de demolição','sel','demolicao'],['obsFis','Observações físicas','area',null,'full']]}
 };
@@ -6274,19 +6352,35 @@ function abaJornada(t){return `<div class="stack">${trilhaHtml(t)}${abaFases(t)}
 function abaViabilidade(t){return `<div class="stack">${abaGeral(t,'viab')}${viabSecao(t)}</div>`}
 function abaInfra(t){return `<div class="stack">${abaGeral(t,'relevo')}${abaUrbanismo(t,'infra')}</div>`}
 function abaEntorno(t){return `<div class="stack">${abaGeral(t,'entorno')}</div>`}
-/* barra das abas sem rolagem lateral (pedido do Moisés, 4/nov/2026): aparecem as abas que cabem; as demais vão para o
-   menu "Mais ações" (⋮) no fim, ao lado das setas de aba anterior e próxima. A aba ativa nunca vai para o menu. */
+/* barra das abas sem rolagem lateral (pedido do Moisés, 4/nov/2026; janela e índice fixo em 6/nov/2026): a barra mostra uma
+   janela de abas seguidas, na ordem, que acompanha a ativa (com a vizinha de cada lado quando cabe); Shift + roda (ou
+   Ctrl + Shift + roda, ou o deslize de lado do trackpad) e, no celular, o dedo deslizam a janela sem trocar de aba; o
+   menu ⋮ no fim lista sempre todas as abas, na mesma ordem, com a atual marcada; as setas andam uma aba. */
 const SVG_DOTS='<svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01"/></svg>';
 const fiSeta=d=>`<svg class="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="${d<0?'M15 6l-6 6 6 6':'M9 6l6 6-6 6'}"/></svg>`;
-let fiRO=null;
-function fiAbasCaber(){const w=document.querySelector('.fi-abas-w');if(!w)return;const bar=w.querySelector('.fi-abas'),mn=w.querySelector('.fi-mais'),menu=mn.querySelector('.adv-menu');
-  const bs=[...bar.querySelectorAll('button[role=tab]')];bs.forEach(b=>b.hidden=false);
-  const vis=bs.filter(b=>getComputedStyle(b).display!=='none'),act=vis.findIndex(b=>b.getAttribute('aria-selected')==='true');
-  const fora=[];mn.hidden=true;
-  if(bar.scrollWidth>bar.clientWidth+1){mn.hidden=false;
-    for(let i=vis.length-1;i>=0&&bar.scrollWidth>bar.clientWidth+1;i--){if(i===act)continue;vis[i].hidden=true;fora.unshift(vis[i])}}
-  menu.innerHTML=fora.map(b=>`<button role="menuitem" data-a="tab" data-t="${b.dataset.t}">${b.innerHTML}</button>`).join('');
+let fiRO=null;const FI={ini:0,aba:null,max:0};
+function fiAbasCaber(forca){const w=document.querySelector('.fi-abas-w');if(!w)return;const bar=w.querySelector('.fi-abas'),mn=w.querySelector('.fi-mais'),menu=mn.querySelector('.adv-menu');
+  const bs=[...bar.querySelectorAll('button[role=tab]')];bs.forEach(b=>b.hidden=false);mn.hidden=false; // mede com o ⋮ no lugar
+  const vis=bs.filter(b=>getComputedStyle(b).display!=='none'),act=vis.findIndex(b=>b.getAttribute('aria-selected')==='true'),aba=vis[act]?.dataset.t;
+  const lg=vis.map(b=>b.offsetWidth),W=bar.clientWidth,L=vis.length;
+  const cabem=s=>{let t=0,k=0;for(let i=s;i<L;i++){t+=lg[i]+(k?2:0);if(t>W+1)break;k++}return Math.max(1,k)};
+  let mi=0;while(mi<L&&mi+cabem(mi)<L)mi++;FI.max=mi;
+  let s=forca??FI.ini;
+  if(forca==null&&FI.aba!==aba&&act>=0){const k0=cabem(s),fora=act<s||act>=s+k0,borda=(act===s&&act>0)||(act===s+k0-1&&act<L-1);
+    if(fora||(borda&&k0>=3)){s=Math.max(0,act-1);if(act>=s+cabem(s))s=act}}
+  s=Math.max(0,Math.min(s,mi));FI.ini=s;FI.aba=aba;const k=cabem(s);
+  vis.forEach((b,i)=>b.hidden=i<s||i>=s+k);mn.hidden=k>=L;
+  menu.innerHTML=vis.map(b=>`<button role="menuitemradio" aria-checked="${b.dataset.t===aba}" class="${b.dataset.t===aba?'atual':''}" data-a="tab" data-t="${b.dataset.t}">${b.innerHTML}</button>`).join('');
   [[-1,'.fi-ant'],[1,'.fi-prox']].forEach(([d,sel])=>{const b=w.querySelector(sel),alvo=vis[act+d];b.disabled=!alvo;if(alvo){b.dataset.t=alvo.dataset.t;b.title=(d<0?'Anterior: ':'Próxima: ')+alvo.firstChild.textContent}else b.title=d<0?'Primeira seção':'Última seção'});
+  if(!bar.__ev){bar.__ev=true;let acc=0,x0=null,y0=0,s0=0,arr=false;
+    const anda=s=>{s=Math.max(0,Math.min(FI.max,s));if(s!==FI.ini)fiAbasCaber(s)};
+    bar.addEventListener('wheel',e=>{const d=e.shiftKey?(e.deltaY||e.deltaX):Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:0;if(!d)return;e.preventDefault();
+      acc+=e.deltaMode===1?d*40:d;if(Math.abs(acc)<40)return;const p=acc>0?1:-1;acc=0;anda(FI.ini+p)},{passive:false});
+    bar.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;s0=FI.ini;arr=false},{passive:true});
+    bar.addEventListener('touchmove',e=>{if(x0==null)return;const dx=e.touches[0].clientX-x0,dy=e.touches[0].clientY-y0;
+      if(!arr&&(Math.abs(dx)<10||Math.abs(dx)<Math.abs(dy)))return;arr=true;if(e.cancelable)e.preventDefault();anda(s0-Math.trunc(dx/48))},{passive:false});
+    bar.addEventListener('touchend',()=>{x0=null});
+    bar.addEventListener('click',e=>{if(arr){e.preventDefault();e.stopPropagation();arr=false}},true)}
   if(window.ResizeObserver&&w.__ro!==true){fiRO?.disconnect();let lw=w.clientWidth;fiRO=new ResizeObserver(()=>{if(Math.abs(w.clientWidth-lw)<1)return;lw=w.clientWidth;fiAbasCaber()});fiRO.observe(w);w.__ro=true}}
 function pgFicha(){
   const t=T(UI.id);{const k=t&&JSON.stringify([t.lotes,t.partes,t.mats,t.insc]);lotesNorm(t);if(t&&k!==JSON.stringify([t.lotes,t.partes,t.mats,t.insc]))save()}const c=completude(t),n=t.neg,aba=abaN(UI.tab);
@@ -6361,6 +6455,7 @@ function renderModal(){
   h=quadrosModal(M,fechar)||cronoModal(M,fechar)||viabModal(M,fechar)||partesModal(M,fechar)||fasesModal(M,fechar)||funilModal(M,fechar)||setoresModal(M,fechar)||topoModal(M,fechar);
   if(M==='novo')h=UI.nv?nvDadosHtml(fechar):nvPasso1Html(fechar);
   if(M==='novo-sobre')h=nvSobreHtml(fechar);
+  if(M==='novo-sql')h=nvSqlHtml(fechar);
   if(M==='lotes-poly')h=lotesPolyHtml(fechar);
   if(M==='lt-dup')h=ltDupHtml(fechar);
   if(M==='etq')h=etqJanela(fechar);
@@ -6471,7 +6566,7 @@ document.addEventListener('click',e=>{
     case 'mp-base':setBase(a.dataset.v);break;
     case 'lug-fechar':lugarFechar();break;
     case 'mp-modo':UI.mpModo=UI.mpModo===a.dataset.v?null:a.dataset.v;fecharPopup();mpRefresh();break;
-    case 'mp-sair':UI.mpModo=null;UI.nvDesenho=false;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
+    case 'mp-sair':if(UI.mpModo==='regua'){rgSair();break}if(UI.mpModo==='desenhar'&&!TOQUE()){desCancelar();break}UI.mpModo=null;UI.nvDesenho=false;UI.poiVolta=null;UI.desenho=null;UI.desHist=null;UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();break;
     case 'mp-desfazer':{const h=UI.desHist||[];if(h.length){UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false}mpRefresh();break}
     case 'mp-concluir':concluirDesenho();break;
     case 'mp-poi':UI.mpPoi=UI.mpPoi===false;mostrarPois(UI.mpPoi);a.setAttribute('aria-pressed',UI.mpPoi);a.classList.toggle('on',UI.mpPoi);break;
@@ -6591,15 +6686,31 @@ document.addEventListener('drop',e=>{const col=e.target.closest?.('.col[data-col
    ===================================================================== */
 UI.sorts=UI.sorts||{};
 UI.mp=UI.mp||{q:'',cor:'',zona:'',f:'',e:'',ocultas:[]};if(!UI.mp.apag)UI.mp.apag={};
+/* o que a legenda apaga (terrenos por fase, etapa e subetapa; concorrência ligada, faixas e situações) fica guardado no navegador
+   e vale em outra sessão (bkm-terrenos-mapa-legenda; pedido do Moisés, 5/nov/2026); a gravação é a cada desenho da legenda */
+const MP_LGKEY='bkm-terrenos-mapa-legenda';
+(()=>{let g=null;try{g=JSON.parse(localStorage.getItem(MP_LGKEY)||'null')}catch(e){}if(!g)return;
+  if(g.apag&&typeof g.apag==='object')UI.mp.apag=g.apag;if(Array.isArray(g.mkOff))UI.mkOff=g.mkOff;if(g.merc===false)UI.mpMerc=false})();
+function mpLegGuardar(){try{localStorage.setItem(MP_LGKEY,JSON.stringify({apag:UI.mp.apag||{},mkOff:UI.mkOff||[],merc:UI.mpMerc!==false}))}catch(e){}}
+/* a camada de renda ou densidade e o filtro da concorrência ficam guardados no navegador, mas se apagam quando a pessoa fica
+   fora da página Mapa por mais de MP_EXPIRA_MIN minutos (pedido do Moisés, 5/nov/2026); bkm-terrenos-mapa-visto é a última vez no mapa */
+const MP_EXPIRA_MIN=30,MP_VISTO_KEY='bkm-terrenos-mapa-visto',MP_MFKEY='bkm-terrenos-mapa-filtro-conc';
+function mpExpirar(){try{const v=Number(localStorage.getItem(MP_VISTO_KEY)||0);if(!v||Date.now()-v<=MP_EXPIRA_MIN*60000)return;
+  localStorage.removeItem('bkm-terrenos-mapa-camada');localStorage.removeItem(MP_MFKEY);localStorage.removeItem(MP_VISTO_KEY);UI.mpSetor=null;UI.mf={}}catch(e){}}
+function mpVisto(){try{localStorage.setItem(MP_VISTO_KEY,String(Date.now()))}catch(e){}}
+mpExpirar();
+setInterval(()=>{if(typeof naMapa==='function'&&naMapa()&&document.visibilityState==='visible')mpVisto()},15000);
+addEventListener('pagehide',()=>{if(typeof naMapa==='function'&&naMapa())mpVisto()});
+document.addEventListener('visibilitychange',()=>{if(typeof naMapa==='function'&&naMapa()){if(document.visibilityState==='hidden')mpVisto();else{const v=Number(localStorage.getItem(MP_VISTO_KEY)||0);if(v&&Date.now()-v>MP_EXPIRA_MIN*60000)render()}}});
 UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
 // rótulo, cor, glifo no pin, cor do glifo. Etapas ativas em rampa de azul (ordem = avanço);
 // Stand By, Comprado, Perdido e Descartado com cores próprias e glifo, para não depender só da cor.
-const SIT={sem_negociacao:['Backlog','#8a8d91','·','#fff'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
+const SIT={sem_negociacao:['Backlog','#fff176','·','#5c4a00'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
   estudos:['Estudos Preliminares','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
   contrato:['Contrato','#1d2e5c','4','#fff'],stand_by:['Stand By','#c98a2e','‖','#fff'],comprado:['Comprado','#6f9a3a','✓','#fff'],
-  perdido:['Perdido','#9a3b30','×','#fff'],descartado:['Descartado','#6b6560','–','#fff']};
+  perdido:['Perdido','#9a3b30','×','#fff'],descartado:['Descartado','#d9d4cf','–','#3a3633']};
 /* nomes das etapas seguem a configuração da empresa */
 const sitNome=k=>STAGES.find(s=>s[0]===k)?.[1]||SIT[k][0];
 const sitMapa=t=>!t.neg?'sem_negociacao':t.neg.status==='ativo'?t.neg.etapa:t.neg.status;
@@ -6607,11 +6718,12 @@ const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT
 const ativosBanco=()=>S.terrenos.filter(t=>t.situacao!=='arquivado');
 /* mapa em três níveis, como o kanban: fases › etapas de uma fase (UI.mp.f) › subetapas de uma etapa (UI.mp.e).
    Cada nível tem a sua legenda (rótulo, cor, glifo, cor do glifo) e classifica o terreno; fora do nível = não aparece. */
-const COR_FASE=['#0b74d6','#863d8f','#c67355','#00838f','#c2477a','#7d8a3e','#1d2e5c','#5f6368'];
+/* Backlog, Obras, Entregue e Descartado em tons claros: sumiam no satélite (Moisés, 9/nov/2026) */
+const COR_FASE=['#0b74d6','#863d8f','#c67355','#00838f','#c2477a','#7d8a3e','#c9a7ff','#69f0ae'],FG_FASE=['#fff','#fff','#fff','#fff','#fff','#fff','#2e1a5c','#0b3d1e'];
 const RAMPA=['#8fc8f7','#4aa3f0','#0b74d6','#0a4fa0','#1d2e5c'];
 const rampa=(i,n)=>{const j=n<=1?2:Math.round(i*(RAMPA.length-1)/(n-1));return [RAMPA[j],j===0?'#1d2e5c':'#fff']};
 function mpItens(){const m=UI.mp,sit=k=>({k,nome:SIT[k][0],cor:SIT[k][1],g:SIT[k][2],fg:SIT[k][3]});
-  if(!m.f)return [...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:'#fff',desce:etapasF(f.k).length>0})),sit('sem_negociacao'),sit('perdido'),sit('descartado')];
+  if(!m.f)return [...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:FG_FASE[i%FG_FASE.length],desce:etapasF(f.k).length>0})),sit('sem_negociacao'),sit('perdido'),sit('descartado')];
   const L=m.e?(etapaF(m.f,m.e)?.subs||[]):etapasF(m.f);
   return [...L.map((x,i)=>{const [cor,fg]=rampa(i,L.length);return {k:x.k,nome:x.nome,cor,g:String(i+1),fg,desce:!m.e&&x.subs?.length>0}}),sit('stand_by')]}
 function mpClasse(t){const m=UI.mp;
@@ -6756,13 +6868,27 @@ function desenhaRascunho(){return GG?G_desenhaRascunho():L_desenhaRascunho()}
 function initMapa(){const r=GG?G_initMapa():L_initMapa();mpCtrlObs();return r}
 /* tema escuro: a visão Mapa fica escura (Google pelo colorScheme, que só vale ao criar o mapa; Leaflet pelo cinza-escuro da Esri). O satélite não muda */
 const temaEscuro=()=>document.documentElement.dataset.tema==='escuro';
-function temaMapa(){if(!MAPA||!$('#mapa'))return;if(GG){if(MAPA.__escuro!==temaEscuro())G_initMapa()}else if((UI.mpBase||'satelite')==='mapa')L_setBase('mapa')}
+function temaMapa(){if(!MAPA||!$('#mapa'))return;if(GG){if(MAPA.__escuro!==temaEscuro())G_initMapa()}else if(mpBaseAtual()==='mapa')L_setBase('mapa')}
+/* fundo do mapa: sem botão Mapa/Satélite; Satélite só com a camada de renda ou densidade ligada (pedido do Moisés, 5/nov/2026) */
+/* posição e zoom do mapa guardados no navegador: a página Mapa abre onde a pessoa deixou (pedido do Moisés, 5/nov/2026) */
+const MP_VKEY='bkm-terrenos-mapa-vista';
+function mpVistaGuardada(){try{const v=JSON.parse(localStorage.getItem(MP_VKEY)||'null');return v&&isFinite(v.c?.lat)&&isFinite(v.c?.lng)&&isFinite(v.z)?v:null}catch(e){return null}}
+function mpVistaGuardar(v){try{localStorage.setItem(MP_VKEY,JSON.stringify({c:{lat:+(+v.c.lat).toFixed(6),lng:+(+v.c.lng).toFixed(6)},z:v.z}))}catch(e){}}
+/* tipo de mapa: o escolhido nos três pontinhos, guardado no navegador (bkm-terrenos-mapa-tipo; padrão Mapa); com renda ou
+   densidade ligada, Satélite, a menos que a pessoa troque enquanto a camada está ligada (vale só até desligar) */
+const MP_TKEY='bkm-terrenos-mapa-tipo';
+function mpTipo(){try{return localStorage.getItem(MP_TKEY)==='satelite'?'satelite':'mapa'}catch(e){return 'mapa'}}
+function mpBaseAtual(){return typeof rdCamada==='function'&&rdCamada()?(UI.mpBaseCam||'satelite'):mpTipo()}
+function mpTipoEscolher(v){v=v==='satelite'?'satelite':'mapa';if(typeof rdCamada==='function'&&rdCamada())UI.mpBaseCam=v;else try{localStorage.setItem(MP_TKEY,v)}catch(e){}setBase(mpBaseAtual())}
 /* botões do canto do mapa: minha localização e tela cheia (o controle de câmera do Google saiu; decisão do Moisés, 23/out/2026).
    Sobem acima do cartão do terreno e do aviso de desenho quando eles ocupam o pé do mapa. */
 function mpCtrlHtml(){const on=document.body.classList.contains('mp-cheia');
-  return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
+  return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb mp-rg" data-a="rg-abrir" aria-pressed="${UI.mpModo==='regua'}" title="Régua" aria-label="Régua">${ic('regua',22)}</button><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
     <button type="button" class="mp-cb" data-a="mp-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia':'Tela cheia'}" aria-label="${on?'Sair da tela cheia':'Tela cheia'}">${ic(on?'telaSair':'tela',22)}</button></div>`}
+/* o bonequinho do Street View fica sempre no mesmo lugar do canto (64 px acima do pé do mapa, 32 de altura): reserva o lugar
+   dele mesmo antes de o Google desenhá-lo ou enquanto o mapa muda de tamanho (tela cheia), senão a tela cheia cai em cima dele */
 function mpCtrlPos(){const a=$('.mapa-area'),c=$('#mp-ctrl');if(!a||!c)return;const ar=a.getBoundingClientRect();let topo=ar.bottom;
+  if(GG&&!a.classList.contains('sv-on'))topo=ar.bottom-64;
   ['#mp-cartao','#mp-modo','.mapa-area .gm-svpc'].forEach(s=>{const e=$(s);if(!e||!e.offsetHeight)return;const r=e.getBoundingClientRect();if(r.bottom>ar.bottom-80&&r.right>ar.right-80)topo=Math.min(topo,r.top)});
   c.style.bottom=topo<ar.bottom?Math.round(ar.bottom-topo+12)+'px':''}
 function mpCtrlObs(){const a=$('.mapa-area');if(!a||a.__ro||!window.ResizeObserver)return mpCtrlPos();a.__ro=new ResizeObserver(mpCtrlPos);[a,$('#mp-cartao'),$('#mp-modo')].forEach(e=>e&&a.__ro.observe(e));mpCtrlPos()}
@@ -6809,7 +6935,7 @@ function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
    apagar uma fase ou etapa apaga tudo que está dentro dela, sem abrir e fechar um a um */
 const mpApag=lv=>(UI.mp.apag||(UI.mp.apag={}))[lv]||[];
 function mpApagado(t){const m=UI.mp,sf=m.f,se=m.e;
-  try{for(const [lv,l] of Object.entries(m.apag||{})){if(!l.length)continue;const [f,e]=lv.split('|');m.f=f;m.e=e;const c=mpClasse(t);if(c!=null&&l.includes(c))return true}return false}finally{m.f=sf;m.e=se}}
+  try{if((m.apag?.['*']||[]).length)return true;for(const [lv,l] of Object.entries(m.apag||{})){if(!l.length||lv==='*')continue;const [f,e]=lv.split('|');m.f=f;m.e=e;const c=mpClasse(t);if(c!=null&&l.includes(c))return true}return false}finally{m.f=sf;m.e=se}}
 function mpApagar(lv,k){const a=UI.mp.apag||(UI.mp.apag={}),l=a[lv]||[];a[lv]=l.includes(k)?l.filter(x=>x!==k):[...l,k];if(!a[lv].length)delete a[lv]}
 const mpTemApag=()=>Object.values(UI.mp.apag||{}).some(l=>l.length);
 /* lista lateral do mapa: a bolinha com o código do terreno (na cor do nível aberto na legenda), o nome e a área; a lupa abre a ficha.
@@ -6884,29 +7010,29 @@ function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.
    e o clique volta para aquele nível. */
 function mpNivelItens(f,e){const m=UI.mp,sf=m.f,se=m.e,base=fxLista('mapa');m.f=f;m.e=e;
   try{const its=mpItens(),cl=new Map(base.map(t=>[t.id,mpClasse(t)]));return its.map(x=>({...x,n:base.filter(t=>cl.get(t.id)===x.k).length}))}finally{m.f=sf;m.e=se}}
-function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
+function mpLegenda(){mpLegGuardar();const m=UI.mp,aberta=!!UI.mpArv;
   const pin=x=>`<span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>`;
   const seta=ab=>`<span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span>`;
-  /* a bolinha e o número de qualquer item ligam e desligam tudo que está nele (data-l = nível, data-v = item); o resto do ramo abre e fecha */
+  /* a bolinha de qualquer item (e a de "Terrenos", data-l="*": todos) liga e desligam tudo que está nele (data-l = nível, data-v = item); o resto do ramo abre e fecha */
   const off=(lv,k,pai)=>pai||mpApag(lv).includes(k),tg=(lv,x)=>`data-l="${esc(lv)}" data-v="${esc(x.k)}"`;
-  const ramo=(x,prof,ab,f,e,fora,lv,pai)=>`<button type="button" class="lg-i lg-a${fora?' lg-fora':''}${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)} aria-expanded="${ab}">${seta(ab)}<span class="lg-tg" title="Ligar ou desligar tudo em ${esc(x.nome)}">${pin(x)}</span>${esc(x.nome)}<span class="n lg-tg" title="Ligar ou desligar tudo em ${esc(x.nome)}">${x.n}</span></button>`;
+  const ramo=(x,prof,ab,f,e,fora,lv,pai)=>`<button type="button" class="lg-i lg-a${fora?' lg-fora':''}${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)} aria-expanded="${ab}">${seta(ab)}<span class="lg-tg">${pin(x)}</span>${esc(x.nome)}<span class="n">${x.n}</span></button>`;
   const folha=(x,prof,ativo,f,e,lv,pai)=>ativo?`<button type="button" class="lg-i lg-a${pai?' lg-off':''}" style="--p:${prof}" data-a="mp-sit" ${tg(lv,x)} aria-pressed="${!off(lv,x.k,pai)}"><span class="lg-s"></span>${pin(x)}${esc(x.nome)}<span class="n">${x.n}</span></button>`
-    :`<button type="button" class="lg-i lg-a lg-fora${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)}><span class="lg-s"></span><span class="lg-tg">${pin(x)}</span>${esc(x.nome)}<span class="n lg-tg">${x.n}</span></button>`;
-  let h='';
+    :`<button type="button" class="lg-i lg-a lg-fora${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)}><span class="lg-s"></span><span class="lg-tg">${pin(x)}</span>${esc(x.nome)}<span class="n">${x.n}</span></button>`;
+  const t0=off('*','todos');let h='';
   if(aberta)for(const x of mpNivelItens('','')){
-    if(!x.desce){h+=folha(x,1,!m.f,'','','|',false);continue}
-    const ab=m.f===x.k,px=off('|',x.k);h+=ramo(x,1,ab,ab?'':x.k,'',m.f&&!ab,'|',false);if(!ab)continue;
+    if(!x.desce){h+=folha(x,1,!m.f,'','','|',t0);continue}
+    const ab=m.f===x.k,px=t0||off('|',x.k);h+=ramo(x,1,ab,ab?'':x.k,'',m.f&&!ab,'|',t0);if(!ab)continue;
     for(const y of mpNivelItens(x.k,'')){
       if(!y.desce){h+=folha(y,2,!m.e,x.k,'',x.k+'|',px);continue}
       const ab2=m.e===y.k,py=px||off(x.k+'|',y.k);h+=ramo(y,2,ab2,x.k,ab2?'':y.k,m.e&&!ab2,x.k+'|',px);if(!ab2)continue;
       for(const z of mpNivelItens(x.k,y.k))h+=folha(z,3,true,x.k,y.k,x.k+'|'+y.k,py)}}
   const tot=fxLista('mapa').length;
-  return `<button type="button" class="lg-i lg-a" style="--p:0" data-a="mp-arv" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
+  return `<button type="button" class="lg-i lg-a${t0?' lg-off':''}" style="--p:0" data-a="mp-arv" data-l="*" data-v="todos" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi lg-tg"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
     +`<hr class="lg-sep">`+(POI_NO_MAPA?`<button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`:'')
     +(CC_MANUAL?`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`:'')
-    +rdLegItem();
+    ;
 }
-function pgMapa(){
+function pgMapa(){mpExpirar();mpVisto();
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
   return `<div class="mapa-pg${mpLargura()<200?' mp-estreita':''}" style="--mp-w:${mpLargura()}px">
   <aside class="mapa-lado" aria-label="Terrenos no mapa">
@@ -6920,23 +7046,25 @@ function pgMapa(){
     <div id="mapa" class="mapa"></div>
     <div class="mp-barra">
       ${mpBuscaHtml()}
-      <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'satelite')===k}">${l}</button>`).join('')}</div>
       ${rdBarraBotao()}
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
     ${mpCtrlHtml()}
-    <details class="mp-legenda" ${(UI.mpLeg??innerWidth>899)?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
+    <details class="mp-legenda" ${(UI.mpLeg??lgAbertaGuardada())?'open':''}><summary><span class="lg-tit">Legenda</span>${lgFixarBtn()}</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
     <div class="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
   </section></div>`;
 }
 function modoBanner(){const m=UI.mpModo;if(!m)return '';
   const t=UI.mpAlvo?T(UI.mpAlvo):null;
+  if(m==='regua')return rgBanner();
   if(m==='poi')return `<span>Clique no mapa para marcar o ponto de interesse.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='marcar')return `<span>Clique no mapa para localizar <b>${esc(t?.nome)}</b>.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='desenhar'||m==='editar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE(),seg=tq?'toque e segure':'clique com o botão direito';
-    if(!tq)return ''; /* desktop: sem janelinha, no desenho e na edição (decisão do Moisés, 4/nov/2026): Enter ou dois cliques no mapa salvam,
-       Esc ou dois cliques fora do mapa cancelam; Desfazer e Cancelar ficam no menu do ponto (clique direito), Ctrl+Z e Esc */
+    /* desktop, no desenho: uma barra fina na base do mapa com Cancelar e Concluir, alternativa ao Enter e aos dois cliques
+       (pedido do Moisés, 5/nov/2026). Na edição continua sem barra (decisão de 4/nov/2026): clique fora salva, Esc cancela;
+       Desfazer e Cancelar ficam no menu do ponto (clique direito), Ctrl+Z e Esc */
+    if(!tq)return m==='desenhar'?`<span class="mp-q mp-fina">${n} ponto${n===1?'':'s'}${a?` · ${m2(Math.round(a))}`:''}</span><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir" ${n>=3?'':'disabled'} title="${n>=3?'Salvar a poligonal (Enter)':'Marque pelo menos 3 pontos'}">Concluir</button>`:'';
     /* celular: só Cancelar e Concluir, sem texto (decisão do Moisés, 24/out/2026); Desfazer fica no menu do ponto */
     if(m==='editar'&&tq)return `<button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir">Concluir</button>`;
     const dica=m==='editar'?`arraste os pontos; ${seg} num ponto para excluí-lo ou adicionar outro depois dele. ${tq?'Toque':'Clique'} fora da poligonal para concluir.`
@@ -6972,19 +7100,19 @@ function L_desenhaRascunho(){const D=UI.edMini?MINI_DES:DES;if(!D)return;D.clear
     mk.on('dragend',e=>{const ll=e.target.getLatLng();vArrastado(i,ll.lat,ll.lng)});
     mk.addTo(D)})}
 function mpRefresh(){if(UI.edMini){miniEdRefresh();return}desenhaPois();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();const g=$('#mp-leg');if(g)g.innerHTML=mpLegenda();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();
-  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha()}mpCartao()}
+  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha();rgDesenha()}mpCartao()}
 function L_initMapa(){const el=$('#mapa');if(!el)return;
   if(!window.L){el.innerHTML='<div class="mapa-erro">Não foi possível carregar a biblioteca de mapas. Verifique a conexão e recarregue a página.</div>';return}
   MAPA=L.map(el,{zoomControl:true,doubleClickZoom:false});
   L.control.scale({imperial:false,position:'bottomright'}).addTo(MAPA);
-  setBase(UI.mpBase||'satelite');PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();CONC=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);if(UI.mpConc!==false)CONC.addTo(MAPA);
+  setBase(mpBaseAtual());PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();CONC=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);if(UI.mpConc!==false)CONC.addTo(MAPA);
   ctxGestos(el,(x,y)=>{const ll=MAPA.containerPointToLatLng([x,y]);return {lat:ll.lat,lng:ll.lng}});MAPA.on('movestart zoomstart',ctxFechar);
   desenhaPins();desenhaPois();desenhaRascunho();el.classList.toggle('modo',!!UI.mpModo);desenhaEu(false);
-  const vista=UI.mpView,enquadrar=()=>{if(vista)return MAPA.setView(vista.c,vista.z);const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)};
+  const vista=UI.mpView||mpVistaGuardada(),enquadrar=()=>{if(vista)return MAPA.setView(vista.c,vista.z);const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)};
   enquadrar();
   // o contêiner só tem o tamanho final depois do layout: recalcula e reenquadra
   const mapaAtual=MAPA;requestAnimationFrame(()=>setTimeout(()=>{if(MAPA!==mapaAtual)return;MAPA.invalidateSize();enquadrar();if(UI.mpFocoPend){const t=T(UI.mpFocoPend);UI.mpFocoPend=null;if(t&&t.lat!=null)focar(t)}},60));
-  MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()};vMenuDesenha()});MAPA.on('movestart zoomstart',()=>$('.mapa-area .v-menu')?.remove());
+  MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()};mpVistaGuardar(UI.mpView);vMenuDesenha()});MAPA.on('movestart zoomstart',()=>$('.mapa-area .v-menu')?.remove());
   MAPA.on('preclick',e=>mapaClique(e.latlng.lat,e.latlng.lng));
   MAPA.on('dblclick',e=>mapaDuplo(e.latlng.lat,e.latlng.lng,e.originalEvent?.target));
   MAPA.on('click',e=>{if(UI.mpModo||e.originalEvent?.target?.closest?.('.leaflet-interactive'))return;if(UI.mpSel)mpSelecionar(null); /* clique no vazio tira a seleção */
@@ -6995,6 +7123,7 @@ function L_initMapa(){const el=$('#mapa');if(!el)return;
 function L_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)MAPA.fitBounds(t.poly,{maxZoom:18,padding:[40,40]});else MAPA.setView([t.lat,t.lng],Math.max(MAPA.getZoom(),16));
   mpSelecionar(t.id)}
 function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
+  if(m==='regua'){rgClique(lat,lng);return}
   if(m==='poi'){UI.mpModo=null;UI.novoPoi={lat,lng};UI.modal='poi';mpRefresh();renderModal();return}
   if(m==='marcar'){const t=T(UI.mpAlvo);UI.mpModo=null;Object.assign(t,{lat,lng,precisao:'aproximada'});log(t,'Localização marcada no mapa');save();mpRefresh();toast(`${t.nome}: localização marcada.`);return}
   if(m==='editar'){if(Date.now()-(UI.vToqueEm||0)<300||Date.now()-(UI.polyLongoEm||0)<700)return;
@@ -7045,7 +7174,7 @@ function pontoNaTela(lat,lng){const M=edMapa();if(!M)return null;if(GG)return ty
 function desDesfazer(){const h=UI.desHist||[];if(!h.length)return false;UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();return true}
 function desCancelar(){const des=UI.mpModo==='desenhar';Object.assign(UI,{mpModo:null,nvDesenho:false,desenho:null,desHist:null,vSel:null,vMenu:false,vMover:false});mpRefresh();toast(des?'Desenho cancelado.':'Edição cancelada, poligonal sem mudanças.')}
 /* desenho no desktop sem barra: só um aviso passageiro ao começar */
-function desAvisoInicio(){if(!TOQUE())toast('Clique no mapa para marcar os pontos. Enter ou dois cliques salvam; Esc cancela.')}
+function desAvisoInicio(){if(!TOQUE())toast('Clique no mapa para marcar os pontos. Enter, dois cliques ou Concluir salvam; Esc cancela.')}
 function desSalvar(){if((UI.desenho||[]).length<3){toast('Marque pelo menos 3 pontos.',true);return}concluirDesenho()}
 function vAcao(a){const i=UI.vSel,p=UI.desenho||[];
   if(a==='v-desfazer'){if(!desDesfazer())vFecharMenu();return}
@@ -7349,7 +7478,7 @@ document.addEventListener('dblclick',e=>{if(e.target.closest?.('.mp-redim'))mpLa
 document.addEventListener('keydown',e=>{const h=e.target.closest?.('.mp-redim');if(!h)return;const w=+h.getAttribute('aria-valuenow'),d=e.shiftKey?80:20;
   const n=e.key==='ArrowLeft'?w-d:e.key==='ArrowRight'?w+d:e.key==='Home'?MP_LMIN:e.key==='End'?mpLmax():null;if(n==null)return;e.preventDefault();mpLarguraPor(n,true)});
 
-/* clique na bolinha ou no número de um item da legenda que abre (fase, etapa): liga e desliga tudo dentro dele */
+/* clique na bolinha de um item da legenda que abre (Terrenos, fase, etapa): liga e desliga tudo dentro dele (o número não; pedido do Moisés, 5/nov/2026) */
 document.addEventListener('click',e=>{const t=e.target.closest?.('#mp-leg .lg-tg');if(!t)return;const b=t.closest('.lg-i[data-l]');if(!b)return;
   e.preventDefault();e.stopImmediatePropagation();mpApagar(b.dataset.l,b.dataset.v);mpRefresh();
   $(`#mp-leg .lg-i[data-l="${b.dataset.l}"][data-v="${b.dataset.v}"]`)?.focus()},true);
@@ -8529,7 +8658,7 @@ const IT_CAT=(()=>{const tr=(c)=>[t=>t[c],(t,v)=>{t[c]=v}],of=c=>[t=>ofertaRef(t
   ['terreno.nome','Nome do terreno','texto',null,null,null,1,0,1,...tr('nome')],['terreno.descricao','Descrição','texto',null,null,null,1,0,0,...tr('descricao')],
   ['terreno.situacao_cadastral','Situação do cadastro','lista',null,itOpc({ativo:'Ativo',arquivado:'Arquivado'}),null,0,1,0,...ro(t=>t.situacao)],
   ['terreno.prioridade','Prioridade','lista',null,itOpc(OPT.prioridade),null,1,1,1,...tr('prioridade')],['terreno.responsavel_id','Responsável do terreno','pessoa',null,opUs,null,1,1,1,...tr('resp')],
-  ['terreno.origem_cadastro','Origem do terreno','lista',null,itOpc(OPT.origem),null,1,1,0,...tr('origem')],['terreno.url_origem','Link do anúncio','texto',null,null,null,1,0,1,...tr('url')],
+  ['terreno.origem_cadastro','Origem do terreno','lista',null,itOpc(OPT.origem),null,1,1,0,...tr('origem')],
   ['terreno.data_identificacao','Identificado em','data',null,null,null,1,0,0,...tr('dataIdent')],['terreno.observacoes','Observações','texto',null,null,null,1,0,0,...tr('obs')],
   ['terreno.cep','CEP','texto',null,null,null,1,0,0,...tr('cep')],['terreno.logradouro','Rua','texto',null,null,null,1,0,0,...tr('logradouro')],['terreno.numero','Número','texto',null,null,null,1,0,0,...tr('numero')],
   ['terreno.complemento','Complemento','texto',null,null,null,1,0,0,...tr('complemento')],['terreno.bairro','Bairro','texto',null,null,null,1,1,0,...tr('bairro')],
@@ -9590,8 +9719,8 @@ function gPontoNaTela(lat,lng){const M=edMapa();if(!M)return null;if(!gProj||gPr
 function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1){MAPA.setCenter(pts[0]);MAPA.setZoom(maxZoom||17);return}
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];gSet(gEu,null);gEu=[];
-  const v=UI.mpView;
-  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
+  const v=UI.mpView||mpVistaGuardada();
+  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[mpBaseAtual()],
     mapTypeControl:false,streetViewControl:true,streetViewControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM},cameraControl:false,fullscreenControl:false,clickableIcons:true,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   MAPA.__escuro=temaEscuro();gInfo=new google.maps.InfoWindow({maxWidth:320,headerDisabled:true});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();desenhaEu(false);
@@ -9601,7 +9730,7 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   MAPA.addListener('dragstart',ctxFechar);MAPA.addListener('zoom_changed',ctxFechar);G_desenhaRascunho();
   MAPA.addListener('dblclick',e=>{if(e.latLng&&!e.placeId)mapaDuplo(e.latLng.lat(),e.latLng.lng(),e.domEvent?.target)});
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
-  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
+  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};mpVistaGuardar(UI.mpView);vMenuDesenha()});
   MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());
   /* Street View: fecha no nosso X (canto de cima, à direita) ou no Esc; o fechar do Google fica escondido para não haver dois */
   const sv=MAPA.getStreetView();sv.setOptions({enableCloseButton:false,fullscreenControl:false});
@@ -9634,9 +9763,14 @@ function lugarHtml(p){const revs=(p.reviews||[]).slice(0,3),nota=p.rating!=null?
   ${revs.length?`<ul class="lug-revs">${revs.map(r=>{const a=r.authorAttribution||{},txt=String(r.text||'');return `<li><div class="lug-ra">${a.uri?`<a href="${esc(a.uri)}" target="_blank" rel="noopener">${esc(a.displayName||'Usuário do Google')}</a>`:esc(a.displayName||'Usuário do Google')} <span class="lug-est" aria-label="nota ${r.rating}">${estrelas(r.rating||0)}</span> <span class="muted">${esc(r.relativePublishTimeDescription||'')}</span></div>${txt?`<div class="lug-rt">${esc(txt.length>220?txt.slice(0,220).trim()+'…':txt)}</div>`:''}</li>`}).join('')}</ul>`:''}
   ${p.googleMapsURI?`<a class="lug-l" href="${esc(p.googleMapsURI)}" target="_blank" rel="noopener">Ver todas no Google Maps</a>`:''}<div class="lug-g muted">Avaliações do Google</div></div>`}
 /* conteúdo como nó, com o X ligado direto (o InfoWindow pode não deixar o clique subir até o documento) */
-function lugarConteudo(h){const d=document.createElement('div');d.innerHTML=h;d.querySelector('.lug-x')?.addEventListener('click',e=>{e.stopPropagation();lugarFechar()});gInfo.setContent(d)}
-function lugarFechar(){if(gInfo&&gInfo.__lug){gInfo.close();gInfo.__lug=false;return true}return false}
-async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
+function lugarConteudo(h){const d=document.createElement('div');d.innerHTML=h;d.querySelector('.lug-x')?.addEventListener('click',e=>{e.stopPropagation();lugarFechar()});gInfo.setContent(d);setTimeout(()=>lugarSaida(d),0)}
+/* o quadro fecha sozinho 1 s depois que o mouse sai dele e, se o mouse não entrar nele, 1 s depois de aberto (no toque, não; pedido do Moisés, 5/nov/2026) */
+let LUG_T=null,LUG_DENTRO=false;
+function lugarSaida(d){if(TOQUE())return;const c=d.closest('.gm-style-iw-c');if(!c||c.__lugH)return;c.__lugH=true;
+  c.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(LUG_T);LUG_DENTRO=true});
+  c.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;LUG_DENTRO=false;clearTimeout(LUG_T);LUG_T=setTimeout(lugarFechar,1000)})}
+function lugarFechar(){clearTimeout(LUG_T);if(gInfo&&gInfo.__lug){gInfo.close();gInfo.__lug=false;return true}return false}
+async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;clearTimeout(LUG_T);LUG_DENTRO=false;if(!TOQUE())LUG_T=setTimeout(()=>{if(!LUG_DENTRO)lugarFechar()},1000);gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
   try{let p=LUGARES[id];if(!p){const pl=new gLib.places.Place({id});await pl.fetchFields({fields:['displayName','formattedAddress','rating','userRatingCount','reviews','googleMapsURI']});
       p=LUGARES[id]={displayName:pl.displayName,formattedAddress:pl.formattedAddress,rating:pl.rating,userRatingCount:pl.userRatingCount,googleMapsURI:pl.googleMapsURI,
         reviews:(pl.reviews||[]).map(r=>({rating:r.rating,text:r.text,relativePublishTimeDescription:r.relativePublishTimeDescription,authorAttribution:r.authorAttribution&&{displayName:r.authorAttribution.displayName,uri:r.authorAttribution.uri}}))}}
@@ -12037,7 +12171,7 @@ document.addEventListener('change',e=>{const el=e.target.closest('[data-ch="hist
 // No banco: app.terrenos_sobrepostos, t_sobre (sobreposicoes_aceitas),
 // ofertas.poligono_geojson e confrontacoes.
 // ---------------------------------------------------------------------
-const NV_FONTE={mapa:'Poligonal desenhada no mapa',kmz:'Poligonal importada de KMZ/KML'};
+const NV_FONTE={mapa:'Poligonal desenhada no mapa',kmz:'Poligonal importada de KMZ/KML',sql:'Poligonal pela soma dos lotes dos SQLs'};
 const NV_FOLGA=5;  // metros de imprecisão aceitos na divisa
 const caixaPoly=p=>[Math.min(...p.map(x=>x[0])),Math.min(...p.map(x=>x[1])),Math.max(...p.map(x=>x[0])),Math.max(...p.map(x=>x[1]))];
 // graus -> metros locais (x para leste, y para norte) e de volta
@@ -12115,6 +12249,7 @@ function nvPasso1Html(fechar){const kmz=UI.nvKmz;
   <div class="nv-ops">
     <button type="button" class="nv-op" data-a="nv-desenhar"><span class="nv-ic">${bi('mapa',24)}</span><span><b>Desenhar no mapa</b><span class="muted">Ache o endereço na barra do mapa e marque os cantos do terreno.</span></span></button>
     <button type="button" class="nv-op" data-a="nv-kmz"><span class="nv-ic">${ic('upload',24)}</span><span><b>Importar KMZ ou KML</b><span class="muted">Arquivo do Google Earth com o polígono do terreno.</span></span></button>
+    <button type="button" class="nv-op" data-a="nv-sql"><span class="nv-ic">${ic('layers',24)}</span><span><b>Incluir por SQL</b><span class="muted">São Paulo: digite os SQLs dos lotes ou marque os lotes no mapa da quadra.</span></span></button>
     ${kmz?`<div class="nv-kmz"><span class="lbl-f">O arquivo tem ${kmz.length} polígonos. Qual é o terreno?</span>${kmz.map((it,i)=>`<button type="button" class="btn sm" data-a="nv-kmz-i" data-i="${i}">${esc(it.nome)} · ${m2(Math.round(areaPoly(it.pts)))}</button>`).join('')}</div>`:''}
   </div>
   `}
@@ -12138,19 +12273,26 @@ function nvSobreHtml(fechar){const nv=UI.nv,s=nv.sobre,ro=UI.role==='Leitura',ig
 // nome de referência: o logradouro sem o tipo (Rua, Avenida...) e sem o número (decisão do Moisés, 4/nov/2026)
 const NV_TIPO_LOG=/^(rua|r\.|avenida|av\.?|alameda|al\.?|travessa|trav\.?|tv\.?|estrada|estr\.?|est\.|pra[çc]a|p[çc]a\.?|rodovia|rod\.?|largo|lgo\.?|viela|via|viaduto|ladeira|passagem|beco|vila|parque|pq\.?|servid[ãa]o|acesso|caminho|marginal)\s+/i;
 const nomeRef=log=>(log||'').trim().replace(NV_TIPO_LOG,'').replace(/,.*$/,'').trim();
+// nome padrão: "Bairro - Rua" (rua sem o tipo e sem número); repetido na base ganha 2, 3... (o primeiro fica sem número; pedido do Moisés, 5/nov/2026)
+const nomeNorm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+function nomeUnico(base,nomes){const b=nomeNorm(base);if(!b)return base;let n=0;
+  nomes.forEach(x=>{const y=nomeNorm(x);if(y===b)n=Math.max(n,1);else if(y.startsWith(b+' ')&&/^\d+$/.test(y.slice(b.length+1)))n=Math.max(n,+y.slice(b.length+1))});
+  return n?base+' '+(n+1):base}
+const nomePadrao=(bairro,log)=>{const base=[(bairro||'').trim(),nomeRef(log)].filter(Boolean).join(' - ');return nomeUnico(base,S.terrenos.map(t=>t.nome))};
 // passo 2: só o nome de referência. Município, endereço e frentes vêm da poligonal; o resto entra ao longo da jornada
-function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l.uf?' · '+l.uf:''):'',f0=nv.frentes?.[0],busca=nv.buscandoLocal;
-  const v=x=>x?`value="${esc(x)}"`:'',nome=nv.nome??(f0?nomeRef(f0.logradouro):'');
+function nvDadosHtml(fechar){const nv=UI.nv,l=nv.local,mun=l?.cidade?l.cidade+(l.uf?' · '+l.uf:''):'',fr=nv.frentes||[],pri=Math.min(nv.pri||0,Math.max(fr.length-1,0)),f0=fr[pri],busca=nv.buscandoLocal;
+  const v=x=>x?`value="${esc(x)}"`:'',nome=nv.nome??(f0?nomePadrao(l?.bairro,f0.logradouro):'');
   const onde=[f0&&[f0.logradouro,f0.numero].filter(Boolean).join(', '),l?.bairro,mun].filter(Boolean).join(' · ');
   return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 2 de 2 · O resto da ficha é preenchido ao longo da jornada.</div></div>${fechar}</div>
   <form data-form="novo" id="f-novo"><div class="fields">
-  <div class="field full"><div class="banner blue">${ic('check')}<div style="flex:1"><div class="bt">${nv.porLotes?`Poligonal pela soma dos ${nv.sqls.length} lote${nv.sqls.length>1?'s':''} da prefeitura`:NV_FONTE[nv.fonte]} · ${m2(Math.round(nv.area))}</div>
+  <div class="field full"><div class="banner blue">${ic('check')}<div style="flex:1"><div class="bt">${nv.porLotes?(nv.sqls.length>1?`Poligonal pela soma dos ${nv.sqls.length} lotes da prefeitura`:'Poligonal pelo lote da prefeitura'):NV_FONTE[nv.fonte]} · ${m2(Math.round(nv.area))}</div>
     <div>${busca?'Buscando o endereço pela poligonal...':onde?esc(onde):'Endereço não encontrado pela localização.'}</div>
     ${nv.ignorados?`<div>Confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}.</div>`:''}</div><button type="button" class="btn sm text" data-a="nv-voltar">Trocar</button></div></div>
-  ${nv.lgFeito||nvSP()?`<div class="field full"><div class="nv-sqls"><span class="etq-sw s"></span><div style="flex:1">${nv.sqls?.length?`<b>${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} da prefeitura</b><div class="nv-sqls-l">${nv.sqls.map(x=>`<span class="etq s"><span class="etq-n num">${esc(x.sql)}</span></span>`).join('')}</div>${nv.porLotes?'<div class="faint">A desenhada fica guardada.</div>':''}`:'<b>Nenhum SQL</b><div class="faint">Marque os lotes da prefeitura que o terreno ocupa.</div>'}</div><button type="button" class="btn sm text" data-a="nv-lotes">${ic('layers',16)}${nv.sqls?.length?'Trocar SQLs':'Escolher SQLs'}</button></div></div>`:''}
-  <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="${busca?'Buscando a rua...':'Ex.: Cupecê'}" ${v(nome)}></div>
+  ${nv.lgFeito||nvSP()?`<div class="field full"><div class="nv-sqls"><span class="etq-sw s"></span><div style="flex:1">${nv.sqls?.length?`<b>${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} da prefeitura</b><div class="nv-sqls-l">${nv.sqls.map(x=>`<span class="etq s"><span class="etq-n num">${esc(x.sql)}</span></span>`).join('')}</div>${nv.porLotes&&nv.polyDesenho?'<div class="faint">A desenhada fica guardada.</div>':''}`:'<b>Nenhum SQL</b><div class="faint">Marque os lotes da prefeitura que o terreno ocupa.</div>'}</div><button type="button" class="btn sm text" data-a="nv-lotes">${ic('layers',16)}${nv.sqls?.length?'Trocar SQLs':'Escolher SQLs'}</button></div></div>`:''}
+  ${!busca&&fr.length>1?`<div class="field full nv-frentes"><span class="lbl-f" id="nv-fr-l">A poligonal tem ${fr.length} frentes. Qual é o acesso principal?</span><span class="nv-fr" role="radiogroup" aria-labelledby="nv-fr-l">${fr.map((x,i)=>`<label class="opt-radio"><input type="radio" name="nv-pri" value="${i}" ${i===pri?'checked':''}>${esc(x.logradouro)}${x.numero?', '+esc(x.numero):''}${x.m?`<span class="faint">&nbsp;· ${num(Math.round(x.m))} m</span>`:''}</label>`).join('')}</span><span class="hint">O nome de referência sai dele; as outras entram em Confrontações como frente.</span></div>`:''}
+  <div class="field full"><label for="n-nome">Nome de referência *</label><input id="n-nome" name="nome" required placeholder="${busca?'Buscando a rua...':'Ex.: Saúde - Cupecê'}" ${v(nome)}></div>
   ${!busca&&!mun?`<div class="field full"><label for="n-mun">Município *</label><input id="n-mun" name="municipio" required placeholder="Cidade · UF"><span class="hint">Não deu para saber pela localização.</span></div>`:`<input type="hidden" name="municipio" ${v(mun)}>`}
-  <input type="hidden" name="logradouro" ${v(f0?.logradouro)}><input type="hidden" name="numero" ${v(f0?.numero)}><input type="hidden" name="bairro" ${v(l?.bairro)}><input type="hidden" name="frente" value="0">
+  <input type="hidden" name="logradouro" ${v(f0?.logradouro)}><input type="hidden" name="numero" ${v(f0?.numero)}><input type="hidden" name="bairro" ${v(l?.bairro)}><input type="hidden" name="frente" value="${pri}">
   </div></form><div class="df"><button class="btn text" data-a="close">Cancelar</button><button class="btn primary" type="submit" form="f-novo" id="btn-novo" ${busca?'disabled':''}>${busca?'Buscando o endereço...':'Cadastrar terreno'}</button></div>`}
 // depois de cadastrar: a ficha em gaveta no mapa e, com SQLs, a consulta completa no GeoSampa de cada um (zonas, parâmetros, camadas, planta e desenho)
 function nvDepois(t){nvGaveta(t);const ins=t.insc.filter(i=>!(i.geo||[]).length);if(ins.length)lgConsultar(t,ins)}
@@ -12162,6 +12304,10 @@ function nvPlGravar(t,d){const P=partesDe(t);P.length=0;
   d.partes.forEach(p=>{const pa={id:uid(),ativa:true,neg:null,propostas:[],nome:p.nome,essencial:true,area:null};['pessoa','tel','email','doc','obs'].forEach(k=>{if(p[k])pa[k]=p[k]});P.push(pa)});
   lotesNorm(t);if(d.partes.length>1||d.partes[0].nome!=='Vendedor 1')log(t,`${d.partes.length} parte${d.partes.length>1?'s':''}: ${d.partes.map(p=>p.nome).join(', ')}`)}
 // depois de desenhar a tela do passo 2: checagem de duplicidade
+// acesso principal: o nome sugerido acompanha a frente escolhida, enquanto a pessoa não escreveu outro
+document.addEventListener('change',e=>{if(e.target.name!=='nv-pri'||!UI.nv)return;const nv=UI.nv,fr=nv.frentes||[];
+  if(!nv.nome?.trim()||fr.some(x=>nomePadrao(nv.local?.bairro,x.logradouro)===nv.nome.trim()))nv.nome=null;
+  nv.pri=Number(e.target.value);renderModal();$('#f-novo [name=nv-pri]:checked')?.focus()});
 function nvPosRender(){const f=$('#f-novo');if(!f||!UI.nv)return;f.nome.addEventListener('input',()=>{if(UI.nv)UI.nv.nome=f.nome.value})}
 // passo 2 gravado: o terreno novo com a poligonal, o município e as frentes
 function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0].toFixed(7);alvo.lng=+nv.ponto[1].toFixed(7);alvo.precisao='aproximada';alvo.municipio=F.municipio.trim();
@@ -12171,7 +12317,7 @@ function nvGravar(alvo,F){const nv=UI.nv;alvo.poly=nv.poly;alvo.lat=+nv.ponto[0]
   (nv.sqls||[]).forEach(x=>{const i={id:uid(),mun:'sp',sql:x.sql,area:x.area??null,valores:[],parte:null,origem:'mapa_prefeitura',endPref:x.end||'',polyLote:x.poly};if(x.cib)i.cib=x.cib;alvo.insc.push(i)});
   if(nv.porLotes){alvo.polyDesenho=nv.polyDesenho;alvo.polyLotes=true}
   if(fr.length>1&&alvo.posicao==='nao_informado')alvo.posicao=fr.length===2?'esquina':'duas_frentes';
-  alvo.hist[0].txt=`Terreno cadastrado: ${NV_FONTE[nv.fonte].toLowerCase()} (${m2(Math.round(nv.area))})`+(nv.ignorados?`, confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}`:'')+(nv.sqls?.length?`; ${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} pelo mapa de lotes da prefeitura${nv.porLotes?', poligonal pela soma dos lotes':''}: ${nv.sqls.map(x=>x.sql).join(', ')}`:'')}
+  alvo.hist[0].txt=`Terreno cadastrado: ${NV_FONTE[nv.fonte].toLowerCase()} (${m2(Math.round(nv.area))})`+(nv.ignorados?`, confirmado como outro terreno apesar de sobrepor ${nv.ignorados.map(x=>x.t.codigo).join(', ')}`:'')+(nv.sqls?.length?`; ${nv.sqls.length} SQL${nv.sqls.length>1?'s':''} ${nv.fonte==='sql'?'incluídos pelo SQL':'pelo mapa de lotes da prefeitura'}${nv.porLotes?', poligonal pela soma dos lotes':''}: ${nv.sqls.map(x=>x.sql).join(', ')}`:'')}
 
 /* ---------- decisões ---------- */
 function nvTrocarPoly(t,poly,como){const ant=t.poly?areaPoly(t.poly):null;(t.polyAnt=t.polyAnt||[]).push({em:agora(),user:me(),poly:t.poly});t.poly=poly;const c=centro(poly);t.lat=+c[0].toFixed(7);t.lng=+c[1].toFixed(7);t.precisao='aproximada';
@@ -12186,6 +12332,7 @@ function nvDecidir(A,id){const t=T(id),nv=UI.nv;if(!t||!nv)return;
   nvAbrirOferta(t,A==='nv-juntar'?nv.poly:null,'Terreno recadastrado. Registre a oferta e revise o cadastro.')}
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nv-"]');if(!a)return;const A=a.dataset.a;
   if(A==='nv-desenhar'){UI.modal=null;renderModal();nvDesenhar()}
+  if(A==='nv-sql')nvSqlAbrir();
   if(A==='nv-kmz'){UI.kmzNovo=true;$('#kmz-in').value='';$('#kmz-in').click()}
   if(A==='nv-kmz-i'){const it=UI.nvKmz[Number(a.dataset.i)];UI.nvKmz=null;nvPoligonal(it.pts,'kmz',{nome:it.nome})}
   if(A==='nv-voltar'){UI.nv=null;UI.nvPool=null;UI.modal='novo';renderModal()}
@@ -12206,7 +12353,25 @@ async function mpBuscar(q){q=(q||'').trim();if(q.length<3)return [];
     return (places||[]).map(p=>({nome:p.formattedAddress||p.displayName,lat:p.location.lat(),lng:p.location.lng()}))}
   const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=br&limit=5&accept-language=pt-BR&q=${encodeURIComponent(q)}`);if(!r.ok)throw new Error('OpenStreetMap respondeu '+r.status);
   return (await r.json()).map(x=>({nome:x.display_name.replace(/, Brasil$/,''),lat:+x.lat,lng:+x.lon}))}
-function mpBuscaHtml(){return `<form class="mp-busca" data-form="mp-busca" role="search"><span class="mp-busca-i">${ic('search',20)}</span><input id="mp-end" name="q" type="search" placeholder="Buscar endereço" aria-label="Buscar endereço no mapa" autocomplete="off"><div id="mp-res" class="mp-res" role="listbox" hidden></div></form>`}
+/* busca de endereço recolhida: só o botão redondo com a lupa; a lupa abre a barra, a seta à direita fecha, e vazia, sem o foco
+   e sem o mouse em cima por 3 s, fecha sozinha (pedido do Moisés, 5/nov/2026; aberta ou não vale na sessão, UI.mpBusca) */
+function mpBuscaHtml(){const ab=!!UI.mpBusca;if(ab)setTimeout(mpBuscaAgendar,0);
+  return `<form class="mp-busca${ab?'':' fechada'}" data-form="mp-busca" role="search"><button type="button" class="mp-busca-i" data-a="mp-busca-abrir" tabindex="${ab?-1:0}" aria-label="Buscar endereço" aria-expanded="${ab}">${ic('search',20)}</button><input id="mp-end" name="q" type="search" placeholder="Buscar endereço" aria-label="Buscar endereço no mapa" autocomplete="off"${ab?'':' tabindex="-1"'}><button type="button" class="mp-busca-x" data-a="mp-busca-fechar" aria-label="Fechar a busca">${ic('back',20)}</button><div id="mp-res" class="mp-res" role="listbox" hidden></div></form>`}
+let MP_BUSCA_FT=null,MP_BUSCA_SOBRE=false;
+function mpBuscaAbrir(ab,semFoco){const f=$('.mapa-area .mp-busca');UI.mpBusca=!!ab;clearTimeout(MP_BUSCA_FT);if(!f)return;
+  f.classList.toggle('fechada',!ab);const i=f.querySelector('#mp-end'),l=f.querySelector('.mp-busca-i');l.setAttribute('aria-expanded',!!ab);l.tabIndex=ab?-1:0;
+  if(ab){i.removeAttribute('tabindex');if(!semFoco)i.focus()}else{i.value='';i.tabIndex=-1;i.blur();const r=$('#mp-res');if(r)r.hidden=true;MP_BUSCA_SOBRE=false}}
+function mpBuscaAgendar(){clearTimeout(MP_BUSCA_FT);if(TOQUE())return;const f=$('.mapa-area .mp-busca'),i=$('#mp-end');
+  if(!f||f.classList.contains('fechada')||!i||i.value.trim()||document.activeElement===i||MP_BUSCA_SOBRE)return;
+  MP_BUSCA_FT=setTimeout(()=>{const i=$('#mp-end');if(i&&!i.value.trim()&&document.activeElement!==i&&!MP_BUSCA_SOBRE)mpBuscaAbrir(false)},3000)}
+document.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-busca-abrir"],[data-a="mp-busca-fechar"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
+  if(a.dataset.a==='mp-busca-abrir'){if(!UI.mpBusca)mpBuscaAbrir(true);else $('#mp-end')?.focus()}else mpBuscaAbrir(false)},true);
+document.addEventListener('focusout',e=>{if(e.target.id==='mp-end')setTimeout(mpBuscaAgendar,0)},true);
+document.addEventListener('focusin',e=>{if(e.target.id==='mp-end')clearTimeout(MP_BUSCA_FT)},true);
+/* fechada, abre sozinha com o mouse parado na lupa por 0,75 s, sem pegar o foco (pedido do Moisés, 5/nov/2026) */
+document.addEventListener('pointerover',e=>{if(e.pointerType==='mouse'&&e.target.closest?.('.mapa-area .mp-busca')&&!MP_BUSCA_SOBRE){MP_BUSCA_SOBRE=true;clearTimeout(MP_BUSCA_FT);
+  if(!UI.mpBusca&&!TOQUE())MP_BUSCA_FT=setTimeout(()=>{if(MP_BUSCA_SOBRE&&!UI.mpBusca)mpBuscaAbrir(true,true)},750)}},true);
+document.addEventListener('pointerout',e=>{if(!MP_BUSCA_SOBRE||!e.target.closest?.('.mp-busca')||e.relatedTarget?.closest?.('.mp-busca'))return;MP_BUSCA_SOBRE=false;mpBuscaAgendar()},true);
 function mpResMostrar(rs,msg){const box=$('#mp-res');if(!box)return;box.hidden=false;UI.mpRes=rs;
   box.innerHTML=rs.length?rs.map((x,i)=>`<button type="button" role="option" data-a="mp-res" data-i="${i}">${bi('mapa',18)}<span>${esc(x.nome)}</span></button>`).join(''):`<div class="hint">${msg||'Nada encontrado.'}</div>`}
 async function mpBuscaRodar(q,ir){try{const rs=await mpBuscar(q);if(($('#mp-end')?.value||'').trim()!==q.trim())return;if(ir&&rs[0])return mpIrPara(rs[0]);mpResMostrar(rs)}catch(e){console.warn(e);mpResMostrar([],'Busca indisponível agora.')}}
@@ -12299,7 +12464,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a="lotes-p
 const LG_MIN=0.2;   // fração do lote dentro da poligonal para vir marcado
 const lgPode=t=>!!(t&&GEO_BASE&&t.poly&&t.poly.length>2&&cidDoTerreno(t)==='sp'&&UI.role!=='Leitura');
 /* o terreno do mapa: o de verdade, ou, no Novo terreno, o que está sendo desenhado (UI.nv) */
-const lgT=L=>!L?null:L.nv?(UI.nv?{id:'__nv',codigo:'Novo terreno',nome:UI.nv.nome||'',poly:UI.nv.polyDesenho||UI.nv.poly,insc:(UI.nv.sqls||[]).map(x=>({sql:x.sql,mun:'sp',valores:[]}))}:null):T(L.tid);
+const lgT=L=>!L?null:L.nvSql?{id:'__nv',codigo:'Novo terreno',nome:'pelo SQL',poly:null,insc:(UI.nvSql?.lista||[]).map(x=>({sql:x.sql,mun:'sp',valores:[]}))}:L.nv?(UI.nv?{id:'__nv',codigo:'Novo terreno',nome:UI.nv.nome||'',poly:UI.nv.polyDesenho||UI.nv.poly,insc:(UI.nv.sqls||[]).map(x=>({sql:x.sql,mun:'sp',valores:[]}))}:null):T(L.tid);
 /* no Novo terreno: abre o mapa de lotes logo depois da poligonal, se ela está em São Paulo */
 const nvSP=()=>{const l=UI.nv?.local;return !!(GEO_BASE&&UI.role!=='Leitura'&&l?.cidade&&cidDoNome(l.cidade)==='sp')};
 function nvLotesAbrir(){if(!UI.nv)return;UI.nv.lgFeito=true;UI.lg={nv:true,fase:'carregando',cad:true};UI.modal='lotes-geo';renderModal();lgCarregar()}
@@ -12323,25 +12488,27 @@ function lgFracao(an,ter){const [x0,y0,x1,y1]=lgBB(an);let n=0,d=0;
 
 /* ---------- consulta ---------- */
 async function lgCarregar(){const L=UI.lg,t=lgT(L);if(!t)return;
-  try{const ter=t.poly.map(([la,ln])=>latLngUtm(la,ln));ter.push(ter[0]);const g={type:'Polygon',coordinates:[ter]};
+  try{let ter=null,qs;
+   if(L.quadrasIni)qs=L.quadrasIni; /* Novo terreno pelo SQL: as quadras dos SQLs, sem poligonal ainda */
+   else{ter=t.poly.map(([la,ln])=>latLngUtm(la,ln));ter.push(ter[0]);const g={type:'Polygon',coordinates:[ter]};
     // 1. lotes que a poligonal toca: dão as quadras (a ponta que só encosta numa quadra vizinha não a traz)
     const toca=await geoWfs({typeNames:'geoportal:lote_cidadao',count:'500',propertyName:'cd_setor_fiscal,cd_quadra_fiscal,ge_poligono',CQL_FILTER:`INTERSECTS(ge_poligono,${geoWkt(g)})`});
     const pesoQ={};toca.forEach(f=>{const an=f.geometry&&geoAneis(f.geometry)[0];if(!an)return;const k=f.properties.cd_setor_fiscal+'.'+f.properties.cd_quadra_fiscal;
       pesoQ[k]=Math.max(pesoQ[k]||0,lgFracao(an,ter)*geoAreaAnel(an))});
-    let qs=Object.entries(pesoQ).filter(([,v])=>v>=10).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+    qs=Object.entries(pesoQ).filter(([,v])=>v>=10).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
     if(!qs.length)qs=Object.keys(pesoQ);
     if(!qs.length){Object.assign(L,{fase:'erro',erro:'A poligonal não ocupa nenhum lote do cadastro da prefeitura.'});return lgRedesenhar()}
-    qs=qs.slice(0,8);
+    qs=qs.slice(0,8)}
     // 2. todos os lotes dessas quadras e os nomes das ruas em volta
     const fs=await geoWfs({typeNames:'geoportal:lote_cidadao',count:'3000',CQL_FILTER:qs.map(k=>{const [s,q]=k.split('.');return `(cd_setor_fiscal='${s}' AND cd_quadra_fiscal='${q}')`}).join(' OR ')});
     const outro=sql=>S.terrenos.find(x=>x.id!==t.id&&x.insc.some(i=>insCid(i)==='sp'&&digits(i.sql)===digits(sql)));
     const lotes=fs.filter(f=>f.geometry&&f.properties.tx_situ_lote!=='INATIVO').map(f=>{const p=f.properties,an=geoAneis(f.geometry)[0],sql=p.nr_contribuinte||null;
       const condo=p.cd_condominio&&p.cd_condominio!=='00',via=p.tx_tipo_lote&&p.tx_tipo_lote!=='FISCAL',ou=sql&&outro(sql),ja=sql&&t.insc.find(i=>digits(i.sql)===digits(sql));
       const trava=via?'Via de acesso: não tem SQL':condo?`Condomínio ${p.cd_condominio}: os SQLs das unidades não vêm no GeoSampa`:!sql?'Sem SQL no cadastro':ou?`Já está no ${ou.codigo}`:null;
-      const fr=lgFracao(an,ter);
+      const fr=ter?lgFracao(an,ter):0;
       return {an,sql,p,condo,via,trava,fr,rot:lgRotulo(an),sel:!!ja||(!trava&&fr>=LG_MIN),ja:!!ja,iptu:!!ja?.valores?.length,area:p.qt_area_terreno??null,
         end:p.nm_logradouro_completo?geoTit(p.nm_logradouro_completo)+(p.cd_numero_porta&&p.cd_numero_porta!=='0'?', '+p.cd_numero_porta:''):''}});
-    const bb=lgBB(lotes.flatMap(l=>l.an).concat(ter));
+    const bb=lgBB(lotes.flatMap(l=>l.an).concat(ter||[]));
     let vias=[];try{vias=await geoWfs({typeNames:'geoportal:v_logradouro_segmento',count:'400',bbox:[bb[0]-25,bb[1]-25,bb[2]+25,bb[3]+25].join(',')+',urn:ogc:def:crs:EPSG::31983'})}catch(e){}
     Object.assign(L,{fase:'mapa',ter,lotes,quadras:qs,bb,vias:lgVias(vias,bb)});
   }catch(e){console.warn(e);Object.assign(L,{fase:'erro',erro:'O GeoSampa não respondeu. Tente de novo em instantes.'})}
@@ -12355,29 +12522,31 @@ function lgVias(fs,bb){const porNome={};
   return Object.values(porNome)}
 
 /* ---------- janela ---------- */
-function lgHtml(fechar){const L=UI.lg,t=lgT(L);if(!t)return '';if(L.nv)fechar=`<button class="iconbtn" data-a="lg-nv-volta" aria-label="Fechar">${ic('close',22)}</button>`;
+function lgHtml(fechar){const L=UI.lg,t=lgT(L);if(!t)return '';const volta=L.nvSql?'lg-sql-volta':'lg-nv-volta';if(L.nv||L.nvSql)fechar=`<button class="iconbtn" data-a="${volta}" aria-label="Fechar">${ic('close',22)}</button>`;
   if(L.fase==='pergunta')return `<div class="dh"><h2>Inserir os lotes da prefeitura?</h2>${fechar}</div>
     <p style="margin:0 0 8px">O ${esc(t.codigo)} fica em São Paulo. Quer marcar <span class="lg-pc">no mapa de lotes do GeoSampa</span><span class="lg-cel">na lista de lotes do GeoSampa</span> os lotes que ele ocupa?</p>
     <p class="muted" style="margin:0">Os SQLs marcados entram no cadastro sem parte, e a poligonal passa a ser a soma dos lotes. Dá para fazer depois pelo botão "Escolher no mapa" do quadro de SQLs.</p>
     <div class="df"><button class="btn text" data-a="close">Agora não</button><button class="btn primary" data-a="lg-sim">${ic('layers',18)}Sim, escolher os lotes</button></div>`;
   const cab=`<div class="dh"><div><h2>Lotes da prefeitura</h2><div class="faint">${esc(t.codigo)} · ${esc(t.nome)}${L.quadras?` · quadra${L.quadras.length>1?'s':''} ${L.quadras.map(k=>k.replace('.','-')).join(', ')}`:''}</div></div>${fechar}</div>`;
   if(L.fase==='carregando')return cab+`<div class="lg-msg">${ic('layers',20)}Buscando os lotes das quadras no GeoSampa...</div>`;
-  if(L.fase==='erro')return cab+`<div class="banner warn">${ic('warn')}<div>${esc(L.erro)}</div></div><div class="df"><button class="btn text" data-a="${L.nv?'lg-nv-volta':'close'}">${L.nv?'Seguir sem lotes':'Fechar'}</button><button class="btn" data-a="lg-sim">Tentar de novo</button></div>`;
+  if(L.fase==='erro')return cab+`<div class="banner warn">${ic('warn')}<div>${esc(L.erro)}</div></div><div class="df"><button class="btn text" data-a="${L.nv||L.nvSql?volta:'close'}">${L.nv?'Seguir sem lotes':L.nvSql?'Voltar':'Fechar'}</button><button class="btn" data-a="lg-sim">Tentar de novo</button></div>`;
   const sel=L.lotes.filter(l=>l.sel&&!l.trava),novos=sel.filter(l=>!t.insc.some(i=>digits(i.sql)===digits(l.sql)));
   const tira=L.lotes.filter(l=>l.ja&&!l.sel&&!l.iptu);
   const area=sel.reduce((s,l)=>s+(l.area||0),0);
   return cab+`<div class="lg-corpo"><div class="lg-mapa" id="lg-mapa">${lgSvg(L)}
       <div class="lg-tip" id="lg-tip" hidden></div>
       <div class="lg-zoom"><button class="iconbtn sm" data-a="lg-zoom" data-z="1" aria-label="Aproximar">+</button><button class="iconbtn sm" data-a="lg-zoom" data-z="-1" aria-label="Afastar">−</button><button class="iconbtn sm" data-a="lg-zoom" data-z="0" aria-label="Enquadrar" title="Enquadrar">${ic('layers',16)}</button></div>
-      <div class="lg-leg"><span><i class="lg-sw sel"></i>Marcado</span><span><i class="lg-sw"></i>Lote</span><span><i class="lg-sw x"></i>Não se marca</span><span><i class="lg-sw ter"></i>Poligonal</span></div></div>
+      <div class="lg-leg"><span><i class="lg-sw sel"></i>Marcado</span><span><i class="lg-sw"></i>Lote</span><span><i class="lg-sw x"></i>Não se marca</span>${L.ter?'<span><i class="lg-sw ter"></i>Poligonal</span>':''}</div></div>
     <div class="lg-lado"><div class="lg-tot"><b>${sel.length} lote${sel.length===1?'':'s'} marcado${sel.length===1?'':'s'}</b>${area?` <span class="muted">· ${m2(area)} de área cadastral</span>`:''}</div>
       <div class="hint" style="margin:4px 0 8px"><span class="lg-mouse">Clique no lote para marcar ou desmarcar. Pare o mouse em cima para ver o SQL. A roda aproxima e mostra os números dos lotes pequenos.</span><span class="lg-toque">Toque no lote para marcar ou desmarcar e ver o SQL. Afaste dois dedos para aproximar.</span></div>
-      <div class="lg-lista">${sel.map(l=>`<div class="lg-it"><span class="num">${esc(l.sql)}</span><span class="faint">${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}</span>${!L.nv&&l.ja?'<span class="chip">já no cadastro</span>':''}</div>`).join('')||'<div class="muted">Nenhum lote marcado.</div>'}</div>${lgTodos(L,t)}</div></div>
-    <div class="df"><button class="btn text" data-a="${L.nv?'lg-nv-volta':'close'}">${L.nv?'Agora não':'Cancelar'}</button><button class="btn primary" data-a="lg-incluir" ${L.nv||novos.length||tira.length?'':'disabled'}>${L.nv?(sel.length?`Usar ${sel.length} lote${sel.length>1?'s':''}`:'Seguir sem lotes'):[novos.length&&`Incluir ${novos.length} SQL${novos.length>1?'s':''}`,tira.length&&`tirar ${tira.length}`].filter(Boolean).join(' e ').replace(/^t/,'T')||'Nada mudou'}</button></div>`}
+      <div class="lg-lista">${sel.map(l=>`<div class="lg-it"><span class="num">${esc(l.sql)}</span><span class="faint">${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}</span>${!L.nv&&!L.nvSql&&l.ja?'<span class="chip">já no cadastro</span>':''}</div>`).join('')||'<div class="muted">Nenhum lote marcado.</div>'}</div>${lgTodos(L,t)}</div></div>
+    <div class="df"><button class="btn text" data-a="${L.nv||L.nvSql?volta:'close'}">${L.nv?'Agora não':L.nvSql?'Voltar':'Cancelar'}</button><button class="btn primary" data-a="lg-incluir" ${L.nvSql?(sel.length?'':'disabled'):L.nv||novos.length||tira.length?'':'disabled'}>${L.nvSql?`Usar ${sel.length} lote${sel.length===1?'':'s'}`:L.nv?(sel.length?`Usar ${sel.length} lote${sel.length>1?'s':''}`:'Seguir sem lotes'):[novos.length&&`Incluir ${novos.length} SQL${novos.length>1?'s':''}`,tira.length&&`tirar ${tira.length}`].filter(Boolean).join(' e ').replace(/^t/,'T')||'Nada mudou'}</button></div>`}
 /* celular: sem o mapa, a lista dos lotes das quadras para marcar (os que tocam a poligonal primeiro) */
 function lgTodos(L,t){const it=(l,i)=>{const on=l.sel&&!l.trava,bloq=!!l.trava;
-    const marca=!L.nv&&l.ja?'<span class="chip">já no cadastro</span>':'';
+    const marca=!L.nv&&!L.nvSql&&l.ja?'<span class="chip">já no cadastro</span>':'';
     return `<button type="button" class="lg-op${on?' on':''}" data-a="lg-marca" data-i="${i}" role="checkbox" aria-checked="${on}" ${bloq?'aria-disabled="true"':''}><span class="lg-cx">${on?ic('check',16):''}</span><span class="lg-op-t"><span class="num">${esc(l.sql)}</span><span class="faint lg-op-s">${l.trava?esc(l.trava):`${esc(l.end||'')}${l.area?` · ${m2(l.area)}`:''}${l.fr>0?` · ${Math.max(1,Math.round(l.fr*100))}% na poligonal`:''}`}</span></span>${marca}</button>`};
+  if(!L.ter){const tds=L.lotes.map((l,i)=>[l,i]).filter(([l])=>l.sql).sort((a,b)=>a[0].sql.localeCompare(b[0].sql));
+    return `<div class="lg-todos"><div class="lg-todos-h">Lotes da quadra <span class="h-n">${tds.length}</span></div>${tds.map(([l,i])=>it(l,i)).join('')}</div>`}
   const L2=L.lotes.map((l,i)=>[l,i]).filter(([l])=>l.sql),na=L2.filter(([l])=>l.fr>0).sort((a,b)=>b[0].fr-a[0].fr),fora=L2.filter(([l])=>!(l.fr>0)).sort((a,b)=>a[0].sql.localeCompare(b[0].sql));
   return `<div class="lg-todos"><div class="lg-todos-h">Na poligonal <span class="h-n">${na.length}</span></div>${na.map(([l,i])=>it(l,i)).join('')||'<div class="muted">Nenhum lote com SQL dentro da poligonal.</div>'}
     ${fora.length?`<details class="lg-fora"${fora.some(([l])=>l.sel)?' open':''}><summary>Outros lotes da quadra <span class="h-n">${fora.length}</span></summary>${fora.map(([l,i])=>it(l,i)).join('')}</details>`:''}</div>`}
@@ -12386,7 +12555,7 @@ function lgSvg(L){const [x0,y0,x1,y1]=L.bb,m=12,vb=L.vb||[x0-m,-y1-m,x1-x0+2*m,y
   return `<svg class="lg-svg" id="lg-svg" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa de lotes das quadras">
     <rect x="${x0-2000}" y="${-y1-2000}" width="${x1-x0+4000}" height="${y1-y0+4000}" class="lg-fundo"/>
     <g>${L.lotes.map((l,i)=>`<path d="${lgD(l.an)}" data-lg="${i}" class="lg-l${l.sel&&!l.trava?' sel':''}${l.trava?' x':''}"/>`).join('')}</g>
-    <path d="${lgD(L.ter)}" class="lg-ter"/>
+    ${L.ter?`<path d="${lgD(L.ter)}" class="lg-ter"/>`:''}
     <g class="lg-vias">${L.vias.map(v=>`<text data-x="${v.x.toFixed(1)}" data-y="${(-v.y).toFixed(1)}" data-g="${(-v.ang).toFixed(1)}">${esc(v.n)}</text>`).join('')}</g>
     <g class="lg-rots">${L.lotes.map((l,i)=>{const f=l.via?'':l.condo?`CD ${l.p.cd_condominio}`:`F ${l.p.cd_lote}`,n=l.p.cd_numero_porta&&l.p.cd_numero_porta!=='0'&&!l.via?`N. ${l.p.cd_numero_porta}`:'';if(!f)return '';
       return `<text data-r="${l.rot.r.toFixed(2)}" data-x="${l.rot.x.toFixed(2)}" data-y="${(-l.rot.y).toFixed(2)}"><tspan x="0" dy="-0.2em">${f}</tspan>${n?`<tspan x="0" dy="1.15em">${esc(n)}</tspan>`:''}</text>`}).join('')}</g></svg>`}
@@ -12406,7 +12575,7 @@ function lgZoom(f,cx,cy){const L=UI.lg;if(!L)return;const [x,y,w,h]=L.vb,nw=Math
 function lgPt(svg,ev){const r=svg.getBoundingClientRect(),[x,y,w,h]=UI.lg.vb,u=Math.max(w/r.width,h/r.height),ox=(r.width*u-w)/2,oy=(r.height*u-h)/2;
   return [x-ox+(ev.clientX-r.left)*u,y-oy+(ev.clientY-r.top)*u,u]}
 function lgDica(l){return `<b class="num">${l.sql?'SQL '+esc(l.sql):l.via?'Via de acesso':l.condo?'Condomínio '+esc(l.p.cd_condominio):'Sem SQL'}</b>${l.end?`<div>${esc(l.end)}</div>`:''}${l.area?`<div>${m2(l.area)} de terreno</div>`:''}
-  ${l.trava?`<div class="lg-tip-x">${esc(l.trava)}</div>`:`<div class="faint">${Math.round(l.fr*100)}% dentro da poligonal · ${l.sel?'marcado':'clique para marcar'}</div>`}`}
+  ${l.trava?`<div class="lg-tip-x">${esc(l.trava)}</div>`:`<div class="faint">${UI.lg.ter?`${Math.round(l.fr*100)}% dentro da poligonal · `:''}${l.sel?'marcado':'clique para marcar'}</div>`}`}
 function lgLigar(){const svg=$('#lg-svg'),box=$('#lg-mapa'),tip=$('#lg-tip');if(!svg)return;lgEscala();
   let arr=null,moveu=false;const toques=new Map();let pinca=null;
   svg.addEventListener('wheel',e=>{e.preventDefault();const [x,y]=lgPt(svg,e);lgZoom(e.deltaY<0?1.25:0.8,x,y)},{passive:false});
@@ -12430,6 +12599,10 @@ const lgPolyLl=l=>l.an.slice(0,-1).map(p=>utmLatLng(p[0],p[1]).map(v=>+v.toFixed
 /* grava. No Novo terreno: a poligonal vira a soma dos lotes marcados e os SQLs vão junto para o passo 2.
    Na ficha: os marcados entram sem parte, os desmarcados saem (menos os com IPTU lançado) e a poligonal é refeita. */
 function lgIncluir(){const L=UI.lg,t=lgT(L);if(!t)return;
+  /* Novo terreno pelo SQL: os marcados voltam para a lista de SQLs (os de outras quadras ficam como estavam) */
+  if(L.nvSql){const marc=L.lotes.filter(l=>l.sel&&!l.trava&&l.sql),Q=UI.nvSql;if(!Q)return;
+    Q.lista=Q.lista.filter(x=>!L.quadras.includes(x.q)).concat(marc.map(l=>({sql:l.sql,area:l.area,end:l.end||'',cib:l.p.cd_cib||null,poly:lgPolyLl(l),q:l.p.cd_setor_fiscal+'.'+l.p.cd_quadra_fiscal})));
+    Q.digitado='';UI.lg=null;UI.modal='novo-sql';renderModal();return}
   if(L.nv){const nv=UI.nv,marc=L.lotes.filter(l=>l.sel&&!l.trava&&l.sql);
     nv.sqls=marc.map(l=>({sql:l.sql,area:l.area,end:l.end||'',cib:l.p.cd_cib||null,poly:lgPolyLl(l)}));
     const des=nv.polyDesenho||nv.poly,u=marc.length?lotesUniao(nv.sqls.map(x=>x.poly)):null;
@@ -12474,8 +12647,55 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="lg-"]'
     const y=a.closest('.dialog')?.scrollTop;const ab=!!a.closest('details[open]');l.sel=!l.sel;renderModal();const d=$('.dialog:has(.lg-corpo)');if(d&&y!=null)d.scrollTop=y;if(ab){const f=$('.lg-fora');if(f)f.open=true}}
   if(A==='lg-incluir')lgIncluir();
   if(A==='lg-nv-volta'){UI.lg=null;UI.modal='novo';renderModal()}
+  if(A==='lg-sql-volta'){UI.lg=null;UI.modal='novo-sql';renderModal()}
   if(A==='lg-zoom'){const z=+a.dataset.z;if(z)lgZoom(z>0?1.5:1/1.5);else lgVb(UI.lg.vb0.slice())}
 });
+/* ---------- Novo terreno pelo SQL (São Paulo; pedido do Moisés, 5/nov/2026) ----------
+   Terceira forma de dar a área no passo 1, além do desenho e do KMZ: digitar os SQLs dos lotes (Incluir, como no quadro de
+   SQLs da aba Terreno) ou abrir o mapa de lotes da quadra do SQL digitado e marcar os lotes. Cada SQL é conferido no GeoSampa
+   (existe, o dígito confere, não está em outro terreno). Continuar faz a poligonal pela soma dos lotes e segue o caminho de
+   sempre: sobreposição com outros terrenos, endereço pela localização e passo 2; os SQLs entram no terreno sem parte e, cadastrado,
+   roda a consulta completa do GeoSampa em cada um e pela poligonal (nvDepois › lgConsultar). Só na versão publicada. */
+const sqlFmt=d=>`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,10)}-${d[10]}`;
+function nvSqlAbrir(){if(!GEO_BASE){toast('A busca no GeoSampa funciona na versão publicada.',true);return}UI.nvSql=UI.nvSql||{lista:[],digitado:''};UI.modal='novo-sql';renderModal()}
+function nvSqlHtml(fechar){const Q=UI.nvSql,n=Q.lista.length,area=Q.lista.reduce((s,x)=>s+(x.area||0),0);
+  return `<div class="dh"><div><h2>Novo terreno</h2><div class="muted" style="margin-top:4px">Passo 1 de 2 · SQLs dos lotes (São Paulo)</div></div>${fechar}</div>
+  <form class="etq-form" data-form="nvq">${campoInsc('nvq','sp',null,false)}<button class="btn sm" ${Q.buscando?'disabled':''}>${ic('add',16)}${Q.buscando?'Buscando...':'Incluir'}</button><button type="button" class="btn sm text" data-a="nvq-mapa" ${Q.buscando?'disabled':''}>${ic('layers',16)}Escolher no mapa</button></form>
+  <div class="hint" style="margin:4px 0 8px">Digite o SQL e Incluir, um de cada vez, ou abra o mapa da quadra do SQL digitado e marque os lotes.</div>
+  <div class="etq-pool">${Q.lista.map((x,i)=>`<span class="etq s" aria-label="SQL ${esc(x.sql)}"><span class="etq-n num" title="${esc([x.end,x.area?m2(x.area):''].filter(Boolean).join(' · '))}">${esc(x.sql)}</span><button type="button" class="etq-x" data-a="nvq-tirar" data-i="${i}" aria-label="Tirar o SQL ${esc(x.sql)}" title="Tirar">${ic('close',14)}</button></span>`).join('')||'<span class="etq-vazio">Nenhum SQL ainda.</span>'}</div>
+  ${n?`<div class="hint" style="margin-top:8px">${n} lote${n>1?'s':''}${area?` · ${m2(area)} de área cadastral`:''}. A poligonal do terreno será a soma deles.</div>`:''}
+  <div class="df"><button class="btn text" data-a="nvq-voltar">Voltar</button><button class="btn primary" data-a="nvq-seguir" ${n&&!Q.buscando?'':'disabled'}>Continuar</button></div>`}
+const nvSqlOutro=d=>S.terrenos.find(t=>t.insc.some(i=>insCid(i)==='sp'&&digits(i.sql)===d));
+async function nvSqlIncluir(txt){const Q=UI.nvSql,d=digits(txt);if(!Q||Q.buscando)return;Q.digitado=txt;
+  if(d.length!==11){toast('O SQL tem 11 dígitos: 000.000.0000-0.',true);return renderModal()}
+  if(Q.lista.some(x=>digits(x.sql)===d)){toast('Este SQL já está na lista.',true);return renderModal()}
+  const ou=nvSqlOutro(d);if(ou){toast(`O SQL ${sqlFmt(d)} já está no ${ou.codigo}.`,true);return renderModal()}
+  Q.buscando=true;renderModal();
+  try{const fs=await geoWfs({typeNames:'geoportal:lote_cidadao',CQL_FILTER:`cd_setor_fiscal='${d.slice(0,3)}' AND cd_quadra_fiscal='${d.slice(3,6)}' AND cd_lote='${d.slice(6,10)}'`});
+    const f=fs.find(f=>String(f.properties.cd_digito_sql)===d[10]&&f.properties.tx_situ_lote!=='INATIVO'&&f.geometry);
+    if(!f)toast(fs.length?`O dígito do SQL não confere (no GeoSampa é ${fs[0].properties.cd_digito_sql}).`:'SQL não encontrado no GeoSampa.',true);
+    else{const p=f.properties,an=geoAneis(f.geometry)[0];
+      Q.lista.push({sql:p.nr_contribuinte||sqlFmt(d),area:p.qt_area_terreno??null,end:p.nm_logradouro_completo?geoTit(p.nm_logradouro_completo)+(p.cd_numero_porta&&p.cd_numero_porta!=='0'?', '+p.cd_numero_porta:''):'',
+        cib:p.cd_cib||null,poly:an.slice(0,-1).map(q=>utmLatLng(q[0],q[1]).map(v=>+v.toFixed(7))),q:p.cd_setor_fiscal+'.'+p.cd_quadra_fiscal});Q.digitado=''}}
+  catch(e){console.warn(e);toast('O GeoSampa não respondeu. Tente de novo em instantes.',true)}
+  finally{Q.buscando=false;if(UI.modal==='novo-sql')renderModal()}}
+/* o mapa das quadras: a do SQL digitado e as dos SQLs já na lista */
+function nvSqlMapa(){const Q=UI.nvSql,d=digits($('#nvq-sql')?.value||'');if(!Q)return;Q.digitado=$('#nvq-sql')?.value||'';
+  const qs=[...new Set([d.length>=6?d.slice(0,3)+'.'+d.slice(3,6):null,...Q.lista.map(x=>x.q)].filter(Boolean))].slice(0,8);
+  if(!qs.length){toast('Digite um SQL para abrir o mapa da quadra dele.',true);return}
+  UI.lg={nvSql:true,quadrasIni:qs,fase:'carregando'};UI.modal='lotes-geo';renderModal();lgCarregar()}
+function nvSqlSeguir(){const Q=UI.nvSql;if(!Q||!Q.lista.length)return;
+  const u=lotesUniao(Q.lista.map(x=>x.poly));
+  if(!u){toast('Os lotes não se encostam: tire os que ficaram separados ou desenhe a poligonal no mapa.',true);return}
+  const sqls=Q.lista.map(({q,...x})=>x);UI.nvSql=null;
+  nvPoligonal(u,'sql',{sqls,porLotes:true,lgFeito:true})}
+document.addEventListener('submit',e=>{if(e.target.dataset?.form!=='nvq')return;e.preventDefault();e.stopImmediatePropagation();nvSqlIncluir(e.target.sql.value)},true);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-a^="nvq-"]');if(!a)return;const A=a.dataset.a,Q=UI.nvSql;if(!Q)return;
+  if(A==='nvq-tirar'){Q.digitado=$('#nvq-sql')?.value||'';Q.lista.splice(+a.dataset.i,1);renderModal()}
+  if(A==='nvq-mapa')nvSqlMapa();
+  if(A==='nvq-seguir')nvSqlSeguir();
+  if(A==='nvq-voltar'){UI.nvSql=null;UI.modal='novo';renderModal()}});
+
 /* =====================================================================
    Filtros de terrenos (decisão do Moisés, 23/out/2026): um painel só, numa
    gaveta à direita (tela cheia no celular), o mesmo em Terrenos, Mapa e Fases,
@@ -12921,6 +13141,23 @@ ccPreparar();
 /* cores das etiquetas (tons claros com o prédio no tom escuro da mesma cor; pedido do Moisés, 4/nov/2026, trocando o neon), fora da paleta dos pinos */
 const MK_SIT={breve_lancamento:['Breve lançamento','#ffdf99','#7a5900'],lancamento:['Lançamento','#c4eed0','#0f5223'],em_obras:['Em obras','#ffdcc1','#8a4a00'],pronto:['Pronto','#f0dbff','#6b2c91'],usado:['Usado','#ffd8e8','#8f1d52'],nao_informado:['Sem situação','#e3e3e3','#444746']};
 const mkSitK=e=>MK_SIT[e?.sit]?e.sit:'nao_informado',mkOff=()=>UI.mkOff||(UI.mkOff=[]);
+/* faixas do R$/m² médio das unidades à venda (soma dos preços ÷ soma das áreas), cada uma com a sua cor; a situação vai no
+   desenho dentro do quadrado (pedido do Moisés, 5/nov/2026). O limite de baixo entra na faixa. */
+const MK_FX=[[7000,'Abaixo de 7 mil','#5e4fa2'],[8000,'7 a 8 mil','#3288bd'],[9000,'8 a 9 mil','#66c2a5'],[10000,'9 a 10 mil','#abdda4'],[11000,'10 a 11 mil','#e6f598'],
+  [13000,'11 a 13 mil','#fee08b'],[15000,'13 a 15 mil','#fdae61'],[18000,'15 a 18 mil','#f46d43'],[25000,'18 a 25 mil','#d53e4f'],[Infinity,'Acima de 25 mil','#9e0142']];
+const MK_FX_SEM=['Sem preço','#bdc1c6'];
+const mkFxK=e=>{const v=e?.preco!=null&&e.area>0?e.preco/e.area:null;if(v==null)return 'fx';return 'f'+MK_FX.findIndex(f=>v<f[0])};
+const mkFxInfo=k=>k==='fx'?MK_FX_SEM:MK_FX[+k.slice(1)].slice(1);
+/* o desenho de cada situação: lançamento estrela, em obras guindaste, pronto prédio (breve lançamento e usado, se vierem,
+   seguem o lançamento e o pronto) */
+const MK_GLIFO={lancamento:'M12 3.5l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.4l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z',
+  em_obras:'M7 21V3M4 21h7M7 4h13M7 4l4 4M17 4v5M15 9h4v3h-4zM7 9h3M7 14h3',
+  pronto:'M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2'};
+MK_GLIFO.breve_lancamento=MK_GLIFO.lancamento;MK_GLIFO.usado=MK_GLIFO.pronto;MK_GLIFO.nao_informado='M8 8a4 4 0 1 1 5 3.9c-.6.2-1 .7-1 1.3V15M12 19h.01';
+const mkGlifo=e=>MK_GLIFO[mkSitK(e)];
+/* cor do desenho: escura sobre as cores claras, branca sobre as escuras */
+const mkTinta=c=>{const n=parseInt(c.slice(1),16),l=(.299*(n>>16)+.587*(n>>8&255)+.114*(n&255))/255;return l>.6?'#1f1f1f':'#fff'};
+const mkVisivel=(e,off=mkOff())=>!off.includes(mkSitK(e))&&!off.includes(mkFxK(e));
 const MK_RAIOS=[1,2,3];
 const MK={box:null,abertoEm:0,d:null,erro:null,promessa:null};
 const mkArq=()=>(location.pathname.startsWith('/prototipo')?'/prototipo/':'')+'dados/mercado.json';
@@ -12945,7 +13182,7 @@ const mkPeriodo=()=>{const j=MK.d?.janela;return j&&j.de?`${mkData(j.de)} a ${mk
 const mkDias=()=>{const j=MK.d?.janela;return j&&j.de?Math.round((new Date(j.ate)-new Date(j.de))/864e5):null};
 
 /* ---------- filtro do mapa (na sessão; não mexe no filtro de terrenos) ---------- */
-UI.mf=UI.mf||{};
+if(!UI.mf)try{UI.mf=JSON.parse(localStorage.getItem(MP_MFKEY)||'null')||{}}catch(e){UI.mf={}}
 const MF_UN=[['dorm','Dormitórios','',0],['area','Área privativa','m²',1],['preco','Preço','R$',2],['m2','Preço por m²','R$/m²',3]];
 const MF_DT=[['lanc','Data de lançamento'],['ent','Data de entrega']];
 let MF_ABERTO=false;
@@ -12964,6 +13201,36 @@ function mfPassa(e,sem){const f=UI.mf;
 const mfLista=()=>mkEmps().filter(e=>mfPassa(e));
 function mfBotao(){const n=mfAtivos().length;
   return `<button type="button" class="mp-renda-b mf-btn" data-a="mf-abrir" aria-expanded="${MF_ABERTO}" aria-pressed="${n>0}" title="Filtrar os empreendimentos da concorrência">${ic('filtro',18)}<span class="mf-l">Concorrência</span>${n?`<span class="mf-n">${n}</span>`:''}</button>`}
+/* barra do mapa: um botão só, os três pontinhos, com os filtros da concorrência e dos terrenos e o tipo de mapa
+   (pedido do Moisés, 5/nov/2026, no lugar do botão Concorrência) */
+function mpMaisBotao(){const n=mfAtivos().length;
+  return `<div class="mp-maisw"><button type="button" class="mp-renda-b mp-mais" data-a="mp-mais" aria-haspopup="menu" aria-expanded="false" aria-pressed="${n>0}" aria-label="Filtros, camadas e tipo de mapa">${ic('mais',22)}${n?`<span class="mf-n">${n}</span>`:''}</button></div>`}
+function mpMaisMenu(abrir){if(!abrir&&typeof MM_SOBRE!=='undefined'&&MM_SOBRE)MM_NAO=true;const w=$('.mapa-area .mp-maisw');if(!w)return;w.querySelector('.mp-cam-m')?.remove();w.querySelector('[data-a="mp-mais"]').setAttribute('aria-expanded',!!abrir);if(!abrir)return;
+  const nc=mfAtivos().length,nt=typeof fxAtivos==='function'?fxAtivos('mapa').length:0,b=mpBaseAtual(),
+    n=k=>k?`<span class="mf-n">${k}</span>`:'',tp=(v,l)=>`<button type="button" role="menuitemradio" aria-checked="${b===v}" data-a="mp-tipo" data-v="${v}"><span class="mm-ck">${ic('check',18)}</span>${l}</button>`,
+    /* renda e densidade por setor saíram da legenda e vieram para cá (pedido do Moisés, 5/nov/2026); uma de cada vez */
+    k=rdCamada(),cm=(a,v,l)=>`<button type="button" role="menuitemcheckbox" aria-checked="${k===v}" data-a="${a}"><span class="mm-ck">${ic('check',18)}</span>${l}</button>`;
+  w.insertAdjacentHTML('beforeend',`<div class="mp-cam-m mp-mais-m" role="menu" aria-label="Filtros, camadas e tipo de mapa">
+    <button type="button" role="menuitem" data-a="mf-abrir">${ic('filtro',18)}<span class="mm-l">Filtro da concorrência</span>${n(nc)}</button>
+    <button type="button" role="menuitem" data-a="fx-abrir">${ic('filtro',18)}<span class="mm-l">Filtro dos terrenos</span>${n(nt)}</button>
+    <button type="button" role="menuitem" data-a="rg-abrir">${ic('regua',18)}<span class="mm-l">Régua</span></button>
+    <div class="mm-t" role="presentation">Camadas</div>${cm('mp-renda','renda','Mapa de Renda')}${cm('mp-dens','dens','Mapa Demográfico')}
+    <div class="mm-t" role="presentation">Tipo de mapa</div>${tp('mapa','Mapa')}${tp('satelite','Satélite')}</div>`)}
+window.addEventListener('click',e=>{const a=e.target.closest?.('[data-a="mp-mais"],[data-a="mp-tipo"],.mp-mais-m [data-a]');if(!a)return;
+  if(a.dataset.a==='mp-mais'){mpMaisMenu(!$('.mp-mais-m'));return}
+  if(a.dataset.a==='mp-tipo')mpTipoEscolher(a.dataset.v);
+  setTimeout(()=>mpMaisMenu(false),0)},true); /* captura na janela: os filtros param a propagação no document */
+document.addEventListener('pointerdown',e=>{if($('.mp-mais-m')&&!e.target.closest('.mp-maisw'))mpMaisMenu(false)},true);
+/* o menu abre com o mouse parado sobre os três pontinhos por 0,75 s e fecha 1 s depois que o mouse sai (sem o foco do teclado dentro);
+   fechado com o mouse em cima, só volta a abrir sozinho depois que o mouse sai (pedido do Moisés, 5/nov/2026) */
+let MM_T=null,MM_SOBRE=false,MM_NAO=false;
+function mmAgendar(){clearTimeout(MM_T);MM_T=null;if(TOQUE())return;const w=$('.mapa-area .mp-maisw');if(!w)return;const ab=!!$('.mp-mais-m');
+  if(!ab&&MM_SOBRE&&!MM_NAO){MM_T=setTimeout(()=>{if(MM_SOBRE&&!MM_NAO&&!$('.mp-mais-m'))mpMaisMenu(true)},750);return}
+  if(ab&&!MM_SOBRE)MM_T=setTimeout(()=>{const w=$('.mapa-area .mp-maisw');if($('.mp-mais-m')&&!MM_SOBRE&&!w?.querySelector(':focus-visible'))mpMaisMenu(false)},1000)}
+document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const s=!!e.target.closest?.('.mapa-area .mp-maisw');if(s===MM_SOBRE)return;MM_SOBRE=s;if(!s)MM_NAO=false;mmAgendar()},true);
+document.addEventListener('pointerout',e=>{if(e.pointerType==='mouse'&&!e.relatedTarget&&MM_SOBRE){MM_SOBRE=false;MM_NAO=false;mmAgendar()}},true);
+document.addEventListener('focusout',e=>{if(e.target.closest?.('.mp-maisw'))setTimeout(mmAgendar,0)},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-mais-m')){mpMaisMenu(false);e.preventDefault();e.stopImmediatePropagation()}},true);
 function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
   if(!MF_ABERTO||!naMapa()){el?.remove();sc?.remove();return}
   const top=el?.querySelector('.fx-b')?.scrollTop||0;
@@ -12990,8 +13257,8 @@ function mfDrawer(){let el=$('#mf-dr'),sc=$('#mf-scrim');
   el.querySelector('.fx-b').scrollTop=top}
 function mfRodape(){const n=mfAtivos().length,t=mfLista().length;
   return `<span class="fx-tot">${n?n+' filtro'+(n>1?'s':''):'Sem filtros'}</span><button class="btn primary sm" data-a="mf-fechar">Ver ${num(t)} empreendimento${t===1?'':'s'}</button>`}
-function mfAplicar(soResultado){desenhaMerc();if(MK.box&&!mfPassa(mkEmp(MK.box)||{}))mkFechar();
-  const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda();const b=$('.mapa-area .mf-btn');if(b)b.outerHTML=mfBotao();
+function mfAplicar(soResultado){try{localStorage.setItem(MP_MFKEY,JSON.stringify(UI.mf||{}))}catch(e){}desenhaMerc();if(MK.box&&!mfPassa(mkEmp(MK.box)||{}))mkFechar();
+  const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda();const b=$('.mapa-area .mp-maisw');if(b)b.outerHTML=mpMaisBotao();
   if(soResultado){const r=$('#mf-f');if(r)r.innerHTML=mfRodape()}else mfDrawer()}
 function mfDigitado(el,soResultado){const k=el.dataset.mf,p=el.dataset.p,w={...(UI.mf[k]||{})};
   w[p]=el.type==='date'?(el.value||null):fxLerNum(el.value);UI.mf[k]=w;
@@ -13013,40 +13280,42 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&MF_ABERTO&&!UI.moda
 
 /* ---------- marca no mapa: quadrado com um prédio, na cor da situação (pedido do Moisés, 4/nov/2026: a bolinha se perdia
    no meio dos pinos dos terrenos) ---------- */
-const MK_PREDIO='M4 21V5l8-3v19M12 9l8 3v9M2 21h20M7 8h2M7 12h2M7 16h2M15 14h2M15 18h2';
-const mkCor=e=>MK_SIT[mkSitK(e)];
+/* cor = faixa do R$/m²; o desenho = situação; com e.sit só (legenda da situação) fica cinza neutro */
+const mkCor=e=>{const f=e?.preco===undefined?'#e8eaed':mkFxInfo(mkFxK(e))[1];return [null,f,mkTinta(f)]};
 /* destacado (o empreendimento aberto): fundo escuro, prédio branco e anel azul */
-const mkMarcaHtml=(e,dest)=>{const [,f,g]=mkCor(e);return `<span class="mk-b${dest?' mk-dest-b':''}" style="background:${dest?'#202124':f};border-color:${dest?'#fff':g}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="${dest?'#fff':g}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${MK_PREDIO}"/></svg></span>`};
+const mkMarcaHtml=(e,dest)=>{const [,f,g]=mkCor(e),d=mkGlifo(e);return `<span class="mk-b${dest?' mk-dest-b':''}" style="background:${dest?'#202124':f};border-color:${dest?'#fff':'rgba(0,0,0,.45)'}">${d?`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="${dest?'#fff':g}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${d}"/></svg>`:''}</span>`};
+const mkFxMarca=k=>`<span class="mk-b" style="background:${mkFxInfo(k)[1]};border-color:rgba(0,0,0,.45)"></span>`;
 /* no Leaflet os ~2 mil empreendimentos ficam em canvas: o mesmo quadrado desenhado à mão (o clique segue o raio do círculo) */
 let MK_SQ=null;
-function mkQuadrado(){if(MK_SQ)return MK_SQ;const ico=new Path2D(MK_PREDIO);
+function mkQuadrado(){if(MK_SQ)return MK_SQ;const icos={};
   L.Canvas.include({_mkSq(l){if(!this._drawing||l._empty())return;const p=l._point,c=this._ctx,r=11,o=l.options;
     c.beginPath();if(c.roundRect)c.roundRect(p.x-r,p.y-r,2*r,2*r,6);else c.rect(p.x-r,p.y-r,2*r,2*r);
-    c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.25)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=1.5;c.strokeStyle=o.color;c.stroke();
-    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.6;c.lineCap=c.lineJoin='round';c.strokeStyle=o.color;c.stroke(ico);c.restore()}});
+    c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.25)';c.stroke();c.fillStyle=o.fillColor;c.fill();c.lineWidth=1.5;c.strokeStyle='rgba(0,0,0,.45)';c.stroke();
+    c.save();c.translate(p.x-6.5,p.y-6.5);c.scale(13/24,13/24);c.lineWidth=2.6;c.lineCap=c.lineJoin='round';c.strokeStyle=o.color;c.stroke(icos[o.glifo]||(icos[o.glifo]=new Path2D(o.glifo)));c.restore()}});
   return MK_SQ=L.CircleMarker.extend({_updatePath(){this._renderer._mkSq(this)}})}
-const mkTitulo=e=>`${e.nome} · ${(MK_SIT[e.sit]||MK_SIT.nao_informado)[0]}`;
+const mkTitulo=e=>`${e.nome} · ${(MK_SIT[e.sit]||MK_SIT.nao_informado)[0]} · ${mkFxK(e)==='fx'?'sem preço':'R$/m² '+mkFxInfo(mkFxK(e))[0].toLowerCase()}`;
 let MERC=null,gMerc=[],MK_CHAVE=null;
 /* os pinos só são refeitos quando os dados, o filtro ou o modo do mapa mudam; no Leaflet, círculos em canvas (são ~2 mil) */
 function desenhaMerc(){if(!MAPA)return;if(!MK.d){mkCarregar();return}
   const chave=JSON.stringify([UI.mf,!!UI.mpModo,GG,mkOff()]),igual=chave===MK_CHAVE&&(GG?gMerc._mapa===MAPA:MERC&&MERC._mapa===MAPA);
-  if(!igual){MK_CHAVE=chave;const off=mkOff(),lista=mfLista().filter(e=>!off.includes(mkSitK(e)));const ar=$('.mapa-area');if(ar)ar.dataset.merc=lista.length;
+  if(!igual){MK_CHAVE=chave;const off=mkOff(),lista=mfLista().filter(e=>mkVisivel(e,off));const ar=$('.mapa-area');if(ar)ar.dataset.merc=lista.length;
     if(GG){gSet(gMerc,null);gMerc=[];gMerc._mapa=MAPA;const {AdvancedMarkerElement}=gLib.marker;
       lista.forEach(e=>{const d=document.createElement('div');d.className='mk g';d.innerHTML=mkMarcaHtml(e);
         const m=new AdvancedMarkerElement({map:null,position:gLL(e.lat,e.lng),content:d,title:mkTitulo(e),gmpClickable:!UI.mpModo});
         m.addListener?.('click',()=>{if(!UI.mpModo)mkAbrir(e.id)});gMerc.push(m)})}
     else{MERC?.remove();MERC=L.featureGroup();MERC._mapa=MAPA;const rd=MAPA._mkCanvas||(MAPA._mkCanvas=L.canvas({padding:.5}));
-      const Q=mkQuadrado();lista.forEach(e=>new Q([e.lat,e.lng],{renderer:rd,radius:12,weight:2,color:mkCor(e)[2],fillColor:mkCor(e)[1],fillOpacity:1,interactive:!UI.mpModo,bubblingMouseEvents:false})
+      const Q=mkQuadrado();lista.forEach(e=>new Q([e.lat,e.lng],{renderer:rd,radius:12,weight:2,color:mkCor(e)[2],fillColor:mkCor(e)[1],glifo:mkGlifo(e),fillOpacity:1,interactive:!UI.mpModo,bubblingMouseEvents:false})
         .bindTooltip(mkTitulo(e),{direction:'top',offset:[0,-6]}).on('click',ev=>{L.DomEvent.stop(ev);if(!UI.mpModo)mkAbrir(e.id)}).addTo(MERC))}}
   else{const ar=$('.mapa-area');if(ar&&!ar.dataset.merc)ar.dataset.merc=gMerc.length||MERC?.getLayers().length||0}
   mostrarMerc(UI.mpMerc!==false);
-  if(!MAPA._mk){MAPA._mk=1;GG?MAPA.addListener('click',mkFecharDoMapa):MAPA.on('click',mkFecharDoMapa)}}
+  if(!MAPA._mk){MAPA._mk=1;GG?MAPA.addListener('click',mkFecharDoMapa):MAPA.on('click',mkFecharDoMapa);
+    if(GG){MAPA.addListener('dragstart',mkFecharMov);MAPA.addListener('zoom_changed',mkFecharMov)}else MAPA.on('dragstart zoomstart',mkFecharMov)}}
 function mostrarMerc(on){mkDestaque();if(GG){gMerc.forEach(m=>{if((m.map||null)!==(on?MAPA:null))m.map=on?MAPA:null});return}if(MAPA&&MERC){on?MERC.addTo(MAPA):MERC.remove()}}
 /* empreendimento aberto fica destacado (pedido do Moisés, 4/nov/2026): continua aceso depois de fechar o card e só apaga ao abrir outro
    ou sair do Mapa; vai num marcador próprio por cima dos outros (MK.dest) */
 let MK_DM=null;
 function mkDestaque(){try{if(MK_DM){GG?(MK_DM.map=null):MK_DM.remove()}}catch(x){}MK_DM=null;
-  const e=MK.dest&&mkEmp(MK.dest);if(!e||!MAPA||!naMapa()||UI.mpMerc===false||mkOff().includes(mkSitK(e)))return;
+  const e=MK.dest&&mkEmp(MK.dest);if(!e||!MAPA||!naMapa()||UI.mpMerc===false||!mkVisivel(e))return;
   if(GG){const d=document.createElement('div');d.className='mk g mk-dest';d.innerHTML=mkMarcaHtml(e,true);
     MK_DM=new gLib.marker.AdvancedMarkerElement({map:MAPA,position:gLL(e.lat,e.lng),content:d,title:mkTitulo(e),zIndex:3000,gmpClickable:!UI.mpModo});MK_DM.addListener?.('click',()=>{if(!UI.mpModo)mkAbrir(e.id)});return}
   MK_DM=L.marker([e.lat,e.lng],{icon:L.divIcon({className:'mk mk-dest',html:mkMarcaHtml(e,true),iconSize:[30,30],iconAnchor:[15,15]}),zIndexOffset:3000,interactive:!UI.mpModo,title:mkTitulo(e)})
@@ -13073,7 +13342,7 @@ function mkResumoHtml(e){const min=MK.d.cfg?.min_unidades_grupo??3,todos=mkGrupo
 function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque),pct=e.unidades?Math.round(100*e.estoque/e.unidades):0,dias=mkDias();
   const kv=(k,v,f)=>`<div class="mk-kv"><span class="muted">${k}</span><span class="num">${v}</span>${f?`<span class="faint">${f}</span>`:''}</div>`;
   return `<div class="cc-box mk-box" role="dialog" aria-label="${esc(e.nome)}">
-  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">${esc(e.nome)}</div><div class="muted">${esc([e.inc,(MK_SIT[e.sit]||MK_SIT.nao_informado)[0],e.bairro].filter(Boolean).join(' · '))}</div></div><button type="button" class="iconbtn" data-a="mk-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
+  <div class="cc-hd"><div class="cc-ti"><div class="cc-n">${esc(e.nome)}</div><div class="muted">${esc([e.inc,(MK_SIT[e.sit]||MK_SIT.nao_informado)[0],e.bairro].filter(Boolean).join(' · '))}</div></div>${mkFixarBtn()}<button type="button" class="iconbtn" data-a="mk-x" aria-label="Fechar" title="Fechar (Esc)">${ic('close',20)}</button></div>
   <div class="cc-k mk-k"><div class="cc-big">${m2!=null?ccM2(Math.round(m2)):'Sem estoque com preço'}</div><div class="faint">${m2!=null?'preço médio por m² das unidades à venda':e.estoque?'as unidades à venda estão sem preço na tabela':'nenhuma unidade à venda'}</div><div class="mk-prog">Enquadramento social: <b>${e.prog==='sim'?'Sim':e.prog==='nao'?'Não':'Não informado'}</b></div></div>
   <div class="mk-grid">${kv('Lançamento',mkData(e.lanc))}${kv('Entrega',mkData(e.ent))}${kv('Unidades',num(e.unidades))}${kv('Estoque',num(e.estoque),pct+'%')}
     ${kv('Vendas',num(e.vendas),mkPeriodo())}${kv('VSO',mkPct(vso),dias?`em ${dias} dias`:'')}</div>
@@ -13083,33 +13352,48 @@ function mkBoxHtml(e){const m2=mkM2(e.preco,e.area),vso=mkVso(e.vendas,e.estoque
 function mkBox(){const area=$('.mapa-area');let el=$('#mk-box');const e=MK.box&&naMapa()?mkEmp(MK.box):null;
   if(!e||!area){el?.remove();if(!e)MK.box=null;return}
   if(!el||el.parentNode!==area){el?.remove();el=document.createElement('div');el.id='mk-box';area.appendChild(el)}
-  el.innerHTML=mkBoxHtml(e)}
-function mkAbrir(id){MK.box=id;MK.dest=id;mkDestaque();MK.abertoEm=Date.now();ccFechar();if(UI.mpSel)mpSelecionar(null);if(UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}mkBox()}
-function mkFechar(){if(!MK.box)return false;MK.box=null;mkBox();return true}
-const mkFecharDoMapa=()=>{if(Date.now()-MK.abertoEm>350)mkFechar()};
+  el.innerHTML=mkBoxHtml(e);mkSaida(el)}
+/* o card fecha sozinho 1 s depois que o mouse sai dele (só depois de ter entrado) e quando o mapa se move (pedido do Moisés, 5/nov/2026; nunca no toque nem com a tabela completa aberta);
+   o olhinho ao lado do X o fixa aberto, guardado no navegador (pedido do Moisés, 5/nov/2026) */
+const MK_FKEY='bkm-terrenos-concorrencia-fixa';let MK_T=null;
+const mkFixa=()=>{try{return localStorage.getItem(MK_FKEY)==='1'}catch(e){return false}};
+function mkFixarBtn(){const f=mkFixa();return `<button type="button" class="iconbtn mk-fixar" data-a="mk-fixar" aria-pressed="${f}" title="${f?'Soltar (volta a fechar sozinho)':'Fixar aberto'}" aria-label="${f?'Soltar o card':'Fixar o card aberto'}">${ic('olho',18)}</button>`}
+function mkSaida(el){if(el.__mkH)return;el.__mkH=true;
+  el.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(MK_T);MK.dentro=true});
+  el.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse'||!MK.dentro||mkFixa()||TOQUE())return;clearTimeout(MK_T);
+    MK_T=setTimeout(()=>{if(UI.modal||el.matches(':hover')||el.querySelector(':focus-visible')||mkFixa())return;mkFechar()},1000)})}
+window.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="mk-fixar"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();
+  const f=!mkFixa();try{localStorage.setItem(MK_FKEY,f?'1':'0')}catch(x){}clearTimeout(MK_T);b.outerHTML=mkFixarBtn();$('#mk-box [data-a="mk-fixar"]')?.focus()},true);
+function mkAbrir(id){clearTimeout(MK_T);MK.dentro=false;MK.box=id;MK.dest=id;mkDestaque();MK.abertoEm=Date.now();ccFechar();if(UI.mpSel)mpSelecionar(null);if(UI.fichaSheet){UI.fichaSheet=null;fichaSheet()}mkBox()}
+function mkFechar(){clearTimeout(MK_T);if(!MK.box)return false;MK.box=null;mkBox();return true}
+const mkFecharDoMapa=()=>{if(!mkFixa()&&Date.now()-MK.abertoEm>350)mkFechar()};
+const mkFecharMov=()=>{if(MK.box&&!mkFixa()&&Date.now()-MK.abertoEm>350)mkFechar()};
 
 /* ---------- ganchos ---------- */
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-x"],[data-a="mp-merc"],[data-a="mk-arv"],[data-a="mk-sit"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
   const leg=()=>{const lg=$('#mp-leg');if(lg)lg.innerHTML=mpLegenda()};
   if(a.dataset.a==='mk-arv'){UI.mkArv=!UI.mkArv;leg();$('#mp-leg [data-a="mk-arv"]')?.focus();return}
   if(a.dataset.a==='mk-sit'){const o=mkOff(),v=a.dataset.v;UI.mkOff=o.includes(v)?o.filter(x=>x!==v):[...o,v];
-    if(MK.box&&UI.mkOff.includes(mkSitK(mkEmp(MK.box))))mkFechar();desenhaMerc();leg();$(`#mp-leg [data-a="mk-sit"][data-v="${v}"]`)?.focus();return}
+    if(MK.box&&!mkVisivel(mkEmp(MK.box)))mkFechar();desenhaMerc();leg();$(`#mp-leg [data-a="mk-sit"][data-v="${v}"]`)?.focus();return}
   if(a.dataset.a==='mk-x')mkFechar();
   else{UI.mpMerc=UI.mpMerc===false;mostrarMerc(UI.mpMerc);if(!UI.mpMerc)mkFechar();leg()}},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!UI.modal&&MK.box){mkFechar();e.preventDefault();e.stopImmediatePropagation()}},true);
 const _lDesenhaConcMk=L_desenhaConc;L_desenhaConc=function(){const r=_lDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
 const _gDesenhaConcMk=G_desenhaConc;G_desenhaConc=function(){const r=_gDesenhaConcMk.apply(this,arguments);desenhaMerc();return r};
-/* legenda: "Concorrência" liga e desliga a camada; a seta abre uma linha por situação, cada uma liga e desliga a sua (pedido do Moisés, 4/nov/2026) */
+/* legenda: "Concorrência" liga e desliga a camada; a seta abre as faixas do R$/m² e as situações, cada linha liga e desliga a sua (pedidos do Moisés, 4 e 5/nov/2026) */
 const _mpLegendaMk=mpLegenda;mpLegenda=function(){const h=_mpLegendaMk.apply(this,arguments),todos=MK.d?mfLista():null,off=mkOff(),ab=!!UI.mkArv;
-  const cont={};(todos||[]).forEach(e=>{const k=mkSitK(e);cont[k]=(cont[k]||0)+1});const n=todos?todos.filter(e=>!off.includes(mkSitK(e))).length:null;
-  let item=`<div class="lg-row"><button type="button" class="lg-sb" data-a="mk-arv" aria-expanded="${ab}" aria-label="${ab?'Fechar':'Abrir'} as situações da concorrência" title="Por situação"><span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span></button><button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'lancamento'})}</span>Concorrência<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button></div>`;
-  if(ab&&todos)item+=Object.keys(MK_SIT).filter(k=>cont[k]).map(k=>`<button type="button" class="lg-i lg-a lg-msit" style="--p:2" data-a="mk-sit" data-v="${k}" aria-pressed="${!off.includes(k)}"${UI.mpMerc===false?' disabled':''}><span class="lg-poi">${mkMarcaHtml({sit:k})}</span>${esc(MK_SIT[k][0])}<span class="n">${num(cont[k])}</span></button>`).join('');
+  const cont={};(todos||[]).forEach(e=>{const k=mkSitK(e),f=mkFxK(e);cont[k]=(cont[k]||0)+1;cont[f]=(cont[f]||0)+1});const n=todos?todos.filter(e=>mkVisivel(e,off)).length:null;
+  let item=`<div class="lg-row"><button type="button" class="lg-sb" data-a="mk-arv" aria-expanded="${ab}" aria-label="${ab?'Fechar':'Abrir'} as situações da concorrência"><span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span></button><button type="button" class="lg-i" data-a="mp-merc" aria-pressed="${UI.mpMerc!==false}"><span class="lg-poi">${mkMarcaHtml({sit:'pronto'})}</span>Concorrência<span class="n">${n==null?(MK.erro?'—':'…'):num(n)}</span></button></div>`;
+  /* primeiro as faixas do R$/m² médio, depois a situação; cada linha liga e desliga a sua (pedido do Moisés, 5/nov/2026) */
+  const linha=(k,marca,nome)=>`<button type="button" class="lg-i lg-a lg-msit" style="--p:2" data-a="mk-sit" data-v="${k}" aria-pressed="${!off.includes(k)}"${UI.mpMerc===false?' disabled':''}><span class="lg-poi">${marca}</span>${esc(nome)}<span class="n">${num(cont[k])}</span></button>`;
+  if(ab&&todos)item+=`<div class="lg-sub">R$/m² médio à venda</div>`+[...MK_FX.map((f,i)=>'f'+i),'fx'].filter(k=>cont[k]).map(k=>linha(k,mkFxMarca(k),mkFxInfo(k)[0])).join('')
+    +`<div class="lg-sub">Situação</div>`+Object.keys(MK_SIT).filter(k=>cont[k]).map(k=>linha(k,mkMarcaHtml({sit:k}),MK_SIT[k][0])).join('');
   const i=h.indexOf('data-a="mp-conc"');if(i<0)return h+item;const fim=h.indexOf('</button>',i)+9;return h.slice(0,fim)+item+h.slice(fim)};
 const _ccAbrirMk=ccAbrir;ccAbrir=function(){mkFechar();return _ccAbrirMk.apply(this,arguments)};
 const _mpSelecionarMk=mpSelecionar;mpSelecionar=function(id){if(id)mkFechar();return _mpSelecionarMk.apply(this,arguments)};
 const _fichaSheetMk=fichaSheet;fichaSheet=function(){if(UI.fichaSheet){mkFechar();if(MF_ABERTO){MF_ABERTO=false;mfDrawer()}}return _fichaSheetMk.apply(this,arguments)};
-/* botão do filtro do mercado na barra do mapa, depois de Camadas */
-const _rdBarraBotaoMk=rdBarraBotao;rdBarraBotao=function(){return _rdBarraBotaoMk.apply(this,arguments)+mfBotao()};
+/* os três pontinhos na barra do mapa (filtros e tipo de mapa) */
+const _rdBarraBotaoMk=rdBarraBotao;rdBarraBotao=function(){return _rdBarraBotaoMk.apply(this,arguments)+mpMaisBotao()};
 const _posRenderMk=posRender;posRender=function(){_posRenderMk.apply(this,arguments);if(!naMapa()){MK.box=null;MK.dest=null;MF_ABERTO=false}mkBox();mfDrawer()};
 
 /* ---------- ficha do terreno, aba Entorno: R$/m² médio e VSO médio a 1, 2 e 3 km ---------- */
@@ -13192,6 +13476,94 @@ const _renderModalMkt=renderModal;renderModal=function(){if(UI.modal!=='mk-tabel
   const el=$('#modal'),rol=el.querySelector('.mkt-w')?.scrollTop||0;el.innerHTML=`<div class="scrim" data-a="scrim"><div class="dialog mkt-dlg" role="dialog" aria-modal="true">${mkTabelaHtml()}</div></div>`;if(rol){const w=el.querySelector('.mkt-w');if(w)w.scrollTop=rol}};
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a="mk-tabela"],[data-a="mk-tabela-f"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();
   if(a.dataset.a==='mk-tabela')mkTabelaAbrir(a.dataset.id);else{MKT.f=a.dataset.f;renderModal();const w=$('#modal .mkt-w');if(w)w.scrollTop=0}},true);
+
+/* ===================== clique fora fecha o que está aberto no mapa ===================== */
+/* Um clique (não o arraste) fora fecha a legenda, a escala da renda/densidade, a busca, o menu dos três pontinhos, o quadro do lugar do Google
+   e o card da concorrência (pedido do Moisés, 5/nov/2026). A legenda e o card fixados no olhinho ficam. Dentro do mapa, o quadro do lugar e o
+   card já fecham pelo clique no mapa (que também tira a seleção), por isso aqui só os cliques fora dele. */
+let FORA0=null;
+document.addEventListener('pointerdown',e=>{FORA0={x:e.clientX,y:e.clientY,t:e.target}},true);
+document.addEventListener('pointerup',e=>{const p=FORA0;FORA0=null;if(!p||Math.hypot(e.clientX-p.x,e.clientY-p.y)>6||!naMapa()||UI.modal)return;
+  const a=p.t;if(!a?.closest||a.closest('.toast,#toast'))return;
+  const d=$('.mapa-area .mp-legenda');if(d?.open&&!lgFixa()&&!a.closest('.mp-legenda'))d.open=false;
+  const r=$('#rd-leg');if(r?.open&&!a.closest('#rd-leg'))r.open=false;
+  if(UI.mpBusca&&!a.closest('.mapa-area .mp-busca'))mpBuscaAbrir(false);
+  if(a.closest('#mapa'))return;
+  if(typeof lugarFechar==='function'&&!a.closest('.gm-style-iw,.gm-style-iw-c'))lugarFechar();
+  if(MK.box&&!mkFixa()&&!a.closest('#mk-box'))mkFechar()},true);
+
+/* ===================== régua ===================== */
+/* Régua (pedido do Moisés, 5/nov/2026): botão no canto, acima da minha localização (e no menu dos três pontinhos), que fica azul enquanto
+   ligada e vale até ser desligada. Cada clique no mapa marca um ponto e a linha mede o caminho, trecho a trecho e no total; clicar no
+   primeiro ponto (com 3 ou mais) fecha a forma e mede a área; o clique seguinte começa outra medida. Não segue a rua.
+   Teclas: Backspace apaga o último ponto, Del ou Esc apagam o desenho (sem desenho, desligam); Ctrl+Z desfaz. Clique direito num
+   ponto: Excluir ponto. */
+UI.rg=null;let rgCam=[];
+const rgDist=(a,b)=>distKm(a[0],a[1],b[0],b[1])*1000;
+const rgM=v=>v>=1000?num(v/1000,2)+' km':num(Math.round(v))+' m',rgA=v=>v>=1e6?num(v/1e6,2)+' km²':m2(Math.round(v));
+function rgTotal(){const p=UI.rg?.pts||[];let t=0;for(let i=1;i<p.length;i++)t+=rgDist(p[i-1],p[i]);if(UI.rg?.fechado&&p.length>2)t+=rgDist(p.at(-1),p[0]);return t}
+function rgBotao(){document.querySelectorAll('.mp-cb[data-a="rg-abrir"]').forEach(b=>b.setAttribute('aria-pressed',String(UI.mpModo==='regua')))}
+function rgAbrir(){if(UI.mpModo&&UI.mpModo!=='regua')return;if(UI.mpModo==='regua'){rgSair();return}
+  lugarFechar?.();mkFechar();if(UI.mpSel)mpSelecionar(null);UI.mpModo='regua';UI.rg={pts:[],fechado:false};mpRefresh();rgBotao();
+  toast(TOQUE()?'Toque no mapa para marcar os pontos.':'Clique no mapa para marcar os pontos e no primeiro ponto para medir a área. Backspace apaga o último ponto; Del ou Esc apagam o desenho e, sem desenho, desligam a régua.')}
+function rgSair(){rgCtxFechar();UI.mpModo=null;UI.rg=null;rgDesenha();mpRefresh();rgBotao()}
+function rgClique(lat,lng){const R=UI.rg;if(!R)return;
+  if(Date.now()-(UI.rgCtxEm||0)<400)return;
+  const a=UI.pdAnt,b=UI.pdUlt;if(!TOQUE()&&((UI.cliqueN||1)>=2||(a&&b&&b.t-a.t<400&&Math.hypot(b.x-a.x,b.y-a.y)<8)))return; /* o segundo clique de um duplo clique não marca outro ponto */
+  if(R.fechado){R.pts=[];R.fechado=false}
+  R.pts.push([lat,lng]);rgAtualizar()}
+function rgFechar(){const R=UI.rg;if(!R||R.pts.length<3||R.fechado)return;R.fechado=true;rgAtualizar()}
+function rgAtualizar(){rgDesenha();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();rgBotao()}
+/* apaga um ponto; a forma fechada com menos de 3 volta a ser linha */
+function rgExcluir(i){const R=UI.rg;if(!R||!R.pts[i])return;R.pts.splice(i,1);if(R.pts.length<3)R.fechado=false;rgAtualizar()}
+function rgCtxFechar(){UI.rgCtx=false;$('.rg-ctx')?.remove()}
+function rgCtx(i,x,y){rgCtxFechar();const area=$('.mapa-area');if(!area||!UI.rg)return;const ar=area.getBoundingClientRect();
+  const m=document.createElement('div');m.className='mp-ctx rg-ctx';m.setAttribute('role','menu');
+  m.innerHTML=`<div class="v-t">Ponto ${i+1} de ${UI.rg.pts.length}</div><button type="button" role="menuitem" class="crit" data-a="rg-excluir" data-i="${i}">Excluir ponto</button>`;
+  area.appendChild(m);m.style.left=Math.max(8,Math.min(ar.width-m.offsetWidth-8,x-ar.left))+'px';m.style.top=Math.max(8,Math.min(ar.height-m.offsetHeight-8,y-ar.top))+'px';
+  UI.rgCtx=true;m.querySelector('button').focus({preventScroll:true})}
+function rgBanner(){const R=UI.rg||{pts:[]},n=R.pts.length,t=rgTotal(),ar=R.fechado?areaPoly(R.pts):null;
+  return `<span class="mp-q mp-fina rg-b">${n<2?'Régua: clique no mapa para medir':`${R.fechado?'Perímetro':'Distância'} ${rgM(t)}${ar?` · área ${rgA(ar)}`:''}`}</span>`
+    +`<button class="btn sm text" data-a="rg-desfazer" ${n?'':'disabled'}>Desfazer</button><button class="btn sm text" data-a="rg-limpar" ${n?'':'disabled'}>Limpar</button><button class="btn sm primary" data-a="mp-sair">Sair</button>`}
+document.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="rg-abrir"],[data-a="rg-desfazer"],[data-a="rg-limpar"],[data-a="rg-excluir"]');if(!b)return;
+  const R=UI.rg;if(b.dataset.a==='rg-abrir')rgAbrir();else if(b.dataset.a==='rg-excluir'){rgCtxFechar();rgExcluir(+b.dataset.i)}
+  else if(R){if(b.dataset.a==='rg-limpar'){R.pts=[];R.fechado=false}else if(R.fechado)R.fechado=false;else R.pts.pop();rgAtualizar()}});
+/* o menu do ponto fecha no clique fora dele (o clique no mapa que o fecha não marca ponto: rgClique) */
+/* (pela marca UI.rgCtx: o fechar do menu do clique direito, ctxFechar, também tira este da página) */
+document.addEventListener('pointerdown',e=>{if(!UI.rgCtx||e.target.closest('.rg-ctx'))return;if(e.target.closest('#mapa'))UI.rgCtxEm=Date.now();rgCtxFechar()},true);
+window.addEventListener('keydown',e=>{if(UI.mpModo!=='regua'||UI.modal||e.target.matches('input,textarea,select'))return;const R=UI.rg;
+  if(e.key==='Escape'&&$('.rg-ctx'))rgCtxFechar();
+  /* Esc faz o mesmo que o Del (pedido do Moisés, 5/nov/2026): com desenho, apaga; sem desenho, desliga a régua */
+  else if(e.key==='Delete'||e.key==='Escape'){rgCtxFechar();if(R?.pts.length){R.pts=[];R.fechado=false;rgAtualizar()}else rgSair()}
+  else if(e.key==='Backspace'){rgCtxFechar();if(R?.pts.length)rgExcluir(R.pts.length-1)}
+  else return;
+  e.preventDefault();e.stopImmediatePropagation()},true);
+document.addEventListener('keydown',e=>{if(UI.mpModo!=='regua'||!(e.ctrlKey||e.metaKey)||e.key.toLowerCase()!=='z'||e.target.matches('input,textarea,select'))return;const R=UI.rg;if(!R?.pts.length)return;if(R.fechado)R.fechado=false;else R.pts.pop();rgAtualizar();e.preventDefault()});
+/* rótulo de cada trecho no meio dele, e do total no último ponto */
+function rgRotulos(){const R=UI.rg;if(!R)return [];const p=R.pts,out=[],seg=(a,b)=>out.push({ll:[(a[0]+b[0])/2,(a[1]+b[1])/2],t:rgM(rgDist(a,b)),c:'rg-seg'});
+  for(let i=1;i<p.length;i++)seg(p[i-1],p[i]);if(R.fechado&&p.length>2)seg(p.at(-1),p[0]);
+  if(p.length>1&&!R.fechado&&p.length>2)out.push({ll:p.at(-1),t:rgM(rgTotal()),c:'rg-tot'});
+  if(R.fechado){const ar=areaPoly(p);if(ar){const c=centroPoly?centroPoly(p):p[0];out.push({ll:c,t:rgA(ar),c:'rg-tot'})}}
+  return out}
+/* com a régua ligada o cursor do mapa é a seta, não a mãozinha (pedido do Moisés, 5/nov/2026): no Google pelo draggableCursor, no Leaflet pela classe */
+function rgCursor(){const on=UI.mpModo==='regua';$('#mapa')?.classList.toggle('regua',on);if(GG&&MAPA?.setOptions)MAPA.setOptions({draggableCursor:on?'default':null})}
+function rgDesenha(){if(!MAPA)return;rgCursor();if(GG){rgCam.forEach(x=>x.setMap?x.setMap(null):(x.map=null));rgCam=[]}else{rgCam.forEach(x=>MAPA.removeLayer(x));rgCam=[]}
+  const R=UI.rg;if(!R||UI.mpModo!=='regua'||!R.pts.length)return;const p=R.pts,cor='#0b57d0';
+  /* um ponto sem tamanho no lugar exato, com o desenho centrado nele (vale para o Google e o Leaflet) */
+  const w=el=>{const d=document.createElement('div');d.className='rg-w';d.appendChild(el);return d};
+  const ponto=(q,i)=>{const el=document.createElement('div');el.className='rg-pt'+(i===0&&p.length>2&&!R.fechado?' rg-ini':'');
+    /* o clique num ponto não marca outro em cima dele; no primeiro (com 3 ou mais) fecha a forma; o direito abre Excluir ponto */
+    el.addEventListener('click',ev=>{ev.stopPropagation();if(i===0&&p.length>2&&!R.fechado)rgFechar()});
+    el.addEventListener('contextmenu',ev=>{ev.preventDefault();ev.stopPropagation();rgCtx(i,ev.clientX,ev.clientY)});return w(el)};
+  const rot=o=>{const el=document.createElement('div');el.className='rg-rot '+o.c;el.textContent=o.t;return w(el)};
+  if(GG){const ll=q=>gLL(q[0],q[1]);
+    rgCam.push(R.fechado?new google.maps.Polygon({map:MAPA,paths:p.map(ll),strokeColor:cor,strokeWeight:2.5,fillColor:cor,fillOpacity:.12,clickable:false}):new google.maps.Polyline({map:MAPA,path:p.map(ll),strokeColor:cor,strokeWeight:2.5,clickable:false}));
+    const {AdvancedMarkerElement}=gLib.marker;
+    p.forEach((q,i)=>{const m=new AdvancedMarkerElement({map:MAPA,position:ll(q),content:ponto(q,i),zIndex:4001,gmpClickable:i===0});if(i===0)m.addListener?.('click',()=>{if(p.length>2&&!R.fechado)rgFechar()});rgCam.push(m)});
+    rgRotulos().forEach(o=>rgCam.push(new AdvancedMarkerElement({map:MAPA,position:ll(o.ll),content:rot(o),zIndex:4000,gmpClickable:false})))}
+  else{rgCam.push((R.fechado?L.polygon(p,{color:cor,weight:2.5,fillOpacity:.12,interactive:false}):L.polyline(p,{color:cor,weight:2.5,interactive:false})).addTo(MAPA));
+    p.forEach((q,i)=>{const m=L.marker(q,{keyboard:false,interactive:true,icon:L.divIcon({className:'',iconSize:[0,0],html:''})}).addTo(MAPA);const el=m.getElement();el.appendChild(ponto(q,i));m.on('click',e=>{L.DomEvent.stop(e);if(i===0)rgFechar()});rgCam.push(m)});
+    rgRotulos().forEach(o=>{const m=L.marker(o.ll,{keyboard:false,interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:''})}).addTo(MAPA);m.getElement().appendChild(rot(o));rgCam.push(m)})}}
 
 /* Olhinho e lixeira nos logs (pedido do Moisés, 24/out/2026).
    Valem nas alterações de campos da ficha (não em etapa, subetapa, status, temperatura, propostas, documentos nem itens
@@ -14797,7 +15169,6 @@ function zonasSubmit(form,F,t,f){
     if(['ca_minimo','ca_basico','ca','cota_parte_m2','max_unidades','lote_minimo_m2','frente_minima_m'].some(k=>exc[k]!=null&&!(exc[k]>0))){toast('CA, cota-parte, unidades, lote e frente: número maior que zero, ou vazio para seguir o catálogo.',true);return true}
     if(['recuo_frente_m','recuo_lateral_m','recuo_lateral_alto_m'].some(k=>exc[k]!=null&&exc[k]<0)){toast('Recuo não pode ser negativo.',true);return true}
     Object.keys(exc).forEach(k=>{if(exc[k]==null)delete exc[k]});
-    if(temExc(exc)&&!exc.fonte){toast('Alteração só com a fonte.',true);return true}
     z.exc=temExc(exc)?exc:null;if('macro' in F)z.macro=F.macro||null;z.ins=zIns(t,z);UI.edit=null;
     log(t,`Zoneamento: ${z.exc?'valores alterados no lote':'lote segue o catálogo'} em ${z.sigla}`);save();render();toast('Salvo.');return true}
   return false}
@@ -14812,7 +15183,7 @@ function zonasSubmit(form,F,t,f){
      renda familiar estimada atual = V06004 × fator familiar × (PNAD atual ÷ PNAD base)
    Faixas fixas (decisão de produto): o limite de cima entra na faixa, depois de arredondar
    para reais. Setor sem renda divulgada fica sem cor, nunca zero. */
-const RENDA_MET={"_leia":"Fonte única da metodologia, das faixas e das cores da camada de renda. O protótipo lê daqui (build.py), o arquivo de setores leva uma cópia e o teste do banco confere que a migration 20261015000900_setores.sql tem os mesmos valores. Mudou a PNAD: troque aqui e na migration (o teste acusa se esquecer) e rode tools/setores/gerar.py.","versao":1,"censoAno":2022,"variavelBase":"V06004","variavelBaseDescricao":"Valor do rendimento nominal médio mensal das pessoas responsáveis com rendimentos por domicílios particulares permanentes ocupados","fatorFamiliar":1.6,"fatorFamiliarOrigem":"Decisão do Moisés (24/out/2026): fator único de 1,6 para a capital, igual em todos os setores. Medidas de apoio: Estado de São Paulo 1,6102 nos microdados públicos da amostra do Censo 2022 (renda domiciliar média D0350 ÷ renda média do responsável P1110, P0170 = 1, peso D0110: R$ 6.156,18 ÷ R$ 3.823,32); capital estimada em 1,576 pela proporção entre capital e Estado nas tabelas oficiais (os microdados públicos não descem abaixo da UF). Aplicado do mesmo jeito a São José dos Campos (25/out/2026), sem medida própria da cidade: os microdados públicos não descem abaixo da UF","pnadAnoBase":2022,"pnadValorBase":2148,"pnadAnoAtual":2025,"pnadValorAtual":2956,"pnadFonte":"PNAD Contínua, rendimento domiciliar per capita do Estado de São Paulo (Lei Complementar 143/2013)","distorcidaRazao":3,"opacidade":0.55,"corOrigem":"Decisão do Moisés (24/out/2026): duas famílias separadas no teto da Faixa 4 do MCMV (R$ 13 mil, Portaria MCID 333/2026). Até 13 mil, do amarelo-claro ao vinho (amarelos, laranjas e marrons), quanto mais escuro, mais renda; acima de 13 mil, do azul-claro ao azul-marinho, fora do MCMV. Substituiu a rampa única do amarelo ao azul-marinho.","faixas":[{"ate":2000,"rotulo":"Até R$ 2.000","cor":"#fff198","nome":"amarelo-claro"},{"ate":3000,"rotulo":"R$ 2.000 – 3.000","cor":"#fed559","nome":"amarelo"},{"ate":4000,"rotulo":"R$ 3.000 – 4.000","cor":"#feb600","nome":"amarelo-ouro"},{"ate":5000,"rotulo":"R$ 4.000 – 5.000","cor":"#fa9500","nome":"laranja-claro"},{"ate":6000,"rotulo":"R$ 5.000 – 6.000","cor":"#ef7700","nome":"laranja"},{"ate":7000,"rotulo":"R$ 6.000 – 7.000","cor":"#db5d00","nome":"laranja-escuro"},{"ate":8000,"rotulo":"R$ 7.000 – 8.000","cor":"#c04c07","nome":"ferrugem"},{"ate":9000,"rotulo":"R$ 8.000 – 9.000","cor":"#9f422d","nome":"marrom-claro"},{"ate":10000,"rotulo":"R$ 9.000 – 10.000","cor":"#833431","nome":"marrom"},{"ate":13000,"rotulo":"R$ 10.000 – 13.000","cor":"#6e202c","nome":"vinho"},{"ate":15000,"rotulo":"R$ 13.000 – 15.000","cor":"#97d6ff","nome":"azul-claro"},{"ate":18000,"rotulo":"R$ 15.000 – 18.000","cor":"#70b2e7","nome":"azul-céu"},{"ate":22000,"rotulo":"R$ 18.000 – 22.000","cor":"#4c8ecb","nome":"azul"},{"ate":25000,"rotulo":"R$ 22.000 – 25.000","cor":"#296baf","nome":"azul-médio"},{"ate":30000,"rotulo":"R$ 25.000 – 30.000","cor":"#024893","nome":"azul-escuro"},{"ate":null,"rotulo":"Acima de R$ 30.000","cor":"#002377","nome":"azul-marinho"}]};
+const RENDA_MET={"_leia":"Fonte única da metodologia, das faixas e das cores da camada de renda. O protótipo lê daqui (build.py), o arquivo de setores leva uma cópia e o teste do banco confere que a migration 20261015000900_setores.sql tem os mesmos valores. Mudou a PNAD: troque aqui e na migration (o teste acusa se esquecer) e rode tools/setores/gerar.py.","versao":1,"censoAno":2022,"variavelBase":"V06004","variavelBaseDescricao":"Valor do rendimento nominal médio mensal das pessoas responsáveis com rendimentos por domicílios particulares permanentes ocupados","fatorFamiliar":1.6,"fatorFamiliarOrigem":"Decisão do Moisés (24/out/2026): fator único de 1,6 para a capital, igual em todos os setores. Medidas de apoio: Estado de São Paulo 1,6102 nos microdados públicos da amostra do Censo 2022 (renda domiciliar média D0350 ÷ renda média do responsável P1110, P0170 = 1, peso D0110: R$ 6.156,18 ÷ R$ 3.823,32); capital estimada em 1,576 pela proporção entre capital e Estado nas tabelas oficiais (os microdados públicos não descem abaixo da UF). Aplicado do mesmo jeito a São José dos Campos (25/out/2026), sem medida própria da cidade: os microdados públicos não descem abaixo da UF","pnadAnoBase":2022,"pnadValorBase":2148,"pnadAnoAtual":2025,"pnadValorAtual":2956,"pnadFonte":"PNAD Contínua, rendimento domiciliar per capita do Estado de São Paulo (Lei Complementar 143/2013)","distorcidaRazao":3,"opacidade":0.55,"corOrigem":"Decisão do Moisés (24/out/2026): duas famílias separadas no teto da Faixa 4 do MCMV (R$ 13 mil, Portaria MCID 333/2026). Até 13 mil, do amarelo-claro ao vinho (amarelos, laranjas, vermelho e marrons; de 5 a 9 mil com tons mais separados, decisão do Moisés de 5/nov/2026), quanto mais escuro, mais renda; de 13 a 22 mil, do azul-claro ao azul, fora do MCMV. As três últimas faixas (acima de 22 mil) em verdes, do verde-claro ao verde-escuro (decisão do Moisés, 5/nov/2026). Substituiu a rampa única do amarelo ao verde-escuro.","faixas":[{"ate":2000,"rotulo":"Até R$ 2.000","cor":"#fff198","nome":"amarelo-claro"},{"ate":3000,"rotulo":"R$ 2.000 – 3.000","cor":"#fed559","nome":"amarelo"},{"ate":4000,"rotulo":"R$ 3.000 – 4.000","cor":"#feb600","nome":"amarelo-ouro"},{"ate":5000,"rotulo":"R$ 4.000 – 5.000","cor":"#fa9500","nome":"laranja-claro"},{"ate":6000,"rotulo":"R$ 5.000 – 6.000","cor":"#f4511e","nome":"laranja-avermelhado"},{"ate":7000,"rotulo":"R$ 6.000 – 7.000","cor":"#d32f2f","nome":"vermelho"},{"ate":8000,"rotulo":"R$ 7.000 – 8.000","cor":"#a0522d","nome":"siena"},{"ate":9000,"rotulo":"R$ 8.000 – 9.000","cor":"#7a4a26","nome":"marrom-café"},{"ate":10000,"rotulo":"R$ 9.000 – 10.000","cor":"#833431","nome":"marrom"},{"ate":13000,"rotulo":"R$ 10.000 – 13.000","cor":"#6e202c","nome":"vinho"},{"ate":15000,"rotulo":"R$ 13.000 – 15.000","cor":"#97d6ff","nome":"azul-claro"},{"ate":18000,"rotulo":"R$ 15.000 – 18.000","cor":"#70b2e7","nome":"azul-céu"},{"ate":22000,"rotulo":"R$ 18.000 – 22.000","cor":"#4c8ecb","nome":"azul"},{"ate":25000,"rotulo":"R$ 22.000 – 25.000","cor":"#9ccc65","nome":"verde-claro"},{"ate":30000,"rotulo":"R$ 25.000 – 30.000","cor":"#43a047","nome":"verde"},{"ate":null,"rotulo":"Acima de R$ 30.000","cor":"#1b5e20","nome":"verde-escuro"}]};
 RENDA_MET.fatorPnad=RENDA_MET.pnadValorAtual/RENDA_MET.pnadValorBase;
 /* densidade bruta: pessoas (V0001) ÷ área do setor; faixas de tools/setores/metodologia_densidade.json
    (a primeira, até 0, é "sem moradores"); o limite de cima entra na faixa, sem arredondar */
@@ -14873,6 +15244,11 @@ function setDesenhaLadrilho(cv,x,y,z,camada){const T=256,dpr=Math.min(2,window.d
     if(cor){ctx.fillStyle=rdHex2rgba(cor,op);ctx.fill('evenodd');if(borda){ctx.lineWidth=.6;ctx.strokeStyle='rgba(255,255,255,.55)';ctx.stroke()}}
     else if(z>=13){ctx.setLineDash([3,3]);ctx.lineWidth=.8;ctx.strokeStyle=sem;ctx.stroke();ctx.setLineDash([])}}}
 let RD_L=null,RD_G=null,RD_SEL=null;
+/* renda ou densidade ligada fica guardada no navegador: quem sai do mapa e volta, mesmo noutra sessão, encontra como deixou
+   (bkm-terrenos-mapa-camada; pedido do Moisés, 5/nov/2026) */
+const RD_KEY='bkm-terrenos-mapa-camada';
+if(UI.mpSetor===undefined)try{const k=localStorage.getItem(RD_KEY);if(k)UI.mpSetor=k}catch(e){}
+function rdGuardar(){try{localStorage.setItem(RD_KEY,CAMADAS_SETOR[UI.mpSetor]?UI.mpSetor:'')}catch(e){}}
 function rdLigada(){return !!CAMADAS_SETOR[UI.mpSetor]}
 function rdCamada(){return rdLigada()?UI.mpSetor:null}
 function rdCamadaLigar(){if(!MAPA||!rdLigada())return;
@@ -14945,20 +15321,24 @@ function rdLegenda(){const area=$('.mapa-area');let el=$('#rd-leg');if(!area||!n
 /* barra do mapa: um botão Camadas que abre a lista das camadas por setor (uma ligada de cada vez);
    ligado, o botão mostra o nome curto da camada */
 const RD_IC={renda:'rd-ic',dens:'ds-ic'};
-function rdBarraBotao(){const k=rdCamada();
+/* rdCamBotao é só o botão Camadas; rdBarraBotao ganha os botões de outras camadas (o da concorrência, em proto_mercado.js) */
+/* o botão Camadas saiu da barra: renda e densidade ligam pela legenda (pedido do Moisés, 5/nov/2026) */
+function rdBarraBotao(){return ''}
+function rdCamBotao(){const k=rdCamada();
   return `<div class="mp-cam"><button type="button" class="mp-renda-b" data-a="mp-camadas" aria-haspopup="menu" aria-expanded="false" aria-pressed="${!!k}" title="Camadas por setor censitário (IBGE)">${k?`<span class="${RD_IC[k]}"></span>`:ic('layers',18)}${k?CAMADAS_SETOR[k].curto:'Camadas'}<span class="cam-seta">${ic('chev',16)}</span></button></div>`}
 function rdMenu(abrir){const w=$('.mapa-area .mp-cam');if(!w)return;w.querySelector('.mp-cam-m')?.remove();const b=w.querySelector('[data-a="mp-camadas"]');b.setAttribute('aria-expanded',!!abrir);if(!abrir)return;
   const k=rdCamada(),it=(v,ico,l)=>`<button type="button" role="menuitemradio" aria-checked="${k===v}" data-a="mp-camada" data-v="${v||''}"><span class="${ico}"></span>${l}</button>`;
   w.insertAdjacentHTML('beforeend',`<div class="mp-cam-m" role="menu" aria-label="Camadas">${it('renda','rd-ic','Renda familiar')}${it('dens','ds-ic','Densidade demográfica')}${it(null,'cam-off','Nenhuma')}</div>`)}
 document.addEventListener('pointerdown',e=>{if($('.mp-cam-m')&&!e.target.closest('.mp-cam'))rdMenu(false)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.mp-cam-m')){rdMenu(false);e.preventDefault();e.stopImmediatePropagation()}},true);
-function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Renda familiar (setores)</button>`
-  +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Densidade demográfica (setores)</button>`}
-function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;
+function rdLegItem(){const k=rdCamada();return `<button type="button" class="lg-i" data-a="mp-renda" aria-pressed="${k==='renda'}"><span class="lg-poi"><span class="rd-ic"></span></span>Mapa de Renda</button>`
+  +`<button type="button" class="lg-i" data-a="mp-dens" aria-pressed="${k==='dens'}"><span class="lg-poi"><span class="ds-ic"></span></span>Mapa Demográfico</button>`}
+function rdLigar(k){const antes=rdCamada();k=CAMADAS_SETOR[k]?k:null;if(k===antes)return;UI.mpSetor=k;rdGuardar();
   if(antes)rdCamadaDesligar();
-  if(k){if(!antes&&(UI.mpBase||'satelite')==='satelite'){UI.rdBaseAntes='satelite';setBase('mapa')}rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
-  else{RD.sel=null;rdBox();if(UI.rdBaseAntes&&UI.mpBase==='mapa')setBase(UI.rdBaseAntes);UI.rdBaseAntes=null}
-  rdLegenda();const b=$('.mapa-area .mp-cam');if(b)b.outerHTML=rdBarraBotao();
+  /* sem camada, o tipo de mapa escolhido nos três pontinhos; com renda ou densidade, Satélite (pedido do Moisés, 5/nov/2026) */
+  if(k){if(!antes){UI.mpBaseCam=null;setBase(mpBaseAtual())}rdCamadaLigar();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
+  else{RD.sel=null;rdBox();UI.mpBaseCam=null;setBase(mpBaseAtual())}
+  rdLegenda();const b=$('.mapa-area .mp-cam');if(b)b.outerHTML=rdCamBotao();
   document.querySelectorAll('[data-a="mp-renda"]').forEach(b=>b.setAttribute('aria-pressed',k==='renda'));document.querySelectorAll('[data-a="mp-dens"]').forEach(b=>b.setAttribute('aria-pressed',k==='dens'))}
 /* chamado depois de criar o mapa (initMapa): a camada, a legenda e o quadro voltam como estavam */
 function rdPosMapa(){if(typeof achadoPin==='function')achadoPin();RD_L=null;RD_G=null;RD_SEL=null;if(!rdLigada()){rdLegenda();return}rdCamadaLigar();rdLegenda();if(RD.sel!=null&&SET.d){rdSelDesenha(RD.sel);rdBox()}}
@@ -15004,7 +15384,7 @@ function rdCardAtualiza(id){const t=T(id),c=$('#rd-corpo');if(t&&c)c.innerHTML=r
    Variáveis do IBGE por setor como vieram (docs/dados/demografia-*.json, gerado por gerar.py), agrupadas
    só por somas exatas (tools/setores/demografia.json, decisão do Moisés). Cada setor entra pela mesma fração
    de área do quadro da renda. Sigilo nunca vira zero: o que o IBGE não divulgou aparece como "não divulgado". */
-const DEMO_CFG={"_leia":"Grupos do perfil da população do entorno (ficha do terreno), feitos só de somas exatas das variáveis do IBGE por setor (Censo 2022, agregados por setor). O protótipo lê daqui (build.py), o gerar.py usa a lista de variáveis e o teste do banco confere que app.demografia_grupos tem os mesmos grupos.","versao":1,"censoAno":2022,"idadeOrigem":"Decisão do Moisés (24/out/2026): cortes exatos do IBGE agrupados. O IBGE publica por setor 0–4, 5–9, 10–14, 15–19, 20–24, 25–29, 30–39, 40–49, 50–59, 60–69 e 70+; idade ano a ano só nos microdados da amostra, por área de ponderação.","idade":[{"rotulo":"0 a 4 anos","total":["V01031"],"homens":["V01009"],"mulheres":["V01020"]},{"rotulo":"5 a 14 anos","total":["V01032","V01033"],"homens":["V01010","V01011"],"mulheres":["V01021","V01022"]},{"rotulo":"15 a 19 anos","total":["V01034"],"homens":["V01012"],"mulheres":["V01023"]},{"rotulo":"20 a 29 anos","total":["V01035","V01036"],"homens":["V01013","V01014"],"mulheres":["V01024","V01025"]},{"rotulo":"30 a 39 anos","total":["V01037"],"homens":["V01015"],"mulheres":["V01026"]},{"rotulo":"40 a 49 anos","total":["V01038"],"homens":["V01016"],"mulheres":["V01027"]},{"rotulo":"50 a 59 anos","total":["V01039"],"homens":["V01017"],"mulheres":["V01028"]},{"rotulo":"60 anos ou mais","total":["V01040","V01041"],"homens":["V01018","V01019"],"mulheres":["V01029","V01030"]}],"sexo":{"homens":"V01007","mulheres":"V01008"},"moradores":{"dppo":"V00001","dpio":"V00002","moradoresDppo":"V00005","moradoresDpio":"V00006"},"tamanho":[{"rotulo":"1 morador","var":"V00017"},{"rotulo":"2 moradores","var":"V00018"},{"rotulo":"3 moradores","var":"V00019"},{"rotulo":"4 moradores","var":"V00020"}],"tamanhoResto":"5 ou mais moradores","especie":[{"rotulo":"Casa","var":"V00047"},{"rotulo":"Casa de vila ou em condomínio","var":"V00048"},{"rotulo":"Apartamento","var":"V00049"},{"rotulo":"Casa de cômodos ou cortiço","var":"V00050"},{"rotulo":"Estrutura degradada ou inacabada","var":"V00052"}],"vagos":"V0009","usoOcasional":"V0008"};
+const DEMO_CFG={"_leia":"Grupos do perfil da população do entorno (ficha do terreno), feitos só de somas exatas das variáveis do IBGE por setor (Censo 2022, agregados por setor). O protótipo lê daqui (build.py), o gerar.py usa a lista de variáveis e o teste do banco confere que app.demografia_grupos tem os mesmos grupos.","versao":1,"censoAno":2022,"idadeOrigem":"Decisão do Moisés (24/out/2026): cortes exatos do IBGE agrupados. O IBGE publica por setor 0–4, 5–9, 10–14, 15–19, 20–24, 25–29, 30–39, 40–49, 50–59, 60–69 e 70+; idade ano a ano só nos microdados da amostra, por área de ponderação.","idade":[{"rotulo":"0 a 4 anos","total":["V01031"],"homens":["V01009"],"mulheres":["V01020"]},{"rotulo":"5 a 14 anos","total":["V01032","V01033"],"homens":["V01010","V01011"],"mulheres":["V01021","V01022"]},{"rotulo":"15 a 19 anos","total":["V01034"],"homens":["V01012"],"mulheres":["V01023"]},{"rotulo":"20 a 29 anos","total":["V01035","V01036"],"homens":["V01013","V01014"],"mulheres":["V01024","V01025"]},{"rotulo":"30 a 39 anos","total":["V01037"],"homens":["V01015"],"mulheres":["V01026"]},{"rotulo":"40 a 49 anos","total":["V01038"],"homens":["V01016"],"mulheres":["V01027"]},{"rotulo":"50 a 59 anos","total":["V01039"],"homens":["V01017"],"mulheres":["V01028"]},{"rotulo":"60 anos ou mais","total":["V01040","V01041"],"homens":["V01018","V01019"],"mulheres":["V01029","V01030"]}],"idadeMedia":{"_leia":"Idade média estimada (pedido do Moisés, 9/nov/2026): soma de (ponto médio da faixa × pessoas) ÷ pessoas, nos 11 cortes do IBGE por setor; só entram os setores com os 11 divulgados. 70 ou mais vale 78 anos, a média real de quem tem 70+ em São Paulo no Censo 2022 (SIDRA 9514, idade ano a ano: 78,15; São José dos Campos 77,42). Conferido com a idade ano a ano da cidade inteira: estimada 38,13 × real 38,07 em São Paulo e 37,41 × 37,29 em São José dos Campos.","faixas":[["V01031",2.5],["V01032",7.5],["V01033",12.5],["V01034",17.5],["V01035",22.5],["V01036",27.5],["V01037",35],["V01038",45],["V01039",55],["V01040",65],["V01041",78]]},"sexo":{"homens":"V01007","mulheres":"V01008"},"moradores":{"dppo":"V00001","dpio":"V00002","moradoresDppo":"V00005","moradoresDpio":"V00006"},"tamanho":[{"rotulo":"1 morador","var":"V00017"},{"rotulo":"2 moradores","var":"V00018"},{"rotulo":"3 moradores","var":"V00019"},{"rotulo":"4 moradores","var":"V00020"}],"tamanhoResto":"5 ou mais moradores","especie":[{"rotulo":"Casa","var":"V00047"},{"rotulo":"Casa de vila ou em condomínio","var":"V00048"},{"rotulo":"Apartamento","var":"V00049"},{"rotulo":"Casa de cômodos ou cortiço","var":"V00050"},{"rotulo":"Estrutura degradada ou inacabada","var":"V00052"}],"vagos":"V0009","usoOcasional":"V0008"};
 const DEMO={d:null,promessa:null,erro:null};
 function demoCarregar(){if(DEMO.d)return Promise.resolve(DEMO.d);if(DEMO.promessa)return DEMO.promessa;
   DEMO.promessa=Promise.all(Object.keys(SET_MUN).map(m=>fetch(setArq('demografia',m)).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}))).then(js=>{
@@ -15103,7 +15483,7 @@ function setoresClick(A,a,t){
     case 'rd-x':rdFechar();return true;
     case 'rd-met':UI.modal='rd-met';renderModal();return true;
     case 'rd-raio':{const v=a.dataset.v;UI.rdRaio=v==='poly'?'poly':Number(v);document.querySelectorAll('[data-a="rd-raio"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));if(t)rdCardAtualiza(t.id);return true}
-    case 'rd-ver':{const x=T(a.dataset.id);UI.mpSetor=rdCamada()||'renda';if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
+    case 'rd-ver':{const x=T(a.dataset.id);UI.mpSetor=rdCamada()||'renda';rdGuardar();if(x&&x.lat!=null){UI.mpView={c:{lat:x.lat,lng:x.lng},z:15}}go('mapa');return true}
   }
   return false}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&RD.sel!=null&&!UI.modal&&naMapa()){rdFechar();e.preventDefault()}});
@@ -16205,6 +16585,27 @@ const _fmtVarre=fmtVarre;fmtVarre=function(){_fmtVarre();uiRotulos();uiThNum();u
 /* fechar a legenda fecha também a árvore de Terrenos e volta os pinos para as fases (pedido do Moisés, 4/nov/2026) */
 document.addEventListener('toggle',e=>{if(!e.target.classList?.contains('mp-legenda'))return;UI.mpLeg=e.target.open;
   if(!e.target.open&&(UI.mpArv||UI.mp?.f||UI.mp?.e)){const mud=UI.mp.f||UI.mp.e;UI.mpArv=false;UI.mp.f='';UI.mp.e='';UI.mp.ocultas=[];mpRefresh();if(mud)mpEnquadrar()}},true);
+
+/* a legenda aberta fecha sozinha depois de 1 s sem o mouse em cima nem o foco do teclado dentro; o olhinho ao lado do título a fixa
+   (guardado no navegador, bkm-terrenos-legenda-fixa; pedido do Moisés, 5/nov/2026) */
+const LG_FKEY='bkm-terrenos-legenda-fixa';
+/* a legenda começa fechada e lembra se ficou aberta ou fechada (bkm-terrenos-legenda; pedido do Moisés, 5/nov/2026) */
+const LG_AKEY='bkm-terrenos-legenda';
+function lgAbertaGuardada(){try{return localStorage.getItem(LG_AKEY)==='1'}catch(e){return false}}let LG_T=null,LG_SOBRE=false;
+function lgFixa(){try{return localStorage.getItem(LG_FKEY)==='1'}catch(e){return false}}
+function lgFixarBtn(){const f=lgFixa();return `<button type="button" class="lg-fixar" data-a="lg-fixar" aria-pressed="${f}" aria-label="${f?'Soltar a legenda':'Fixar a legenda aberta'}">${ic('olho',18)}</button>`}
+/* fechada, abre sozinha com o mouse parado em cima dela por 0,75 s (pedido do Moisés, 5/nov/2026) */
+function lgAgendar(){clearTimeout(LG_T);LG_T=null;if(TOQUE())return;const d=$('.mp-legenda');
+  if(d&&!d.open&&LG_SOBRE){LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&!d.open&&LG_SOBRE)d.open=true},750);return}
+  if(!d||!d.open||lgFixa()||LG_SOBRE||d.querySelector(':focus-visible'))return;
+  LG_T=setTimeout(()=>{LG_T=null;const d=$('.mp-legenda');if(d&&d.open&&!lgFixa()&&!LG_SOBRE&&!d.querySelector(':focus-visible'))d.open=false},1000)}
+document.addEventListener('toggle',e=>{if(e.target.classList?.contains('mp-legenda')){try{localStorage.setItem(LG_AKEY,e.target.open?'1':'')}catch(x){}if(!e.target.matches(':hover'))LG_SOBRE=false;lgAgendar()}},true);
+document.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const d=e.target.closest?.('.mp-legenda');if(d&&!LG_SOBRE){LG_SOBRE=true;lgAgendar()}},true);
+document.addEventListener('pointerout',e=>{if(!LG_SOBRE||!e.target.closest?.('.mp-legenda'))return;if(e.relatedTarget?.closest?.('.mp-legenda'))return;LG_SOBRE=false;lgAgendar()},true);
+document.addEventListener('focusout',e=>{if(e.target.closest?.('.mp-legenda'))setTimeout(lgAgendar,0)},true);
+document.addEventListener('focusin',e=>{if(e.target.closest?.('.mp-legenda'))lgAgendar()},true);
+document.addEventListener('click',e=>{const b=e.target.closest?.('[data-a="lg-fixar"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();
+  const f=!lgFixa();try{localStorage.setItem(LG_FKEY,f?'1':'')}catch(x){}b.outerHTML=lgFixarBtn();lgAgendar()},true);
 
 /* ===================== botão flutuante do celular ===================== */
 /* Padrão Material: o "Novo terreno" estendido vira só o + ao rolar para baixo (cobre menos

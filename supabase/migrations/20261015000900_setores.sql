@@ -126,7 +126,7 @@ insert into app.metodologias_renda (versao, censo_ano, variavel_base, fator_fami
    'Decisão do Moisés (24/out/2026): fator único de 1,6 para a capital, igual em todos os setores. Medidas de apoio: Estado de São Paulo 1,6102 nos microdados públicos da amostra do Censo 2022 (renda domiciliar média D0350 ÷ renda média do responsável P1110, P0170 = 1, peso D0110: R$ 6.156,18 ÷ R$ 3.823,32); capital estimada em 1,576 pela proporção entre capital e Estado nas tabelas oficiais (os microdados públicos não descem abaixo da UF). Aplicado do mesmo jeito a São José dos Campos (25/out/2026), sem medida própria da cidade: os microdados públicos não descem abaixo da UF',
    2022, 2148, 2025, 2956, 'PNAD Contínua, rendimento domiciliar per capita do Estado de São Paulo (Lei Complementar 143/2013)', 3, true);
 
--- faixas do mapa (decisão de produto, nunca quantis; R$ 13 mil = teto da Faixa 4 do MCMV 2026; cores: amarelo-claro ao vinho até 13 mil (MCMV) e azuis acima, mais escuro = mais renda): o limite de cima entra na faixa,
+-- faixas do mapa (decisão de produto, nunca quantis; R$ 13 mil = teto da Faixa 4 do MCMV 2026; cores: amarelo-claro ao vinho até 13 mil (MCMV), azuis de 13 a 22 mil e verdes acima, mais escuro = mais renda): o limite de cima entra na faixa,
 -- a renda é arredondada para reais antes de classificar; a última não tem limite
 create table app.renda_faixas (
   ordem   smallint primary key,
@@ -138,12 +138,12 @@ create table app.renda_faixas (
 insert into app.renda_faixas (ordem, ate, rotulo, cor) values
   (1, 2000, 'Até R$ 2.000', '#fff198'), (2, 3000, 'R$ 2.000 – 3.000', '#fed559'),
   (3, 4000, 'R$ 3.000 – 4.000', '#feb600'), (4, 5000, 'R$ 4.000 – 5.000', '#fa9500'),
-  (5, 6000, 'R$ 5.000 – 6.000', '#ef7700'), (6, 7000, 'R$ 6.000 – 7.000', '#db5d00'),
-  (7, 8000, 'R$ 7.000 – 8.000', '#c04c07'), (8, 9000, 'R$ 8.000 – 9.000', '#9f422d'),
+  (5, 6000, 'R$ 5.000 – 6.000', '#f4511e'), (6, 7000, 'R$ 6.000 – 7.000', '#d32f2f'),
+  (7, 8000, 'R$ 7.000 – 8.000', '#a0522d'), (8, 9000, 'R$ 8.000 – 9.000', '#7a4a26'),
   (9, 10000, 'R$ 9.000 – 10.000', '#833431'), (10, 13000, 'R$ 10.000 – 13.000', '#6e202c'),
   (11, 15000, 'R$ 13.000 – 15.000', '#97d6ff'), (12, 18000, 'R$ 15.000 – 18.000', '#70b2e7'),
-  (13, 22000, 'R$ 18.000 – 22.000', '#4c8ecb'), (14, 25000, 'R$ 22.000 – 25.000', '#296baf'),
-  (15, 30000, 'R$ 25.000 – 30.000', '#024893'), (16, null, 'Acima de R$ 30.000', '#002377');
+  (13, 22000, 'R$ 18.000 – 22.000', '#4c8ecb'), (14, 25000, 'R$ 22.000 – 25.000', '#9ccc65'),
+  (15, 30000, 'R$ 25.000 – 30.000', '#43a047'), (16, null, 'Acima de R$ 30.000', '#1b5e20');
 
 create or replace function app.renda_faixa(p_valor numeric) returns smallint
 language sql stable set search_path = '' as $$

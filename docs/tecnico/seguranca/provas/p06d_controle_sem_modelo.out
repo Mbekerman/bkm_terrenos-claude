@@ -1,0 +1,14 @@
+                      k                       | moveu 
+----------------------------------------------+-------
+ CONTROLE: sem o quadro da Outra SA, o avanço | t
+(1 row)
+
+                          k                          | count 
+-----------------------------------------------------+-------
+ CONTROLE: tarefas de regra criadas no quadro da BKM |     0
+(1 row)
+
+ titulo | quadro_bkm 
+--------+------------
+(0 rows)
+

@@ -70,8 +70,8 @@ function gPontoNaTela(lat,lng){const M=edMapa();if(!M)return null;if(!gProj||gPr
 function gEnquadrar(pts,maxZoom){if(!MAPA||!pts.length)return;if(pts.length===1){MAPA.setCenter(pts[0]);MAPA.setZoom(maxZoom||17);return}
   const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));MAPA.fitBounds(b,48);if(maxZoom)google.maps.event.addListenerOnce(MAPA,'idle',()=>{if(MAPA.getZoom()>maxZoom)MAPA.setZoom(maxZoom)})}
 function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[];gPois=[];gConc=[];gDes=[];gRota=[];gEntorno=[];gSet(gEu,null);gEu=[];
-  const v=UI.mpView;
-  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[UI.mpBase||'satelite'],
+  const v=UI.mpView||mpVistaGuardada();
+  MAPA=new google.maps.Map(el,{mapId:'DEMO_MAP_ID',colorScheme:temaEscuro()?'DARK':'LIGHT',center:v?gLL(v.c.lat??v.c[0],v.c.lng??v.c[1]):gLL(-23.55,-46.63),zoom:v?v.z:11,mapTypeId:TIPO_G[mpBaseAtual()],
     mapTypeControl:false,streetViewControl:true,streetViewControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM},cameraControl:false,fullscreenControl:false,clickableIcons:true,gestureHandling:'greedy',scaleControl:true,tilt:0,disableDoubleClickZoom:true});
   MAPA.__escuro=temaEscuro();gInfo=new google.maps.InfoWindow({maxWidth:320,headerDisabled:true});
   el.classList.toggle('modo',!!UI.mpModo);G_desenhaPins();G_desenhaPois();G_desenhaConc();desenhaEu(false);
@@ -81,7 +81,7 @@ function G_initMapa(){const el=$('#mapa');if(!el)return;el.innerHTML='';gPins=[]
   MAPA.addListener('dragstart',ctxFechar);MAPA.addListener('zoom_changed',ctxFechar);G_desenhaRascunho();
   MAPA.addListener('dblclick',e=>{if(e.latLng&&!e.placeId)mapaDuplo(e.latLng.lat(),e.latLng.lng(),e.domEvent?.target)});
   if(!v)gEnquadrar(ativosBanco().filter(t=>t.lat!=null).map(t=>gLL(t.lat,t.lng)),15);
-  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};vMenuDesenha()});
+  MAPA.addListener('idle',()=>{const c=MAPA.getCenter();UI.mpView={c:{lat:c.lat(),lng:c.lng()},z:MAPA.getZoom()};mpVistaGuardar(UI.mpView);vMenuDesenha()});
   MAPA.addListener('dragstart',()=>$('.mapa-area .v-menu')?.remove());MAPA.addListener('zoom_changed',()=>$('.mapa-area .v-menu')?.remove());
   /* Street View: fecha no nosso X (canto de cima, à direita) ou no Esc; o fechar do Google fica escondido para não haver dois */
   const sv=MAPA.getStreetView();sv.setOptions({enableCloseButton:false,fullscreenControl:false});
@@ -114,9 +114,14 @@ function lugarHtml(p){const revs=(p.reviews||[]).slice(0,3),nota=p.rating!=null?
   ${revs.length?`<ul class="lug-revs">${revs.map(r=>{const a=r.authorAttribution||{},txt=String(r.text||'');return `<li><div class="lug-ra">${a.uri?`<a href="${esc(a.uri)}" target="_blank" rel="noopener">${esc(a.displayName||'Usuário do Google')}</a>`:esc(a.displayName||'Usuário do Google')} <span class="lug-est" aria-label="nota ${r.rating}">${estrelas(r.rating||0)}</span> <span class="muted">${esc(r.relativePublishTimeDescription||'')}</span></div>${txt?`<div class="lug-rt">${esc(txt.length>220?txt.slice(0,220).trim()+'…':txt)}</div>`:''}</li>`}).join('')}</ul>`:''}
   ${p.googleMapsURI?`<a class="lug-l" href="${esc(p.googleMapsURI)}" target="_blank" rel="noopener">Ver todas no Google Maps</a>`:''}<div class="lug-g muted">Avaliações do Google</div></div>`}
 /* conteúdo como nó, com o X ligado direto (o InfoWindow pode não deixar o clique subir até o documento) */
-function lugarConteudo(h){const d=document.createElement('div');d.innerHTML=h;d.querySelector('.lug-x')?.addEventListener('click',e=>{e.stopPropagation();lugarFechar()});gInfo.setContent(d)}
-function lugarFechar(){if(gInfo&&gInfo.__lug){gInfo.close();gInfo.__lug=false;return true}return false}
-async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
+function lugarConteudo(h){const d=document.createElement('div');d.innerHTML=h;d.querySelector('.lug-x')?.addEventListener('click',e=>{e.stopPropagation();lugarFechar()});gInfo.setContent(d);setTimeout(()=>lugarSaida(d),0)}
+/* o quadro fecha sozinho 1 s depois que o mouse sai dele e, se o mouse não entrar nele, 1 s depois de aberto (no toque, não; pedido do Moisés, 5/nov/2026) */
+let LUG_T=null,LUG_DENTRO=false;
+function lugarSaida(d){if(TOQUE())return;const c=d.closest('.gm-style-iw-c');if(!c||c.__lugH)return;c.__lugH=true;
+  c.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(LUG_T);LUG_DENTRO=true});
+  c.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;LUG_DENTRO=false;clearTimeout(LUG_T);LUG_T=setTimeout(lugarFechar,1000)})}
+function lugarFechar(){clearTimeout(LUG_T);if(gInfo&&gInfo.__lug){gInfo.close();gInfo.__lug=false;return true}return false}
+async function lugarAbrir(id,ll){if(!gInfo||!MAPA)return;clearTimeout(LUG_T);LUG_DENTRO=false;if(!TOQUE())LUG_T=setTimeout(()=>{if(!LUG_DENTRO)lugarFechar()},1000);gInfo.__lug=true;lugarConteudo(`<div class="lug muted"><button type="button" class="lug-x" data-a="lug-fechar" aria-label="Fechar">${ic('close',18)}</button>Carregando avaliações…</div>`);gInfo.setPosition(ll);gInfo.open({map:MAPA});
   try{let p=LUGARES[id];if(!p){const pl=new gLib.places.Place({id});await pl.fetchFields({fields:['displayName','formattedAddress','rating','userRatingCount','reviews','googleMapsURI']});
       p=LUGARES[id]={displayName:pl.displayName,formattedAddress:pl.formattedAddress,rating:pl.rating,userRatingCount:pl.userRatingCount,googleMapsURI:pl.googleMapsURI,
         reviews:(pl.reviews||[]).map(r=>({rating:r.rating,text:r.text,relativePublishTimeDescription:r.relativePublishTimeDescription,authorAttribution:r.authorAttribution&&{displayName:r.authorAttribution.displayName,uri:r.authorAttribution.uri}}))}}

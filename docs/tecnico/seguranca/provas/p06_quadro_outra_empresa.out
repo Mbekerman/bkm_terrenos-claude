@@ -1,0 +1,29 @@
+                       k                       | ok 
+-----------------------------------------------+----
+ quadro criado na Outra SA apontando para A003 | t
+(1 row)
+
+            k             | processo_bkm |  etapa  |       subetapa        
+--------------------------+--------------+---------+-----------------------
+ (a) a tarefa dele ganhou | t            | triagem | aguardando_documentos
+(1 row)
+
+          k           | v_terrenos | v_tarefas_funil | processos | tarefas_abertas_fase | jornada | campo_cartao | suas_tarefas 
+----------------------+------------+-----------------+-----------+----------------------+---------+--------------+--------------
+ (a) leituras diretas |          0 |               0 |         0 |                    0 | f       |              |            1
+(1 row)
+
+psql:p06_quadro_outra_empresa.sql:26: ERROR:  Modelo não encontrado nesta empresa
+CONTEXT:  PL/pgSQL function fluxo.aplicar_modelo_mapa(uuid,uuid,date,uuid,uuid[],jsonb) line 6 at RAISE
+PL/pgSQL function app._tarefas_ao_entrar(uuid,text,text) line 41 at assignment
+SQL statement "SELECT app._tarefas_ao_entrar(p.id, 'etapa', p_destino)"
+PL/pgSQL function app._executar_passagem(uuid,text,text,boolean,text,jsonb,uuid,uuid) line 16 at PERFORM
+SQL statement "SELECT app._executar_passagem(p.id, p_destino_tipo, p_destino, v_forcado, p_comentario, p_dados)"
+PL/pgSQL function app._passagem(uuid,text,text,boolean,text,jsonb) line 34 at PERFORM
+PL/pgSQL function app.mover_para_etapa(uuid,text,boolean,text) line 14 at assignment
+psql:p06_quadro_outra_empresa.sql:27: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:p06_quadro_outra_empresa.sql:30: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:p06_quadro_outra_empresa.sql:31: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:p06_quadro_outra_empresa.sql:33: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:p06_quadro_outra_empresa.sql:35: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:p06_quadro_outra_empresa.sql:36: ERROR:  current transaction is aborted, commands ignored until end of transaction block

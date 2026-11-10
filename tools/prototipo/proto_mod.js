@@ -5,15 +5,31 @@
    ===================================================================== */
 UI.sorts=UI.sorts||{};
 UI.mp=UI.mp||{q:'',cor:'',zona:'',f:'',e:'',ocultas:[]};if(!UI.mp.apag)UI.mp.apag={};
+/* o que a legenda apaga (terrenos por fase, etapa e subetapa; concorrência ligada, faixas e situações) fica guardado no navegador
+   e vale em outra sessão (bkm-terrenos-mapa-legenda; pedido do Moisés, 5/nov/2026); a gravação é a cada desenho da legenda */
+const MP_LGKEY='bkm-terrenos-mapa-legenda';
+(()=>{let g=null;try{g=JSON.parse(localStorage.getItem(MP_LGKEY)||'null')}catch(e){}if(!g)return;
+  if(g.apag&&typeof g.apag==='object')UI.mp.apag=g.apag;if(Array.isArray(g.mkOff))UI.mkOff=g.mkOff;if(g.merc===false)UI.mpMerc=false})();
+function mpLegGuardar(){try{localStorage.setItem(MP_LGKEY,JSON.stringify({apag:UI.mp.apag||{},mkOff:UI.mkOff||[],merc:UI.mpMerc!==false}))}catch(e){}}
+/* a camada de renda ou densidade e o filtro da concorrência ficam guardados no navegador, mas se apagam quando a pessoa fica
+   fora da página Mapa por mais de MP_EXPIRA_MIN minutos (pedido do Moisés, 5/nov/2026); bkm-terrenos-mapa-visto é a última vez no mapa */
+const MP_EXPIRA_MIN=30,MP_VISTO_KEY='bkm-terrenos-mapa-visto',MP_MFKEY='bkm-terrenos-mapa-filtro-conc';
+function mpExpirar(){try{const v=Number(localStorage.getItem(MP_VISTO_KEY)||0);if(!v||Date.now()-v<=MP_EXPIRA_MIN*60000)return;
+  localStorage.removeItem('bkm-terrenos-mapa-camada');localStorage.removeItem(MP_MFKEY);localStorage.removeItem(MP_VISTO_KEY);UI.mpSetor=null;UI.mf={}}catch(e){}}
+function mpVisto(){try{localStorage.setItem(MP_VISTO_KEY,String(Date.now()))}catch(e){}}
+mpExpirar();
+setInterval(()=>{if(typeof naMapa==='function'&&naMapa()&&document.visibilityState==='visible')mpVisto()},15000);
+addEventListener('pagehide',()=>{if(typeof naMapa==='function'&&naMapa())mpVisto()});
+document.addEventListener('visibilitychange',()=>{if(typeof naMapa==='function'&&naMapa()){if(document.visibilityState==='hidden')mpVisto();else{const v=Number(localStorage.getItem(MP_VISTO_KEY)||0);if(v&&Date.now()-v>MP_EXPIRA_MIN*60000)render()}}});
 UI.dash=UI.dash||{f:{},sel:['situacao','zona','valor','mes']};
 
 /* ---------- situação do terreno (cor do pin, gráficos) ---------- */
 // rótulo, cor, glifo no pin, cor do glifo. Etapas ativas em rampa de azul (ordem = avanço);
 // Stand By, Comprado, Perdido e Descartado com cores próprias e glifo, para não depender só da cor.
-const SIT={sem_negociacao:['Backlog','#8a8d91','·','#fff'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
+const SIT={sem_negociacao:['Backlog','#fff176','·','#5c4a00'],triagem:['Em Triagem','#8fc8f7','1','#1d2e5c'],
   estudos:['Estudos Preliminares','#4aa3f0','2','#fff'],negociacao:['Negociação','#0b74d6','3','#fff'],
   contrato:['Contrato','#1d2e5c','4','#fff'],stand_by:['Stand By','#c98a2e','‖','#fff'],comprado:['Comprado','#6f9a3a','✓','#fff'],
-  perdido:['Perdido','#9a3b30','×','#fff'],descartado:['Descartado','#6b6560','–','#fff']};
+  perdido:['Perdido','#9a3b30','×','#fff'],descartado:['Descartado','#d9d4cf','–','#3a3633']};
 /* nomes das etapas seguem a configuração da empresa */
 const sitNome=k=>STAGES.find(s=>s[0]===k)?.[1]||SIT[k][0];
 const sitMapa=t=>!t.neg?'sem_negociacao':t.neg.status==='ativo'?t.neg.etapa:t.neg.status;
@@ -21,11 +37,12 @@ const sitChip=k=>`<span class="sitchip"><span class="sw" style="background:${SIT
 const ativosBanco=()=>S.terrenos.filter(t=>t.situacao!=='arquivado');
 /* mapa em três níveis, como o kanban: fases › etapas de uma fase (UI.mp.f) › subetapas de uma etapa (UI.mp.e).
    Cada nível tem a sua legenda (rótulo, cor, glifo, cor do glifo) e classifica o terreno; fora do nível = não aparece. */
-const COR_FASE=['#0b74d6','#863d8f','#c67355','#00838f','#c2477a','#7d8a3e','#1d2e5c','#5f6368'];
+/* Backlog, Obras, Entregue e Descartado em tons claros: sumiam no satélite (Moisés, 9/nov/2026) */
+const COR_FASE=['#0b74d6','#863d8f','#c67355','#00838f','#c2477a','#7d8a3e','#c9a7ff','#69f0ae'],FG_FASE=['#fff','#fff','#fff','#fff','#fff','#fff','#2e1a5c','#0b3d1e'];
 const RAMPA=['#8fc8f7','#4aa3f0','#0b74d6','#0a4fa0','#1d2e5c'];
 const rampa=(i,n)=>{const j=n<=1?2:Math.round(i*(RAMPA.length-1)/(n-1));return [RAMPA[j],j===0?'#1d2e5c':'#fff']};
 function mpItens(){const m=UI.mp,sit=k=>({k,nome:SIT[k][0],cor:SIT[k][1],g:SIT[k][2],fg:SIT[k][3]});
-  if(!m.f)return [...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:'#fff',desce:etapasF(f.k).length>0})),sit('sem_negociacao'),sit('perdido'),sit('descartado')];
+  if(!m.f)return [...fasesL().filter(f=>f.ativo).map((f,i)=>({k:f.k,nome:f.nome,cor:COR_FASE[i%COR_FASE.length],g:String(i+1),fg:FG_FASE[i%FG_FASE.length],desce:etapasF(f.k).length>0})),sit('sem_negociacao'),sit('perdido'),sit('descartado')];
   const L=m.e?(etapaF(m.f,m.e)?.subs||[]):etapasF(m.f);
   return [...L.map((x,i)=>{const [cor,fg]=rampa(i,L.length);return {k:x.k,nome:x.nome,cor,g:String(i+1),fg,desce:!m.e&&x.subs?.length>0}}),sit('stand_by')]}
 function mpClasse(t){const m=UI.mp;
@@ -170,13 +187,27 @@ function desenhaRascunho(){return GG?G_desenhaRascunho():L_desenhaRascunho()}
 function initMapa(){const r=GG?G_initMapa():L_initMapa();mpCtrlObs();return r}
 /* tema escuro: a visão Mapa fica escura (Google pelo colorScheme, que só vale ao criar o mapa; Leaflet pelo cinza-escuro da Esri). O satélite não muda */
 const temaEscuro=()=>document.documentElement.dataset.tema==='escuro';
-function temaMapa(){if(!MAPA||!$('#mapa'))return;if(GG){if(MAPA.__escuro!==temaEscuro())G_initMapa()}else if((UI.mpBase||'satelite')==='mapa')L_setBase('mapa')}
+function temaMapa(){if(!MAPA||!$('#mapa'))return;if(GG){if(MAPA.__escuro!==temaEscuro())G_initMapa()}else if(mpBaseAtual()==='mapa')L_setBase('mapa')}
+/* fundo do mapa: sem botão Mapa/Satélite; Satélite só com a camada de renda ou densidade ligada (pedido do Moisés, 5/nov/2026) */
+/* posição e zoom do mapa guardados no navegador: a página Mapa abre onde a pessoa deixou (pedido do Moisés, 5/nov/2026) */
+const MP_VKEY='bkm-terrenos-mapa-vista';
+function mpVistaGuardada(){try{const v=JSON.parse(localStorage.getItem(MP_VKEY)||'null');return v&&isFinite(v.c?.lat)&&isFinite(v.c?.lng)&&isFinite(v.z)?v:null}catch(e){return null}}
+function mpVistaGuardar(v){try{localStorage.setItem(MP_VKEY,JSON.stringify({c:{lat:+(+v.c.lat).toFixed(6),lng:+(+v.c.lng).toFixed(6)},z:v.z}))}catch(e){}}
+/* tipo de mapa: o escolhido nos três pontinhos, guardado no navegador (bkm-terrenos-mapa-tipo; padrão Mapa); com renda ou
+   densidade ligada, Satélite, a menos que a pessoa troque enquanto a camada está ligada (vale só até desligar) */
+const MP_TKEY='bkm-terrenos-mapa-tipo';
+function mpTipo(){try{return localStorage.getItem(MP_TKEY)==='satelite'?'satelite':'mapa'}catch(e){return 'mapa'}}
+function mpBaseAtual(){return typeof rdCamada==='function'&&rdCamada()?(UI.mpBaseCam||'satelite'):mpTipo()}
+function mpTipoEscolher(v){v=v==='satelite'?'satelite':'mapa';if(typeof rdCamada==='function'&&rdCamada())UI.mpBaseCam=v;else try{localStorage.setItem(MP_TKEY,v)}catch(e){}setBase(mpBaseAtual())}
 /* botões do canto do mapa: minha localização e tela cheia (o controle de câmera do Google saiu; decisão do Moisés, 23/out/2026).
    Sobem acima do cartão do terreno e do aviso de desenho quando eles ocupam o pé do mapa. */
 function mpCtrlHtml(){const on=document.body.classList.contains('mp-cheia');
-  return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
+  return `${GG?`<button type="button" class="mp-cb sv-x" data-a="sv-fechar" title="Fechar o Street View (Esc)" aria-label="Fechar o Street View">${ic('close',22)}</button>`:''}<div id="mp-ctrl" class="mp-ctrl"><button type="button" class="mp-cb mp-rg" data-a="rg-abrir" aria-pressed="${UI.mpModo==='regua'}" title="Régua" aria-label="Régua">${ic('regua',22)}</button><button type="button" class="mp-cb" data-a="mp-eu" title="Minha localização" aria-label="Centralizar na minha localização">${ic('eu',22)}</button>
     <button type="button" class="mp-cb" data-a="mp-cheia" aria-pressed="${on}" title="${on?'Sair da tela cheia':'Tela cheia'}" aria-label="${on?'Sair da tela cheia':'Tela cheia'}">${ic(on?'telaSair':'tela',22)}</button></div>`}
+/* o bonequinho do Street View fica sempre no mesmo lugar do canto (64 px acima do pé do mapa, 32 de altura): reserva o lugar
+   dele mesmo antes de o Google desenhá-lo ou enquanto o mapa muda de tamanho (tela cheia), senão a tela cheia cai em cima dele */
 function mpCtrlPos(){const a=$('.mapa-area'),c=$('#mp-ctrl');if(!a||!c)return;const ar=a.getBoundingClientRect();let topo=ar.bottom;
+  if(GG&&!a.classList.contains('sv-on'))topo=ar.bottom-64;
   ['#mp-cartao','#mp-modo','.mapa-area .gm-svpc'].forEach(s=>{const e=$(s);if(!e||!e.offsetHeight)return;const r=e.getBoundingClientRect();if(r.bottom>ar.bottom-80&&r.right>ar.right-80)topo=Math.min(topo,r.top)});
   c.style.bottom=topo<ar.bottom?Math.round(ar.bottom-topo+12)+'px':''}
 function mpCtrlObs(){const a=$('.mapa-area');if(!a||a.__ro||!window.ResizeObserver)return mpCtrlPos();a.__ro=new ResizeObserver(mpCtrlPos);[a,$('#mp-cartao'),$('#mp-modo')].forEach(e=>e&&a.__ro.observe(e));mpCtrlPos()}
@@ -223,7 +254,7 @@ function mpVisiveis(){const m=UI.mp,q=m.q.trim().toLowerCase();
    apagar uma fase ou etapa apaga tudo que está dentro dela, sem abrir e fechar um a um */
 const mpApag=lv=>(UI.mp.apag||(UI.mp.apag={}))[lv]||[];
 function mpApagado(t){const m=UI.mp,sf=m.f,se=m.e;
-  try{for(const [lv,l] of Object.entries(m.apag||{})){if(!l.length)continue;const [f,e]=lv.split('|');m.f=f;m.e=e;const c=mpClasse(t);if(c!=null&&l.includes(c))return true}return false}finally{m.f=sf;m.e=se}}
+  try{if((m.apag?.['*']||[]).length)return true;for(const [lv,l] of Object.entries(m.apag||{})){if(!l.length||lv==='*')continue;const [f,e]=lv.split('|');m.f=f;m.e=e;const c=mpClasse(t);if(c!=null&&l.includes(c))return true}return false}finally{m.f=sf;m.e=se}}
 function mpApagar(lv,k){const a=UI.mp.apag||(UI.mp.apag={}),l=a[lv]||[];a[lv]=l.includes(k)?l.filter(x=>x!==k):[...l,k];if(!a[lv].length)delete a[lv]}
 const mpTemApag=()=>Object.values(UI.mp.apag||{}).some(l=>l.length);
 /* lista lateral do mapa: a bolinha com o código do terreno (na cor do nível aberto na legenda), o nome e a área; a lupa abre a ficha.
@@ -298,29 +329,29 @@ function mpCartao(){const c=$('#mp-cartao');if(!c)return;const t=UI.mpSel&&T(UI.
    e o clique volta para aquele nível. */
 function mpNivelItens(f,e){const m=UI.mp,sf=m.f,se=m.e,base=fxLista('mapa');m.f=f;m.e=e;
   try{const its=mpItens(),cl=new Map(base.map(t=>[t.id,mpClasse(t)]));return its.map(x=>({...x,n:base.filter(t=>cl.get(t.id)===x.k).length}))}finally{m.f=sf;m.e=se}}
-function mpLegenda(){const m=UI.mp,aberta=!!UI.mpArv;
+function mpLegenda(){mpLegGuardar();const m=UI.mp,aberta=!!UI.mpArv;
   const pin=x=>`<span class="pin-mini" style="background:${x.cor};color:${x.fg}">${x.g}</span>`;
   const seta=ab=>`<span class="lg-s${ab?' ab':''}" aria-hidden="true">${ic('chev',14)}</span>`;
-  /* a bolinha e o número de qualquer item ligam e desligam tudo que está nele (data-l = nível, data-v = item); o resto do ramo abre e fecha */
+  /* a bolinha de qualquer item (e a de "Terrenos", data-l="*": todos) liga e desligam tudo que está nele (data-l = nível, data-v = item); o resto do ramo abre e fecha */
   const off=(lv,k,pai)=>pai||mpApag(lv).includes(k),tg=(lv,x)=>`data-l="${esc(lv)}" data-v="${esc(x.k)}"`;
-  const ramo=(x,prof,ab,f,e,fora,lv,pai)=>`<button type="button" class="lg-i lg-a${fora?' lg-fora':''}${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)} aria-expanded="${ab}">${seta(ab)}<span class="lg-tg" title="Ligar ou desligar tudo em ${esc(x.nome)}">${pin(x)}</span>${esc(x.nome)}<span class="n lg-tg" title="Ligar ou desligar tudo em ${esc(x.nome)}">${x.n}</span></button>`;
+  const ramo=(x,prof,ab,f,e,fora,lv,pai)=>`<button type="button" class="lg-i lg-a${fora?' lg-fora':''}${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)} aria-expanded="${ab}">${seta(ab)}<span class="lg-tg">${pin(x)}</span>${esc(x.nome)}<span class="n">${x.n}</span></button>`;
   const folha=(x,prof,ativo,f,e,lv,pai)=>ativo?`<button type="button" class="lg-i lg-a${pai?' lg-off':''}" style="--p:${prof}" data-a="mp-sit" ${tg(lv,x)} aria-pressed="${!off(lv,x.k,pai)}"><span class="lg-s"></span>${pin(x)}${esc(x.nome)}<span class="n">${x.n}</span></button>`
-    :`<button type="button" class="lg-i lg-a lg-fora${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)}><span class="lg-s"></span><span class="lg-tg">${pin(x)}</span>${esc(x.nome)}<span class="n lg-tg">${x.n}</span></button>`;
-  let h='';
+    :`<button type="button" class="lg-i lg-a lg-fora${off(lv,x.k,pai)?' lg-off':''}" style="--p:${prof}" data-a="mp-abre" data-f="${esc(f)}" data-e="${esc(e)}" ${tg(lv,x)}><span class="lg-s"></span><span class="lg-tg">${pin(x)}</span>${esc(x.nome)}<span class="n">${x.n}</span></button>`;
+  const t0=off('*','todos');let h='';
   if(aberta)for(const x of mpNivelItens('','')){
-    if(!x.desce){h+=folha(x,1,!m.f,'','','|',false);continue}
-    const ab=m.f===x.k,px=off('|',x.k);h+=ramo(x,1,ab,ab?'':x.k,'',m.f&&!ab,'|',false);if(!ab)continue;
+    if(!x.desce){h+=folha(x,1,!m.f,'','','|',t0);continue}
+    const ab=m.f===x.k,px=t0||off('|',x.k);h+=ramo(x,1,ab,ab?'':x.k,'',m.f&&!ab,'|',t0);if(!ab)continue;
     for(const y of mpNivelItens(x.k,'')){
       if(!y.desce){h+=folha(y,2,!m.e,x.k,'',x.k+'|',px);continue}
       const ab2=m.e===y.k,py=px||off(x.k+'|',y.k);h+=ramo(y,2,ab2,x.k,ab2?'':y.k,m.e&&!ab2,x.k+'|',px);if(!ab2)continue;
       for(const z of mpNivelItens(x.k,y.k))h+=folha(z,3,true,x.k,y.k,x.k+'|'+y.k,py)}}
   const tot=fxLista('mapa').length;
-  return `<button type="button" class="lg-i lg-a" style="--p:0" data-a="mp-arv" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
+  return `<button type="button" class="lg-i lg-a${t0?' lg-off':''}" style="--p:0" data-a="mp-arv" data-l="*" data-v="todos" aria-expanded="${aberta}">${seta(aberta)}<span class="lg-poi lg-tg"><span class="pin-mini lg-nt"></span></span>Terrenos<span class="n">${tot}</span></button>`+h
     +`<hr class="lg-sep">`+(POI_NO_MAPA?`<button type="button" class="lg-i" data-a="mp-poi" aria-pressed="${UI.mpPoi!==false}"><span class="lg-poi"><span class="poi-b"></span></span>Pontos de interesse<span class="n">${(S.pontos||[]).length}</span></button>`:'')
     +(CC_MANUAL?`<button type="button" class="lg-i" data-a="mp-conc" aria-pressed="${UI.mpConc!==false}"><span class="lg-poi">${ccMarcaHtml()}</span>Concorrência<span class="n">${ccAtivos().length}</span></button>`:'')
-    +rdLegItem();
+    ;
 }
-function pgMapa(){
+function pgMapa(){mpExpirar();mpVisto();
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${esc(l)}</option>`).join('');
   return `<div class="mapa-pg${mpLargura()<200?' mp-estreita':''}" style="--mp-w:${mpLargura()}px">
   <aside class="mapa-lado" aria-label="Terrenos no mapa">
@@ -334,23 +365,25 @@ function pgMapa(){
     <div id="mapa" class="mapa"></div>
     <div class="mp-barra">
       ${mpBuscaHtml()}
-      <div class="seg" role="group" aria-label="Fundo do mapa">${Object.entries(GG?CAMADAS_G:CAMADAS_L).map(([k,l])=>`<button type="button" data-a="mp-base" data-v="${k}" aria-pressed="${(UI.mpBase||'satelite')===k}">${l}</button>`).join('')}</div>
       ${rdBarraBotao()}
     </div>
     <div id="mp-modo" class="mp-modo" aria-live="polite">${modoBanner()}</div>
     <div id="mp-cartao" class="mp-cartao" aria-live="polite"></div>
     ${mpCtrlHtml()}
-    <details class="mp-legenda" ${(UI.mpLeg??innerWidth>899)?'open':''}><summary>Legenda</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
+    <details class="mp-legenda" ${(UI.mpLeg??lgAbertaGuardada())?'open':''}><summary><span class="lg-tit">Legenda</span>${lgFixarBtn()}</summary><div id="mp-leg" class="mp-leg-l">${mpLegenda()}</div></details>
     <div class="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
   </section></div>`;
 }
 function modoBanner(){const m=UI.mpModo;if(!m)return '';
   const t=UI.mpAlvo?T(UI.mpAlvo):null;
+  if(m==='regua')return rgBanner();
   if(m==='poi')return `<span>Clique no mapa para marcar o ponto de interesse.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='marcar')return `<span>Clique no mapa para localizar <b>${esc(t?.nome)}</b>.</span><button class="btn sm text" data-a="mp-sair">Cancelar</button>`;
   if(m==='desenhar'||m==='editar'){const n=(UI.desenho||[]).length,a=areaPoly(UI.desenho),tq=TOQUE(),seg=tq?'toque e segure':'clique com o botão direito';
-    if(!tq)return ''; /* desktop: sem janelinha, no desenho e na edição (decisão do Moisés, 4/nov/2026): Enter ou dois cliques no mapa salvam,
-       Esc ou dois cliques fora do mapa cancelam; Desfazer e Cancelar ficam no menu do ponto (clique direito), Ctrl+Z e Esc */
+    /* desktop, no desenho: uma barra fina na base do mapa com Cancelar e Concluir, alternativa ao Enter e aos dois cliques
+       (pedido do Moisés, 5/nov/2026). Na edição continua sem barra (decisão de 4/nov/2026): clique fora salva, Esc cancela;
+       Desfazer e Cancelar ficam no menu do ponto (clique direito), Ctrl+Z e Esc */
+    if(!tq)return m==='desenhar'?`<span class="mp-q mp-fina">${n} ponto${n===1?'':'s'}${a?` · ${m2(Math.round(a))}`:''}</span><button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir" ${n>=3?'':'disabled'} title="${n>=3?'Salvar a poligonal (Enter)':'Marque pelo menos 3 pontos'}">Concluir</button>`:'';
     /* celular: só Cancelar e Concluir, sem texto (decisão do Moisés, 24/out/2026); Desfazer fica no menu do ponto */
     if(m==='editar'&&tq)return `<button class="btn sm text" data-a="mp-sair">Cancelar</button><button class="btn sm primary" data-a="mp-concluir">Concluir</button>`;
     const dica=m==='editar'?`arraste os pontos; ${seg} num ponto para excluí-lo ou adicionar outro depois dele. ${tq?'Toque':'Clique'} fora da poligonal para concluir.`
@@ -386,19 +419,19 @@ function L_desenhaRascunho(){const D=UI.edMini?MINI_DES:DES;if(!D)return;D.clear
     mk.on('dragend',e=>{const ll=e.target.getLatLng();vArrastado(i,ll.lat,ll.lng)});
     mk.addTo(D)})}
 function mpRefresh(){if(UI.edMini){miniEdRefresh();return}desenhaPois();const l=$('#mp-lista');if(l)l.innerHTML=mpLista();const g=$('#mp-leg');if(g)g.innerHTML=mpLegenda();const m=$('#mp-modo');if(m)m.innerHTML=modoBanner();
-  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha()}mpCartao()}
+  if(MAPA){$('#mapa')?.classList.toggle('modo',!!UI.mpModo);desenhaPins();desenhaRascunho();vMenuDesenha();rgDesenha()}mpCartao()}
 function L_initMapa(){const el=$('#mapa');if(!el)return;
   if(!window.L){el.innerHTML='<div class="mapa-erro">Não foi possível carregar a biblioteca de mapas. Verifique a conexão e recarregue a página.</div>';return}
   MAPA=L.map(el,{zoomControl:true,doubleClickZoom:false});
   L.control.scale({imperial:false,position:'bottomright'}).addTo(MAPA);
-  setBase(UI.mpBase||'satelite');PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();CONC=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);if(UI.mpConc!==false)CONC.addTo(MAPA);
+  setBase(mpBaseAtual());PINS=L.layerGroup().addTo(MAPA);POIS=L.layerGroup();CONC=L.layerGroup();DES=L.layerGroup().addTo(MAPA);if(UI.mpPoi!==false)POIS.addTo(MAPA);if(UI.mpConc!==false)CONC.addTo(MAPA);
   ctxGestos(el,(x,y)=>{const ll=MAPA.containerPointToLatLng([x,y]);return {lat:ll.lat,lng:ll.lng}});MAPA.on('movestart zoomstart',ctxFechar);
   desenhaPins();desenhaPois();desenhaRascunho();el.classList.toggle('modo',!!UI.mpModo);desenhaEu(false);
-  const vista=UI.mpView,enquadrar=()=>{if(vista)return MAPA.setView(vista.c,vista.z);const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)};
+  const vista=UI.mpView||mpVistaGuardada(),enquadrar=()=>{if(vista)return MAPA.setView(vista.c,vista.z);const pts=ativosBanco().filter(t=>t.lat!=null).map(t=>[t.lat,t.lng]);pts.length?MAPA.fitBounds(pts,{padding:[48,48],maxZoom:15}):MAPA.setView([-23.55,-46.63],11)};
   enquadrar();
   // o contêiner só tem o tamanho final depois do layout: recalcula e reenquadra
   const mapaAtual=MAPA;requestAnimationFrame(()=>setTimeout(()=>{if(MAPA!==mapaAtual)return;MAPA.invalidateSize();enquadrar();if(UI.mpFocoPend){const t=T(UI.mpFocoPend);UI.mpFocoPend=null;if(t&&t.lat!=null)focar(t)}},60));
-  MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()};vMenuDesenha()});MAPA.on('movestart zoomstart',()=>$('.mapa-area .v-menu')?.remove());
+  MAPA.on('moveend',()=>{UI.mpView={c:MAPA.getCenter(),z:MAPA.getZoom()};mpVistaGuardar(UI.mpView);vMenuDesenha()});MAPA.on('movestart zoomstart',()=>$('.mapa-area .v-menu')?.remove());
   MAPA.on('preclick',e=>mapaClique(e.latlng.lat,e.latlng.lng));
   MAPA.on('dblclick',e=>mapaDuplo(e.latlng.lat,e.latlng.lng,e.originalEvent?.target));
   MAPA.on('click',e=>{if(UI.mpModo||e.originalEvent?.target?.closest?.('.leaflet-interactive'))return;if(UI.mpSel)mpSelecionar(null); /* clique no vazio tira a seleção */
@@ -409,6 +442,7 @@ function L_initMapa(){const el=$('#mapa');if(!el)return;
 function L_focar(t){if(!MAPA)return;UI.mpSel=t.id;if(t.poly)MAPA.fitBounds(t.poly,{maxZoom:18,padding:[40,40]});else MAPA.setView([t.lat,t.lng],Math.max(MAPA.getZoom(),16));
   mpSelecionar(t.id)}
 function mapaClique(lat,lng){const m=UI.mpModo;if(!m)return;
+  if(m==='regua'){rgClique(lat,lng);return}
   if(m==='poi'){UI.mpModo=null;UI.novoPoi={lat,lng};UI.modal='poi';mpRefresh();renderModal();return}
   if(m==='marcar'){const t=T(UI.mpAlvo);UI.mpModo=null;Object.assign(t,{lat,lng,precisao:'aproximada'});log(t,'Localização marcada no mapa');save();mpRefresh();toast(`${t.nome}: localização marcada.`);return}
   if(m==='editar'){if(Date.now()-(UI.vToqueEm||0)<300||Date.now()-(UI.polyLongoEm||0)<700)return;
@@ -459,7 +493,7 @@ function pontoNaTela(lat,lng){const M=edMapa();if(!M)return null;if(GG)return ty
 function desDesfazer(){const h=UI.desHist||[];if(!h.length)return false;UI.desenho=h.pop();UI.vSel=null;UI.vMenu=false;UI.vMover=false;mpRefresh();return true}
 function desCancelar(){const des=UI.mpModo==='desenhar';Object.assign(UI,{mpModo:null,nvDesenho:false,desenho:null,desHist:null,vSel:null,vMenu:false,vMover:false});mpRefresh();toast(des?'Desenho cancelado.':'Edição cancelada, poligonal sem mudanças.')}
 /* desenho no desktop sem barra: só um aviso passageiro ao começar */
-function desAvisoInicio(){if(!TOQUE())toast('Clique no mapa para marcar os pontos. Enter ou dois cliques salvam; Esc cancela.')}
+function desAvisoInicio(){if(!TOQUE())toast('Clique no mapa para marcar os pontos. Enter, dois cliques ou Concluir salvam; Esc cancela.')}
 function desSalvar(){if((UI.desenho||[]).length<3){toast('Marque pelo menos 3 pontos.',true);return}concluirDesenho()}
 function vAcao(a){const i=UI.vSel,p=UI.desenho||[];
   if(a==='v-desfazer'){if(!desDesfazer())vFecharMenu();return}
@@ -763,7 +797,7 @@ document.addEventListener('dblclick',e=>{if(e.target.closest?.('.mp-redim'))mpLa
 document.addEventListener('keydown',e=>{const h=e.target.closest?.('.mp-redim');if(!h)return;const w=+h.getAttribute('aria-valuenow'),d=e.shiftKey?80:20;
   const n=e.key==='ArrowLeft'?w-d:e.key==='ArrowRight'?w+d:e.key==='Home'?MP_LMIN:e.key==='End'?mpLmax():null;if(n==null)return;e.preventDefault();mpLarguraPor(n,true)});
 
-/* clique na bolinha ou no número de um item da legenda que abre (fase, etapa): liga e desliga tudo dentro dele */
+/* clique na bolinha de um item da legenda que abre (Terrenos, fase, etapa): liga e desliga tudo dentro dele (o número não; pedido do Moisés, 5/nov/2026) */
 document.addEventListener('click',e=>{const t=e.target.closest?.('#mp-leg .lg-tg');if(!t)return;const b=t.closest('.lg-i[data-l]');if(!b)return;
   e.preventDefault();e.stopImmediatePropagation();mpApagar(b.dataset.l,b.dataset.v);mpRefresh();
   $(`#mp-leg .lg-i[data-l="${b.dataset.l}"][data-v="${b.dataset.v}"]`)?.focus()},true);

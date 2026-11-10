@@ -1,7 +1,7 @@
 // Tipos escritos à mão a partir das migrations. Quando o projeto Supabase
 // estiver ligado, trocar por `npm run gen:types` (ver README).
 
-export type Papel = 'gestor' | 'analista';
+export type Papel = 'diretor' | 'gestor' | 'analista' | 'leitura' | 'basico';
 export type StatusProcesso = 'ativo' | 'ganha' | 'perdida' | 'stand_by';
 export type SituacaoDoc = 'pendente' | 'recebido' | 'validado' | 'vencido' | 'rejeitado';
 export type SituacaoProposta = 'em_analise' | 'contraproposta' | 'aceita' | 'recusada';
@@ -14,6 +14,17 @@ export interface Membro {
   user_id: string;
   papel: Papel;
   nome: string;
+  administrador: boolean;
+  superior_id: string | null;
+}
+
+/** Perfil do usuário (app.usuarios): nome e foto vêm do Google a cada login. */
+export interface Usuario {
+  user_id: string;
+  email: string;
+  nome: string;
+  foto_url: string | null;
+  arroba: string;
 }
 
 export interface Empresa {

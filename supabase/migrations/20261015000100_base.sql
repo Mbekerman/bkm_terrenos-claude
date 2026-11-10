@@ -96,7 +96,7 @@ returns boolean
 language sql stable security definer set search_path = ''
 as $$ select exists (select 1 from app.membros where user_id = auth.uid() and empresa_id = p_empresa) $$;
 
--- Gestor ou acima (diretor): força avanço, vê a auditoria.
+-- Gestor ou acima (diretor): força avanço.
 create or replace function app.eh_gestor(p_empresa uuid)
 returns boolean
 language sql stable security definer set search_path = ''
@@ -165,17 +165,20 @@ end $$;
 
 -- Cria a empresa e torna quem chamou diretor e administrador. Usado no primeiro acesso.
 -- A configuração do funil é copiada do modelo padrão por trigger (ver cadastros).
-create or replace function app.criar_empresa(p_nome text, p_meu_nome text)
+-- Empresa nova: só pela carga do sistema (service role ou SQL do dono do banco), nunca pelo usuário
+-- logado (revisão de 4/nov/2026: com o login aberto a todo e-mail do domínio, qualquer um criava
+-- uma empresa e virava diretor dela). p_dono entra como diretor e administrador; sem dono, a empresa
+-- nasce sem equipe e recebe as pessoas pela equipe prevista (app.equipe_prevista) no primeiro login.
+create or replace function app.criar_empresa(p_nome text, p_meu_nome text default null, p_dono uuid default null)
 returns uuid
 language plpgsql security definer set search_path = ''
 as $$
 declare v_id uuid;
 begin
-  if auth.uid() is null then
-    raise exception 'Faça login primeiro' using errcode = '42501';
-  end if;
   insert into app.empresas (nome) values (p_nome) returning id into v_id;
-  insert into app.membros (empresa_id, user_id, papel, nome, administrador) values (v_id, auth.uid(), 'diretor', p_meu_nome, true);
+  if p_dono is not null then
+    insert into app.membros (empresa_id, user_id, papel, nome, administrador) values (v_id, p_dono, 'diretor', p_meu_nome, true);
+  end if;
   return v_id;
 end $$;
 
@@ -190,8 +193,11 @@ begin
   if to_jsonb(new) ? 'atualizado_por' then
     new := jsonb_populate_record(new, jsonb_build_object('atualizado_por', auth.uid()));
   end if;
-  -- versão para controle de edição simultânea
-  if to_jsonb(new) ? 'versao' then
+  -- versão para controle de edição simultânea; a temperatura do terreno não conta (9/nov/2026: o clique nela
+  -- não pode derrubar com PT409 quem está editando a ficha). As colunas geradas vêm nulas aqui e ficam de fora.
+  if to_jsonb(new) ? 'versao' and not (tg_table_name = 'terrenos'
+     and to_jsonb(new) - array['temperatura','temperatura_em','atualizado_em','atualizado_por','poligono','area_poligonal_m2']
+       = to_jsonb(old) - array['temperatura','temperatura_em','atualizado_em','atualizado_por','poligono','area_poligonal_m2']) then
     new := jsonb_populate_record(new, jsonb_build_object('versao', (to_jsonb(old)->>'versao')::int + 1));
   end if;
   return new;
@@ -212,7 +218,11 @@ create table app.auditoria (
   -- e o registro da volta ao valor de antes aponta para ele
   desfeito_em  timestamptz,
   desfeito_por uuid,
-  desfaz_id    bigint references app.auditoria(id)
+  desfaz_id    bigint references app.auditoria(id),
+  -- consequência automática de uma ação (consulta do GeoSampa, frentes medidas pela poligonal...), não ação de quem
+  -- está usando: o painel de Logs mostra a ação e recolhe estas dentro dela (pedido do Moises, 9/nov/2026).
+  -- Vem de app.origem_automatica(): o cabeçalho x-bkm-automatico da requisição ou app.automatico na transação.
+  automatico  boolean not null default false
 );
 create index on app.auditoria (empresa_id, tabela, registro_id);
 create index on app.auditoria (empresa_id, em desc, id desc);
@@ -241,6 +251,17 @@ returns text[] language sql immutable set search_path = '' as $$
   where k not in ('atualizado_em', 'atualizado_por', 'versao')
     and (a -> k) is distinct from (b -> k) $$;
 
+-- A gravação é automática (consequência de outra ação, feita pelo próprio sistema)? O front manda o cabeçalho
+-- x-bkm-automatico: 1 nessas requisições; uma função do servidor pode ligar app.automatico na transação.
+-- Só muda como o log aparece (recolhido dentro da ação); a gravação e a permissão são as mesmas.
+create or replace function app.origem_automatica()
+returns boolean
+language sql stable set search_path = ''
+as $$
+  select coalesce(current_setting('app.automatico', true), '') = '1'
+      or coalesce(nullif(current_setting('request.headers', true), '')::json->>'x-bkm-automatico', '') = '1'
+$$;
+
 create or replace function app.juntar_auditoria(p_tabela text, p_old jsonb, p_new jsonb)
 returns boolean
 language plpgsql security definer set search_path = ''
@@ -256,6 +277,7 @@ begin
   order by em desc, id desc limit 1;
   if not found or u.acao <> 'update' or u.user_id is distinct from auth.uid()
      or u.desfeito_em is not null or u.desfaz_id is not null  -- o desfazer e o desfeito não se juntam com nada
+     or u.automatico <> app.origem_automatica()               -- ação e consequência automática ficam separadas
      or u.em < clock_timestamp() - app.janela_log(p_tabela, v_cols)
      or app.colunas_mudadas(u.antes, u.depois) <> v_cols then
     return false;
@@ -280,8 +302,9 @@ begin
   if tg_op = 'UPDATE' and v_old = v_new then return new; end if;
   if tg_op = 'UPDATE' and tg_table_name <> 'processos' and coalesce(current_setting('app.desfazendo', true), '') <> '1'
      and app.juntar_auditoria(tg_table_name, v_old, v_new) then return new; end if;
-  insert into app.auditoria (empresa_id, tabela, registro_id, acao, antes, depois)
-  values ((v_row->>'empresa_id')::uuid, tg_table_name, coalesce(v_row->>'id', v_row->>'tarefa_id', v_row->>'comentario_id', v_row->>'user_id')::uuid, lower(tg_op), v_old, v_new);
+  insert into app.auditoria (empresa_id, tabela, registro_id, acao, antes, depois, automatico)
+  values ((v_row->>'empresa_id')::uuid, tg_table_name, coalesce(v_row->>'id', v_row->>'tarefa_id', v_row->>'comentario_id', v_row->>'user_id')::uuid, lower(tg_op), v_old, v_new,
+          app.origem_automatica());
   return coalesce(new, old);
 end $$;
 
@@ -298,10 +321,11 @@ create policy membros_ver on app.membros for select to authenticated
   using (empresa_id in (select app.minhas_empresas()));
 create policy membros_admin_gerencia on app.membros for all to authenticated
   using (app.eh_administrador(empresa_id)) with check (app.eh_administrador(empresa_id));
-create policy auditoria_gestor_ve on app.auditoria for select to authenticated
-  using (app.eh_gestor(empresa_id));
+-- os logs da ficha: todos da empresa veem (decisão do Moisés, 5/nov/2026)
+create policy auditoria_ver on app.auditoria for select to authenticated
+  using (empresa_id in (select app.minhas_empresas()));
 
 grant select on app.empresas, app.auditoria to authenticated;
 grant select, insert, update, delete on app.membros to authenticated;
-grant execute on function app.criar_empresa(text, text) to authenticated;
+revoke execute on function app.criar_empresa(text, text, uuid) from public, anon, authenticated;
 create trigger t_aud after insert or update or delete on app.membros for each row execute function app.tg_auditoria();

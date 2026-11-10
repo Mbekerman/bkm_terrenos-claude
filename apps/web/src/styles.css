@@ -327,6 +327,7 @@ h1, h2, h3 { margin: 0; text-wrap: balance; color: var(--texto) }
 .scrim { position: fixed; inset: 0; background: rgba(29, 46, 92, .45); z-index: 40; display: grid; place-items: center; padding: var(--e4) }
 .dialog { background: var(--superficie); border-radius: var(--raio-xl); width: min(640px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: var(--e8); display: flex; flex-direction: column; gap: var(--e4) }
 .dh { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--e3) }
+.dh-t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
 .dh h2 { font-size: 32px; line-height: 40px; font-weight: 300; display: flex; align-items: center; gap: var(--e3) }
 .df { display: flex; justify-content: flex-end; gap: var(--e2); flex-wrap: wrap; padding-top: var(--e2) }
 .passo { font-size: 12px; line-height: 16px; letter-spacing: .25em; text-transform: uppercase; color: var(--texto-suave) }
@@ -656,6 +657,16 @@ body.dash-fixo .dash { position: fixed; inset: 0; z-index: 30; overflow: auto; p
 
 /* ---- Google Maps ---- */
 .pin.g { position: relative; width: 30px; height: 40px }
+.pin.pin-ed { cursor: grab } .pin.pin-ed:active { cursor: grabbing }
+/* terreno no mapa: etiqueta com o código e o ponto no lugar exato (pedido do Moises, 10/nov/2026), para se destacar dos pinos do
+   Google; tudo em em, e a fonte vem do zoom (--et-fs no contêiner, fonteEtiqueta em mapa/motor.ts): 13 px de perto, 15 no zoom 14,
+   o máximo, e menor daí para longe */
+.pin.et { display: flex; flex-direction: column; align-items: center; font-size: var(--et-fs, 13px); cursor: pointer; transform: translateY(.42em) }
+.pin.et .et-b { position: relative; padding: .3em .75em; border-radius: 1.1em; font-weight: 700; line-height: 1.2; letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap; border: 2.5px solid #fff; box-shadow: 0 0 0 1.5px #1f1f1f, 0 4px 10px rgba(0,0,0,.55) }
+.pin.et .et-b i { position: absolute; left: 50%; bottom: -.5em; width: .8em; height: .8em; transform: translateX(-50%) rotate(45deg); border-right: 2.5px solid #fff; border-bottom: 2.5px solid #fff; box-shadow: 2px 2px 0 0 #1f1f1f }
+.pin.et .et-c { width: .84em; height: .84em; margin-top: .55em; border-radius: 50%; background: #1f1f1f; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,.5) }
+.pin.et.sel .et-b { box-shadow: 0 0 0 1.5px #1f1f1f, 0 0 0 4.5px #0094fe, 0 4px 10px rgba(0,0,0,.55) }
+.pin.et.sel .et-c { background: #0094fe }
 .poi.g { position: relative; width: 14px; height: 14px; transform: translateY(50%) }
 .poi.g .poi-b { position: absolute; inset: 0 }
 .ent.g { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid #863d8f; color: #863d8f; font-size: 11px; font-weight: 700; display: grid; place-items: center; transform: translateY(50%); box-shadow: 0 1px 3px rgba(0,0,0,.3) }
@@ -1134,6 +1145,13 @@ gmp-place-autocomplete::part(input) { padding-left: 38px; font-size: 16px }
   .mapa-area:has(.mp-modo:not(:empty)) .leaflet-control-scale { display: none }
 }
 .mp-modo .mp-q { opacity: .75; white-space: nowrap }
+/* desenho no desktop: só o mapa, a busca e a barra Cancelar/Concluir no canto de baixo à direita (opção 5 do Moises, 5/nov/2026) */
+.mapa-area:has(.mp-modo > .mp-fina:not(.rg-b)) :is(.mp-legenda, #mp-ctrl, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+/* régua: o botão dela, no canto, continua à mostra (é ele que desliga) */
+.mapa-area:has(.mp-modo > .rg-b) :is(.mp-legenda, .gm-svpc, .mp-barra > :not(.mp-busca)) { display: none !important }
+.mp-modo:has(> .mp-fina) { top: auto !important; bottom: 28px; left: auto !important; right: 12px; transform: none; flex-wrap: nowrap; max-width: none; padding: 4px 4px 4px 16px !important; gap: 4px !important; border-radius: 22px !important; font-size: 13px; line-height: 18px }
+.mp-modo:has(> .mp-fina) > .mp-fina { flex: 0 0 auto; margin-right: 8px }
+.mp-modo:has(> .mp-fina) .btn { height: 32px; min-height: 32px !important; border-radius: 16px !important }
 /* edição da poligonal no celular: só os dois botões, sem a faixa escura (decisão do Moisés, 24/out/2026) */
 .mp-modo:not(:has(> span)):not(:empty) { background: transparent !important; box-shadow: none !important; padding: 0 !important; gap: 8px !important; justify-content: flex-end; pointer-events: none }
 .mp-modo:not(:has(> span)) .btn { pointer-events: auto; height: 40px; min-height: 40px !important; padding: 0 20px !important; border-radius: 20px !important; box-shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 8px rgba(0,0,0,.15) !important }
@@ -1626,14 +1644,18 @@ html[data-tema="escuro"] body.dnd .col[data-col]:not(.origem), html[data-tema="e
 html[data-tema="escuro"] .col.sobre, html[data-tema="escuro"] .tk-col.sobre { background: rgba(128,132,139,0.18) !important; outline-color: rgba(149,153,160,0.9) !important }
 
 /* Mapa: botões do canto (minha localização, tela cheia), X do cartão do terreno e tela cheia (23/out/2026) */
-.mp-ctrl { position: absolute; right: 10px; bottom: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; transition: bottom .15s }
-.mp-cb { width: 40px; height: 40px; border-radius: 20px; border: 0; display: grid; place-items: center; cursor: pointer; background: #fff; color: #444746; box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.15) }
-.mp-cb:hover { color: #0b57d0; background: #f0f4f9 }
+.mp-ctrl { position: absolute; right: 10px; bottom: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; transition: bottom .15s }
+/* no jeito dos botões do Google Maps atual: pequenos, escuros e discretos (pedido do Moisés, 5/nov/2026) */
+.mp-cb { width: 32px; height: 32px; border-radius: 8px; border: 0; display: grid; place-items: center; cursor: pointer; background: rgba(32,33,36,.9); color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3) }
+.mp-cb svg { width: 18px; height: 18px }
+.mp-cb:hover { color: #fff; background: #3c4043 }
+.mapa-area .gm-svpc { width: 32px !important; height: 32px !important; margin-left: 8px !important; border-radius: 8px !important; background-color: rgba(32,33,36,.9) !important; box-shadow: 0 1px 4px rgba(0,0,0,.3) !important }
+.mapa-area .gm-svpc img { max-width: 20px; max-height: 20px }
 .mp-cb:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
 .mp-cb.busca svg { animation: mp-pulso 1s ease-in-out infinite }
 @keyframes mp-pulso { 50% { opacity: .35 } }
-:root[data-tema="escuro"] .mp-cb { background: #1a1a1b; color: #c1d9ff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 6px 16px rgba(0,0,0,.5) }
-:root[data-tema="escuro"] .mp-cb:hover { background: #29292b }
+:root[data-tema="escuro"] .mp-cb { background: rgba(32,33,36,.9); color: #fff; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 1px 4px rgba(0,0,0,.5) }
+:root[data-tema="escuro"] .mp-cb:hover { background: #3c4043 }
 .mapa-area.sv-on .mp-cb[data-a="mp-eu"] { display: none }
 .eu-dot { width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2), 0 1px 4px rgba(0,0,0,.35); transform: translateY(50%) }
 .mp-it.cartao { grid-template-columns: auto minmax(0, 1fr) auto auto; column-gap: 4px; padding-right: 4px }
@@ -1772,6 +1794,26 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 :root[data-tema="escuro"] .fx-op[data-zero] { color: #556b8f }
 :root[data-tema="escuro"] .fx-vis select { background: #131314 }
 :root[data-tema="escuro"] .fx-in { background: transparent }
+/* aba Ordenação da gaveta (pedido do Moises, 9/nov/2026) */
+.fx-modo { display: grid; grid-template-columns: 1fr 1fr; margin: 12px 24px 4px; padding: 0; border: 1px solid #747775; border-radius: 20px; background: transparent; overflow: hidden }
+.fx-modo button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 0; font-family: inherit; font-size: 14px; font-weight: 500; color: #1f1f1f; cursor: pointer }
+.fx-modo button + button { border-left: 1px solid #747775 }
+.fx-modo button[aria-selected="true"] { background: #c2e7ff; color: #001d35 }
+.fx-ords { display: flex; flex-direction: column; border: 1px solid #c4c7c5; border-radius: 12px; overflow: hidden }
+.fx-ord { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 16px; border: 0; border-top: 1px solid #e3e3e3; background: transparent; color: #1f1f1f; font-family: inherit; text-align: left; cursor: pointer }
+.fx-ord:first-child { border-top: 0 } .fx-ord:hover { background: rgba(31,31,31,.06) }
+.fx-ord[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+.fx-ord-t { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 14px; font-weight: 500; line-height: 20px } .fx-ord-t small { font-size: 12px; font-weight: 400; color: #5f6368 }
+.fx-ord[aria-pressed="true"] .fx-ord-t small { color: #0b3a66 }
+.fx-ord-n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 11px; background: #0b57d0; color: #fff; font-size: 12px; font-weight: 500 }
+.fx-ord-d { min-width: 104px; text-align: right; font-size: 13px; color: #444746 } .fx-ord[aria-pressed="true"] .fx-ord-d { color: #001d35; font-weight: 500 }
+@media (max-width: 699px) { .fx-modo { margin-left: 16px; margin-right: 16px } }
+:root[data-tema="escuro"] :is(.fx-modo, .fx-modo button + button) { border-color: #8e918f }
+:root[data-tema="escuro"] .fx-modo button, :root[data-tema="escuro"] .fx-ord { color: #e3e3e3 }
+:root[data-tema="escuro"] :is(.fx-modo button[aria-selected="true"], .fx-ord[aria-pressed="true"]) { background: #004a77; color: #c2e7ff }
+:root[data-tema="escuro"] .fx-ords { border-color: #444746 } :root[data-tema="escuro"] .fx-ord { border-color: #2a2a2c }
+:root[data-tema="escuro"] :is(.fx-ord-t small, .fx-ord-d) { color: #c4c7c5 } :root[data-tema="escuro"] .fx-ord[aria-pressed="true"] :is(.fx-ord-t small, .fx-ord-d) { color: #c2e7ff }
+:root[data-tema="escuro"] .fx-ord-n { background: #a8c7fa; color: #062e6f }
 /* ---------- Concorrência: quadro ao tocar no ícone e gaveta de cadastro ---------- */
 .cc-box { position: absolute; z-index: 1060; top: 64px; right: 10px; width: min(400px, calc(100% - 20px)); max-height: calc(100% - 150px); overflow-y: auto; overscroll-behavior: contain; background: #fff; color: #1f1f1f; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 4px 16px rgba(0,0,0,.16); padding: 4px 0 12px }
 .cc-hd { display: flex; align-items: flex-start; gap: 8px; padding: 12px 8px 4px 20px }
@@ -1840,7 +1882,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 
 /* ---------- Setores do IBGE: camadas de renda e densidade no mapa e quadro "Renda e população do entorno" na ficha ---------- */
 .lg-i .ds-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
-.lg-i .rd-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.lg-i .rd-ic { display: block; width: 14px; height: 14px; border-radius: 3px; background: conic-gradient(#feb600 0 25%, #d32f2f 0 50%, #97d6ff 0 75%, #43a047 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 .rd-leg { position: absolute; z-index: 1000; right: 10px; top: 64px; width: 200px; max-height: calc(100% - 160px); overflow-y: auto; overscroll-behavior: contain; background: #fff; color: #1f1f1f; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 2px 8px rgba(0,0,0,.12); font-size: 12px; line-height: 16px }
 .rd-leg summary { cursor: pointer; list-style: none; padding: 8px 12px; font-size: 13px; font-weight: 500 }
 .rd-leg summary::-webkit-details-marker { display: none }
@@ -1861,10 +1903,10 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .mp-cam-m button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 16px; border: 0; background: none; font: inherit; font-size: 14px; color: inherit; text-align: left; cursor: pointer }
 .mp-cam-m button:hover { background: rgba(31,31,31,.06) } .mp-cam-m button[aria-checked="true"] { background: #c2e7ff; color: #001d35; font-weight: 500 }
 .mp-cam-m :is(.rd-ic, .ds-ic, .cam-off) { display: block; flex: none; width: 16px; height: 16px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
-.mp-cam-m .rd-ic { background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0) } .mp-cam-m .ds-ic { background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0) } .mp-cam-m .cam-off { box-shadow: inset 0 0 0 1px #747775 }
+.mp-cam-m .rd-ic { background: conic-gradient(#feb600 0 25%, #d32f2f 0 50%, #97d6ff 0 75%, #43a047 0) } .mp-cam-m .ds-ic { background: conic-gradient(#a8dfcb 0 25%, #54b997 0 50%, #1f8668 0 75%, #0a5140 0) } .mp-cam-m .cam-off { box-shadow: inset 0 0 0 1px #747775 }
 :root[data-tema="escuro"] .mp-cam-m { background: #1a1a1b; color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.35), 0 10px 28px rgba(0,0,0,.55) }
 :root[data-tema="escuro"] .mp-cam-m button:hover { background: rgba(149,153,160,0.12) } :root[data-tema="escuro"] .mp-cam-m button[aria-checked="true"] { background: rgba(128,132,139,0.22); color: #c1d9ff }
-.mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#feb600 0 25%, #c04c07 0 50%, #97d6ff 0 75%, #296baf 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
+.mp-renda-b .rd-ic { display: block; width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#feb600 0 25%, #d32f2f 0 50%, #97d6ff 0 75%, #43a047 0); box-shadow: 0 0 0 1px rgba(0,0,0,.15) }
 :root[data-tema="escuro"] .mp-renda-b { background: rgba(25,25,26,0.72); color: #e3e3e3; box-shadow: 0 0 0 1px rgba(149,153,160,0.35) }
 :root[data-tema="escuro"] .mp-renda-b[aria-pressed="true"] { background: rgba(128,132,139,0.22); color: #c1d9ff; box-shadow: 0 0 0 1px rgba(149,153,160,0.5) }
 :root[data-tema="escuro"] :is(.rd-esc-m, .rd-esc-u) { color: #c4c7c5 }
@@ -2172,6 +2214,10 @@ body.vb-aberto { overflow: hidden }
 .lz-sem{padding:4px 0}
 .lz-cam{border-top:1px solid var(--linha);padding-top:10px;margin-top:4px}
 .lz-cam .geo-toca{margin:0}
+.lz-naotoca{margin-top:12px}
+.lz-pan{margin-top:16px}
+.lz-pan .geo-toca{margin-top:12px}
+.lz-lotes{margin-top:16px;border-top:1px solid var(--linha);padding-top:4px}
 @media (max-width:600px){.lz-lote{padding:10px 12px}}
 .lz-exc{padding:8px 0}
 .lz-fontes{margin-top:12px}
@@ -2332,6 +2378,9 @@ input[type=checkbox] { accent-color: var(--m-primary, #0b57d0) }
 .mp-legenda summary::after { content: "" !important; width: 18px; height: 18px; margin-left: auto; transition: transform .15s;
   background: no-repeat center/18px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23444746' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") }
 .mp-legenda[open] summary::after { transform: rotate(180deg) }
+/* o título fica no topo enquanto a lista rola por baixo (pedido do Moisés, 5/nov/2026) */
+.mp-legenda[open] summary { position: sticky; top: 0; z-index: 2; background-color: #f8fafd !important }
+:root[data-tema="escuro"] .mp-legenda[open] summary { background-color: #1e1f20 !important }
 :root[data-tema="escuro"] .mp-legenda summary { color: #e3e3e3 !important }
 :root[data-tema="escuro"] .mp-legenda summary::after { filter: invert(.85) }
 .lg-r { display: grid !important; grid-template-columns: minmax(0, 1fr) 32px }
@@ -4431,6 +4480,7 @@ body.fab-min .fab .fab-t { max-width: 0; opacity: 0 }
 /* ===== Ficha em abas (decisão do Moisés, 3/nov/2026): botões das seções sempre visíveis no topo, como a janela do cartão de tarefa ===== */
 .fi-head h1 { margin: 2px 0 0 }
 .fi-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 8px; color: var(--m-on-surface-var, #444746); font-size: 14px; line-height: 20px }
+.fi-meta:first-child { margin-top: 0 }
 .fi-meta .fi-sep { color: var(--texto-suave) } .fi-meta .chip { margin: 0 }
 .fi-meta .fi-temp { display: inline-flex; align-items: center; gap: 6px }
 .fi-meta .fi-temp .temp { margin: 0 }
@@ -4679,6 +4729,10 @@ html[data-tema="escuro"] .ag-ia{background:#1e1f20;border-color:#444746}
 .lg-l.sel:hover { fill: #74a5f6 }
 .lg-l.fixo { fill: #a8c7fa; cursor: default }
 .lg-l.x { fill: #e9e3c9; stroke: #c9a27e; cursor: not-allowed }
+/* São José: satélite do Google por baixo, lotes transparentes (só o contorno e o marcado em azul) */
+.lg-sat .lg-l { fill: rgba(253,213,107,.12); stroke: #ffd54f } .lg-sat .lg-l:hover { fill: rgba(253,213,107,.35) }
+.lg-sat .lg-l.sel { fill: rgba(138,180,248,.55); stroke: #8ab4f8 } .lg-sat .lg-l.x { fill: rgba(233,227,201,.55); stroke: #c9a27e }
+.lg-sat .lg-ter { stroke: #00e5ff } .lg-sat .lg-rots text { fill: #fff; stroke: rgba(0,0,0,.7) }
 .lg-ter { fill: none; stroke: #062e6f; stroke-width: calc(var(--lg-w, .1) * 3px); stroke-dasharray: calc(var(--lg-w, .1) * 9px) calc(var(--lg-w, .1) * 5px); pointer-events: none }
 .lg-rots text { font-size: 10px; font-family: Arial, sans-serif; font-weight: 700; fill: #111; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: rgba(255,255,255,.65); stroke-width: .12em }
 .lg-vias text { font-size: 11px; font-family: Arial, sans-serif; fill: #6b6b6b; text-anchor: middle; dominant-baseline: middle; letter-spacing: .04em; pointer-events: none; text-transform: uppercase }
@@ -4696,6 +4750,7 @@ html[data-tema="escuro"] .ag-ia{background:#1e1f20;border-color:#444746}
 .lg-it .num { font-weight: 500 } .lg-it .faint { flex: 1 1 100%; font-size: 12px } .lg-it .chip { margin-left: auto }
 .lg-soltos { border: 1px solid var(--m-outline-variant, #c4c7c5); border-radius: 12px; padding: 10px 16px 4px; margin: 0 0 12px }
 .lg-soltos-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap }
+.lg-op { width: 100%; border: 0; border-bottom: 1px solid var(--m-outline-variant, #c4c7c5); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; flex-wrap: nowrap; justify-content: space-between; padding: 10px 4px } .lg-op:hover { background: var(--azul-gelo, #e8f0fe) }
 .lg-soltos .lg-it { flex-wrap: nowrap } .lg-soltos .lg-it .faint { flex: 1 1 auto } .lg-soltos .lg-it:last-child { border-bottom: 0 }
 .lt-solto { flex: 1 1 260px }
 html[data-tema="escuro"] .lg-mapa { border-color: #444746 }
@@ -4918,11 +4973,11 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 /* ---------- Lista do mapa redimensionável e bolinha com o código (pedido do Moisés, 4/nov/2026) ---------- */
 @media (min-width: 900px) {
   .mapa-pg { grid-template-columns: var(--mp-w, 360px) 16px minmax(0, 1fr); gap: 0 }
-  .mp-redim { position: relative; cursor: grab; touch-action: none; outline: none }
+  .mp-redim { position: relative; cursor: col-resize; touch-action: none; outline: none }
   .mp-redim::after { content: ""; position: absolute; left: 6px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: #c4c7c5; transition: background .15s, height .15s, margin .15s }
   .mp-redim:hover::after, .mp-redim:focus-visible::after, body.mp-arrastando .mp-redim::after { background: #0b57d0; height: 72px; margin-top: -36px }
   .mp-redim:focus-visible { box-shadow: inset 0 0 0 2px #0b57d0; border-radius: 8px }
-  body.mp-arrastando, body.mp-arrastando * { cursor: grabbing !important; user-select: none !important }
+  body.mp-arrastando, body.mp-arrastando * { cursor: col-resize !important; user-select: none !important }
   /* estreita: só as bolinhas com o código, uma embaixo da outra */
   .mp-estreita .mapa-lado { padding-right: 0; overflow-x: hidden }
   .mp-estreita .mapa-lado > :not(#mp-lista), .mp-estreita #mp-lista > :not(.mp-lst) { display: none !important }
@@ -4949,10 +5004,170 @@ table.mkt .mkt-sub { display: block; font-size: 12px } table.mkt .mkt-sub:empty 
 .lg-sb:hover { background: rgba(31,31,31,.06) } :root[data-tema="escuro"] .lg-sb:hover { background: rgba(227,227,227,.08) }
 .lg-sb:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
 .lg-msit[aria-pressed="false"] .mk-b { filter: grayscale(1); opacity: .5 }
+.lg-sub { padding: 8px 8px 2px 36px; font-size: 12px; line-height: 16px; color: var(--m-on-surface-variant, #444746) }
+:root[data-tema="escuro"] .lg-sub { color: #c4c7c5 }
 .lg-msit[disabled] { opacity: .5; cursor: default }
 /* legenda: item desligado (ele ou o ramo de cima) fica apagado; a bolinha e o número de um ramo ligam e desligam tudo dentro */
 #mp-leg .lg-i.lg-off .pin-mini { filter: grayscale(1); opacity: .45 } #mp-leg .lg-i.lg-off { color: var(--m-on-surface-variant, #444746) }
-#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini, #mp-leg .n.lg-tg:hover { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
+#mp-leg .lg-tg { cursor: pointer } #mp-leg span.lg-tg:hover .pin-mini { outline: 2px solid #0b57d0; outline-offset: 1px; border-radius: 9px }
 
-/* Aliases do esquema antigo, usados por componentes ainda não portados. Remover no porte. */
-:root { --ink: var(--texto); --ink-2: var(--texto-suave); --ink-3: var(--texto-suave); --line: var(--linha); --surface: var(--superficie); --surface-2: var(--superficie-elevada); --good: var(--ok-marca); --warn: var(--terracota); --crit: var(--terracota); --accent: var(--azul-bkm) }
+/* três pontinhos da barra do mapa: filtros da concorrência e dos terrenos e o tipo de mapa (pedido do Moisés, 5/nov/2026) */
+.mp-maisw { position: relative; flex: none; pointer-events: auto }
+.mp-mais { width: 40px; padding: 0 !important; justify-content: center; position: relative }
+.mp-mais .mf-n { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; font-size: 11px; padding: 0 5px }
+.mp-mais-m { min-width: 248px }
+.mp-mais-m .mm-l { flex: 1 }
+.mp-mais-m .mm-t { padding: 10px 16px 4px; margin-top: 6px; border-top: 1px solid #e3e3e3; font-size: 12px; font-weight: 500; color: #444746 }
+.mp-mais-m .mm-ck { display: inline-flex; width: 18px } .mp-mais-m [aria-checked="false"] .mm-ck { visibility: hidden }
+.mp-mais-m button .ic { color: #444746 } .mp-mais-m button[aria-checked="true"] .ic { color: inherit }
+:root[data-tema="escuro"] .mp-mais-m .mm-t { border-color: #444746; color: #c4c7c5 }
+:root[data-tema="escuro"] .mp-mais-m button .ic { color: #c4c7c5 }
+
+/* olhinho ao lado do título da legenda: fixa a legenda aberta (sem ele, fecha sozinha em 3 s; pedido do Moisés, 5/nov/2026) */
+.mp-legenda .lg-fixar { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 14px; background: none; color: #747775; cursor: pointer }
+.mp-legenda .lg-fixar:hover { background: rgba(31,31,31,.08) }
+.mp-legenda .lg-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mp-legenda .lg-fixar { color: #c4c7c5 }
+:root[data-tema="escuro"] .mp-legenda .lg-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
+
+/* busca do mapa recolhida no botão redondo da lupa; aberta, a seta à direita fecha (pedido do Moisés, 5/nov/2026) */
+.mapa-area .mp-busca { transition: max-width .2s ease }
+.mp-busca .mp-busca-i { display: grid; place-items: center; padding: 0; border: 0; background: none; border-radius: 20px; cursor: default; pointer-events: none; z-index: 1 }
+.mp-busca-x { flex: none; display: grid; place-items: center; width: 36px; height: 36px; margin-right: 2px; padding: 0; border: 0; border-radius: 18px; background: none; color: var(--m-on-var, #444746); cursor: pointer }
+.mp-busca-x:hover { background: rgba(31,31,31,.08) }
+.mp-busca input { padding-right: 4px !important }
+.mapa-area .mp-busca.fechada { flex: none !important; width: 40px; max-width: 40px !important; margin-right: auto; order: 0 !important }
+.mapa-area .mp-busca.fechada input, .mapa-area .mp-busca.fechada .mp-busca-x, .mapa-area .mp-busca.fechada .mp-res { display: none !important }
+.mapa-area .mp-busca.fechada .mp-busca-i { position: static; width: 40px; height: 40px; pointer-events: auto; cursor: pointer }
+.mapa-area .mp-busca.fechada .mp-busca-i:hover { background: rgba(31,31,31,.06) }
+:root[data-tema="escuro"] .mp-busca-x { color: #c4c7c5 } :root[data-tema="escuro"] .mp-busca-x:hover { background: rgba(149,153,160,0.12) }
+.mapa-area .mp-busca input:focus-visible { outline: none } .mapa-area .mp-busca:has(input:focus-visible) { outline: 2px solid #0b57d0; outline-offset: 0 }
+:root[data-tema="escuro"] .mapa-area .mp-busca:has(input:focus-visible) { outline-color: #a8c7fa }
+/* olhinho do card da concorrência: fixa o card aberto (pedido do Moisés, 5/nov/2026) */
+.mk-box .mk-fixar { color: #747775 }
+.mk-box .mk-fixar[aria-pressed="true"] { background: #c2e7ff; color: #001d35 }
+:root[data-tema="escuro"] .mk-box .mk-fixar { color: #c4c7c5 }
+:root[data-tema="escuro"] .mk-box .mk-fixar[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
+
+/* Régua do mapa (menu dos três pontinhos; pedido do Moisés, 5/nov/2026) */
+.rg-w { position: relative; width: 0; height: 0 }
+.rg-pt { position: absolute; left: 0; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid #0b57d0; transform: translate(-50%, -50%); box-sizing: border-box }
+.rg-pt.rg-ini { width: 16px; height: 16px; cursor: pointer; background: #0b57d0; box-shadow: 0 0 0 3px rgba(11,87,208,.25) }
+.rg-rot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; background: #fff; color: #1f1f1f; border: 1px solid #c4c7c5; border-radius: 6px; padding: 1px 6px; font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,.2) }
+.rg-rot.rg-tot { background: #0b57d0; color: #fff; border-color: #0b57d0; font-weight: 500; transform: translate(-50%, calc(-100% - 10px)) }
+/* no desenho, na edição e na régua o clique passa pelos pinos do mapa (terrenos e concorrência) e marca o ponto ali */
+:is(.mapa, .mini-mapa).modo gmp-advanced-marker:not(:has(.v-alvo, .rg-pt, .pin-ed)) { pointer-events: none !important }
+.rg-pt { pointer-events: auto }
+/* régua como botão do canto, acima da localização (pedido do Moisés, 5/nov/2026): ligada, fica azul */
+.mp-cb.mp-rg[aria-pressed="true"], .mp-cb.mp-rg[aria-pressed="true"]:hover { background: #0b57d0; color: #fff }
+.mapa-area.sv-on .mp-cb.mp-rg { display: none }
+/* a busca a 12 px da borda esquerda, a mesma distância dos três pontinhos à direita (pedido do Moisés, 5/nov/2026);
+   no Leaflet fica depois do + e − do zoom */
+.mapa-area:not(:has(.leaflet-container)) .mp-barra { left: 12px !important }
+/* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
+
+/* ⋮ das abas da ficha: índice fixo com todas as abas, a atual marcada (pedido do Moisés, 6/nov/2026) */
+.fi-mais .adv-menu button.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35); font-weight: 500 }
+.fi-mais .adv-menu button.atual::after { content: '✓'; margin-left: auto; font-weight: 500 }
+html[data-tema="escuro"] .fi-mais .adv-menu button.atual { background: #004a77; color: #c2e7ff }
+.fi-abas { touch-action: pan-y }
+
+/* régua ligada: seta em vez da mãozinha no Leaflet (no Google, draggableCursor) */
+.mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
+
+/* Frentes do terreno, em Áreas e dimensões (pedido do Moises, 8/nov/2026) */
+.fr-l { list-style: none; margin: 2px 0 0; padding: 0; max-width: 560px }
+.fr-l li { display: flex; justify-content: space-between; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--m-outline-var, #e3e3e3); font-size: 15px; line-height: 22px }
+.fr-l li:last-child { border-bottom: 0 }
+.fr-l .num { font-variant-numeric: tabular-nums; white-space: nowrap }
+
+/* Logs automáticos recolhidos dentro da ação (pedido do Moises, 9/nov/2026) */
+.pn-auto-b { display: inline-flex; align-items: center; gap: 2px; margin: 4px 0 0 -4px; padding: 2px 8px 2px 2px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 12px; line-height: 18px; font-weight: 500; color: var(--m-primary, #0b57d0); cursor: pointer }
+.pn-auto-b:hover { background: rgba(11,87,208,.08) }
+.pn-auto-b svg { width: 16px; height: 16px; transform: rotate(-90deg); transition: transform .15s }
+.pn-auto-b.aberto svg { transform: none }
+.pn-auto { margin: 6px 0 2px; padding-left: 10px; border-left: 2px solid var(--m-outline-var, #c4c7c5) }
+.pn-auto-l { padding: 4px 6px; margin: 0 -6px 2px 0; border-radius: 6px; cursor: pointer }
+.pn-auto-l:hover { background: rgba(127,127,127,.08) }
+.pn-auto-l .pn-lt { font-size: 13px; line-height: 18px; color: var(--m-on-var, #444746) }
+.pn-auto-l .pn-lm { margin-top: 0 }
+.pn-auto-l.pn-log-sel { background: var(--m-sc, #c2e7ff) }
+.pn-log-auto .pn-lt { color: var(--m-on-var, #444746) }
+.pn-log .avatar.pn-av-auto { background: var(--m-sc-high, #e9eef6) !important; color: var(--m-on-var, #444746) !important }
+:root[data-tema="escuro"] .pn-auto-b { color: #a8c7fa }
+:root[data-tema="escuro"] .pn-log .avatar.pn-av-auto { background: #282a2c !important; color: #c4c7c5 !important }
+/* ---------- marcar pessoas com @ (participantes da reunião; components/Marcar.tsx, 9/nov/2026) ---------- */
+.mkp { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 44px; padding: 5px 10px; border: 1px solid var(--m-outline, var(--borda-controle)); border-radius: var(--raio-sm); background: var(--superficie); cursor: text }
+.mkp.foco { outline: 2px solid var(--m-primary, var(--foco)); outline-offset: -1px; border-color: transparent }
+.field .mkp input, .field .mkp input:focus { flex: 1 1 120px; min-width: 120px; min-height: 30px !important; height: 30px; border: 0 !important; outline: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; font-size: 16px }
+.mk-chip { display: inline-flex; align-items: center; gap: 2px; height: 28px; padding: 0 2px 0 10px; border-radius: 8px; font-size: 14px; background: var(--m-surface-cont, #f0f4f9); border: 1px solid var(--m-outline-var, #c4c7c5); color: var(--m-on-surface, #1f1f1f); white-space: nowrap; max-width: 100% }
+.mk-chip.bkm { background: var(--m-sec-cont, #c2e7ff); border-color: transparent; color: #001d35 }
+.mk-chip button { width: 24px; height: 24px; border: 0; border-radius: 50%; background: none; color: inherit; font-size: 16px; line-height: 1; cursor: pointer }
+.mk-chip button:hover { background: rgba(31,31,31,.08) }
+.mk-txt { position: relative }
+.mk-pop { position: absolute; left: 0; right: 0; top: calc(100% + 4px); min-width: 240px; max-width: 520px }
+.mk-av { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; background: #0b57d0; color: #fff }
+.mk-av.fora { background: #e9eef6; color: #444746 }
+.reu-ed { cursor: pointer }
+.reu-ed:hover { background: var(--m-surface-cont, #f0f4f9) }
+.reu-ed:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
+.reu-acts .btn[href] { text-decoration: none }
+html[data-tema="escuro"] .mkp { background: #282a2c; border-color: #8e918f }
+html[data-tema="escuro"] .mk-chip { background: #1e1f20; border-color: #444746; color: #e3e3e3 }
+html[data-tema="escuro"] .mk-chip.bkm { background: #004a77; color: #c2e7ff }
+html[data-tema="escuro"] .mk-av.fora { background: #333537; color: #c4c7c5 }
+html[data-tema="escuro"] .reu-ed:hover { background: #282a2c }
+.reu-st { display: inline-flex; align-items: center; gap: 4px }
+.reu-st .iconbtn { margin: -6px -8px -6px 0 }
+/* gaveta da ficha sem repetir o cabeçalho (pedido do Moisés, 9/nov/2026): o nome da fase em cima da linha do tempo; fase ·
+   etapa · subetapa só onde a linha do tempo some; a temperatura no cabeçalho da gaveta, ao lado do ícone "Abrir página" */
+.tl-fase { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--m-on-var, #444746); margin: 0 0 8px }
+@media (min-width: 768px) { .tgav .fi-so-cel { display: none !important } }
+.tgav-temp { flex: none } .tgav-temp .temp { margin: 0 }
+@media (max-width: 520px) { .tgav-temp .tl { display: none } }
+
+/* Parâmetros urbanísticos na aba Terreno (9/nov/2026): um quadro com três quadros dentro (Índices, Restrições, Histórico de uso) */
+.qd-filhos { display: flex; flex-direction: column; gap: 12px; padding: 16px var(--q-px, 24px) }
+.qd-filhos > .muted { padding: 8px 0 }
+:root:not(#_) .qd-filhos > section.sec.sec.sec { margin: 0 !important; box-shadow: none !important; border: 1px solid var(--m-outline-var, #c4c7c5) !important; border-radius: 12px !important; background: var(--m-card, #fff) !important }
+:root[data-tema="escuro"]:not(#_) .qd-filhos > section.sec.sec.sec { border-color: #2d2f31 !important }
+@media (max-width: 599px) { .qd-filhos { padding: 12px 8px } }
+
+/* Detalhes da contaminação (popup; 9/nov/2026) */
+.dialog:has(.ct-b) { max-width: 780px; width: calc(100vw - 32px) }
+.ct-b { display: flex; flex-direction: column; gap: 16px; padding: 0 24px 24px; max-height: calc(100vh - 160px); overflow: auto }
+.ct-mapa { margin: 0 }
+.ct-mapa svg { width: 100%; height: auto; display: block; border: 1px solid var(--m-outline-var, #c4c7c5); border-radius: 12px }
+.ct-carr { padding: 48px 0; text-align: center }
+.ct-leg { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; margin-top: 6px; color: var(--m-on-var, #444746) }
+.ct-leg i { display: inline-block; width: 14px; height: 10px; margin-right: 6px; vertical-align: -1px; border-radius: 2px }
+.ct-leg .ct-t { background: rgba(11,87,208,.12); border: 2px solid #0b57d0 }
+.ct-leg .ct-c { background: rgba(179,38,30,.28); border: 2px solid #b3261e }
+.ct-r h3 { font-size: 15px; font-weight: 500; margin: 0 0 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px }
+.ct-n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #b3261e; color: #fff; font-size: 12px; font-weight: 600; margin-right: 6px }
+.ct-ver { font-size: 13px; margin-left: 4px; white-space: nowrap }
+@media (max-width: 599px) { .ct-b { padding: 0 16px 16px } }
+
+/* carregando dos campos que vêm de outras fontes (lib/buscando.tsx; pedido do Moises, 9/nov/2026) */
+.busca { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; vertical-align: middle; color: var(--m-on-surface-var, #444746); font-size: 12px; font-weight: 400 }
+.busca-sp { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--m-outline-var, #c4c7c5); border-top-color: var(--m-primary, #0b57d0); animation: busca-gira .8s linear infinite; flex: none }
+@keyframes busca-gira { to { transform: rotate(360deg) } }
+@media (prefers-reduced-motion: reduce) { .busca-sp { animation-duration: 2.4s } }
+
+/* Menu ⋮ do terreno e Terrenos excluídos (pedido do Moises, 9/nov/2026) */
+.fi-head-d { display: flex; align-items: center; gap: 8px; flex: none }
+.mt-mais .iconbtn { color: var(--m-on-surface-var, #444746) }
+.mt-mais .adv-menu { min-width: 200px }
+.btn.primary.mt-perigo:not(:disabled) { background: #b3261e !important; border-color: #b3261e !important; color: #fff !important }
+.btn.mt-perigo-t { color: #b3261e !important }
+html[data-tema="escuro"] .btn.primary.mt-perigo:not(:disabled) { background: #ffb4ab !important; border-color: #ffb4ab !important; color: #690005 !important }
+html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
+.tx-lista { padding: 0 }
+.tx-l { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 12px var(--q-px, 24px); border-top: 1px solid var(--m-outline-var, #c4c7c5) }
+.tx-l:first-child { border-top: 0 }
+.tx-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere }
+.tx-t .num { font-size: 12px; color: var(--m-on-var, #444746) }
+.tx-t .muted { font-size: 13px }
+.tx-b { flex: none; display: flex; gap: 8px }
+@media (max-width: 640px) { .tx-l { flex-direction: column; align-items: stretch; padding: 12px 16px } .tx-b { justify-content: flex-end } }

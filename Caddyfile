@@ -70,7 +70,7 @@
 	handle_path /geosanja/* {
 		@visitante {
 			method GET
-			path /v1/autenticar /v1/proxy
+			path /v1/autenticar /v1/proxy /v1/inscricao/bycoord
 		}
 		@busca {
 			method POST
@@ -85,14 +85,54 @@
 		respond 404
 	}
 
-	# Enquanto o banco não existe, a raiz leva ao protótipo. O app React fica em /app.
-	handle / {
-		redir * /prototipo/ 302
+	# IPTU de São Paulo (9/nov/2026): o serviço terrenos-iptu do Cloud Run (services/iptu)
+	# emite a notificação de lançamento no portal da Prefeitura com a Senha Web guardada no
+	# Secret Manager dele e grava o venal e o IPTU com o login de quem pediu. Só as rotas
+	# do serviço; sem IPTU_URL no serviço, responde 502.
+	handle /iptu/* {
+		@iptu {
+			method POST GET
+			path /iptu/consultar /iptu/notificacao /iptu/fila /iptu/situacao /iptu/saude
+		}
+		handle @iptu {
+			reverse_proxy {$IPTU_URL:http://127.0.0.1:9} {
+				header_up Host {upstream_hostport}
+				header_up -Cookie
+				header_down -Set-Cookie
+				transport http {
+					response_header_timeout 180s
+				}
+			}
+		}
+		respond 404
 	}
 
+	# Sem banco configurado no serviço (SUPABASE_URL vazia, como na produção até o primeiro
+	# uso), a raiz leva ao protótipo. Com o banco, a raiz abre o sistema real.
+	@sem_banco expression `{env.SUPABASE_URL} == ""`
+	handle / {
+		redir @sem_banco /prototipo/ 302
+		root * /srv
+		header Cache-Control "no-cache"
+		templates {
+			mime text/html
+			between {% %}
+		}
+		rewrite * /index.html
+		file_server
+	}
+
+	# App React. A página (index.html) recebe o endereço e a chave publicável do Supabase e o
+	# ambiente pelas variáveis SUPABASE_URL, SUPABASE_KEY e AMBIENTE do serviço (templates).
 	handle {
 		root * /srv
 		header /assets/* Cache-Control "public, max-age=31536000, immutable"
+		@pagina not path /assets/*
+		header @pagina Cache-Control "no-cache"
+		templates {
+			mime text/html
+			between {% %}
+		}
 		try_files {path} /index.html
 		file_server
 	}

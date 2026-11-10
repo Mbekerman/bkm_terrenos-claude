@@ -27,6 +27,10 @@ const P = {
   money: 'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
   search: 'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
   logout: 'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z',
+  menu: 'M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z',
+  funil: 'M4.25 5.61C6.27 8.2 10 13 10 13v6c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-6s3.72-4.8 5.74-7.39A.998.998 0 0 0 18.95 4H5.04c-.83 0-1.3.95-.79 1.61z',
+  mapa: 'M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z',
+  sino: 'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z',
   open: 'M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z',
 };
 export type NomeIcone = keyof typeof P;
@@ -101,8 +105,10 @@ export function ChipDoc({ s }: { s: SituacaoDoc }) {
 // ---------------------------------------------------------------------
 // Diálogo (bottom sheet no celular)
 // ---------------------------------------------------------------------
-export function Dialogo({ titulo, sub, onFechar, children, rodape }: {
+export function Dialogo({ titulo, sub, onFechar, children, rodape, acao }: {
   titulo: string; sub?: string; onFechar: () => void; children: ReactNode; rodape?: ReactNode;
+  /** botão pequeno logo depois do título, na mesma linha (ex.: "Limpar dados") */
+  acao?: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const fechar = useRef(onFechar);
@@ -120,7 +126,7 @@ export function Dialogo({ titulo, sub, onFechar, children, rodape }: {
       <div className="dialog" role="dialog" aria-modal="true" aria-label={titulo} ref={ref}>
         <div className="dh">
           <div>
-            <h2>{titulo}</h2>
+            {acao ? <div className="dh-t"><h2>{titulo}</h2>{acao}</div> : <h2>{titulo}</h2>}
             {sub && <div className="muted" style={{ marginTop: 4 }}>{sub}</div>}
           </div>
           <button className="iconbtn" onClick={onFechar} aria-label="Fechar"><Icon n="close" /></button>
