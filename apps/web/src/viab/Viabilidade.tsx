@@ -11,6 +11,7 @@ import { lerNum, Quadro } from '../ficha/edicao';
 import type { Ficha } from '../ficha/dados';
 import { brl, calcular, mi, nf, normTip, VB_RESTRITO, VB_SECAO, vin, type Calc, type Tip, type Viab } from './calc';
 import { SecDre, SecLinhas, SecObra, SecTerreno, vbQPadrao, type Ctx } from './Secoes';
+import { NovoEstudo, SalvarModelo, useModelos } from './Modelos';
 import { carregarEstudo, erroTxt, useDespesas, useEstudos, useRecarregar, type ResumoViab } from './dados';
 
 // Aba Viabilidades da ficha e o popup do estudo de viabilidade estática (porte de tools/prototipo/proto_viab.js ›
@@ -43,15 +44,22 @@ const kpiV = (s: string) => {
 function useAcoes(f: Ficha) {
   const empresa = useSessao().empresa?.id;
   const toast = useToast(), recarregar = useRecarregar();
-  const novo = async (lista: ResumoViab[]) => {
-    const nome = lista.length ? `Estudo ${lista.length + 1}` : 'Estudo base';
-    /* sem escolha, o banco usa o modelo padrão da empresa (se houver); a escolha do modelo entra com os modelos */
-    const { data, error } = await supabase.rpc('criar_viabilidade', { p_terreno: f.id, p_nome: nome });
+  const modelos = useModelos(empresa).data ?? [];
+  const [pedirModelo, setPedirModelo] = useState<string | null>(null);
+  /** cria o estudo (com o modelo escolhido; sem escolha, o banco usa o padrão da empresa) e já o abre */
+  const criar = async (nome: string, modelo: string | null, perguntou: boolean) => {
+    const { data, error } = await supabase.rpc('criar_viabilidade', { p_terreno: f.id, p_nome: nome, p_modelo: modelo, p_sem_modelo: perguntou && !modelo });
     if (error) { toast(erroTxt(error), true); return; }
     /* como no protótipo, o estudo novo já vem com a primeira tipologia para preencher */
     await supabase.from('viabilidade_tipologias').insert({ empresa_id: f.t.empresa_id ?? empresa, viabilidade_id: data, nome: 'Tipologia 1', ordem: 1 });
-    recarregar(); abrirEstudo(data as string);
+    setPedirModelo(null); recarregar(); abrirEstudo(data as string);
   };
+  /** Novo estudo pergunta o modelo; sem nenhum modelo, cria direto */
+  const novo = (lista: ResumoViab[]) => {
+    const nome = lista.length ? `Estudo ${lista.length + 1}` : 'Estudo base';
+    if (modelos.length) setPedirModelo(nome); else void criar(nome, null, false);
+  };
+  const dlgNovo = pedirModelo != null && <NovoEstudo nomeIni={pedirModelo} modelos={modelos} onCriar={(n, m) => criar(n, m, true)} onFechar={() => setPedirModelo(null)} />;
   const duplicar = async (id: string, nome: string) => {
     const { data, error } = await supabase.rpc('criar_viabilidade', { p_terreno: f.id, p_nome: 'Cópia de ' + nome, p_copiar_de: id });
     if (error) { toast(erroTxt(error), true); return; }
@@ -63,7 +71,7 @@ function useAcoes(f: Ficha) {
     if (error) { toast(erroTxt(error), true); return; }
     recarregar(); toast(`${nome} é o estudo válido.`);
   };
-  return { novo, duplicar, vincular };
+  return { novo, duplicar, vincular, dlgNovo };
 }
 
 /* ---------- aba Viabilidades: Resumo da viabilidade e a lista dos estudos ---------- */
@@ -93,6 +101,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
   const novoBtn = !ro && <button className="btn sm" onClick={() => ac.novo(lista)}><Ic n="add" s={16} />Novo estudo</button>;
   return (
     <div className="stack">
+      {ac.dlgNovo}
       <Quadro aba="viabilidade" id="viab-res" primeiro titulo="Resumo da viabilidade">
         <div className="sec-b">
           {lista.length > 0 && (
@@ -212,6 +221,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
   const [aba, setAba] = useState<Sec>('tip');
   const [fechados, setFechados] = useState<Set<string>>(vbQPadrao);
   const [apagar, setApagar] = useState(false);
+  const [modelo, setModelo] = useState(false);
   const sc = useRef<HTMLDivElement>(null);
   const atual = useRef<Viab | null>(null);
   atual.current = v;
@@ -257,6 +267,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
   const acoes = ro ? null : <>
     {!valido && negAtiva && <button className="btn sm" onClick={() => v && ac.vincular(v.id, v.nome)}>Marcar como válido</button>}
     <button className="btn sm" onClick={() => v && ac.duplicar(v.id, v.nome)}>Duplicar</button>
+    <button className="btn sm" onClick={() => setModelo(true)}>Salvar como modelo</button>
     {!valido && <button className="btn text sm danger" onClick={() => setApagar(true)}>Apagar</button>}
   </>;
 
@@ -335,6 +346,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
           {corpo}
         </div>
       </div>
+      {modelo && v && <SalvarModelo viab={v.id} dir={dir} onFechar={() => setModelo(false)} />}
       {apagar && v && (
         <Dialogo titulo="Apagar o estudo?" onFechar={() => setApagar(false)}
           rodape={<><button className="btn text" onClick={() => setApagar(false)}>Cancelar</button>

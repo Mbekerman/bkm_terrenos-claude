@@ -4,7 +4,7 @@
 
 Montar o **estudo de viabilidade estática** do terreno: quantas unidades cabem, por quanto se vendem, quanto custam o terreno, a obra e as despesas, e quanto sobra (lucro e margem). Um terreno pode ter vários estudos; um deles é o **válido**, o que vale para a negociação. É dele que saem as **Unidades** e o **VGV** do Resumo da Visão geral e o filtro "VGV estimado".
 
-O estudo está chegando ao sistema em partes. **Hoje:** a lista de estudos, o Resumo da viabilidade e, no estudo, os indicadores e todas as seções (Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE). Os modelos de estudo e o vínculo com o estudo de massa chegam nas próximas entregas (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
+O estudo está chegando ao sistema em partes. **Hoje:** a lista de estudos, o Resumo da viabilidade e, no estudo, os indicadores e todas as seções (Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE). Também os modelos de estudo. O vínculo com o estudo de massa chega na próxima entrega (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
 
 ## Onde fica
 
@@ -18,7 +18,7 @@ O primeiro quadro da parte.
 |---|---|
 | **Estudo válido** | Seletor com todos os estudos do terreno (nome e margem). Escolher um o marca como válido. Só funciona com a negociação ativa e para quem edita. |
 | **Abrir estudo** | Abre o estudo válido. |
-| **Novo estudo** | Cria um estudo e já o abre. |
+| **Novo estudo** | Cria um estudo e já o abre. Com algum modelo salvo, pergunta antes o nome e o modelo (ver [Modelos de estudo](#modelos-de-estudo)). |
 | **Margem líquida** e **Mínima da empresa** | A margem do estudo válido e a rentabilidade mínima da empresa (quando o administrador definiu uma). |
 | Tabela | VGV líquido, valor pedido, última proposta e lucro líquido, cada um em % do VGV líquido. |
 | Aviso **Rentabilidade abaixo da mínima** | Quando a margem do estudo válido fica abaixo da mínima da empresa. O mesmo aviso aparece no formulário de Nova proposta (aba Comercial), como "Levar ao comitê" nas Próximas ações do painel e no cartão do terreno no Funil. |
@@ -39,6 +39,7 @@ A lista dos estudos do terreno, com VGV líquido, lucro líquido, margem, a data
 
 - **Marcar como válido**: só com a negociação ativa e quando o estudo ainda não é o válido.
 - **Duplicar**: cria "Cópia de …" com tudo do estudo e a abre.
+- **Salvar como modelo**: guarda o estudo como modelo para os próximos (ver [Modelos de estudo](#modelos-de-estudo)).
 - **Apagar**: pede confirmação. O estudo válido não se apaga (marque outro como válido antes).
 
 **Indicadores** (ficam presos no topo ao rolar): **VGV**, **VGV líquido**, **Lucro líquido** e **Margem líquida**. Eles se refazem enquanto você digita.
@@ -108,6 +109,16 @@ Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascido
 
 O resultado do estudo, do VGV ao lucro, com o valor e o % da receita líquida de cada linha: receita bruta, permuta e comissão em unidades, deduções, receita líquida, terreno, obras, lucro bruto, comerciais, gerais, EBITDA, despesas financeiras, resultado e margem sem as taxas, taxas e lucro líquido. Cada grupo mostra o detalhe embaixo. Fora da diretoria, Financeiras e Taxas aparecem só pelo total. Só leitura: muda conforme as outras seções.
 
+## Modelos de estudo
+
+Um modelo guarda os valores e as bases de cálculo de um estudo (custo de obra por m², dedução do VGV, o que se deduz do VGV e os itens de cada seção) para começar um estudo novo já preenchido. Tipologias, permuta, mínimo garantido e pagamentos do terreno não entram: são de cada terreno.
+
+**Salvar como modelo** (no topo do estudo): dê um nome. Com o nome de um modelo seu que já existe, ele é atualizado. O administrador escolhe também **Para quem**: **Só para mim**, **Para a empresa** ou **Padrão da empresa** (o que vem marcado no estudo novo; só um por vez). Fora da diretoria, Taxas e Despesas financeiras não entram no modelo.
+
+**Novo estudo**, quando existe algum modelo, abre a janela com o **Nome do estudo** e a lista dos modelos: os seus ("Meu modelo"), os da empresa e o padrão, cada um com o custo de obra e quantos itens têm valor, e **Sem modelo** (só a lista de itens da empresa com os valores padrão dela). O padrão vem marcado. A lixeira ao lado apaga o modelo: os seus, ou os da empresa pelo administrador. Sem nenhum modelo, Novo estudo cria o estudo direto.
+
+Taxas e Despesas financeiras de um modelo só valem quando o modelo é da empresa ou quando quem cria é da diretoria; nos outros casos, o estudo usa os valores padrão da empresa.
+
 ## Quem pode
 
 - **Analista, gestor e diretor**: criam, editam, duplicam, apagam e marcam o válido.
@@ -116,6 +127,5 @@ O resultado do estudo, do VGV ao lucro, com o valor e o % da receita líquida de
 
 ## O que não é possível hoje
 
-- Escolher um modelo ao criar o estudo e "Salvar como modelo". Sem escolha, o estudo nasce com o modelo padrão da empresa, se houver.
 - Ligar o estudo a um estudo de massa.
 - Configurações › Viabilidade (lista de itens, margem mínima, modelos da empresa).
