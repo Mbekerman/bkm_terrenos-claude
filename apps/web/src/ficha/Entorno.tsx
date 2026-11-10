@@ -86,22 +86,26 @@ export function EntornoAuto({ f }: { f: Ficha }) {
   return null;
 }
 
-export default function AbaEntorno({ f }: { f: Ficha }) {
+/** aba Mercado (pedido do Moises, 10/nov/2026): concorrência, renda, perfil da população e
+    pontos de interesse, cada um num chip; o Entorno de Estudos Técnicos saiu */
+export default function AbaMercado({ f }: { f: Ficha }) {
   /* um raio para cada quadro (pedido do Moisés, 6/nov/2026: antes era o mesmo nos dois) */
   const [raioR, setRaioR] = useState<Raio>(1000), [raioP, setRaioP] = useState<Raio>(1000);
-  if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Endereço e localização) para ver o entorno.</div></section>;
+  if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Localização) para ver o mercado.</div></section>;
   return (
     <div className="stack">
-      <SecPontos f={f} />
+      {/* ordem pedida pelo Moises (10/nov/2026): Concorrência primeiro, Pontos de interesse por último */}
+      <SecConcorrencia f={f} />
       <SecRenda f={f} raio={raioR} setRaio={setRaioR} />
       <SecPerfil f={f} raio={raioP} setRaio={setRaioP} />
-      <SecConcorrencia f={f} />
+      <SecPontos f={f} />
     </div>
   );
 }
 
 /* ---------- Pontos de interesse ---------- */
 interface Linha { tp: 'g' | 'e'; id: string; nome: string; cat: string; ord: number; dist: string; modo: string; url: string }
+
 function SecPontos({ f }: { f: Ficha }) {
   const { edita } = useSessao();
   const qc = useQueryClient(), toast = useToast();
@@ -173,7 +177,7 @@ function SecPontos({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="entorno" id="ent" primeiro titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
+    <Quadro aba="mercado" id="ent" chip="Pontos de interesse" titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
       <div className="sec-b">{corpo}</div>
     </Quadro>
   );
@@ -230,7 +234,7 @@ function SecRenda({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Rai
     </>;
   }
   return (
-    <Quadro aba="entorno" id="rd" titulo="Renda e população do entorno">
+    <Quadro aba="mercado" id="rd" chip="Renda e população" titulo="Renda e população do entorno">
       <Raios f={f} raio={raio} setRaio={setRaio} />
       <div className="sec-b">{corpo}</div>
       {met && <Metodologia camada="renda" fechar={() => setMet(false)} />}
@@ -290,7 +294,7 @@ function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Ra
     }
   }
   return (
-    <Quadro aba="entorno" id="pf" titulo="Perfil da população do entorno">
+    <Quadro aba="mercado" id="pf" chip="Perfil da população" titulo="Perfil da população do entorno">
       <Raios f={f} raio={raio} setRaio={setRaio} />
       <div className="sec-b">{corpo}</div>
       {met && <Dialogo titulo="Perfil da população: os dados" onFechar={() => setMet(false)} rodape={<button type="button" className="btn primary" onClick={() => setMet(false)}>Fechar</button>}>
@@ -375,7 +379,7 @@ function SecConcorrencia({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="entorno" id="mk" titulo="Concorrência no entorno">
+    <Quadro aba="mercado" id="mk" primeiro chip="Concorrência" titulo="Concorrência no entorno">
       <div className="sec-b mk-sec">{corpo}</div>
     </Quadro>
   );

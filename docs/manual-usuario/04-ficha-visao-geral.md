@@ -38,13 +38,13 @@ Os 12 itens:
 
 | Item | Onde se preenche |
 |---|---|
-| Endereço completo (logradouro, número, bairro) | Terreno › Endereço e localização |
-| Zona | Terreno › Endereço e localização |
+| Endereço completo (logradouro, número, bairro) | Terreno › Localização |
+| Zona | Terreno › Localização |
 | Ponto no mapa | Poligonal no mapa |
-| Área adotada | Terreno › Áreas e dimensões |
-| Testada | Terreno › Áreas e dimensões |
-| Matrícula | Terreno › Matrículas e SQLs |
-| Inscrição e IPTU | Terreno › Matrículas e SQLs |
+| Área adotada | Terreno › Dimensões |
+| Testada | Terreno › Dimensões |
+| Matrícula | Terreno › Matrículas e Lotes |
+| Inscrição e IPTU | Terreno › Matrículas e Lotes |
 | Proprietário (cada parte com proprietários somando 100%) | Terreno › Partes (lápis da parte) |
 | Zoneamento | Terreno › Parâmetros urbanísticos › Registrar zonas (ou automático pelo GeoSampa) |
 | Valor pedido | Comercial › Condições pedidas, no valor da primeira parte (ou registrar oferta) |
@@ -57,7 +57,7 @@ Quando você rola e o topo sai da vista, a barra das abas mostra um **botão de 
 
 ## Barra das abas
 
-As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viabilidades, Infraestrutura, Entorno, Jornada, Documentos**.
+As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mercado, Jornada, Documentos**.
 
 | Aba | Situação | Seção do manual |
 |---|---|---|
@@ -67,23 +67,33 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viab
 | Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
 | Estudos Técnicos › Estudos de massa | Disponível | [14](14-ficha-estudos-de-massa.md) |
 | Estudos Técnicos › Estudos de viabilidade | Disponível | [15](15-ficha-viabilidades.md) |
-| Estudos Técnicos › Entorno | Disponível | [08](08-ficha-entorno.md) |
-| Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico** fora de São Paulo), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
-| Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
+| Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico**), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
+| Estudos Técnicos › Restrições e entorno e › Histórico de uso | Disponível | [07](07-ficha-parametros.md) |
+| Mercado | Disponível: Concorrência, Renda e população, Perfil da população e Pontos de interesse | [08](08-ficha-entorno.md) |
+| Jornada | Disponível: linha do tempo e fases do terreno | [16](16-ficha-jornada.md) |
+| Documentos | **Ainda não disponível** (mostra "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
-**Estudos Técnicos** junta quatro partes, nesta ordem: Estudos de massa, Estudos de viabilidade, Entorno e Avaliação de infraestrutura. Com ela aberta, aparecem logo abaixo da barra quatro botões, um para cada parte; o que está aberto fica em azul-claro. Clicar em Estudos Técnicos abre a parte que você viu por último na sessão (da primeira vez, Estudos de massa).
+**Estudos Técnicos** junta cinco partes, nesta ordem: Estudos de massa, Estudos de viabilidade, Avaliação de infraestrutura, Restrições e entorno e Histórico de uso. Com ela aberta, aparecem logo abaixo da barra cinco botões, um para cada parte; o que está aberto fica em azul-claro. Clicar em Estudos Técnicos abre a parte que você viu por último na sessão (da primeira vez, Estudos de massa).
 
 **Como andar pelas abas:**
 
 - Clique na aba.
 - A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (com o mouse em cima, o cursor é o dedinho, como em qualquer botão; vira mão fechada enquanto você segura o botão do mouse). Solta com força, ela continua rodando e freia aos poucos.
-- O **⋮ "Mais ações"** (só quando a barra não cabe) lista todas as abas, com as quatro partes de Estudos Técnicos embaixo do nome dela e a atual marcada.
+- O **⋮ "Mais ações"** (só quando a barra não cabe) lista todas as abas, com as cinco partes de Estudos Técnicos embaixo do nome dela e a atual marcada.
 
-Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos Técnicos, o da parte, como `/terrenos/A123/entorno`), então dá para mandar o link direto para uma aba.
+Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos Técnicos, o da parte, como `/terrenos/A123/infra`), então dá para mandar o link direto para uma aba.
 
-## Quadros que abrem e fecham
+## Seções em botões
 
-Em todas as abas menos a Visão geral, o conteúdo fica em **quadros** que abrem e fecham pela **seta do título**. O primeiro quadro da aba nasce aberto; os outros, fechados. O sistema lembra o que você abriu durante a sessão, por aba. Editar um campo, abrir um formulário ou chegar a um item pelo log ou pelo aviso abre o quadro dele.
+<a id="quadros-que-abrem-e-fecham"></a>
+
+Em todas as abas menos a Visão geral, cada **seção** (Identificação, Localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra.
+
+Em Estudos Técnicos a barra é uma só, com as cinco partes; dentro de cada parte, os quadros (Relevo, Visita técnica, Viabilidades técnicas, Resumo da viabilidade...) continuam abrindo e fechando pela seta. Em Estudos de massa, o estudo aberto aparece embaixo da lista, também como quadro que abre e fecha.
+
+**Para ver os botões que não cabem**, a barra gira como uma roleta, igual à barra das abas: segure o botão do mouse e arraste para o lado; solte com força e ela continua girando e vai freando. Também funciona com Shift + roda do mouse, o deslize de lado do trackpad e, no celular, o dedo. Arrastar não troca de seção; só o clique troca. Quando **mais de um botão** fica de fora, aparecem os **três pontinhos (⋮)** no fim da barra, com a lista de todas as seções e a atual marcada. O botão escolhido nunca fica na ponta da barra: ao clicar no último que aparece, a barra gira um pouco para mostrar pelo menos 70% do botão seguinte (e, voltando, do anterior). O mesmo vale para a barra das abas.
+
+Se você trocar de seção com a página rolada para baixo, ela volta para o começo da seção.
 
 O título do quadro aberto fica preso logo abaixo das abas enquanto você rola o conteúdo dele.
 
@@ -121,12 +131,12 @@ Cada linha tem uma **seta** que leva à aba onde o dado mora.
 |---|---|---|
 | **Endereço** | Logradouro, número, bairro | Lápis **"Editar no mapa"**: abre a página Mapa com a poligonal em edição (ver [05](05-ficha-terreno.md#endereço-e-localização)). |
 | **Município e região** | Município · UF · Zona | O seletor de **Zona** (Norte, Sul, Leste, Oeste, Centro...) se edita ali mesmo. Em São Paulo a zona vem sozinha do GeoSampa (região oficial da subprefeitura); trocada à mão, fica a sua. |
-| **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Terreno › Parâmetros urbanísticos (a seta abre a seção em Índices urbanísticos). |
+| **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Terreno › Parâmetros urbanísticos (a seta abre a seção em Índices). |
 | **Área adotada** | Área e a fonte | O seletor de **fonte** troca a área adotada ali mesmo (a Cadastral aparece sempre; as outras, quando preenchidas). |
 | **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido (unidades somadas das tipologias e VGV bruto) | Estudos Técnicos › Estudos de viabilidade (a seta leva lá); vazias enquanto nenhum estudo for o válido. Ver [15](15-ficha-viabilidades.md). |
-| **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Entorno). |
+| **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Mercado, Pontos de interesse). |
 | **Valor pedido na entrada** | Valor da **primeira** oferta, com a data | Aba Comercial. |
-| **Perfil topográfico** | Plano, Inclinado, Acidentado... | A medição automática ainda não está no sistema real; a seta leva a Estudos Técnicos › Avaliação de infraestrutura, onde está o Topográfico. |
+| **Perfil topográfico** | Plano, Inclinado, Acidentado... e o desnível | Medido sozinho (veja Relevo, abaixo); enquanto mede, "medindo...". A seta leva a Estudos Técnicos › Avaliação de infraestrutura. |
 | **Corretor** | Corretor principal e imobiliária | Aba Comercial. |
 
 Linhas sem dado mostram "Não informado" ou "Falta preencher".
@@ -143,6 +153,13 @@ Igual à página, com:
 - clicar noutro terreno no mapa troca o terreno da gaveta.
 
 A gaveta da ficha e a gaveta de filtros não abrem juntas.
+
+## Imóvel sobreposto e terreno escondido
+
+Quando o mesmo imóvel foi cadastrado mais de uma vez com lotes diferentes (ver [03](03-novo-terreno.md#se-outro-terreno-já-ocupa-a-área)), o alto da ficha mostra:
+
+- **"Sobreposição parcial com A112"**: o código abre a ficha do outro, e a **lupa** abre "Comparar os lotes", com o mapa das quadras da prefeitura dos dois cadastros lado a lado.
+- No terreno **escondido** (a tratativa ativa é a do outro), a faixa **"Terreno escondido"** diz se a outra tratativa está em andamento ou vencida. Enquanto isso, ele não aparece no mapa, no funil nem nas listas, mas a ficha abre pelo link ou pelo aviso. Quando pode (o responsável, com a outra vencida, ou o diretor), aparece **"Assumir a tratativa"**.
 
 ## Excluir ou deletar o terreno
 
@@ -174,6 +191,23 @@ Cada mudança aparece nos Logs. Quem tem papel de Leitura só vê.
 
 **Avisos:** com a validade já passada, o serviço mostra "Vencida em …" em vermelho e o título do quadro conta quantas venceram; nos 30 dias antes, "Vence em …" em amarelo. A validade não pode ser antes da emissão.
 
+## Relevo (aba Infraestrutura)
+
+**Para que serve:** saber logo, sem levantamento, se o terreno é plano, inclinado ou acidentado.
+
+**Como funciona:** ao abrir a ficha de um terreno com poligonal e sem medição, o sistema mede sozinho as cotas dentro da poligonal (em qualquer aba; só para quem edita). Em São Paulo, pelo laser de 2020 da prefeitura; fora, pelo Google. Ao ajustar a poligonal, a medição antiga sai e o sistema mede de novo na próxima vez que a ficha abre.
+
+O quadro **Relevo** mostra:
+
+- A faixa com o **perfil**, na cor dele: Plano, Inclinado (com o %), Acidentado leve, mediano, intenso, agudo ou crítico, e a data da medição.
+- **Declividade média** (a média da inclinação em cada ponto do terreno; é ela que decide o perfil), **Inclinação do plano** (o plano que melhor se ajusta às cotas), **Terra mexida até o plano** (corte + aterro ÷ área, só com o laser), **Desnível** e de onde vieram as **Cotas**.
+- A escala dos 7 perfis, com o do terreno marcado, e a regra: Plano até 5%, Inclinado até 10%, Leve até 13%, Mediano até 19%, Intenso até 24%, Agudo até 30%; acima disso, ou com terra mexida acima de 1,5 m³/m², Crítico (os limites são os da empresa).
+- **Medir de novo**, para quem edita.
+
+**Fora de São Paulo** (cotas do Google, que erram de 1 a 4 m), o perfil fica só em Plano, Inclinado ou Crítico, com o aviso "Acidentado não avaliado". É uma triagem: não substitui o levantamento planialtimétrico.
+
+**Se der errado:** o quadro diz "Não deu para medir o relevo" com o motivo e **Tentar de novo**. Em São Paulo o sistema nunca usa o Google no lugar do laser.
+
 ## Topográfico preliminar (aba Infraestrutura)
 
 **Para que serve:** ter uma planta com as curvas de nível do terreno e da vizinhança para o estudo, antes do levantamento de campo.
@@ -182,25 +216,28 @@ Cada mudança aparece nos Logs. Quem tem papel de Leitura só vê.
 
 1. Clique em **Topográfico**. A janela explica de onde vem cada coisa.
 2. Clique em **Gerar topográfico**. A janela mostra cada passo enquanto trabalha (contorno, cotas, curvas, imagem, PDF e DXF).
-3. No fim aparece a prévia da folha. Baixe o **PDF** (folha A3 para imprimir) ou o **DXF + imagem (.zip)** (para o AutoCAD, com o mesmo PDF dentro).
+3. No fim aparece a prévia da folha. Baixe o **PDF** (folha A3 para imprimir; em São Paulo sem SQL pode sair maior, veja abaixo) ou o **DXF + imagem (.zip)** (para o AutoCAD, com o mesmo PDF dentro).
 
 **De onde vem:**
 
-- **Contorno**: em São José dos Campos, a soma dos lotes do GeoSanja quando todas as inscrições têm o lote; senão, a poligonal desenhada.
-- **Cotas**: do Google, um ponto a cada 5 m, com curvas de 1 em 1 m e mestra de 5 em 5 m. O erro típico é de 3 a 4 m: serve para estudo, não para projeto.
-- **Imagem por trás**: o satélite do Google com os nomes das ruas, para você reconhecer as ruas e a vizinhança.
+- **Contorno**: a soma dos lotes da prefeitura quando todos os SQLs (São Paulo, GeoSampa) ou todas as inscrições (São José dos Campos, GeoSanja) têm o lote; senão, a poligonal desenhada.
+- **Cotas em São Paulo**: sempre do laser de 2020 da prefeitura (erro típico de 0,1 a 0,2 m na forma do terreno). Se a prefeitura não responder, aparece o erro com **Tentar de novo**: em São Paulo o Google nunca é usado.
+- **Cotas fora de São Paulo**: do Google, um ponto a cada 5 m. O erro típico é de 3 a 4 m: serve para estudo, não para projeto.
+- Curvas de 1 em 1 m e mestra de 5 em 5 m.
+- **Imagem por trás**: o satélite do Google com os nomes das ruas, para você reconhecer as ruas e a vizinhança. Se o Google não responder, a ortofoto da prefeitura.
 - O levantamento cobre o terreno e 30 m em volta.
+- **São Paulo sem SQL**: o levantamento cobre a quadra inteira (o quarteirão entre as ruas) que a poligonal ocupa, mais os 30 m, com todos os lotes desenhados e numerados (número do lote e dígito; setor e quadra na lateral). Quadra acima de 6 ha e de 3 vezes o terreno fica de fora (dela, só os lotes perto do terreno). A escala é a mesma que o terreno teria sozinho, e a folha cresce para caber a quadra (A2, A1 ou A0, para plotter).
+- **Do GeoSampa** (São Paulo): calçadas com a largura média, eixos com o nome da rua, a largura da via e do leito medida entre as calçadas, quadras, lotes, edificações (só no DXF), córregos (canalizado tracejado), corpos d'água e melhoramentos viários. No DXF vão também os pontos cotados do laser a cada 5 m (layer MALHA_COTAS) e o SQL de cada lote da quadra (NUMERO_LOTES).
 - **Lotes da quadra** (São José dos Campos): todos os lotes das quadras do terreno, montados pelo GeoSanja, desenhados e numerados pelo número do lote (no DXF, a inscrição inteira, na layer TEXTO_LOTES; os lotes na layer LOTES_PREFEITURA). A quadra já montada no mapa de lotes vem do sistema na hora; senão, o passo "Lotes da quadra" leva alguns segundos.
 
 **O que não dá hoje:**
 
-- **São Paulo**: lá as cotas vêm sempre do laser da prefeitura, nunca do Google, e essa parte ainda não está no sistema novo. O botão abre a janela com esse aviso.
 - Os arquivos **não ficam guardados** no sistema enquanto a aba Documentos não existe: baixe-os na hora. Fechando a página, é preciso gerar de novo.
 - O DXF não leva os pontos do Google, só as curvas com a cota.
 
 ## O que não é possível na ficha hoje
 
-- Parte do estudo de viabilidade (ver [15](15-ficha-viabilidades.md)), o PDF e o DWG dos estudos de massa, as abas Jornada e Documentos, e, em Avaliação de infraestrutura, a medição automática do perfil topográfico e o Topográfico de São Paulo.
+- Parte do estudo de viabilidade (ver [15](15-ficha-viabilidades.md)), o PDF e o DWG dos estudos de massa, a aba Documentos, e guardar o PDF e o DXF do Topográfico em Documentos.
 - Digitar o endereço (CEP, rua, bairro, município) direto: ele vem do mapa.
 - Ver a ficha em tema escuro.
 - Imprimir ou exportar a ficha.

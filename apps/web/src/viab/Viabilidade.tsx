@@ -132,7 +132,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
           </> : <div className="muted">{lista.length ? 'Nenhum estudo marcado como válido.' : <>Sem estudo.{!ro && <> <button className="linkbtn ed" onClick={() => ac.novo(lista)}>Montar estudo</button></>}</>}</div>}
         </div>
       </Quadro>
-      <Quadro aba="viabilidade" id="viab" titulo="Viabilidade" acoes={novoBtn}>
+      <Quadro aba="viabilidade" id="viab" chip="Estudos" titulo="Viabilidade" acoes={novoBtn}>
         <div className="sec-b">
           {vi && <>
             <div className="metrics vb-met">

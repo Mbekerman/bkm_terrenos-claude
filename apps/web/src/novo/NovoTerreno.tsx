@@ -6,29 +6,33 @@ import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Bi, Ic } from '../components/Moldura';
 import { carregarGoogle } from '../mapa/google';
-import { classe, info, type Fase, type TerrenoMapa } from '../mapa/dados';
-import { abrirNovo, escolherKmz, fecharNovo, pedirDesenho, poligonal, atualizarNv, useNovo, voltarPasso1, novoEstado, listaSql, abrirLotes, type Sobre } from './estado';
+import { abrirNovo, escolherKmz, fecharNovo, pedirDesenho, poligonal, atualizarNv, useNovo, voltarPasso1, novoEstado, listaSql, abrirLotes, lerRascNv, limparRascNv, continuarRascNv, type Conflito } from './estado';
+import CompararLotes from './CompararLotes';
+import { EscolherCorretor } from '../components/Corretor';
+import { OPT } from '../ficha/edicao';
 import LotesGeo from './LotesGeo';
 import { consultarTerreno } from './consulta';
 import { atualizarFrentes } from './frentes';
 import { GEO_BASE, digitos, loteDoSql, sqlFmt, sqlMascara, type LoteSql } from './geosampa';
 import { GSJ_BASE, gsjPoligono, icFmt } from './geosanja';
 import { quadraDe } from './lotesSjc';
-import { areaPoly, centroPoly, fixa, geojson, lerKmz, lotesUniao, m2, nomeBase, nomeUnico, normRua, uniaoPoly, type P } from './geo';
+import { areaPoly, geojson, lerKmz, lotesUniao, m2, nomeBase, nomeUnico, normRua } from './geo';
 
 // Janela do Novo terreno, com a marcação do protótipo (tools/prototipo/proto_novo.js: nvPasso1Html, nvSobreHtml,
 // nvDadosHtml, nvGravar, nvDecidir). Passo 1: a poligonal (desenho no mapa ou KMZ/KML); se outro terreno ocupa parte
-// da área, a pergunta do que fazer; passo 2: só o nome de referência. Em São Paulo, "Incluir por SQL" (nvSqlHtml, nvSqlIncluir,
+// passo 2: o nome de referência, a origem do cadastro, o corretor (só com a origem Corretor) e a observação da primeira oferta (cadastrar é receber uma oferta,
+// pedido do Moises, 10/nov/2026). Ao cadastrar, se um terreno ativo tem algum lote em comum (ou, sem lote, ocupa parte da
+// poligonal), a janela da sobreposição decide: mesmos lotes, nova oferta nele; lotes diferentes, terreno novo ligado a ele,
+// e só a tratativa ativa aparece (app.conflitos_cadastro, app.registrar_oferta_cadastro, app.vincular_tratativa). Em São Paulo, "Incluir por SQL" (nvSqlHtml, nvSqlIncluir,
 // nvSqlSeguir em proto_lotesgeo.js) faz a poligonal pela soma dos lotes. Em São José dos Campos (pedido do Moises, 10/nov/2026),
 // o mesmo caminho com o GeoSanja: "Incluir por inscrição" e o mapa de lotes depois da poligonal (lotesSjc.ts, LotesGeo.tsx).
 
 const NV_FONTE = { mapa: 'Poligonal desenhada no mapa', kmz: 'Poligonal importada de KMZ/KML', sql: 'Poligonal pela soma dos lotes dos SQLs' };
-const NV_FOLGA = 5;
 const num = (v: number, d = 0) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d });
 
 export default function NovoTerreno() {
   const st = useNovo();
-  const { empresa, session, edita } = useSessao();
+  const { empresa, session, edita, membro } = useSessao();
   const toast = useToast();
   const navegar = useNavigate();
   const loc = useLocation();
@@ -62,7 +66,10 @@ export default function NovoTerreno() {
   const nv0 = st.nv;
   const cid = (c: string) => !!nv0?.local?.cidade && nv0.local.cidade.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === c && (!nv0.local.uf || nv0.local.uf === 'SP');
   const sp = cid('sao paulo'), sjc = cid('sao jose dos campos'), pref = (sp && !!GEO_BASE) || (sjc && !!GSJ_BASE);
-  const lgPronto = !!(nv0 && !nv0.buscando && !nv0.lgFeito && nv0.sobre != null && (!nv0.sobre.length || nv0.ignorados) && pref && edita);
+  const lgPronto = !!(nv0 && !nv0.buscando && !nv0.lgFeito && pref && edita);
+  const [pend, setPend] = useState<{ nome: string; munId: string } | null>(null);
+  const [rascV, setRascV] = useState(0);
+  const [comparar, setComparar] = useState<Conflito | null>(null);
   useEffect(() => { if (lgPronto) { atualizarNv({ lgFeito: true }); abrirLotes({ modo: 'nv', sjc }); } }, [lgPronto]);
   if (!st.aberto || !empresa) return null;
   const nv = st.nv;
@@ -83,6 +90,70 @@ export default function NovoTerreno() {
     } catch (e) { toast(mensagemErro(e), true); }
   }
 
+  /* Cadastrar (pedido do Moises, 10/nov/2026): terreno novo com a primeira oferta; com sobreposição, o que a janela decidiu */
+  async function criar(dec: Decisao, nomeF: string, munId: string) {
+    const n = novoEstado().nv;
+    if (!n || gravando || !empresa) return;
+    const l = n.local, fr = n.frentes || [], pri = Math.min(n.pri || 0, Math.max(fr.length - 1, 0)), f0 = fr[pri];
+    setGravando(true);
+    try {
+      if (dec.tipo === 'oferta') {
+        const { data, error } = await supabase.rpc('registrar_oferta_cadastro', { p_terreno: dec.terreno.terreno_id, p_modo: dec.modo, p_corretor: (n.origem === 'corretor' && n.corretor) || null });
+        if (error) throw error;
+        const oid = (data as { oferta_id?: string } | null)?.oferta_id;
+        if (oid && n.obs?.trim()) { const r = await supabase.from('ofertas').update({ observacoes: n.obs.trim() }).eq('id', oid); if (r.error) toast(`A oferta entrou, mas a observação não: ${mensagemErro(r.error)}`, true); }
+        await qc.invalidateQueries({ queryKey: ['mapa'] });
+        fecharNovo(); limparRascNv(); setPend(null);
+        if (dec.modo === 'aguardando') { toast('Oferta salva, aguardando. Você será avisado quando a outra tratativa vencer.'); navegar('/mapa'); }
+        else { toast(`Oferta ${(data as { codigo: string }).codigo} registrada.`); navegar(`/terrenos/${dec.terreno.codigo}/comercial`); }
+        return;
+      }
+      /* o banco recusa poligonal sobre outro terreno sem a confirmação; quem decidiu foi a janela pelos lotes */
+      const { data: sob } = await supabase.rpc('terrenos_sobrepostos', { p_empresa: empresa.id, p_poligono: geojson(n.poly) });
+      const { data: t, error } = await supabase.from('terrenos').insert({
+        empresa_id: empresa.id, nome: nomeF, responsavel_id: session!.user.id, municipio_id: munId, origem_cadastro: n.origem || 'nao_informado',
+        logradouro: f0?.logradouro || null, numero: f0?.numero || null, bairro: l?.bairro || null, cep: l?.cep || null,
+        latitude: +n.ponto[0].toFixed(7), longitude: +n.ponto[1].toFixed(7), poligono_geojson: geojson(n.poly), precisao_localizacao: 'aproximada',
+        ...(n.porLotes && n.polyDesenho ? { poligono_desenhado_geojson: geojson(n.polyDesenho) } : {}),
+        sobreposicoes_aceitas: ((sob || []) as { terreno_id: string }[]).map((x) => x.terreno_id), posicao_quadra: fr.length > 1 ? (fr.length === 2 ? 'esquina' : 'duas_frentes') : 'nao_informado',
+      }).select('id,codigo').single();
+      if (error) throw error;
+      /* com lotes diferentes: liga aos outros antes dos SQLs (o lote em comum só entra nos ligados) */
+      if (dec.tipo === 'vinculo') {
+        const r = await supabase.rpc('vincular_tratativa', { p_novo: t.id, p_outros: dec.outros.map((x) => x.terreno_id), p_modo: dec.modo });
+        if (r.error) toast(`${t.codigo} cadastrado, mas a ligação com o outro terreno falhou: ${mensagemErro(r.error)}`, true);
+      }
+      /* cadastrar é receber a primeira oferta: entra em Ofertas recebidas como a ativa, com o corretor */
+      const ro = await supabase.from('ofertas').insert({ empresa_id: empresa.id, terreno_id: t.id, corretor_id: (n.origem === 'corretor' && n.corretor) || null, observacoes: n.obs?.trim() || null });
+      if (ro.error) toast(`${t.codigo} cadastrado, mas a oferta não entrou: ${mensagemErro(ro.error)}`, true);
+      /* as outras ruas em volta viram confrontações de frente */
+      const outras = fr.filter((x, i) => i !== pri || normRua(x.logradouro) !== normRua(f0?.logradouro || ''));
+      if (outras.length) {
+        const r = await automatico(supabase.from('confrontacoes').insert(outras.map((x, i) => ({ empresa_id: empresa.id, terreno_id: t.id, ordem: i + 1, tipo: 'frente', comprimento_m: x.m ? +x.m.toFixed(2) : null, confrontante: x.logradouro + (x.numero ? ', ' + x.numero : ''), fonte: 'Localização da poligonal' }))));
+        if (r.error) console.warn('confrontações', r.error);
+      }
+      /* os SQLs incluídos entram no terreno sem parte, como no mapa de lotes da prefeitura */
+      if (n.sqls?.length) {
+        const r = await supabase.from('inscricoes_municipais').insert(n.sqls.map((q) => ({ empresa_id: empresa.id, terreno_id: t.id, municipio_id: munId, inscricao: q.sql,
+          area_cadastral_m2: q.area, cib: q.cib, origem: 'mapa_prefeitura', endereco_prefeitura: q.end || null }))).select('id,inscricao');
+        if (r.error) toast(`${t.codigo} cadastrado, mas os SQLs não entraram: ${mensagemErro(r.error)}`, true);
+        /* a consulta completa do GeoSampa em cada SQL e depois pela poligonal, em segundo plano (o andamento aparece na lista do mapa) */
+        else consultarTerreno(t.id, n.poly, (r.data || []).map((x) => ({ id: x.id as string, sql: x.inscricao as string })), (m, e) => toast(m, e), n.sqls.some((q) => digitos(q.sql).length === 14) ? 'geosanja' : 'geosampa');
+      }
+      /* em São Paulo, frentes, esquina e testada medidas pela poligonal e pelos lotes da prefeitura, em segundo plano */
+      atualizarFrentes(t.id).catch((e) => console.warn('frentes', e));
+      await qc.invalidateQueries({ queryKey: ['mapa'] });
+      fecharNovo(); limparRascNv(); setPend(null);
+      if (dec.tipo === 'vinculo' && dec.modo === 'espera') {
+        toast(`${t.codigo} salvo e escondido: a outra tratativa continua ativa. Você será avisado quando ela vencer.`);
+        navegar(`/terrenos/${t.codigo}`);
+      } else {
+        toast(`${t.codigo} cadastrado.`);
+        navegar(`/mapa/${t.codigo}`, { state: { focar: true } });
+      }
+    } catch (e) { toast(mensagemErro(e), true); } finally { setGravando(false); }
+  }
+
   /* ---------- passo 1 ---------- */
   let corpo: React.ReactNode;
   if (st.lotes) {
@@ -90,8 +161,14 @@ export default function NovoTerreno() {
   } else if (!nv && st.sql) {
     corpo = <IncluirSql lista={st.sql} fechar={x} empresa={empresa.id} sjc={!!st.sqlSjc} />;
   } else if (!nv) {
+    void rascV;
+    const rasc = lerRascNv();
     corpo = <>
       <div className="dh"><div><h2>Novo terreno</h2><div className="muted" style={{ marginTop: 4 }}>Passo 1 de 2 · Poligonal do terreno</div></div>{x}</div>
+      {rasc && <div className="banner nv-rasc"><Ic n="edit" /><div style={{ flex: 1 }}><div className="bt">Cadastro em rascunho{rasc.nv.nome ? ': ' + rasc.nv.nome : rasc.nv.local?.logradouro ? ': ' + rasc.nv.local.logradouro : ''}</div>
+        <div>{m2(rasc.nv.area)}{rasc.nv.sqls?.length ? ` · ${rasc.nv.sqls.length} lote${rasc.nv.sqls.length > 1 ? 's' : ''}` : ''} · {!rasc.nv.origem ? 'falta a origem da oferta' : rasc.nv.origem === 'corretor' && !rasc.nv.corretor ? 'falta o corretor' : 'não foi concluído'}</div></div>
+        <button type="button" className="btn sm text" onClick={() => { limparRascNv(); setRascV((x) => x + 1); }}>Descartar</button>
+        <button type="button" className="btn sm" onClick={continuarRascNv}>Continuar</button></div>}
       <div className="nv-ops">
         <button type="button" className="nv-op" onClick={desenhar}><span className="nv-ic"><Bi n="mapa" s={24} /></span><span><b>Desenhar no mapa</b><span className="muted">Ache o endereço na barra do mapa e marque os cantos do terreno.</span></span></button>
         <button type="button" className="nv-op" onClick={() => { if (arq.current) { arq.current.value = ''; arq.current.click(); } }}><span className="nv-ic"><Ic n="upload" s={24} /></span><span><b>Importar KMZ ou KML</b><span className="muted">Arquivo do Google Earth com o polígono do terreno.</span></span></button>
@@ -105,24 +182,11 @@ export default function NovoTerreno() {
       </div>
       <input ref={arq} type="file" accept=".kmz,.kml,application/vnd.google-earth.kmz,application/vnd.google-earth.kml+xml" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) kmzLido(f); }} />
     </>;
-  } else if (nv.sobre?.length && !nv.ignorados) {
-    corpo = <Sobreposicao sobre={nv.sobre} area={nv.area} poly={nv.poly} fechar={x} ro={!edita}
-      voltar={voltarPasso1} mesmo={() => atualizarNv({ ignorados: nv.sobre! })}
+  } else if (nv.conflitos?.length && pend) {
+    corpo = <Sobreposicao cf={nv.conflitos} fechar={x} sair={() => { setPend(null); fechar(); }} ro={!edita} dir={membro?.papel === 'diretor'} gravando={gravando}
+      voltar={() => { atualizarNv({ conflitos: null }); setPend(null); }} comparar={setComparar}
       abrir={(c) => { fecharNovo(); navegar(`/terrenos/${c}`); }}
-      decidir={async (a, s) => {
-        if (a === 'nv-oferta' || a === 'nv-oferta-p') { fecharNovo(); navegar(`/terrenos/${s.codigo}/comercial`); toast('Registre a oferta na aba Comercial do terreno.'); return; }
-        const { data: t, error } = await supabase.from('terrenos').select('id,versao,poligono_geojson').eq('id', s.id).single();
-        if (error || !t) { toast(mensagemErro(error), true); return; }
-        const velho = ((t.poligono_geojson as { coordinates: number[][][] }).coordinates[0].slice(0, -1)).map(([lo, la]) => [la, lo] as P);
-        const u = a === 'nv-juntar' ? uniaoPoly(velho, nv.poly) : nv.poly;
-        if (!u) { toast('Não deu para juntar as duas áreas. Recadastre só com a área nova e ajuste no mapa.', true); return; }
-        const c = centroPoly(fixa(u));
-        const r = await supabase.rpc('salvar_terreno', { p_terreno: s.id, p_versao: t.versao, p_dados: { poligono_geojson: geojson(fixa(u)), latitude: +c[0].toFixed(7), longitude: +c[1].toFixed(7), precisao_localizacao: 'aproximada' } });
-        if (r.error) { toast(mensagemErro(r.error), true); return; }
-        qc.invalidateQueries({ queryKey: ['mapa'] });
-        fecharNovo(); navegar(`/terrenos/${s.codigo}/comercial`);
-        toast('Terreno recadastrado. Registre a oferta e revise o cadastro.');
-      }} />;
+      decidir={(d) => criar(d, pend.nome, pend.munId)} />;
   } else {
     /* ---------- passo 2: só o nome de referência ---------- */
     const l = nv.local, mun = l?.cidade ? l.cidade + (l.uf ? ' · ' + l.uf : '') : '', fr = nv.frentes || [], pri = Math.min(nv.pri || 0, Math.max(fr.length - 1, 0)), f0 = fr[pri], busca = nv.buscando || nv.sobre == null || nomesQ.isFetching;
@@ -141,47 +205,27 @@ export default function NovoTerreno() {
       let cidade = l?.cidade || '', uf = l?.uf || '';
       if (!mun) { const [c, u] = String(F.get('municipio') || '').split(/[·,/-]/).map((s) => s.trim()); cidade = c || ''; uf = u || ''; }
       if (!nomeF) { toast('Informe o nome de referência.', true); return; }
+      if (!nv.origem) { toast('Escolha a origem da oferta. Sem ela o cadastro fica em rascunho.', true); document.getElementById('n-orig')?.focus(); return; }
+      if (nv.origem === 'corretor' && !nv.corretor) { toast('Escolha o corretor da oferta. Sem ele o cadastro fica em rascunho.', true); document.getElementById('n-cor')?.focus(); return; }
       setGravando(true);
       try {
         const { data: munId, error: e1 } = await supabase.rpc('municipio_por_nome', { p_nome: cidade, p_uf: uf });
         if (e1) throw e1;
         if (!munId) { toast(`Município não encontrado: ${cidade || '(vazio)'}${uf ? ' · ' + uf : ''}. Digite como "São Paulo · SP".`, true); setGravando(false); return; }
-        const { data: t, error } = await supabase.from('terrenos').insert({
-          empresa_id: empresa!.id, nome: nomeF, responsavel_id: session!.user.id, municipio_id: munId,
-          logradouro: f0?.logradouro || null, numero: f0?.numero || null, bairro: l?.bairro || null, cep: l?.cep || null,
-          latitude: +nv.ponto[0].toFixed(7), longitude: +nv.ponto[1].toFixed(7), poligono_geojson: geojson(nv.poly), precisao_localizacao: 'aproximada',
-          ...(nv.porLotes && nv.polyDesenho ? { poligono_desenhado_geojson: geojson(nv.polyDesenho) } : {}),
-          sobreposicoes_aceitas: (nv.ignorados || []).map((s) => s.id), posicao_quadra: fr.length > 1 ? (fr.length === 2 ? 'esquina' : 'duas_frentes') : 'nao_informado',
-        }).select('id,codigo').single();
-        if (error) throw error;
-        /* as outras ruas em volta viram confrontações de frente */
-        const outras = fr.filter((x, i) => i !== pri || normRua(x.logradouro) !== normRua(f0?.logradouro || ''));
-        if (outras.length) {
-          const r = await automatico(supabase.from('confrontacoes').insert(outras.map((x, i) => ({ empresa_id: empresa!.id, terreno_id: t.id, ordem: i + 1, tipo: 'frente', comprimento_m: x.m ? +x.m.toFixed(2) : null, confrontante: x.logradouro + (x.numero ? ', ' + x.numero : ''), fonte: 'Localização da poligonal' }))));
-          if (r.error) console.warn('confrontações', r.error);
-        }
-        /* os SQLs incluídos entram no terreno sem parte, como no mapa de lotes da prefeitura */
-        if (nv.sqls?.length) {
-          const r = await supabase.from('inscricoes_municipais').insert(nv.sqls.map((q) => ({ empresa_id: empresa!.id, terreno_id: t.id, municipio_id: munId, inscricao: q.sql,
-            area_cadastral_m2: q.area, cib: q.cib, origem: 'mapa_prefeitura', endereco_prefeitura: q.end || null }))).select('id,inscricao');
-          if (r.error) toast(`${t.codigo} cadastrado, mas os SQLs não entraram: ${mensagemErro(r.error)}`, true);
-          /* a consulta completa do GeoSampa em cada SQL e depois pela poligonal, em segundo plano (o andamento aparece na lista do mapa) */
-          else consultarTerreno(t.id, nv.poly, (r.data || []).map((x) => ({ id: x.id as string, sql: x.inscricao as string })), (m, e) => toast(m, e), sjc || nv.sqls.some((q) => digitos(q.sql).length === 14) ? 'geosanja' : 'geosampa');
-        }
-        /* em São Paulo, frentes, esquina e testada medidas pela poligonal e pelos lotes da prefeitura, em segundo plano */
-        atualizarFrentes(t.id).catch((e) => console.warn('frentes', e));
-        await qc.invalidateQueries({ queryKey: ['mapa'] });
-        fecharNovo();
-        toast(`${t.codigo} cadastrado.`);
-        navegar(`/mapa/${t.codigo}`, { state: { focar: true } });
-      } catch (e) { toast(mensagemErro(e), true); } finally { setGravando(false); }
+        /* o imóvel já existe na base? basta um lote em comum (sem lote, a poligonal) */
+        const { data: cf, error: e2 } = await supabase.rpc('conflitos_cadastro', { p_empresa: empresa!.id, p_municipio: munId, p_inscricoes: (nv.sqls || []).map((q) => q.sql), p_poligono: geojson(nv.poly) });
+        if (e2) throw e2;
+        if ((cf as Conflito[] | null)?.length) { setPend({ nome: nomeF, munId: munId as string }); atualizarNv({ conflitos: cf as Conflito[] }); setGravando(false); return; }
+        setGravando(false);
+        await criar({ tipo: 'novo' }, nomeF, munId as string);
+      } catch (e) { toast(mensagemErro(e), true); setGravando(false); }
     }
     corpo = <>
       <div className="dh"><div><h2>Novo terreno</h2><div className="muted" style={{ marginTop: 4 }}>Passo 2 de 2 · O resto da ficha é preenchido ao longo da jornada.</div></div>{x}</div>
       <form id="f-novo" onSubmit={gravar}><div className="fields">
         <div className="field full"><div className="banner blue"><Ic n="check" /><div style={{ flex: 1 }}><div className="bt">{nv.porLotes && nv.sqls?.length ? (nv.sqls.length > 1 ? `Poligonal pela soma dos ${nv.sqls.length} lotes da prefeitura` : 'Poligonal pelo lote da prefeitura') : NV_FONTE[nv.fonte]} · {m2(nv.area)}</div>
           <div>{nv.buscando ? 'Buscando o endereço pela poligonal...' : onde || 'Endereço não encontrado pela localização.'}</div>
-          {nv.ignorados && <div>Confirmado como outro terreno apesar de sobrepor {nv.ignorados.map((s) => s.codigo).join(', ')}.</div>}</div>
+</div>
           <button type="button" className="btn sm text" onClick={voltarPasso1}>Trocar</button></div></div>
         {!busca && fr.length > 1 && <div className="field full nv-frentes"><span className="lbl-f" id="nv-fr-l">A poligonal tem {fr.length} frentes. Qual é o acesso principal?</span>
           <span className="nv-fr" role="radiogroup" aria-labelledby="nv-fr-l">{fr.map((f, i) => <label key={i} className="opt-radio"><input type="radio" name="nv-pri" value={i} checked={i === pri} onChange={() => escolherFrente(i)} />
@@ -189,6 +233,13 @@ export default function NovoTerreno() {
           <span className="hint">O nome de referência sai dele; as outras entram em Confrontações como frente.</span></div>}
         <div className="field full"><label htmlFor="n-nome">Nome de referência *</label>
           <input id="n-nome" name="nome" required placeholder={nv.buscando ? 'Buscando a rua...' : 'Ex.: Saúde - Cupecê'} key={(busca ? 'b' : 'p') + pri} defaultValue={nome} onInput={(e) => atualizarNv({ nome: e.currentTarget.value })} /></div>
+        <div className="field"><label htmlFor="n-orig">Origem da oferta *</label>
+          <select id="n-orig" value={nv.origem || ''} onChange={(e) => atualizarNv({ origem: e.target.value, ...(e.target.value === 'corretor' ? {} : { corretor: '' }) })}><option value="" disabled>Escolha a origem</option>
+            {Object.entries(OPT.origem).map(([k, r]) => <option key={k} value={k}>{r}</option>)}</select></div>
+        {nv.origem === 'corretor' && <div className="field"><label htmlFor="n-cor">Corretor *</label>
+          <EscolherCorretor id="n-cor" value={nv.corretor || ''} vazio="Digite ou escolha o corretor" onChange={(v) => atualizarNv({ corretor: v })} /></div>}
+        <div className="field full"><label htmlFor="n-obs">Informações gerais</label>
+          <textarea id="n-obs" rows={3} defaultValue={nv.obs || ''} placeholder="Impressões sobre o corretor, firmeza da proposta..." onInput={(e) => atualizarNv({ obs: e.currentTarget.value })} /></div>
         {(nv.lgFeito || (pref && edita)) && <div className="field full"><div className="nv-sqls"><span className="etq-sw s" /><div style={{ flex: 1 }}>{nv.sqls?.length ? <><b>{nv.sqls.length} {sjc ? (nv.sqls.length > 1 ? 'inscrições' : 'inscrição') : 'SQL' + (nv.sqls.length > 1 ? 's' : '')} da prefeitura</b>
           <div className="nv-sqls-l">{nv.sqls.map((q) => <span key={q.sql} className="etq s"><span className="etq-n num">{q.sql}</span></span>)}</div>{nv.porLotes && nv.polyDesenho && <div className="faint">A desenhada fica guardada.</div>}</>
           : <><b>Nenhum{sjc ? 'a inscrição' : ' SQL'}</b><div className="faint">Marque os lotes da prefeitura que o terreno ocupa.</div></>}</div>
@@ -202,47 +253,74 @@ export default function NovoTerreno() {
   return (
     <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && fechar()}>
       <div className="dialog" role="dialog" aria-modal="true">{corpo}</div>
+      {comparar && nv && <CompararLotes empresa={empresa.id} fechar={() => setComparar(null)}
+        a={{ titulo: 'Este cadastro', lotes: (nv.sqls || []).map((q) => q.sql) }}
+        b={{ titulo: comparar.sou_responsavel ? comparar.codigo : 'Terreno existente', lotes: [...comparar.comuns, ...comparar.so_existente] }} />}
     </div>
   );
 }
 
-/* ---------- algum terreno já ocupa parte da área ---------- */
-type Acao = 'nv-oferta' | 'nv-oferta-p' | 'nv-recad' | 'nv-juntar';
-function nvAcoes(s: Sobre): [Acao, string, string][] {
-  if (s.motivo === 'mesma_area') return [['nv-oferta', 'Nova oferta neste terreno', 'primary']];
-  if (s.pctNova >= 95) return [['nv-oferta-p', 'Nova oferta de parte do terreno', 'primary']];
-  if (s.pctExist >= 95) return [['nv-recad', 'Recadastrar com a área nova', 'primary']];
-  return [['nv-juntar', 'Recadastrar juntando as áreas', 'primary'], ['nv-recad', 'Recadastrar só com a área nova', '']];
-}
-function Sobreposicao({ sobre, area, fechar, ro, voltar, mesmo, abrir, decidir }: {
-  sobre: Sobre[]; area: number; poly: P[]; fechar: React.ReactNode; ro: boolean; voltar: () => void; mesmo: () => void; abrir: (codigo: string) => void; decidir: (a: Acao, s: Sobre) => void;
+/* ---------- o imóvel já existe na base (pedido do Moises, 10/nov/2026) ----------
+   Basta um lote em comum. A tratativa em andamento continua valendo; a nova só fica ativa com a outra vencida (90 dias sem
+   ação de uma pessoa) ou pelo diretor. Quem é o responsável da outra vê o código; os demais, só que o imóvel já existe. */
+type Decisao = { tipo: 'novo' } | { tipo: 'oferta'; terreno: Conflito; modo: 'vigente' | 'nao_vigente' | 'aguardando' } | { tipo: 'vinculo'; outros: Conflito[]; modo: 'ativa' | 'espera' };
+type Opcao = [string, Decisao, string];
+function Sobreposicao({ cf, fechar, sair, ro, dir, gravando, voltar, abrir, decidir, comparar }: {
+  cf: Conflito[]; fechar: React.ReactNode; sair: () => void; ro: boolean; dir: boolean; gravando: boolean; voltar: () => void; abrir: (codigo: string) => void;
+  decidir: (d: Decisao) => void; comparar: (c: Conflito) => void;
 }) {
-  const qc = useQueryClient(), { empresa } = useSessao();
-  const dados = qc.getQueryData<{ fases: Fase[]; terrenos: TerrenoMapa[] }>(['mapa', empresa?.id]);
-  const igual = sobre.some((s) => s.motivo === 'mesma_area');
-  const areaDe = (s: Sobre) => (s.pctExist ? (s.area * 100) / s.pctExist : null);
-  const porque = (s: Sobre) => s.motivo === 'mesma_area' ? `Mesma área (${num(s.pctNova)}% da área nova coincide com ${num(s.pctExist)}% da dele).`
-    : s.pctNova >= 95 ? `A área nova fica dentro dele: é ${num(s.pctExist)}% do terreno cadastrado.`
-    : s.pctExist >= 95 ? `O terreno cadastrado (${m2(areaDe(s))}) fica dentro da área nova: ela é maior e o inclui.`
-    : `Parte em comum de ${m2(s.area)}: ${num(s.pctNova)}% da área nova e ${num(s.pctExist)}% da dele.`;
-  /* a situação do terreno, na cor da legenda do mapa */
-  const sit = (s: Sobre) => {
-    if (s.situacao === 'arquivado') return <span className="chip">Arquivado</span>;
-    const t = dados?.terrenos.find((x) => x.id === s.id);
-    if (!t || !dados) return null;
-    const [nome, cor] = info(dados.fases, classe(dados.fases, t, '', ''), '', '');
-    return <span className="sitchip"><span className="sw" style={{ background: cor }} />{nome}</span>;
-  };
+  const mesmo = cf.find((c) => c.mesmos_lotes);
+  const lista = mesmo ? [mesmo] : cf;
+  const meus = lista.every((c) => c.sou_responsavel), venc = lista.every((c) => c.vencida);
+  const cods = lista.map((c) => c.codigo).join(', ');
+  const dias = Math.min(...lista.map((c) => c.dias_sem_acao));
+  const parado = `sem ação há ${dias} dia${dias === 1 ? '' : 's'}`;
+  let titulo: string, texto: React.ReactNode, ops: Opcao[];
+  if (mesmo) {
+    const t = mesmo;
+    titulo = meus ? `Este imóvel é o ${t.codigo}` : 'Este imóvel já existe na base';
+    if (meus && !venc) { texto = <>O {t.codigo} · {t.nome} tem os mesmos lotes e está com você. Siga a tratativa por lá: a oferta entra na lista de Ofertas recebidas dele.</>;
+      ops = [['Registrar como nova oferta no ' + t.codigo, { tipo: 'oferta', terreno: t, modo: 'nao_vigente' }, 'primary']]; }
+    else if (meus) { texto = <>O {t.codigo} · {t.nome} tem os mesmos lotes, está com você e a tratativa está vencida ({parado}). Qual oferta segue ativa?</>;
+      ops = [['Manter a oferta atual', { tipo: 'oferta', terreno: t, modo: 'nao_vigente' }, ''], ['Seguir com esta oferta', { tipo: 'oferta', terreno: t, modo: 'vigente' }, 'primary']]; }
+    else if (venc) { texto = <>A tratativa deste imóvel está vencida ({parado}). Quer assumir? A sua oferta passa a ser a ativa e você fica responsável pelo terreno.</>;
+      ops = [['Sim, assumir', { tipo: 'oferta', terreno: t, modo: 'vigente' }, 'primary']]; }
+    else { texto = <>A tratativa deste imóvel está ativa. A sua oferta fica salva, aguardando, e você será avisado quando a tratativa vencer.</>;
+      ops = [['Cadastrar e aguardar', { tipo: 'oferta', terreno: t, modo: 'aguardando' }, 'primary']];
+      if (dir) ops.push(['Seguir com esta oferta (diretor)', { tipo: 'oferta', terreno: t, modo: 'vigente' }, '']); }
+  } else {
+    const parte = lista.some((c) => c.por === 'lotes') ? 'tem lotes em comum com' : 'ocupa parte de';
+    titulo = meus ? `Este imóvel sobrepõe o ${cods}` : 'Este imóvel já existe na base';
+    const marca = 'Os dois ficam com a marca "Sobreposição parcial", e só o da tratativa ativa aparece no mapa, no funil e nas listas.';
+    if (meus && !venc) { texto = <>Este cadastro {parte} {cods}, que está com você. A tratativa de lá continua valendo; este fica salvo e escondido até ela vencer. {marca}</>;
+      ops = [['Cadastrar e manter o ' + cods + ' ativo', { tipo: 'vinculo', outros: lista, modo: 'espera' }, 'primary']];
+      if (dir) ops.push(['Seguir com este cadastro (diretor)', { tipo: 'vinculo', outros: lista, modo: 'ativa' }, '']); }
+    else if (meus) { texto = <>Este cadastro {parte} {cods}, que está com você, e a tratativa de lá está vencida ({parado}). Qual segue? {marca}</>;
+      ops = [['Manter o ' + cods + ' ativo', { tipo: 'vinculo', outros: lista, modo: 'espera' }, ''], ['Seguir com este cadastro', { tipo: 'vinculo', outros: lista, modo: 'ativa' }, 'primary']]; }
+    else if (venc) { texto = <>Parte destes lotes já está noutro terreno, e a tratativa de lá está vencida ({parado}). Quer assumir? Este cadastro passa a ser o ativo. {marca}</>;
+      ops = [['Sim, assumir', { tipo: 'vinculo', outros: lista, modo: 'ativa' }, 'primary']]; }
+    else { texto = <>Parte destes lotes já está noutro terreno, com a tratativa ativa. Este cadastro fica salvo e escondido, e você será avisado quando a tratativa vencer. {marca}</>;
+      ops = [['Cadastrar e aguardar', { tipo: 'vinculo', outros: lista, modo: 'espera' }, 'primary']];
+      if (dir) ops.push(['Seguir com este cadastro (diretor)', { tipo: 'vinculo', outros: lista, modo: 'ativa' }, '']); }
+  }
   return <>
-    <div className="dh"><div><h2>{igual ? 'Este terreno já existe no sistema' : 'Parte desta área já está cadastrada'}</h2>
-      <div className="muted" style={{ marginTop: 4 }}>Área nova: {m2(area)}. {sobre.length === 1 ? 'Encontramos um terreno no mesmo lugar.' : `Encontramos ${sobre.length} terrenos no mesmo lugar.`} Divisas encostadas (até {NV_FOLGA} m) não contam.</div></div>{fechar}</div>
-    <div className="nv-sob">{sobre.map((s) => (
-      <div key={s.id} className="nv-s"><div className="nv-s-t"><div className="t1"><b className="num">{s.codigo}</b> · {s.nome} {sit(s)}</div><div className="t2">{porque(s)}</div></div>
-        <div className="nv-s-a"><button className="btn sm text" onClick={() => abrir(s.codigo)}>Abrir ficha</button>
-          {!ro && nvAcoes(s).map(([a, l, c]) => <button key={a} className={`btn sm ${c}`} onClick={() => decidir(a, s)}>{l}</button>)}</div></div>
-    ))}</div>
-    <div className="hint" style={{ marginTop: 'var(--e3)' }}>{igual && <><b>Nova oferta</b> registra a oferta no terreno, sem mudar o cadastro. </>}<b>Recadastrar</b> troca a poligonal do terreno pela área nova (ou pela soma das duas) e registra a oferta nele, guardando o pedaço oferecido. A poligonal anterior fica no histórico.</div>
-    <div className="df"><button className="btn text" onClick={voltar}>Voltar</button>{!ro && <button className="btn" onClick={mesmo}>É outro terreno, cadastrar mesmo assim</button>}</div>
+    <div className="dh"><div><h2>{titulo}</h2></div>{fechar}</div>
+    <div className="nv-cf">
+      <div>{texto}</div>
+      {lista.map((c) => (
+        <div key={c.terreno_id} className="nv-cf-t"><div>
+          <div className="t1">{c.sou_responsavel ? <><b className="num">{c.codigo}</b> · {c.nome}</> : <b>Terreno existente</b>}
+            {!c.mesmos_lotes && <span className="chip warn" style={{ marginLeft: 8 }}>Sobreposição parcial</span>}</div>
+          <div className="t2 faint">{c.por === 'lotes'
+            ? (c.mesmos_lotes ? `Os mesmos ${c.comuns.length} lote${c.comuns.length === 1 ? '' : 's'}` : `${c.comuns.length} em comum · ${c.so_novo.length} só deste cadastro · ${c.so_existente.length} só do existente`)
+            : 'Ocupa parte da mesma área (sem lotes para comparar)'} · {c.vencida ? `tratativa vencida (${c.dias_sem_acao} dias sem ação)` : 'tratativa em andamento'}</div></div>
+          {c.por === 'lotes' && <button className="iconbtn" title="Comparar os lotes" aria-label="Comparar os lotes" onClick={() => comparar(c)}><Ic n="search" /></button>}
+          {c.sou_responsavel && <button className="btn sm text" onClick={() => abrir(c.codigo)}>Abrir ficha</button>}
+        </div>
+      ))}
+    </div>
+    <div className="df"><button className="btn text" onClick={voltar}>Voltar</button><button className="btn" onClick={sair}>Não cadastrar</button>
+      {!ro && ops.map(([r, d, c]) => <button key={r} className={`btn ${c}`} disabled={gravando} onClick={() => decidir(d)}>{gravando ? 'Cadastrando...' : r}</button>)}</div>
   </>;
 }
 

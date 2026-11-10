@@ -38,6 +38,7 @@ Quando o texto fala de "clicar", no celular vale "tocar". A primeira versão do 
 | 13 | [Perguntas frequentes e problemas](13-perguntas-frequentes.md) | Respostas curtas para as dúvidas mais comuns e o que fazer quando algo não funciona. |
 | 14 | [Ficha: aba Estudos de massa](14-ficha-estudos-de-massa.md) | Pedir o estudo ao arquiteto, tipologias, áreas, índices, estudo válido, criar a viabilidade. |
 | 15 | [Ficha: Estudos de viabilidade](15-ficha-viabilidades.md) | Estudo de viabilidade: lista, estudo válido, Resumo da viabilidade, tipologias. |
+| 16 | [Ficha: Jornada](16-ficha-jornada.md) | Linha do tempo da negociação e fases do terreno, com Abrir e Abrir antes da hora. |
 | — | [Registro de mudanças](CHANGELOG.md) | O que mudou para o usuário, por data. |
 | — | [Roteiros de vídeo de onboarding](onboarding/README.md) | Três roteiros para novos usuários. |
 

@@ -36,7 +36,7 @@ export const SECOES: Record<string, { titulo: string; campos: Campo[] }> = {
   ident: { titulo: 'Identificação', campos: [['nome', 'Nome de referência', 'txt', null, 'full'], ['descricao', 'Descrição', 'area', null, 'full'], ['prioridade', 'Prioridade', 'sel', 'prioridade'],
     ['responsavel_id', 'Responsável', 'user', null], ['origem_cadastro', 'Origem do cadastro', 'sel', 'origem'], ['data_identificacao', 'Identificado em', 'date', null],
     ['observacoes', 'Observações gerais', 'area', null, 'full']] },
-  loc: { titulo: 'Endereço e localização', campos: [['cep', 'CEP', 'cep', null], ['logradouro', 'Logradouro', 'txt', null], ['numero', 'Número', 'txt', null], ['complemento', 'Complemento', 'txt', null],
+  loc: { titulo: 'Localização', campos: [['cep', 'CEP', 'cep', null], ['logradouro', 'Logradouro', 'txt', null], ['numero', 'Número', 'txt', null], ['complemento', 'Complemento', 'txt', null],
     ['bairro', 'Bairro', 'txt', null], ['municipio_id', 'Município', 'mun', null], ['zona', 'Zona', 'sel', 'zona'],
     ['cartorio', 'Cartório de registro de imóveis', 'cri', null], ['referencia_localizacao', 'Referência', 'txt', null, 'full'], ['latitude', 'Latitude', 'dec', null],
     ['longitude', 'Longitude', 'dec', null]] },
@@ -292,17 +292,22 @@ export function usePedido(secs: string[], fn: (p: PedidoCampo) => void) {
     return () => window.removeEventListener('ficha-campo', at);
   }, [chave]);
 }
-/** quadros que moram dentro de outro quadro */
-const QD_PAI: Record<string, string> = { indices: 'param', rest: 'param', histuso: 'param' };
 /** abre o quadro da aba e avisa os quadros na tela */
-export function abrirQuadroJa(aba: string, id: string) { abrirQuadro(aba, id); window.dispatchEvent(new Event('ficha-quadro')); }
-/** abre o quadro da seção (sem mexer na escolha das outras) */
+export function abrirQuadroJa(aba: string, id: string) { abrirQuadro(aba, id); }
+/** abre o quadro da seção: com as seções em chips (pedido do Moises, 10/nov/2026) é o chip escolhido da aba, guardado
+    como "@id" no mesmo conjunto da aba; avisa a barra e os quadros na tela */
 export function abrirQuadro(aba: string, id: string) {
   const L = lojaAtiva?.mapa ?? QD, st = L[aba] || (L[aba] = new Set());
   st.add(id);
-  /* quadro dentro de outro (Parâmetros urbanísticos da aba Terreno): abre também o de fora */
-  if (QD_PAI[id]) st.add(QD_PAI[id]);
+  for (const x of [...st]) if (x[0] === '@') st.delete(x);
+  st.add('@' + id);
   lojaAtiva?.mudou();
+  window.dispatchEvent(new Event('ficha-quadro'));
+}
+/** o chip escolhido da aba (o primeiro na tela quando não há escolha) */
+export function chipEscolhido(L: Record<string, Set<string>>, aba: string) {
+  for (const x of L[aba] ?? []) if (x[0] === '@') return x.slice(1);
+  return null;
 }
 /** rola até o campo ficar na "altura dos olhos": o primeiro item visível logo abaixo do que fica preso no alto
     (barra das abas e título do quadro); no fim da aba, sem folga para rolar, a aba ganha um respiro embaixo, que sai
@@ -451,7 +456,7 @@ export async function municipioId(m: EndGoogle | null, f: Ficha): Promise<number
 
 /** quadro das abas da ficha que abre e fecha pela seta do título; nasce fechado, menos o primeiro da aba; a escolha
     vale na sessão, por aba (proto_ui.js › uiQuadros) */
-const QD: Record<string, Set<string>> = {};
+export const QD: Record<string, Set<string>> = {};
 /** quadros guardados à parte, por terreno: a gaveta do Mapa dá a sua (lembrar.ts), que grava a cada mudança; sem ela,
     vale o QD da sessão. abrirQuadro (Logs, ações, "ir ao campo") mexe na loja da gaveta aberta. */
 export interface LojaQd { mapa: Record<string, Set<string>>; mudou: () => void }
@@ -459,11 +464,20 @@ export const LojaQdCtx = createContext<LojaQd | null>(null);
 let lojaAtiva: LojaQd | null = null;
 /** a gaveta marca a loja dela como a ativa enquanto está aberta */
 export function ativarLojaQd(l: LojaQd | null) { lojaAtiva = l; }
-export function Quadro({ aba, id, primeiro, titulo, acoes, aberto: forca, children, form }: {
+/** seções da aba em chips (pedido do Moises, 10/nov/2026): cada quadro se registra na barra de chips da aba (SecoesChips em
+    Chips.tsx) e só o do chip escolhido aparece, sempre aberto, sem a seta */
+export interface ChipsCtxV { reg: (id: string, rot: string, el: HTMLElement) => () => void; ativo: string | null }
+export const ChipsCtx = createContext<ChipsCtxV | null>(null);
+export function Quadro({ aba, id, primeiro, titulo, chip, acoes, aberto: forca, children, form }: {
   aba: string; id: string; primeiro?: boolean; titulo: ReactNode; acoes?: ReactNode; aberto?: boolean; children: ReactNode;
+  /** o nome no chip (sem ele, o título quando é texto); false = fica fora dos chips, como quadro que abre e fecha */
+  chip?: string | false;
   form?: (corpo: ReactNode) => ReactNode;
 }) {
   const loja = useContext(LojaQdCtx), L = loja?.mapa ?? QD;
+  const chips = useContext(ChipsCtx);
+  const rot = chip === false ? null : chip ?? (typeof titulo === 'string' ? titulo : id);
+  const emChip = !!chips && rot != null;
   const st = L[aba] || (L[aba] = new Set());
   const [, re] = useState(0);
   /* o painel de Logs abre o quadro de fora (abrirQuadro + evento 'ficha-quadro') */
@@ -481,16 +495,20 @@ export function Quadro({ aba, id, primeiro, titulo, acoes, aberto: forca, childr
     while (p && !(p.scrollHeight > p.clientHeight && /auto|scroll/.test(getComputedStyle(p).overflowY))) p = p.parentElement;
     if (p) p.scrollTop += d; else window.scrollBy(0, d);
   });
+  useLayoutEffect(() => (emChip && sec.current ? chips!.reg(id, rot!, sec.current) : undefined), [emChip, id, rot]);
   if (primeiro && !st.has('§' + id)) { st.add('§' + id); st.add(id); }
-  const ab = !!forca || st.has(id);
+  const ab = emChip || !!forca || st.has(id);
   const alternar = () => { if (ab) st.delete(id); else st.add(id); loja?.mudou(); re((x) => x + 1); };
-  const cab = (
-    <div className="sec-h"><h2><button type="button" className="qd-tg" aria-expanded={ab} onClick={alternar}>
-      <svg className="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-      <span>{titulo}</span></button></h2>{acoes}</div>
-  );
+  const cab = emChip
+    ? <div className="sec-h"><h2><span className="qd-tit">{titulo}</span></h2>{acoes}</div>
+    : (
+      <div className="sec-h"><h2><button type="button" className="qd-tg" aria-expanded={ab} onClick={alternar}>
+        <svg className="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+        <span>{titulo}</span></button></h2>{acoes}</div>
+    );
   return (
-    <section ref={sec} className={`sec${ab ? '' : ' qd-fechado'}${forca ? ' qd-ed' : ''}`} id={`sec-${id}`}>
+    <section ref={sec} className={`sec${ab ? '' : ' qd-fechado'}${forca ? ' qd-ed' : ''}${emChip ? ' qd-chip' : ''}`} id={`sec-${id}`}
+      hidden={emChip && chips!.ativo !== id ? true : undefined} role={emChip ? 'tabpanel' : undefined}>
       {form ? form(<>{cab}{children}</>) : <>{cab}{children}</>}
     </section>
   );

@@ -1,6 +1,6 @@
 # 09. Quadro de avanço e painel (Ações, Tarefas, Logs)
 
-**Disponível.** Na ficha, à direita, fica o **painel**. Em tela estreita (sem espaço para o painel), o quadro de avanço vai para a própria página.
+**Disponível.** Na ficha, à direita, fica o **painel**. Em tela estreita (sem espaço para o painel), o quadro de avanço vai para a própria página e os Logs viram a aba **Histórico** (ver [Histórico sem o painel](#histórico-sem-o-painel)).
 
 ## O painel
 
@@ -142,8 +142,12 @@ Mostra as **tarefas em aberto** do terreno. Como as tarefas ainda não foram por
 
 **Ainda não disponível:** o **olhinho** (ver o terreno como se a alteração não tivesse acontecido) e a **lixeira** (desfazer de verdade uma alteração antiga) dos logs. Para desfazer o que você acabou de fazer, use o **Ctrl+Z** (ver [01](01-entrar-e-navegar.md#desfazer-e-refazer-ctrlz-e-ctrly)).
 
+## Histórico sem o painel
+
+Quando a tela não tem espaço para o painel (janela estreita, ou a ficha aberta na gaveta do Mapa ou do Pipeline), a barra das abas ganha, no fim, a aba **Histórico**. Ela mostra os mesmos Logs do painel, com os mesmos filtros de usuários e de período, e o clique num log leva ao item do mesmo jeito. Os filtros escolhidos valem nos dois lugares. Com o painel na tela, a aba Histórico some.
+
 ## O que não é possível
 
 - **Ainda não disponível:** "O que esta etapa pede" (as perguntas da Jornada respondidas no quadro de avanço).
-- **Ainda não disponível:** abrir a fase seguinte antes da hora.
+- Abrir a fase seguinte antes da hora fica na aba **Jornada** (ver [16](16-ficha-jornada.md)).
 - Desfazer um movimento de etapa com Ctrl+Z: faça o movimento contrário (voltar etapa pelo Funil, com motivo).

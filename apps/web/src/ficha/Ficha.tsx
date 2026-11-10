@@ -4,24 +4,30 @@ import { useSessao } from '../lib/sessao';
 import { data as fd, milhoes, m2 } from '../lib/format';
 import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
+import FaixaTratativa from './Tratativa';
 import { carregarFicha, completude, dispensados, type Falta, FONTE_AREA, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
+import { useEstRelevo, useRelevoAuto } from '../topo/relevo';
 import MiniMapa from './MiniMapa';
 import { fixa, geojson } from '../novo/geo';
 import { LapisMapa, verificarEndereco } from '../novo/TrocarEndereco';
 import Temperatura from './Temperatura';
 import AbaComercial from './Comercial';
-import Painel, { Avancos, usePN } from './Painel';
-import AbaEntorno, { EntornoAuto } from './Entorno';
+import Painel, { Avancos, Historico, usePN } from './Painel';
+import AbaMercado, { EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
 import AbaInfra from '../topo/Topografico';
+import { AbaRestricoes, AbaHistUso } from './Parametros';
 import AbaViabilidade, { PopEstudo } from '../viab/Viabilidade';
 import AbaMassa from './Massa';
+import AbaJornada from './Jornada';
 import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
 import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
 import { useToast } from '../components/ui';
 import MenuTerreno from '../components/MenuTerreno';
 import { useNavigate } from 'react-router-dom';
+import { useRoleta } from '../components/Roleta';
+import { BarraChips, SecoesChips } from './Chips';
 
 // Ficha do terreno, porte de tools/prototipo/proto.js › pgFicha (topo, abas, fiAbasCaber), proto_fases.js › linhaTopo,
 // proto_funil.js › linhaEtapas e proto_mod.js › abaGeral (Visão geral: Localização e Resumo). Mesma marcação e classes do
@@ -29,12 +35,16 @@ import { useNavigate } from 'react-router-dom';
 // vieram depois, e o quadro de avanço com o painel de Logs (Painel.tsx, Avanco.tsx) na quarta entrega. As abas fora da primeira versão ficam
 // com o aviso.
 
-/** os itens da barra de abas; Estudos Técnicos junta, nesta ordem, Estudos de massa, Estudos de viabilidade, Entorno e
-    Avaliação de infraestrutura, que viram as subabas dela (pedido do Moises, 10/nov/2026). O endereço continua o da
-    subaba (`/terrenos/A123/entorno`), e `/terrenos/A123/estudos` abre a última subaba vista na sessão. */
-export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['viabilidade', 'Estudos de viabilidade'], ['entorno', 'Entorno'], ['infra', 'Avaliação de infraestrutura']];
+/** os itens da barra de abas; Estudos Técnicos junta, nesta ordem, Estudos de massa, Estudos de viabilidade, Avaliação de
+    infraestrutura, Restrições e entorno e Histórico de uso (os dois últimos vindos da aba Terreno), que viram as subabas dela (pedido do Moises, 10/nov/2026). O endereço continua o da subaba
+    (`/terrenos/A123/infra`), e `/terrenos/A123/estudos` abre a última subaba vista na sessão. */
+export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['viabilidade', 'Estudos de viabilidade'], ['infra', 'Avaliação de infraestrutura'], ['restricoes', 'Restrições e entorno'], ['historico-uso', 'Histórico de uso']];
+/** Mercado (antes Mercado e Demografia): pontos de interesse, renda, perfil da população e concorrência; o Entorno saiu (pedido do Moises,
+    10/nov/2026), e o link antigo `/entorno` cai aqui */
 export const BARRA: [string, string, [string, string][]?][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'],
-  ['estudos', 'Estudos Técnicos', ESTUDOS], ['jornada', 'Jornada'], ['documentos', 'Documentos']];
+  ['estudos', 'Estudos Técnicos', ESTUDOS], ['mercado', 'Mercado'], ['jornada', 'Jornada'], ['documentos', 'Documentos'], ['historico', 'Histórico']];
+/** Histórico só sem o painel (a classe o esconde onde o painel aparece) */
+const HIST = (k: string) => (k === 'historico' ? 'tab-hist' : undefined);
 /** as abas de conteúdo, na ordem (cada subaba é uma aba própria no endereço) */
 export const ABAS: [string, string][] = BARRA.flatMap(([k, l, s]) => s ?? [[k, l] as [string, string]]);
 /** o item da barra de uma aba (a subaba dá o grupo) */
@@ -42,7 +52,7 @@ const grupo = (k: string) => BARRA.find(([g, , s]) => g === k || s?.some((x) => 
 const SUB_LEMBRA = 'bkm-terrenos-ficha-estudos';
 const subVista = () => { try { const v = sessionStorage.getItem(SUB_LEMBRA); return ESTUDOS.some((x) => x[0] === v) ? v! : ESTUDOS[0][0]; } catch { return ESTUDOS[0][0]; } };
 /** links antigos caem na aba nova (CLAUDE.md, ficha em abas); Parâmetros virou seção da aba Terreno (9/nov/2026) */
-const ANTIGA: Record<string, string> = { cadastro: 'terreno', negociacao: 'comercial', urbanismo: 'terreno', parametros: 'terreno', fases: 'jornada', viabilidades: 'viabilidade' };
+const ANTIGA: Record<string, string> = { cadastro: 'terreno', negociacao: 'comercial', urbanismo: 'terreno', parametros: 'terreno', fases: 'jornada', viabilidades: 'viabilidade', entorno: 'mercado' };
 export const abaN = (k: string | undefined | null) => {
   if (k === 'estudos') return subVista();
   const a = ANTIGA[k ?? ''] ?? k ?? 'geral'; return ABAS.some((x) => x[0] === a) ? a : 'geral';
@@ -179,98 +189,7 @@ const SVG_DOTS = <svg className="ic" width="20" height="20" viewBox="0 0 24 24" 
 function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void }) {
   const barra = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState(false);
-  const [sobra, setSobra] = useState(false); // há abas fora da vista
-  const anim = useRef(0);
-  /* a aba ativa entra na vista (com as vizinhas) ao trocar de aba */
-  useLayoutEffect(() => {
-    const b = barra.current, a = b?.querySelector<HTMLElement>(`button[data-t="${grupo(aba)}"]`);
-    if (!b || !a) return;
-    const ant = a.previousElementSibling as HTMLElement | null, prox = a.nextElementSibling as HTMLElement | null;
-    const L = b.clientWidth, x0 = a.offsetLeft - (b.firstElementChild as HTMLElement).offsetLeft, aw = a.offsetWidth;
-    let e = ant ? x0 - ant.offsetWidth * 0.6 : 0, d = prox ? x0 + aw + prox.offsetWidth * 0.6 : b.scrollWidth;
-    if (d - e > L) { e = x0 - (L - aw) / 2; d = e + L; } // não cabem as vizinhas: a ativa no meio
-    let alvo = b.scrollLeft;
-    if (e < alvo) alvo = e; else if (d > alvo + L) alvo = d - L;
-    if (alvo !== b.scrollLeft) { cancelAnimationFrame(anim.current); b.scrollTo({ left: alvo, behavior: 'smooth' }); }
-  }, [aba]);
-  useEffect(() => {
-    const b = barra.current;
-    if (!b) return;
-    const medir = () => setSobra(b.scrollWidth > b.clientWidth + 1);
-    medir();
-    const ro = window.ResizeObserver ? new ResizeObserver(medir) : null;
-    ro?.observe(b);
-    /* inércia: a velocidade (px/ms) cai a cada quadro até parar; bater na ponta para */
-    const rodar = (v: number) => {
-      cancelAnimationFrame(anim.current);
-      let t0 = performance.now();
-      const passo = (t: number) => {
-        const dt = Math.min(32, t - t0); t0 = t;
-        const antes = b.scrollLeft;
-        b.scrollLeft = antes + v * dt;
-        v *= Math.pow(0.9965, dt); // atrito: perde ~30% da velocidade a cada 100 ms
-        if (Math.abs(v) > 0.02 && b.scrollLeft !== antes) anim.current = requestAnimationFrame(passo);
-      };
-      anim.current = requestAnimationFrame(passo);
-    };
-    /* Shift + roda do mouse: cada dente empurra a roleta, que segue com inércia (o trackpad já tem a dele) */
-    const roda = (ev: WheelEvent) => {
-      if (b.scrollWidth <= b.clientWidth + 1) return;
-      if (ev.shiftKey) {
-        const d = (ev.deltaY || ev.deltaX) * (ev.deltaMode === 1 ? 40 : 1);
-        if (!d) return;
-        ev.preventDefault();
-        rodar(Math.max(-6, Math.min(6, d / 60)));
-      }
-    };
-    /* mouse arrastado (no toque, a rolagem do navegador já desliza com inércia) */
-    let px: number | null = null, sx = 0, arrastou = false, id = -1, ult: [number, number][] = [];
-    const baixo = (ev: PointerEvent) => {
-      if (ev.pointerType !== 'mouse' || ev.button !== 0) return;
-      cancelAnimationFrame(anim.current);
-      px = ev.clientX; sx = b.scrollLeft; arrastou = false; id = ev.pointerId; ult = [[performance.now(), b.scrollLeft]];
-      if (b.scrollWidth > b.clientWidth + 1) { // mão fechada só com o botão apertado, mesmo se soltar fora da barra
-        b.classList.add('segurando');
-        window.addEventListener('pointerup', () => b.classList.remove('segurando'), { once: true });
-      }
-    };
-    const move = (ev: PointerEvent) => {
-      if (px == null || ev.pointerId !== id) return;
-      const dx = ev.clientX - px;
-      if (!arrastou) {
-        if (Math.abs(dx) < 6 || b.scrollWidth <= b.clientWidth + 1) return;
-        arrastou = true;
-        try { b.setPointerCapture(id); } catch { /* sem captura */ }
-        b.classList.add('arrastando');
-      }
-      ev.preventDefault();
-      b.scrollLeft = sx - dx;
-      ult.push([performance.now(), b.scrollLeft]); if (ult.length > 6) ult.shift();
-    };
-    const cima = (ev: PointerEvent) => {
-      if (ev.pointerId !== id || px == null) return;
-      px = null;
-      if (!arrastou) return;
-      b.classList.remove('arrastando');
-      const z = ult[ult.length - 1], a0 = ult.find((u) => z[0] - u[0] < 100) ?? ult[0], dt = z[0] - a0[0];
-      if (dt > 0 && performance.now() - z[0] < 60) rodar(Math.max(-8, Math.min(8, (z[1] - a0[1]) / dt)));
-    };
-    const clique = (ev: MouseEvent) => { if (arrastou) { ev.preventDefault(); ev.stopPropagation(); arrastou = false; } };
-    const parar = () => cancelAnimationFrame(anim.current); // o dedo na barra segura a roleta
-    b.addEventListener('wheel', roda, { passive: false });
-    b.addEventListener('pointerdown', baixo);
-    b.addEventListener('pointermove', move);
-    b.addEventListener('pointerup', cima);
-    b.addEventListener('pointercancel', cima);
-    b.addEventListener('touchstart', parar, { passive: true });
-    b.addEventListener('click', clique, true);
-    return () => {
-      ro?.disconnect(); cancelAnimationFrame(anim.current);
-      b.removeEventListener('wheel', roda); b.removeEventListener('pointerdown', baixo); b.removeEventListener('pointermove', move);
-      b.removeEventListener('pointerup', cima); b.removeEventListener('pointercancel', cima); b.removeEventListener('touchstart', parar);
-      b.removeEventListener('click', clique, true);
-    };
-  }, []);
+  const sobra = useRoleta(barra, grupo(aba)); // há abas fora da vista
   useEffect(() => {
     if (!menu) return;
     const fecha = (ev: PointerEvent) => { if (!(ev.target as HTMLElement).closest?.('.fi-mais')) setMenu(false); };
@@ -305,7 +224,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
     <div className="fi-abas-w">
       <div className={`fi-abas roleta${sobra ? ' desliza' : ''}`} role="tablist" aria-label="Seções do terreno" ref={barra}>
         {BARRA.map(([k, l]) => (
-          <button key={k} role="tab" data-t={k} aria-selected={k === g} aria-controls={`bl-${k === g ? aba : k}`} onClick={() => irG(k)}>{l}</button>
+          <button key={k} role="tab" data-t={k} className={HIST(k)} aria-selected={k === g} aria-controls={`bl-${k === g ? aba : k}`} onClick={() => irG(k)}>{l}</button>
         ))}
       </div>
       <div className="fi-fim">
@@ -315,7 +234,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
           <div className="adv-menu" role="menu">
             {BARRA.map(([k, l, s]) => s
               ? [<div key={k} className="fi-mais-g">{l}</div>, ...s.map(([sk, sl]) => <button key={sk} role="menuitemradio" aria-checked={sk === aba} className={`fi-mais-sub${sk === aba ? ' atual' : ''}`} onClick={() => { setMenu(false); if (sk !== aba) irAba(sk); }}>{sl}</button>)]
-              : <button key={k} role="menuitemradio" aria-checked={k === aba} className={k === aba ? 'atual' : undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{l}</button>)}
+              : <button key={k} role="menuitemradio" aria-checked={k === aba} className={[k === aba ? 'atual' : '', HIST(k) ?? ''].join(' ').trim() || undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{l}</button>)}
           </div>
         </div>
       </div>
@@ -348,6 +267,7 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
   );
   const dois = (a: ReactNode, b: ReactNode) => <span>{a}{b ? <span className="kv-2">{b}</span> : null}</span>;
   const [cor, fg] = corPino(f);
+  const rel = useEstRelevo(f.id);
   const end = [f.logradouro && f.logradouro + (f.numero ? ', ' + f.numero : ''), f.bairro].filter(Boolean).join(' · ');
   const mun = [[f.municipio, f.uf].filter(Boolean).join(' · '), f.zona && 'Zona ' + (ZONA[f.zona] ?? f.zona)].filter(Boolean).join(' · ');
   const e = f.estacao;
@@ -357,7 +277,7 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
   const tp = f.topo
     ? <span id="rs-topo"><span className={`tp-chip tp-${f.topo.perfil}`}>{f.topo.perfil === 'inclinado' ? `Inclinado · ${num(f.topo.decl, 1)}%` : TP_N[f.topo.perfil] ?? f.topo.perfil}</span>
       {f.topo.desnivel != null && <span className="kv-2">desnível {num(f.topo.desnivel, 1)} m</span>}</span>
-    : '';
+    : rel.em ? <span id="rs-topo"><span className="faint">medindo...</span></span> : '';
   return (
     <div className="geral">
       <div className="geral-c">
@@ -384,7 +304,7 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
             : lin('Área adotada', f.area != null ? dois(m2(f.area), f.fonteArea ? FONTE_AREA[f.fonteArea] : null) : '', ir('terreno', 'Ver as áreas'))}
           {lin('Unidades do estudo válido', f.unidades != null ? `${num(f.unidades)} unidades` : '', ir('viabilidade', 'Ver os estudos de viabilidade'))}
           {lin('VGV do estudo válido', f.vgv != null ? milhoes(f.vgv) : '')}
-          {lin('Distância do metrô ou trem', est, ir('entorno', 'Ver o entorno'))}
+          {lin('Distância do metrô ou trem', est, ir('mercado', 'Ver os pontos de interesse', 'ent'))}
           {lin('Valor pedido na entrada', f.ofertaEntrada?.valor ? dois(milhoes(f.ofertaEntrada.valor), `oferta de ${fd(f.ofertaEntrada.data)}`) : '', ir('comercial', 'Ver as ofertas'))}
           {lin('Perfil topográfico', tp, ir('infra', 'Ver a infraestrutura'))}
           {lin('Corretor', f.corretor ? dois(f.corretor.nome, f.corretor.imob) : '', ir('comercial', 'Ver os corretores'))}
@@ -490,6 +410,8 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
 }) {
   const [pn] = usePN();
   const navegar = useNavigate();
+  /* relevo medido sozinho ao abrir a ficha, em qualquer aba (topo/relevo.ts) */
+  useRelevoAuto(f);
   const c = completude(f);
   const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
   const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;
@@ -500,10 +422,14 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   const corpo = aba === 'geral' ? <VisaoGeral f={f} irAba={irAba} abrirMapa={abrirMapa} />
     : aba === 'terreno' ? <AbaTerreno key={f.id} f={f} />
     : aba === 'comercial' ? <AbaComercial key={f.id} f={f} cor={corPino(f)[0]} />
-    : aba === 'entorno' ? <AbaEntorno key={f.id} f={f} />
+    : aba === 'mercado' ? <AbaMercado key={f.id} f={f} />
     : aba === 'infra' ? <AbaInfra key={f.id} f={f} />
+    : aba === 'restricoes' ? <AbaRestricoes key={f.id} f={f} />
+    : aba === 'historico-uso' ? <AbaHistUso key={f.id} f={f} />
     : aba === 'viabilidade' ? <AbaViabilidade key={f.id} f={f} />
     : aba === 'massa' ? <AbaMassa key={f.id} f={f} irAba={irAba} />
+    : aba === 'jornada' ? <AbaJornada key={f.id} f={f} />
+    : aba === 'historico' ? <Historico f={f} irAba={irAba} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
     <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main">
@@ -525,6 +451,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
         <div className="fi-head-d"><Resp r={f.resp} />{!naGaveta && <MenuTerreno t={f} aoSair={() => navegar('/mapa', { replace: true })} />}</div>
       </div>
       <div className="stack">
+        <FaixaTratativa f={f} />
         {c.pct < 100 && (
           <div className="complete">
             <span className="progress"><span className="bar"><span style={{ width: `${c.pct}%` }} /></span><Faltam f={f} c={c} irAba={irAba} /></span>
@@ -533,13 +460,15 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
         <div className="adv-main"><Avancos f={f} irAba={irAba} /></div>
       </div>
       <Abas f={f} aba={aba} irAba={irAba} />
-      {grupo(aba) === 'estudos' && (
-        <div className="fi-subabas" role="tablist" aria-label="Estudos Técnicos">
-          {ESTUDOS.map(([k, l]) => <button key={k} role="tab" aria-selected={k === aba} aria-controls={`bl-${k}`} onClick={() => k !== aba && irAba(k)}>{l}</button>)}
-        </div>
-      )}
-      <section key={aba} className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
-      {aba !== 'entorno' && f.lat != null && <EntornoAuto f={f} />}
+      {grupo(aba) === 'estudos' && <BarraChips itens={ESTUDOS} ativo={aba} ir={irAba} rotulo="Estudos Técnicos" />}
+      {/* em Estudos Técnicos, uma fileira só (as subabas); dentro de cada subaba os quadros continuam abrindo e fechando pela
+          seta (pedido do Moises, 10/nov/2026) */}
+      {grupo(aba) === 'estudos'
+        ? <section key={aba} className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
+        : <SecoesChips key={aba} aba={aba} rotulo={ABAS.find((x) => x[0] === aba)?.[1] ?? aba}>
+          <section className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
+        </SecoesChips>}
+      {aba !== 'mercado' && f.lat != null && <EntornoAuto f={f} />}
       <CartorioAuto f={f} />
       <PopEstudo f={f} />
     </div><Painel f={f} irAba={irAba} /></div>
