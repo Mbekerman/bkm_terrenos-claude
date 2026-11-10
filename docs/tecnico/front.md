@@ -183,7 +183,7 @@ Como funciona:
 - **Páginas com sub-rotas** usam `path="mapa/*"` e leem `useParams()['*']` e dividem por `/` (`Mapa.tsx`, `Funil.tsx`, `FichaPagina.tsx`).
 - **De onde veio**: abrir a ficha pelo Funil passa `state: { de: 'funil', volta: <caminho> }`; o botão de voltar da ficha usa isso (`FichaPagina.tsx`).
 - **Filtros** ficam depois do `#`, como `#f=<json>`, sem entrar no histórico (`history.replaceState`).
-- A especificação (CLAUDE.md, "Endereço de cada tela") lista mais endereços (`/terrenos`, `/tarefas/...`, `/dashboard`, `/configuracoes/...`, `/terrenos/A123/viabilidade/2`, `/terrenos/A123/gaveta`); eles existem só no protótipo por enquanto.
+- A especificação (CLAUDE.md, "Endereço de cada tela") lista mais endereços (`/terrenos`, `/tarefas/...`, `/dashboard`, `/configuracoes/...`, `/terrenos/A123/gaveta`); eles existem só no protótipo por enquanto.
 
 ---
 
@@ -509,8 +509,9 @@ A primeira versão em uso é, por decisão do Moisés: login, mapa, novo terreno
 | Dashboard | não | |
 | Tarefas (Lista, Quadro, Cronograma, Calendário, Funil, cartão, modelos, automações, aprovação, pausa, recorrência) | não | A ficha só **lê** as tarefas abertas do quadro do terreno (`Painel.tsx`, aba Tarefas). As tarefas devem ir para um banco próprio (`bkm_tarefas`, ADR 0002). |
 | Configurações (Funil, Jornada, Fases, Campos, Viabilidade, Parâmetros, Topografia, Tarefas, Equipe, Notificações) | não | Ajuste urgente direto no banco, a pedido do Moisés. |
-| Abas da ficha Estudos de massa, Viabilidades, Jornada, Documentos | não | Mostram "Esta aba entra depois da primeira versão" (`Ficha.tsx`, fim). |
-| Estudo de viabilidade (popup, DRE, modelos) | não | |
+| Aba Viabilidades: Resumo da viabilidade, lista, popup com indicadores e Tipologias | sim | `viab/Viabilidade.tsx`, `viab/calc.ts`, `viab/dados.ts`; o popup abre por `abrirEstudo(id)` de qualquer lugar da ficha e fica em `/terrenos/A123/viabilidade/N` na página. |
+| Abas da ficha Estudos de massa, Jornada, Documentos | não | Mostram "Esta aba entra depois da primeira versão" (`Ficha.tsx`, fim). |
+| Estudo de viabilidade: seções Terreno, Comercial, Obras, Gerais, Financeiras, Taxas, DRE; modelos; vínculo com estudo de massa | não | Próximos PRs do porte. |
 | Topográfico preliminar fora de São Paulo | sim | `topo/gerar.ts` (porte de `proto_topo.js` sem laser, quadra inteira, calçadas nem larguras de via) e `topo/Topografico.tsx` (aba Infraestrutura, quadro Relevo); modelo do DXF em `topo/modelo.dxf` (cópia de `tools/prototipo/topo_modelo.dxf`, lido com `?raw`). Baixa na hora, sem gravar em Documentos. |
 | Topográfico em São Paulo (laser 2020, quadra inteira), relevo medido sozinho, visita técnica, viabilidades técnicas | não | O Resumo mostra o perfil se já estiver gravado (`topo_perfil`). |
 | Logs com olhinho e lixeira (`app.desfazer_alteracao`) | não | Logs entram sem eles (decisão da sabatina). |

@@ -21,7 +21,7 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 | Aba | Situação |
 |---|---|
 | **Estudos de massa** (pedido ao arquiteto, tipologias, CA, eficiência, estudo válido) | Só no protótipo |
-| **Viabilidades** (estudo de viabilidade estática, DRE, modelos, "Rentabilidade abaixo da mínima") | Só no protótipo. Por isso Unidades e VGV do Resumo ficam vazios. |
+| **Viabilidades** | Em partes ([14](14-ficha-viabilidades.md)): já estão a lista, o Resumo da viabilidade, o estudo válido e a seção Tipologias. Faltam as seções Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE, os modelos de estudo e o vínculo com o estudo de massa. |
 | **Infraestrutura** (relevo em 7 perfis medido sozinho, visita técnica, viabilidades técnicas de energia, água, esgoto e gás) | Só no protótipo; a aba já tem o quadro Relevo com o Topográfico fora de São Paulo. Por isso "Perfil topográfico" fica vazio; a "Visita técnica" fica fora da completude até a aba chegar. |
 | **Jornada** (as fases do terreno, "Abrir antes da hora") | Só no protótipo |
 | **Documentos** (envio com versão, pastas no Google Drive, planta e desenho do GeoSampa) | Só no protótipo; pastas no Drive no plano |

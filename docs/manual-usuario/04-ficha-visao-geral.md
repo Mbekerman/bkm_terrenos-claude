@@ -66,7 +66,8 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viab
 | Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
 | Entorno | Disponível | [08](08-ficha-entorno.md) |
 | Infraestrutura | Só o quadro **Relevo**, com o **Topográfico** fora de São Paulo (veja abaixo) | esta |
-| Estudos de massa, Viabilidades, Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
+| Viabilidades | Disponível em parte: lista, Resumo da viabilidade e a seção Tipologias do estudo | [14](14-ficha-viabilidades.md) |
+| Estudos de massa, Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
 **Como andar pelas abas:**
 
@@ -119,7 +120,7 @@ Cada linha tem uma **seta** que leva à aba onde o dado mora.
 | **Município e região** | Município · UF · Zona | O seletor de **Zona** (Norte, Sul, Leste, Oeste, Centro...) se edita ali mesmo. Em São Paulo a zona vem sozinha do GeoSampa (região oficial da subprefeitura); trocada à mão, fica a sua. |
 | **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Terreno › Parâmetros urbanísticos (a seta abre a seção em Índices urbanísticos). |
 | **Área adotada** | Área e a fonte | O seletor de **fonte** troca a área adotada ali mesmo (a Cadastral aparece sempre; as outras, quando preenchidas). |
-| **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido | **Ainda não disponível**: ficam vazias até a viabilidade chegar ao sistema real. |
+| **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido (unidades somadas das tipologias e VGV bruto) | Aba Viabilidades (a seta leva lá); vazias enquanto nenhum estudo for o válido. Ver [14](14-ficha-viabilidades.md). |
 | **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Entorno). |
 | **Valor pedido na entrada** | Valor da **primeira** oferta, com a data | Aba Comercial. |
 | **Perfil topográfico** | Plano, Inclinado, Acidentado... | A medição automática ainda não está no sistema real; a seta leva à aba Infraestrutura, onde está o Topográfico. |
@@ -175,7 +176,7 @@ Enquanto o terreno está excluído, a matrícula e os SQLs dele continuam presos
 
 ## O que não é possível na ficha hoje
 
-- As abas Estudos de massa, Viabilidades, Jornada e Documentos, e o resto da aba Infraestrutura (visita técnica, viabilidades técnicas).
+- As abas Estudos de massa, Jornada e Documentos, parte do estudo de viabilidade (ver [14](14-ficha-viabilidades.md)), e o resto da aba Infraestrutura (visita técnica, viabilidades técnicas).
 - Digitar o endereço (CEP, rua, bairro, município) direto: ele vem do mapa.
 - Ver a ficha em tema escuro.
 - Imprimir ou exportar a ficha.

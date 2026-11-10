@@ -14,6 +14,7 @@ import Painel, { Avancos, usePN } from './Painel';
 import AbaEntorno, { EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
 import AbaInfra from '../topo/Topografico';
+import AbaViabilidade, { PopEstudo } from '../viab/Viabilidade';
 import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
 import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
@@ -462,6 +463,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
     : aba === 'comercial' ? <AbaComercial key={f.id} f={f} cor={corPino(f)[0]} />
     : aba === 'entorno' ? <AbaEntorno key={f.id} f={f} />
     : aba === 'infra' ? <AbaInfra key={f.id} f={f} />
+    : aba === 'viabilidade' ? <AbaViabilidade key={f.id} f={f} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
     <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main">
@@ -494,6 +496,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
       <section key={aba} className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
       {aba !== 'entorno' && f.lat != null && <EntornoAuto f={f} />}
       <CartorioAuto f={f} />
+      <PopEstudo f={f} />
     </div><Painel f={f} irAba={irAba} /></div>
   );
 }

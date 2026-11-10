@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
+- **Estudo de viabilidade, primeira parte** (ficha › aba Viabilidades): Resumo da viabilidade com o seletor do estudo válido, a lista dos estudos (Novo estudo, Duplicar, Apagar, Marcar como válido) e a janela do estudo com os indicadores, os botões das seções e a seção Tipologias. Com um estudo válido, Unidades e VGV aparecem no Resumo da Visão geral. As outras seções chegam nas próximas entregas. Ver [Viabilidades](14-ficha-viabilidades.md). (#313)
 - **Concorrência mais suave e agrupada de longe** (Mapa): os quadrados da concorrência passam a tons pastel, na mesma ordem de faixas de R$/m². Até o zoom 13, empreendimentos próximos com a mesma situação e a mesma faixa viram uma bolha do tamanho das unidades; a dica mostra quantos empreendimentos e unidades, e o clique aproxima. Ver [Mapa](02-mapa.md#concorrência-empreendimentos-de-outras-empresas). (#305)
 - **Terrenos próximos agrupados** (página Mapa): etiquetas que se cobririam viram uma bolha com o número e o anel com as cores dos terrenos; o mouse parado mostra a lista, e o clique no número aproxima até elas se separarem. Ver [Mapa](02-mapa.md). (#304)
 - **Área total na proposta** (aba Comercial, Nova proposta): ao marcar as partes da proposta, aparece embaixo a soma das áreas delas, quantas partes de quantas e o valor por m². Ver [Comercial](06-ficha-comercial.md). (#303)

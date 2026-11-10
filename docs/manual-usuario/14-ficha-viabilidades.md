@@ -1,0 +1,79 @@
+# Ficha: aba Viabilidades
+
+## Para que serve
+
+Montar o **estudo de viabilidade estática** do terreno: quantas unidades cabem, por quanto se vendem, quanto custam o terreno, a obra e as despesas, e quanto sobra (lucro e margem). Um terreno pode ter vários estudos; um deles é o **válido**, o que vale para a negociação. É dele que saem as **Unidades** e o **VGV** do Resumo da Visão geral e o filtro "VGV estimado".
+
+O estudo está chegando ao sistema em partes. **Hoje:** a lista de estudos, o Resumo da viabilidade e, no estudo, os indicadores e a seção **Tipologias**. As outras seções (Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE) e os modelos de estudo chegam nas próximas entregas (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
+
+## Onde fica
+
+Ficha do terreno › aba **Viabilidades** (`/terrenos/A123/viabilidade`). Um estudo aberto tem endereço próprio, pela ordem em que foi criado no terreno: `/terrenos/A123/viabilidade/2` abre o segundo estudo. O link enviado a um colega abre direto nele.
+
+## Resumo da viabilidade
+
+O primeiro quadro da aba.
+
+| O que aparece | De onde vem |
+|---|---|
+| **Estudo válido** | Seletor com todos os estudos do terreno (nome e margem). Escolher um o marca como válido. Só funciona com a negociação ativa e para quem edita. |
+| **Abrir estudo** | Abre o estudo válido. |
+| **Novo estudo** | Cria um estudo e já o abre. |
+| **Margem líquida** e **Mínima da empresa** | A margem do estudo válido e a rentabilidade mínima da empresa (quando o administrador definiu uma). |
+| Tabela | VGV líquido, valor pedido, última proposta e lucro líquido, cada um em % do VGV líquido. |
+| Aviso **Rentabilidade abaixo da mínima** | Quando a margem do estudo válido fica abaixo da mínima da empresa. |
+
+Sem estudo, o quadro mostra "Sem estudo" e o link **Montar estudo**.
+
+## Quadro Viabilidade
+
+A lista dos estudos do terreno, com VGV líquido, lucro líquido, margem, a data da última alteração e a coluna **Válido** (clique no círculo para marcar o válido). O nome abre o estudo. **Novo estudo** no título cria outro.
+
+## O estudo (janela sobre a ficha)
+
+**Como abrir:** clique no nome do estudo na lista, em **Abrir estudo** ou em **Novo estudo**.
+
+**Como fechar:** o **X** no canto, **Esc**, ou clique fora da janela.
+
+**No topo:** o terreno, o selo **Válido** (quando é o válido), o **nome do estudo** (clique e digite para trocar; grava ao sair do campo) e a data da última alteração. À direita, para quem edita:
+
+- **Marcar como válido**: só com a negociação ativa e quando o estudo ainda não é o válido.
+- **Duplicar**: cria "Cópia de …" com tudo do estudo e a abre.
+- **Apagar**: pede confirmação. O estudo válido não se apaga (marque outro como válido antes).
+
+**Indicadores** (ficam presos no topo ao rolar): **VGV**, **VGV líquido**, **Lucro líquido** e **Margem líquida**. Eles se refazem enquanto você digita.
+
+**Botões das seções** (logo abaixo, também presos): Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE, cada um com o total e o % do VGV. Financeiras e Taxas só aparecem para a diretoria e o administrador. No fim de cada seção, os botões levam à anterior e à próxima.
+
+### Tipologias
+
+Uma linha por tipo de unidade:
+
+| Campo | Observação |
+|---|---|
+| **Tipologia** | O nome (ex.: "2 dormitórios"). |
+| **Área privativa** | Em m². |
+| **Quantidade** | Unidades dessa tipologia. |
+| **Em permuta** | Unidades que vão para o dono do terreno (permuta física). |
+| **Comissão** | Unidades dadas na comissão do terreno. |
+| **Preço unitário** e **Preço por m²** | Ligados: com a área preenchida, mudar um refaz o outro. Mudar a área refaz o preço por m². |
+| **VGV** | Quantidade × preço unitário (só leitura). |
+
+- **Adicionar tipologia** no título da seção cria uma linha nova; o **X** no fim da linha a tira.
+- Cada campo grava sozinho ao sair dele.
+- Permuta e comissão juntas não passam da quantidade: o sistema avisa e ajusta.
+- O estudo novo já vem com a "Tipologia 1" para preencher.
+- A linha **Total** soma a área privativa, as unidades, a permuta e a comissão, e mostra o preço médio, o preço médio por m² e o VGV.
+
+## Quem pode
+
+- **Analista, gestor e diretor**: criam, editam, duplicam, apagam e marcam o válido.
+- **Leitura**: só vê (campos travados, sem botões).
+- **Financeiras** e **Taxas**: só a diretoria e o administrador veem e mudam. Para os demais, o resultado já conta com elas pelo total.
+
+## O que não é possível hoje
+
+- As seções Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE do estudo (a janela mostra que entram na próxima entrega).
+- Escolher um modelo ao criar o estudo e "Salvar como modelo". Sem escolha, o estudo nasce com o modelo padrão da empresa, se houver.
+- Ligar o estudo a um estudo de massa.
+- Configurações › Viabilidade (lista de itens, margem mínima, modelos da empresa).
