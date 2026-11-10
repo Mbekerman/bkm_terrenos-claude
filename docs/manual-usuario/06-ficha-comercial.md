@@ -79,7 +79,7 @@ Lista os corretores que trouxeram ofertas deste terreno. Eles "entram automatica
    - **Valor total**;
    - **Forma de pagamento**;
    - **Status**: Apresentada, Em análise ou Rascunho;
-   - **Partes da proposta**: para qual parte (dono) a proposta é feita. Pode ser uma, várias ou todas (**"Marcar todas"**, com três partes ou mais). Se o terreno tem **uma parte só**, ela já vem marcada; com **duas ou mais**, nenhuma vem marcada e o sistema **não deixa registrar** sem escolher pelo menos uma: o campo fica vermelho com o aviso "Escolha pelo menos uma parte". As partes são as cadastradas na aba Terreno;
+   - **Partes da proposta**: para qual parte (dono) a proposta é feita. Pode ser uma, várias ou todas (**"Marcar todas"**, com três partes ou mais). Se o terreno tem **uma parte só**, ela já vem marcada; com **duas ou mais**, nenhuma vem marcada e o sistema **não deixa registrar** sem escolher pelo menos uma: o campo fica vermelho com o aviso "Escolha pelo menos uma parte". Logo abaixo das partes aparece a **área total da proposta**, que se refaz a cada parte marcada ou desmarcada: a soma das áreas das partes escolhidas (a mesma área que cada parte mostra no quadro Partes; com uma parte só, a área adotada do terreno), quantas partes de quantas e, com o valor total digitado, o valor por m². Parte sem área fica fora da soma e é citada embaixo ("Sem área: …"). As partes são as cadastradas na aba Terreno;
    - **Apresentada em** (data) e **Validade** (vem com 15 dias depois);
    - **Condições de pagamento** (texto).
 3. Clique em **Registrar**.
