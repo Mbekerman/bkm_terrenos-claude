@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
+- **Terreno no mapa mais fácil de achar:** cada terreno agora aparece como uma etiqueta com o código (A112), na cor da fase ou etapa, com um ponto embaixo no lugar exato, no lugar do pino parecido com os do Google. Com o mapa mais afastado, a etiqueta fica um pouco maior. (#295)
 - **Mapa de lotes de São José dos Campos mais rápido na segunda vez:** cada quadra montada pelo GeoSanja fica guardada no sistema, e quem abrir o mapa na mesma quadra depois vê os lotes na hora. A quadra é montada de novo depois de 90 dias. (#290)
 - **Novo terreno em São José dos Campos** igual ao de São Paulo: **"Incluir por inscrição"** no passo 1 (a poligonal vira a soma dos lotes do GeoSanja) e o **mapa de lotes da prefeitura** logo depois da poligonal, com as quadras inteiras montadas pelo GeoSanja, o satélite do Google por baixo e o clique fora dos lotes para acrescentar o lote daquele ponto. Na ficha, "Escolher no mapa" em Matrículas e SQLs. (#289)
 - **Planta do loteamento** (aba Terreno, Endereço e localização, só São José dos Campos): baixa do GeoSanja a planta do loteamento aprovado onde o terreno está. (#289)
