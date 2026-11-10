@@ -52,7 +52,7 @@ const GSJ_FICHA = ['macrozoneamentoUrbano', 'centralidade', 'setorSocioEconomico
 export const macroDe = (n: unknown) => (/consolida/i.test(String(n || '')) ? 'MC' : /estrutura/i.test(String(n || '')) ? 'ME' : /controlad/i.test(String(n || '')) ? 'MOC' : null);
 
 let TOKEN: string | null = null;
-async function token(novo = false) {
+export async function gsjToken(novo = false) {
   if (TOKEN && !novo) return TOKEN;
   const r = await fetch(GSJ_BASE + 'autenticar?token=VISITANTE');
   if (!r.ok) throw new Error('GeoSanja respondeu ' + r.status);
@@ -65,8 +65,8 @@ const icFmt = (s: string) => { const d = digitos(s); return d.length === 14 ? `$
 export async function gsjLote(ic: string): Promise<any | null> {
   const ped = (tk: string) => fetch(GSJ_BASE + 'localizar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
     body: JSON.stringify({ toolId: 'SearchICTool', parametros: [{ name: 'ic', value: icFmt(ic) }] }) });
-  let r = await ped(await token());
-  if (r.status === 401) r = await ped(await token(true));
+  let r = await ped(await gsjToken());
+  if (r.status === 401) r = await ped(await gsjToken(true));
   if (!r.ok) throw new Error('GeoSanja respondeu ' + r.status);
   const j = await r.json();
   return Array.isArray(j) && j[0]?.data?.geom ? JSON.parse(j[0].data.geom) : null;
@@ -77,10 +77,10 @@ export async function gsjPoligono(ic: string): Promise<P[] | null> {
   return g ? geoAneis(g)[0].slice(0, -1).map((p) => [p[1], p[0]] as P) : null;
 }
 /** feições da camada dentro do retângulo (graus): um pixel no centro com raio que alcança os cantos */
-async function gsjInfo(camada: string, bb: number[]): Promise<any[]> {
+export async function gsjInfoBB(camada: string, bb: number[]): Promise<any[]> {
   const u = new URL(GSJ_BASE + 'proxy');
   const q: Record<string, string | number> = { SERVICE: 'WMS', VERSION: '1.1.1', REQUEST: 'GetFeatureInfo', LAYERS: 'geoSJC:' + camada, QUERY_LAYERS: 'geoSJC:' + camada, SRS: 'EPSG:4326',
-    BBOX: bb.join(','), WIDTH: 101, HEIGHT: 101, X: 50, Y: 50, BUFFER: 75, INFO_FORMAT: 'application/json', FEATURE_COUNT: 200, authToken: await token() };
+    BBOX: bb.join(','), WIDTH: 101, HEIGHT: 101, X: 50, Y: 50, BUFFER: 75, INFO_FORMAT: 'application/json', FEATURE_COUNT: 200, authToken: await gsjToken() };
   Object.entries(q).forEach(([k, v]) => u.searchParams.set(k, String(v)));
   const r = await fetch(u);
   if (!r.ok) throw new Error('GeoSanja respondeu ' + r.status);
@@ -122,7 +122,7 @@ export async function consultarLoteSjc(inscricaoId: string, ic: string, auto = f
   const folga = Math.max(...GSJ_CAMADAS.map((c) => c[5] || 0)) + 5, xs = r0.map((p) => p[0]), ys = r0.map((p) => p[1]);
   const bb = [Math.min(...xs) - folga / kx, Math.min(...ys) - folga / ky, Math.max(...xs) + folga / kx, Math.max(...ys) + folga / ky];
   const wms = [...new Set(GSJ_CAMADAS.map((c) => c[0]))], res: Record<string, any[]> = {}, falhou: string[] = [];
-  await Promise.all(wms.map(async (k) => { try { res[k] = await gsjInfo(k, bb); } catch { falhou.push(k); } }));
+  await Promise.all(wms.map(async (k) => { try { res[k] = await gsjInfoBB(k, bb); } catch { falhou.push(k); } }));
   const camadas: Record<string, any[]> = {}, zonasF: any[] = [];
   GSJ_CAMADAS.forEach(([k, pref, , fmt, , dist], n) => {
     if (!res[k]) return;

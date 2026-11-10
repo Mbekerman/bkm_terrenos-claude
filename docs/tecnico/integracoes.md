@@ -14,9 +14,9 @@ Retrato de **8 de novembro de 2026**. "React" é o sistema real (`apps/web`); "p
 | Places API (New) | busca de endereço, lugares do mapa, pontos de interesse do entorno | sim | sim | `GOOGLE_MAPS_KEY` |
 | Routes API (matriz a pé) e Distance Matrix | distância a pé até os pontos de interesse | sim | sim (e rota no mapa) | `GOOGLE_MAPS_KEY` |
 | Geocoding | endereço a partir do ponto (Novo terreno, troca de endereço) | sim | sim | `GOOGLE_MAPS_KEY` |
-| Elevation | cotas fora de São Paulo (relevo, topográfico) | não | sim | `GOOGLE_MAPS_KEY` |
+| Elevation | cotas fora de São Paulo (relevo, topográfico) | sim (topográfico) | sim | `GOOGLE_MAPS_KEY` |
 | Street View | ver a rua | sim | sim | `GOOGLE_MAPS_KEY` |
-| Maps Static API | imagem de satélite por baixo do topográfico fora de São Paulo (sem ela, Esri) | não | sim | `GOOGLE_MAPS_KEY` |
+| Maps Static API | imagem por baixo do topográfico fora de São Paulo (no sistema real, satélite com nomes de rua, sem reserva; no protótipo, sem ela, Esri) | sim | sim | `GOOGLE_MAPS_KEY` |
 | People API | foto do Google da pessoa logada | sim | não | token OAuth da própria pessoa |
 | Google OAuth (login) | entrar com a conta @bkm.com.br | sim | não | app OAuth "Interno" no GCP, configurado no Supabase |
 | GeoSampa (Prefeitura de SP) | lote pelo SQL, camadas urbanísticas, mapa de lotes | sim | sim | nenhuma (repasse do Caddy `/geosampa`) |

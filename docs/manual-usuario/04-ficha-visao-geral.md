@@ -63,7 +63,8 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viab
 | Comercial | Disponível | [06](06-ficha-comercial.md) |
 | Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
 | Entorno | Disponível | [08](08-ficha-entorno.md) |
-| Estudos de massa, Viabilidades, Infraestrutura, Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
+| Infraestrutura | Só o quadro **Relevo**, com o **Topográfico** fora de São Paulo (veja abaixo) | esta |
+| Estudos de massa, Viabilidades, Jornada, Documentos | **Ainda não disponível** (mostram "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
 **Como andar pelas abas:**
 
@@ -119,7 +120,7 @@ Cada linha tem uma **seta** que leva à aba onde o dado mora.
 | **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido | **Ainda não disponível**: ficam vazias até a viabilidade chegar ao sistema real. |
 | **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Entorno). |
 | **Valor pedido na entrada** | Valor da **primeira** oferta, com a data | Aba Comercial. |
-| **Perfil topográfico** | Plano, Inclinado, Acidentado... | **Ainda não disponível** no sistema real (relevo entra depois). |
+| **Perfil topográfico** | Plano, Inclinado, Acidentado... | A medição automática ainda não está no sistema real; a seta leva à aba Infraestrutura, onde está o Topográfico. |
 | **Corretor** | Corretor principal e imobiliária | Aba Comercial. |
 
 Linhas sem dado mostram "Não informado" ou "Falta preencher".
@@ -146,9 +147,32 @@ Só para **diretor** e **administrador**: no topo da ficha, à direita do respon
 
 Enquanto o terreno está excluído, a matrícula e os SQLs dele continuam presos a ele: tentar incluí-los em outro terreno mostra "está num terreno excluído". Para usar o número noutro terreno, o administrador restaura ou deleta o excluído.
 
+## Topográfico preliminar (aba Infraestrutura)
+
+**Para que serve:** ter uma planta com as curvas de nível do terreno e da vizinhança para o estudo, antes do levantamento de campo.
+
+**Onde:** aba **Infraestrutura**, quadro **Relevo**, botão **Topográfico** (aparece quando o terreno tem poligonal).
+
+1. Clique em **Topográfico**. A janela explica de onde vem cada coisa.
+2. Clique em **Gerar topográfico**. A janela mostra cada passo enquanto trabalha (contorno, cotas, curvas, imagem, PDF e DXF).
+3. No fim aparece a prévia da folha. Baixe o **PDF** (folha A3 para imprimir) ou o **DXF + imagem (.zip)** (para o AutoCAD, com o mesmo PDF dentro).
+
+**De onde vem:**
+
+- **Contorno**: em São José dos Campos, a soma dos lotes do GeoSanja quando todas as inscrições têm o lote; senão, a poligonal desenhada.
+- **Cotas**: do Google, um ponto a cada 5 m, com curvas de 1 em 1 m e mestra de 5 em 5 m. O erro típico é de 3 a 4 m: serve para estudo, não para projeto.
+- **Imagem por trás**: o satélite do Google com os nomes das ruas, para você reconhecer as ruas e a vizinhança.
+- O levantamento cobre o terreno e 30 m em volta.
+
+**O que não dá hoje:**
+
+- **São Paulo**: lá as cotas vêm sempre do laser da prefeitura, nunca do Google, e essa parte ainda não está no sistema novo. O botão abre a janela com esse aviso.
+- Os arquivos **não ficam guardados** no sistema enquanto a aba Documentos não existe: baixe-os na hora. Fechando a página, é preciso gerar de novo.
+- O DXF não leva os pontos do Google, só as curvas com a cota.
+
 ## O que não é possível na ficha hoje
 
-- As abas Estudos de massa, Viabilidades, Infraestrutura, Jornada e Documentos.
+- As abas Estudos de massa, Viabilidades, Jornada e Documentos, e o resto da aba Infraestrutura (visita técnica, viabilidades técnicas).
 - Digitar o endereço (CEP, rua, bairro, município) direto: ele vem do mapa.
 - Ver a ficha em tema escuro.
 - Imprimir ou exportar a ficha.
