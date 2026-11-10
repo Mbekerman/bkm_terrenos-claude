@@ -420,3 +420,9 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .mapa.regua, .mapa.regua .leaflet-grab, .mapa.regua .leaflet-interactive { cursor: default }
 :is(.mapa, .mini-mapa).modo.leaflet-dragging, :is(.mapa, .mini-mapa).modo.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive),
 .mapa.regua.leaflet-dragging, .mapa.regua.leaflet-dragging :is(.leaflet-grab, .leaflet-interactive) { cursor: grabbing }
+
+/* matrículas da parte na aba Comercial: etiquetas sem x, que abrem a janela da matrícula (10/nov/2026) */
+.ptcom-mats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px }
+.ptcom-mats .etq { height: 28px; font-size: 13px; cursor: pointer }
+.ptcom-mats .etq-n { cursor: pointer; padding-right: 10px }
+.ptm-dlg { display: flex; flex-direction: column; gap: 12px }

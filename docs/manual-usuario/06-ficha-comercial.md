@@ -36,6 +36,8 @@ Mostra o que o vendedor pede, na **oferta de referência** (a primeira, até alg
 
 Aparece quando o terreno tem **duas ou mais partes** (ver [05](05-ficha-terreno.md#partes)). Uma linha por parte, com:
 
+- as **matrículas da parte**, em etiquetas amarelas com a mini pizza do percentual (os SQLs não aparecem na linha). A etiqueta não se tira daqui; o clique abre a janela da matrícula, com a área registrada, o percentual da parte, a área da parte nela e os SQLs (ou inscrições) que estão dentro dela, cada um com a área do lote, o % da parte e a área da parte;
+
 - a **área da parte** (pelas matrículas; sem elas, pelos SQLs);
 - o **zoneamento**;
 - o **valor pedido** e o **valor por m²**, que se calculam um pelo outro (digite um e o outro muda);
