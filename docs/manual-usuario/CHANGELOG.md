@@ -8,8 +8,8 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
-- **GeoSanja em São José dos Campos** (aba Terreno, Matrículas e SQLs): a inscrição imobiliária incluída é consultada sozinha no GeoSanja e traz a poligonal do lote, a zona com a área, a macrozona e as restrições; a poligonal do terreno é refeita pela soma dos lotes. Na janela da etiqueta, "Buscar no GeoSanja". O que o GeoSanja não traz (área cadastral, endereço, testada, valor venal, IPTU, cartório) continua para digitar, com o aviso na janela. (#NNN)
-- **"Adicionar ponto" de interesse** saiu da lista do que falta: não vai para o sistema (decisão de 10/nov). (#NNN)
+- **GeoSanja em São José dos Campos** (aba Terreno, Matrículas e SQLs): a inscrição imobiliária incluída é consultada sozinha no GeoSanja e traz a poligonal do lote, a zona com a área, a macrozona e as restrições; a poligonal do terreno é refeita pela soma dos lotes. Na janela da etiqueta, "Buscar no GeoSanja". O que o GeoSanja não traz (área cadastral, endereço, testada, valor venal, IPTU, cartório) continua para digitar, com o aviso na janela. (#288)
+- **"Adicionar ponto" de interesse** saiu da lista do que falta: não vai para o sistema (decisão de 10/nov). (#288)
 
 ## 9/nov/2026
 
