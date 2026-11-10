@@ -70,7 +70,7 @@ Um dono com várias matrículas é **uma** negociação. Vários donos que negoc
 - **Parte perdida ou descartada** trava a compra: ou sai do terreno (`remover_parte`, com motivo; parte essencial só com gestor ou diretor, e tornar uma parte dispensável também), ou o terreno se encerra. Parte comprada não sai.
 - **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
 - **Proposta** é feita a uma ou mais partes ativas do terreno (`proposta_partes`; pedido do Moises, 9/nov/2026): com uma parte só ela entra sozinha, com duas ou mais escolher é obrigatório, na negociação de uma parte é a dela. Nenhuma proposta muda o status de outra: com duas em aberto e parte em comum a ficha avisa, e quem edita muda o status de qualquer uma, exclui uma (`app.excluir_proposta`) ou deixa as duas; nos resumos vale a de maior versão. 
-- **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço e a condição de pagamento de cada uma quando informados); a negociação da parte usa como referência a oferta mais recente que a cobre. Na aba Comercial, o quadro Partes lista cada parte com a área adotada (soma dos lotes), o zoneamento, o valor pedido e o valor por m² (digitar um calcula o outro) e a condição de pagamento; só a oferta, sem proposta.
+- **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço, a condição de pagamento e as informações gerais de cada uma quando informados; com uma parte só, o texto é o da própria oferta, `ofertas.observacoes`); a negociação da parte usa como referência a oferta mais recente que a cobre. Na aba Comercial, o quadro Partes lista cada parte com a área adotada (soma dos lotes), o zoneamento, o valor pedido e o valor por m² (digitar um calcula o outro) e a condição de pagamento; só a oferta, sem proposta.
 - `v_partes`: cada parte com donos, corretores, matrículas, negociação (etapa, subetapa, prazo, status), preço pedido e última proposta. A temperatura é uma só, a do terreno (`terrenos.temperatura`, decisão do Moises, 9/nov/2026: vale também sem negociação, no Backlog).
 
 ## Papéis, hierarquia e configuração
@@ -596,6 +596,8 @@ erDiagram
     uuid oferta_id PK
     uuid parte_id PK
     numeric valor_pedido "da parte, se informado"
+    text forma_pagamento
+    text observacoes "informações gerais da parte nesta oferta"
   }
   proposta_partes {
     uuid proposta_id PK

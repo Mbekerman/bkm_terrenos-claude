@@ -12,7 +12,7 @@ import { Ic } from '../components/Moldura';
 import { data as fd, hojeISO, milhoes, m2, somarDias } from '../lib/format';
 import type { Ficha, R } from './dados';
 import Temperatura from './Temperatura';
-import { lerNum, num, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido } from './edicao';
+import { lerNum, num, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido, Vivo } from './edicao';
 import { copias, daParte, fracao, ptArea, useLotes, type Lotes } from './Partes';
 import { ComMencoes, MarcarPessoas, TextoMencao, useGente, type Gente, type Marcado } from '../components/Marcar';
 
@@ -43,7 +43,7 @@ export function useComercial(f: Ficha) {
     queryFn: async (): Promise<Com> => {
       const neg = f.negId, nada = Promise.resolve({ data: null, error: null });
       const [of, ng, pr, tc, co, pp, ru, pt] = await Promise.all([
-        supabase.from('ofertas').select('id,numero,vigente,criado_por,data_oferta,valor_pedido,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,validade,status,corretor_id,criado_em,oferta_partes(parte_id,valor_pedido,forma_pagamento)')
+        supabase.from('ofertas').select('id,numero,vigente,criado_por,data_oferta,valor_pedido,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,observacoes,validade,status,corretor_id,criado_em,oferta_partes(parte_id,valor_pedido,forma_pagamento,observacoes)')
           .eq('terreno_id', f.id).order('data_oferta').order('criado_em'),
         neg ? supabase.from('negociacoes').select('oferta_referencia_id').eq('processo_id', neg).maybeSingle() : nada,
         neg ? supabase.from('processos').select('id,status,etapa_atual,subetapa_atual,subetapa_desde,motivo_encerramento,detalhe_encerramento').eq('id', neg).maybeSingle() : nada,
@@ -216,14 +216,17 @@ function JanelaMat({ L, x, c, rot, fechar }: { L: Lotes; x: R; c: R; rot: string
   );
 }
 
-function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar }: {
+function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar, gravarObs }: {
   o: R | null; pa: R; um: boolean; primeiro: boolean; area: number | null; zonas: string; nomeDet: ReactNode;
   mudar: (pa: R, valor: number | null, forma: string | null) => Promise<void>;
+  gravarObs: (pa: R, v: string | null) => Promise<boolean>;
 }) {
   const { edita } = useSessao();
   const op = o && !um ? (o.oferta_partes ?? []).find((x: R) => x.parte_id === pa.id) : null;
   const valor: number | null = !o ? null : um ? o.valor_pedido : op?.valor_pedido ?? null;
   const forma: string | null = !o ? null : um ? o.forma_pagamento_pedida : op?.forma_pagamento ?? o.forma_pagamento_pedida ?? null;
+  // informações gerais desta parte nesta oferta (com uma parte só, o texto da própria oferta)
+  const obs: string = (!o ? '' : um ? o.observacoes : op?.observacoes) ?? '';
   const [vv, setVv] = useState(numTxt(valor));
   const [vm, setVm] = useState(valor != null && area ? numTxt(Math.round(valor / area)) : '');
   useEffect(() => { setVv(numTxt(valor)); setVm(valor != null && area ? numTxt(Math.round(valor / area)) : ''); }, [valor, area]);
@@ -245,6 +248,11 @@ function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar }: {
       <div className="ptcom-c field ptcom-f">{L('Condição de pagamento')}{ro ? <span>{forma ? FORMA[forma] : '—'}</span>
         : <select value={forma ?? ''} aria-label={`Condição de pagamento de ${pa.nome}`} onChange={(e) => mudar(pa, valor, e.target.value || null)}>
           <option value="">Não informada</option>{Object.entries(FORMA).map(([k, x]) => <option key={k} value={k}>{x}</option>)}</select>}</div>
+      {/* informações gerais da parte nesta oferta: a composição das partes pode mudar de uma oferta para outra (pedido do Moises, 10/nov/2026) */}
+      <div className="ptcom-c field ptcom-obs"><span className="lbl-f">Informações gerais</span>{ro ? <span>{obs || '—'}</span>
+        : <Vivo ini={obs} gravar={(v) => (obs === v.trim() ? true : gravarObs(pa, v.trim() || null))}>
+          {(p) => <textarea {...p} rows={2} placeholder="Permuta, entrada, prazos, o que mais este vendedor pediu nesta oferta" aria-label={`Informações gerais de ${pa.nome}`} />}
+        </Vivo>}</div>
     </div>
   );
 }
@@ -295,7 +303,8 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
     let error;
     if (um) ({ error } = await supabase.from('ofertas').update({ valor_pedido: valor, forma_pagamento_pedida: forma }).eq('id', o.id));
     else {
-      if (valor == null && forma == null) ({ error } = await supabase.from('oferta_partes').delete().eq('oferta_id', o.id).eq('parte_id', pa.id));
+      const temObs = !!(o.oferta_partes ?? []).find((x: R) => x.parte_id === pa.id)?.observacoes;
+      if (valor == null && forma == null && !temObs) ({ error } = await supabase.from('oferta_partes').delete().eq('oferta_id', o.id).eq('parte_id', pa.id));
       else ({ error } = await supabase.from('oferta_partes').upsert({ oferta_id: o.id, parte_id: pa.id, empresa_id: empresa!.id, valor_pedido: valor, forma_pagamento: forma }));
       /* o valor da oferta passa a ser a soma das partes (é o que a lista, o funil e os filtros leem) */
       if (!error) {
@@ -307,6 +316,19 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
     if (error) { toast(error.message, true); return; }
     recarregar();
     qc.invalidateQueries({ queryKey: ['ficha-lotes', f.id] });
+  }
+  async function gravarObs(pa: R, v: string | null) {
+    if (!o) return false;
+    let error;
+    if (um) ({ error } = await supabase.from('ofertas').update({ observacoes: v }).eq('id', o.id));
+    else {
+      const op = (o.oferta_partes ?? []).find((x: R) => x.parte_id === pa.id);
+      if (!v && op && op.valor_pedido == null && op.forma_pagamento == null) ({ error } = await supabase.from('oferta_partes').delete().eq('oferta_id', o.id).eq('parte_id', pa.id));
+      else ({ error } = await supabase.from('oferta_partes').upsert({ oferta_id: o.id, parte_id: pa.id, empresa_id: empresa!.id, observacoes: v }));
+    }
+    if (error) { toast(error.message, true); return false; }
+    recarregar();
+    return true;
   }
   const vs = P.map((pa) => valorDe(pa.id));
   const vT = vs.some((v) => v != null) ? vs.reduce<number>((s, v) => s + (+(v ?? 0)), 0) : null;
@@ -330,7 +352,7 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
         {antigo != null && <div className="cond-aviso">O valor de {brl(antigo)} foi registrado para o terreno inteiro. Informe o valor de cada parte abaixo; o total passa a ser a soma delas.</div>}
         {L && <div className="ptcom cond-pt">
           <div className="ptcom-r ptcom-th"><span>{um ? 'Parte' : 'Por parte'}</span><span>{um ? 'Área adotada' : 'Área da parte'}</span><span>Valor pedido</span><span>Valor por m²</span><span>Condição de pagamento</span></div>
-          {P.map((pa, i) => <LinhaParte key={pa.id} o={o} pa={pa} um={um} primeiro={i === 0} area={areaDe(pa.id)} zonas={zonasDe(pa.id)} nomeDet={<MatsParte L={L} pid={pa.id} rot={rot} />} mudar={mudar} />)}
+          {P.map((pa, i) => <LinhaParte key={pa.id} gravarObs={gravarObs} o={o} pa={pa} um={um} primeiro={i === 0} area={areaDe(pa.id)} zonas={zonasDe(pa.id)} nomeDet={<MatsParte L={L} pid={pa.id} rot={rot} />} mudar={mudar} />)}
           {!um && (
             <div className="ptcom-r ptcom-tot"><div className="ptcom-p"><b>Total</b></div><div className="ptcom-c">{Lb('Área da parte')}<span>{aT ? m2(Math.round(aT * 100) / 100) : '—'}</span></div>
               <div className="ptcom-c">{Lb('Valor pedido')}<span>{vT != null ? <>{brl(vT)}{nCom < P.length ? <> <span className="faint">(faltam {P.length - nCom})</span></> : null}</> : '—'}</span></div>
