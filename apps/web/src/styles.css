@@ -4650,9 +4650,6 @@ html[data-tema="escuro"] .vt-obs { color: #c4c7c5; background: transparent !impo
 .cond-aviso .ic { flex: none; margin-top: 1px }
 .cond-sub { font-size: 12px; color: #444746; margin-top: 2px }
 .cond-pt { margin-top: 16px }
-.ptcom-obs { grid-column: 1 / -1 }
-.ptcom-obs textarea { width: 100%; min-height: 56px; resize: vertical; font: inherit; box-sizing: border-box }
-.ptcom-obs > span:not(.lbl-f) { white-space: pre-wrap }
 @container (max-width: 400px) { .cond-res { grid-template-columns: minmax(0, 1fr) } }
 html[data-tema="escuro"] .cond-b { background: #1e1f20 } html[data-tema="escuro"] .cond-b .lbl, html[data-tema="escuro"] .cond-sub { color: #c4c7c5 }
 .ptcom-p { min-width: 0 } .ptcom-p b { font-weight: 500 } .ptcom-p .faint { font-size: 13px }
@@ -4674,8 +4671,8 @@ html[data-tema="escuro"] .ptcom-zona { color: #8e918f }
 /* no celular: área e valor por m² lado a lado; valor pedido e condição na linha inteira, para caber 999 milhões e
    "Permuta financeira" sem os rótulos desencontrarem (pedido do Moises, 10/nov/2026) */
 @container (max-width: 480px) {
-  .ptcom-r { grid-template-areas: "p p" "ar m" "v v" "f f" "o o" }
-  .ptcom-p { grid-area: p } .ptcom-ar { grid-area: ar } .ptcom-m { grid-area: m } .ptcom-v { grid-area: v } .ptcom-f { grid-area: f } .ptcom-obs { grid-area: o }
+  .ptcom-r { grid-template-areas: "p p" "ar m" "v v" "f f" }
+  .ptcom-p { grid-area: p } .ptcom-ar { grid-area: ar } .ptcom-m { grid-area: m } .ptcom-v { grid-area: v } .ptcom-f { grid-area: f }
   .ptcom-ar { align-self: end }
 }
 @media (max-width: 720px) {
