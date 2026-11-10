@@ -10,7 +10,7 @@ import { data as fd } from '../lib/format';
 import { lerNum, Quadro } from '../ficha/edicao';
 import type { Ficha } from '../ficha/dados';
 import { brl, calcular, mi, nf, normTip, VB_RESTRITO, VB_SECAO, vin, type Calc, type Tip, type Viab } from './calc';
-import { SecLinhas, SecObra, SecTerreno, vbQPadrao, type Ctx } from './Secoes';
+import { SecDre, SecLinhas, SecObra, SecTerreno, vbQPadrao, type Ctx } from './Secoes';
 import { carregarEstudo, erroTxt, useDespesas, useEstudos, useRecarregar, type ResumoViab } from './dados';
 
 // Aba Viabilidades da ficha e o popup do estudo de viabilidade estática (porte de tools/prototipo/proto_viab.js ›
@@ -21,8 +21,6 @@ import { carregarEstudo, erroTxt, useDespesas, useEstudos, useRecarregar, type R
 type Sec = 'tip' | 'terreno' | 'comercial' | 'obra' | 'despesas' | 'financeiro' | 'taxas' | 'res';
 const VB_ORDEM: Sec[] = ['tip', 'terreno', 'comercial', 'obra', 'despesas', 'financeiro', 'taxas', 'res'];
 const VB_ROT: Record<Sec, string> = { tip: 'Tipologias', terreno: 'Terreno', comercial: 'Comercial', obra: 'Obras', despesas: 'Gerais', taxas: 'Taxas', financeiro: 'Financeiras', res: 'DRE' };
-/** seções já portadas; as outras mostram que entram na próxima entrega */
-const PRONTAS = new Set<Sec>(['tip', 'terreno', 'comercial', 'obra', 'despesas']);
 
 /* ---------- o estudo aberto no popup (um por vez, de qualquer lugar da ficha) ---------- */
 let aberto: string | null = null;
@@ -69,6 +67,15 @@ function useAcoes(f: Ficha) {
 }
 
 /* ---------- aba Viabilidades: Resumo da viabilidade e a lista dos estudos ---------- */
+/** margem do estudo válido abaixo da mínima da empresa (Configurações › Viabilidade): o aviso da negociação, da proposta e de "Levar ao comitê" */
+export function useRentabilidade(f: Ficha): { margem: number; minima: number; txt: string } | null {
+  const { empresa } = useSessao();
+  const d = useEstudos(f.id, f.negId, empresa?.id).data;
+  const vi = d?.lista.find((x) => x.id === d.valido);
+  if (!d || vi?.margem == null || d.margemMin == null || vi.margem >= d.margemMin) return null;
+  return { margem: vi.margem, minima: d.margemMin, txt: `margem de ${nf(vi.margem, 1)}% no estudo válido, mínima de ${nf(d.margemMin, 1)}%` };
+}
+
 export default function AbaViabilidade({ f }: { f: Ficha }) {
   const { empresa, edita } = useSessao();
   const q = useEstudos(f.id, f.negId, empresa?.id);
@@ -301,10 +308,10 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
             setTimeout(() => { const i = document.querySelector<HTMLInputElement>(`[data-tp="${t.id}"] .vb-nome input`); i?.focus(); i?.select(); }, 30);
           });
         }}><Ic n="add" s={16} />Adicionar tipologia</button> : null}>
-        {!PRONTAS.has(ab) ? <div className="empty muted">Esta seção do estudo está sendo portada do protótipo e entra na próxima entrega.</div>
-          : ab === 'tip' ? <Tipologias v={v} c={c} ro={ro} setV={setV} gravar={gravar} toast={toast} />
+        {ab === 'tip' ? <Tipologias v={v} c={c} ro={ro} setV={setV} gravar={gravar} toast={toast} />
           : ab === 'terreno' ? <SecTerreno x={ctx!} />
           : ab === 'obra' ? <SecObra x={ctx!} />
+          : ab === 'res' ? <SecDre x={ctx!} />
           : <SecLinhas x={ctx!} sec={ab} />}
       </Secao>
     </>

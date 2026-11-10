@@ -12,6 +12,7 @@ import type { Ficha, R } from './dados';
 import Temperatura from './Temperatura';
 import { lerNum, num, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido, Vivo } from './edicao';
 import { copias, daParte, fracao, ptArea, useLotes, type Lotes } from './Partes';
+import { useRentabilidade } from '../viab/Viabilidade';
 import { ComMencoes, MarcarPessoas, TextoMencao, useGente, type Gente, type Marcado } from '../components/Marcar';
 
 // Aba Comercial da ficha (proto.js › abaComercialFicha = abaGeral(t,'neg') + abaComercial + abaNegociacao; proto_lotes.js ›
@@ -419,6 +420,7 @@ const ABERTA = ['rascunho', 'apresentada', 'em_analise'];
 
 function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const { edita } = useSessao();
+  const rent = useRentabilidade(f);
   const toast = useToast(), recarregar = useRecarregar();
   const ativa = c.proc?.status === 'ativo';
   const [form, setForm] = useState(false);
@@ -525,6 +527,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
               </div>
               <div className="field full"><label htmlFor="pp-c">Condições de pagamento</label><textarea id="pp-c" value={v.cond} onChange={m('cond')} placeholder="Entrada, parcelas, permuta, torna, condição suspensiva" /></div>
             </div>
+            {rent && <div className="banner warn" id="pp-warn" style={{ marginTop: 12 }}><Ic n="warn" /><div>Rentabilidade abaixo da mínima: {rent.txt}.</div></div>}
             {jaAbertas.length > 0 && <div className="diverg"><Ic n="warn" s={16} />{jaAbertas.length > 1 ? 'Já há propostas em aberto' : 'Já há proposta em aberto'} para {nomesDe(sel.filter((x) => jaAbertas.some((p) => !ptsDe(p).length || ptsDe(p).includes(x))))}: {jaAbertas.map((p) => `v${p.versao}`).join(', ')}. Nenhuma muda sozinha: depois de registrar, mude o status ou exclua a que não vale.</div>}
             <div className="sec-f" style={{ padding: '12px 0 0' }}><LimparRasc chave={kPr} mostrar={sujoPr} limpar={() => setV(ini)} /><button type="button" className="btn text" onClick={() => setForm(false)}>Cancelar</button><button className="btn primary" disabled={grav}>Registrar</button></div>
           </form>

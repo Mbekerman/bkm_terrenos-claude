@@ -9,6 +9,7 @@ import { abrirQuadro, OPT, pedirCampo, SECOES } from './edicao';
 import { completude, ITEM_COMPLETUDE, TEMP, type Ficha as F, type R } from './dados';
 import { Avanco, procsAvanco, useAvanco } from './Avanco';
 import { useComercial } from './Comercial';
+import { useRentabilidade } from '../viab/Viabilidade';
 
 // Painel lateral da ficha, porte de tools/prototipo/proto_painel.js: coluna própria à direita (280 a 360 px; some quando
 // não cabe), recolhível, com o quadro de avanço no topo e o seletor Logs / Ações. Logs: toda alteração do terreno, do
@@ -586,6 +587,7 @@ function useAcoes(f: F, irAba: (k: string) => void): Acao[] {
   const procs = procsAvanco(f), neg = procs.find((p) => f.fases.find((x) => x.k === p.fase)?.entrada) ?? procs[0];
   const adv = useAvanco(f, neg ?? { id: '', fase: '', etapa: '', sub: null, status: '', desde: null, encerrado: null });
   const com = useComercial(f).data;
+  const rent = useRentabilidade(f);
   const L: Acao[] = [];
   const d = neg ? adv.data : undefined;
   if (d?.p.status === 'stand_by') L.push({ sev: 'warn', i: 'pause', txt: `Negociação em Stand By. Retomar em ${fd(d.p.retomar_em)}` });
@@ -599,6 +601,7 @@ function useAcoes(f: F, irAba: (k: string) => void): Acao[] {
     if (r.ok && !ped) L.push({ sev: 'good', i: 'fwd', txt: `Pronto para ${r.proxima_tipo === 'status' ? 'concluir como Comprado' : 'avançar para ' + (r.proxima_nome ?? '')}${(r.aprovacoes ?? []).length ? ' (pede aprovação)' : ''}` });
     const lp = com?.props.slice().sort((a, b) => b.versao - a.versao)[0];
     if (lp && ['apresentada', 'em_analise'].includes(lp.status)) L.push({ sev: 'warn', i: 'money', txt: lp.origem === 'bkm' ? `Cobrar resposta da proposta v${lp.versao} (enviada em ${fd(lp.data_apresentacao)})` : `Responder à proposta v${lp.versao} do vendedor (${milhoes(lp.valor_total)})`, fix: ['Ver propostas', () => { abrirQuadro('comercial', 'propostas'); irAba('comercial'); }] });
+    if (rent) L.push({ sev: 'crit', i: 'money', txt: `Levar ao comitê: rentabilidade abaixo da mínima: ${rent.txt}`, fix: ['Ver estudo', () => irAba('viabilidade')] });
     if (!f.temp) L.push({ sev: 'warn', i: 'warn', txt: 'Avaliar a temperatura do terreno' });
     const agora = new Date().toISOString();
     const pr = com?.reus.filter((x) => x.status !== 'realizada' && x.status !== 'cancelada' && x.inicio && x.inicio >= agora).sort((a, b) => (a.inicio < b.inicio ? -1 : 1))[0];

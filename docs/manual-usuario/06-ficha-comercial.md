@@ -83,6 +83,8 @@ Lista os corretores que trouxeram ofertas deste terreno. Eles "entram automatica
    - **Partes da proposta**: para qual parte (dono) a proposta é feita. Pode ser uma, várias ou todas (**"Marcar todas"**, com três partes ou mais). Se o terreno tem **uma parte só**, ela já vem marcada; com **duas ou mais**, nenhuma vem marcada e o sistema **não deixa registrar** sem escolher pelo menos uma: o campo fica vermelho com o aviso "Escolha pelo menos uma parte". Logo abaixo das partes aparece a **área total da proposta**, que se refaz a cada parte marcada ou desmarcada: a soma das áreas das partes escolhidas (a mesma área que cada parte mostra no quadro Partes; com uma parte só, a área adotada do terreno), quantas partes de quantas e, com o valor total digitado, o valor por m². Parte sem área fica fora da soma e é citada embaixo ("Sem área: …"). As partes são as cadastradas na aba Terreno;
    - **Apresentada em** (data) e **Validade** (vem com 15 dias depois);
    - **Condições de pagamento** (texto).
+
+   Se a margem do estudo de viabilidade válido está abaixo da mínima da empresa, o formulário mostra o aviso **"Rentabilidade abaixo da mínima"**, com a margem e a mínima. Ele só avisa: a proposta pode ser registrada.
 3. Clique em **Registrar**.
 
 **Na lista**, cada proposta mostra as partes a que foi feita, em etiquetas logo abaixo do valor. Proposta registrada antes de 9/nov/2026 num terreno com duas ou mais partes aparece com **"Parte não informada"** (conta como de todas as partes). Parte que foi tirada do terreno aparece com "(saiu)".

@@ -4,7 +4,7 @@
 
 Montar o **estudo de viabilidade estática** do terreno: quantas unidades cabem, por quanto se vendem, quanto custam o terreno, a obra e as despesas, e quanto sobra (lucro e margem). Um terreno pode ter vários estudos; um deles é o **válido**, o que vale para a negociação. É dele que saem as **Unidades** e o **VGV** do Resumo da Visão geral e o filtro "VGV estimado".
 
-O estudo está chegando ao sistema em partes. **Hoje:** a lista de estudos, o Resumo da viabilidade e, no estudo, os indicadores e as seções **Tipologias**, **Terreno**, **Comercial**, **Obras** e **Gerais**. Financeiras, Taxas, DRE e os modelos de estudo chegam nas próximas entregas (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
+O estudo está chegando ao sistema em partes. **Hoje:** a lista de estudos, o Resumo da viabilidade e, no estudo, os indicadores e todas as seções (Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE). Os modelos de estudo e o vínculo com o estudo de massa chegam nas próximas entregas (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
 
 ## Onde fica
 
@@ -21,7 +21,7 @@ O primeiro quadro da parte.
 | **Novo estudo** | Cria um estudo e já o abre. |
 | **Margem líquida** e **Mínima da empresa** | A margem do estudo válido e a rentabilidade mínima da empresa (quando o administrador definiu uma). |
 | Tabela | VGV líquido, valor pedido, última proposta e lucro líquido, cada um em % do VGV líquido. |
-| Aviso **Rentabilidade abaixo da mínima** | Quando a margem do estudo válido fica abaixo da mínima da empresa. |
+| Aviso **Rentabilidade abaixo da mínima** | Quando a margem do estudo válido fica abaixo da mínima da empresa. O mesmo aviso aparece no formulário de Nova proposta (aba Comercial), como "Levar ao comitê" nas Próximas ações do painel e no cartão do terreno no Funil. |
 
 Sem estudo, o quadro mostra "Sem estudo" e o link **Montar estudo**.
 
@@ -96,6 +96,18 @@ Cada linha escolhe o item na lista da empresa (digite para buscar), a base (% do
 
 Despesas gerais em quatro quadros, como em Obras: **Terreno**, **Incorporação**, **CEF** e **Administrativo e financeiro**, com as bases % do VGV, % da obra total, % do lucro líquido ou verba.
 
+### Financeiras (só diretoria e administrador)
+
+**Despesas financeiras**, que entram depois do EBITDA: Custo de alavancagem, Custo de juros PJ (% do custo de obra total), Custo financeiro e Impostos, com as mesmas bases das outras seções, e Custo de capital da permuta financeira e do pagamento do terreno, em % sobre o **aporte** (o dinheiro da permuta financeira, com o mínimo garantido quando ele vale, e o pagamento em dinheiro do terreno). Os itens são fixos e nascem com o valor padrão da empresa.
+
+### Taxas (só diretoria e administrador)
+
+Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascidos com o valor padrão da empresa. Saem por último, depois do resultado sem as taxas.
+
+### DRE
+
+O resultado do estudo, do VGV ao lucro, com o valor e o % da receita líquida de cada linha: receita bruta, permuta e comissão em unidades, deduções, receita líquida, terreno, obras, lucro bruto, comerciais, gerais, EBITDA, despesas financeiras, resultado e margem sem as taxas, taxas e lucro líquido. Cada grupo mostra o detalhe embaixo. Fora da diretoria, Financeiras e Taxas aparecem só pelo total. Só leitura: muda conforme as outras seções.
+
 ## Quem pode
 
 - **Analista, gestor e diretor**: criam, editam, duplicam, apagam e marcam o válido.
@@ -104,7 +116,6 @@ Despesas gerais em quatro quadros, como em Obras: **Terreno**, **Incorporação*
 
 ## O que não é possível hoje
 
-- As seções Financeiras, Taxas e DRE do estudo (a janela mostra que entram na próxima entrega).
 - Escolher um modelo ao criar o estudo e "Salvar como modelo". Sem escolha, o estudo nasce com o modelo padrão da empresa, se houver.
 - Ligar o estudo a um estudo de massa.
 - Configurações › Viabilidade (lista de itens, margem mínima, modelos da empresa).

@@ -321,3 +321,58 @@ export function SecObra({ x }: { x: Ctx }) {
     </div>
   );
 }
+
+/* ---------- DRE (decisão do Moisés, 26/out/2026; vbResHtml): da receita bruta ao lucro líquido, com o detalhe de cada
+   grupo; análise vertical sobre a receita líquida (VGV líquido). Mesmos números do cálculo: só muda a apresentação.
+   Fora da diretoria, Despesas financeiras e Taxas só com o total. ---------- */
+export function SecDre({ x }: { x: Ctx }) {
+  const { v, c, dir } = x;
+  const dp = dpDe(x);
+  const pct = (y: number | null | undefined) => (c.liq > 0 && y != null ? nf(y / c.liq * 100, 1) + '%' : '');
+  let i = 0;
+  const ln = (rot: string, y: number | null | undefined, cls = '') => (
+    <tr key={i++} className={cls}><td className="esq">{rot}</td><td className="num">{brl(y)}</td><td className="num">{pct(y)}</td></tr>
+  );
+  const sub = (rot: string, y: number | null | undefined) => (y ? ln(rot, y, 'vb-sub') : null);
+  const itens = (ls: Linha[]) => ls.map((l) => sub(dp.get(l.despesa)?.nome || l.despesa, c.L[l.id]?.valor));
+  const lsDe = (gs: string[]) => v.linhas.filter((l) => gs.includes(dp.get(l.despesa)?.grupo ?? ''));
+  const dedLs = v.linhas.filter((l) => c.L[l.id]?.ded), comLs = lsDe(['comercial']).filter((l) => !c.L[l.id]?.ded);
+  const bruto = r2(c.liq - c.SEC.terreno - c.SEC.obra), com = r2(c.SEC.comercial - c.dedc);
+  const det = (gs: string[]) => (dir ? itens(lsDe(gs)) : null);
+  const FIN = gruposDe('financeiro');
+  const marg = (rot: string, y: string, forte?: boolean) => <tr key={i++} className={`vb-tt${forte ? ' forte' : ''}`}><td className="esq">{rot}</td><td className="num">{y}</td><td /></tr>;
+  return <>
+    <div className="dt-wrap"><table className="dt compacta vb-rt vb-dre"><thead><tr><th className="esq"><span className="sr-only">Demonstração do resultado</span></th><th className="num">Valor</th><th className="num">% da receita líquida</th></tr></thead><tbody>
+      {ln(`Receita bruta de vendas (VGV, ${nf(c.un)} unidades)`, c.vgv, 'forte')}
+      {c.vp ? ln(`(−) Permuta física (${nf(c.unp)} unidades)`, c.vp) : null}
+      {c.vc ? ln(`(−) Unidades dadas na comissão (${nf(c.unc)})`, c.vc) : null}
+      {c.vp || c.vc ? ln('(=) VGV vendido', c.vv, 'forte') : null}
+      {ln('(−) Deduções da receita', r2(c.dedp + c.dedc))}
+      {c.dedp ? sub(`Dedução de ${nf(v.deducao_vgv_pct, 2)}% do VGV`, c.dedp) : null}
+      {itens(dedLs)}
+      {ln('(=) Receita líquida (VGV líquido)', c.liq, 'vb-tt')}
+      {ln('(−) ' + VB_SECAO.terreno, c.SEC.terreno)}
+      {sub(c.minimo ? 'Permuta financeira (mínimo garantido)' : 'Permuta financeira', c.pf)}
+      {sub('Pagamento em dinheiro', v.pagamento_dinheiro)}
+      {sub('Comissão em dinheiro', v.comissao_dinheiro)}
+      {ln('(−) ' + VB_SECAO.obra, c.SEC.obra)}
+      {sub('Custo de obra típico', c.oi)}
+      {['obra_atipica', 'obra_nao_incidente', 'projetos', 'pos_obra'].map((g) => sub(VB_GRUPO[g].nome, c.GR[g]))}
+      {ln('(=) Lucro bruto', bruto, 'vb-tt')}
+      {ln(`(−) ${VB_SECAO.comercial}${c.dedc ? ' (fora as deduzidas da receita)' : ''}`, com)}
+      {itens(comLs)}
+      {ln('(−) ' + VB_SECAO.despesas, c.SEC.despesas)}
+      {['terreno', 'incorporacao', 'cef', 'adm_financeiro'].map((g) => sub(VB_GRUPO[g].nome, c.GR[g]))}
+      {ln('(=) EBITDA', c.ebitda, 'vb-tt')}
+      {ln('(−) ' + VB_SECAO.financeiro, c.SEC.financeiro)}
+      {det(FIN)}
+      {ln('(=) Resultado sem as taxas', c.semTaxas, 'vb-tt forte')}
+      {marg('Margem sem as taxas', c.liq > 0 ? nf(c.semTaxas / c.liq * 100, 2) + '%' : '—')}
+      {ln('(−) ' + VB_SECAO.taxas, c.SEC.taxas)}
+      {det(['taxas'])}
+      {ln('(=) Lucro líquido (pagando as taxas)', c.lucro, 'vb-tt forte')}
+      {marg('Margem líquida', c.margem == null ? '—' : nf(c.margem, 2) + '%', true)}
+    </tbody></table></div>
+    <div className="faint vb-obra">Margem bruta {c.liq > 0 ? nf(bruto / c.liq * 100, 1) + '%' : '—'} · obra incidente {brl(c.raso)} · obra total {brl(c.ot)}</div>
+  </>;
+}
