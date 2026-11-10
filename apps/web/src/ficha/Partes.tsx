@@ -794,8 +794,17 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
       const d = (document.elementFromPoint(x, y) as HTMLElement | null)?.closest?.('.etq-aceita');
       document.querySelectorAll('.etq-sobre').forEach((z) => { if (z !== d) z.classList.remove('etq-sobre'); });
       d?.classList.add('etq-sobre');
-      if (y < 60) scrollBy(0, -14); else if (y > innerHeight - 60) scrollBy(0, 14);
+      if (y < 60) rolar(-14); else if (y > innerHeight - 60) rolar(14);
     };
+    /* rola quem de fato rola a seção (a página ou a gaveta da ficha) */
+    const rolar = (dy: number) => {
+      for (let p = raiz()?.parentElement; p; p = p.parentElement) {
+        const o = getComputedStyle(p).overflowY;
+        if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) { p.scrollBy(0, dy); return; }
+      }
+      scrollBy(0, dy);
+    };
+    const rolou = () => { const q = Q; if (q?.ativo) laco(q.lx, q.ly); };
     const fim = (soltar: boolean, x = 0, y = 0) => {
       const a = A; A = null; if (!a) return; clearTimeout(a.timer); if (!a.ativo) return;
       soltou.current = Date.now();
@@ -811,7 +820,10 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const VAZIO_NAO = '.etq, input, select, textarea, button, a, label, [contenteditable], .etq-menu, .scrim';
     const laco = (x: number, y: number) => {
       const q = Q; if (!q) return;
-      const l = Math.min(q.x, x), t = Math.min(q.y, y), w = Math.abs(x - q.x), h = Math.abs(y - q.y);
+      q.lx = x; q.ly = y;
+      /* o ponto de partida fica preso ao conteúdo: rolando (roda ou borda), ele anda junto e o retângulo cresce */
+      const rr = q.ancora.getBoundingClientRect(), ax = rr.left + q.ox, ay = rr.top + q.oy;
+      const l = Math.min(ax, x), t = Math.min(ay, y), w = Math.abs(x - ax), h = Math.abs(y - ay);
       Object.assign(q.div.style, { left: l + 'px', top: t + 'px', width: w + 'px', height: h + 'px' });
       const dentro = new Set<string>(q.base);
       raiz()?.querySelectorAll<HTMLElement>('.etq[data-etq]').forEach((el) => {
@@ -821,7 +833,7 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
       });
       const atual = selR.current;
       if (dentro.size !== atual.size || [...dentro].some((k) => !atual.has(k))) setSel(dentro);
-      if (y < 60) scrollBy(0, -14); else if (y > innerHeight - 60) scrollBy(0, 14);
+      if (y < 60) rolar(-14); else if (y > innerHeight - 60) rolar(14);
     };
     const down = (e: PointerEvent) => {
       const alvo = e.target as HTMLElement;
@@ -829,7 +841,9 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
       const somar = e.ctrlKey || e.metaKey || e.shiftKey;
       if (!el) {
         if (e.pointerType !== 'mouse' || e.button !== 0 || !raiz()?.contains(alvo) || alvo.closest(VAZIO_NAO)) return;
-        Q = { x: e.clientX, y: e.clientY, pid: e.pointerId, ativo: false, base: somar ? [...selR.current] : [] };
+        /* âncora: o elemento clicado (a seção é display: contents e não tem caixa) */
+        const rr = alvo.getBoundingClientRect();
+        Q = { x: e.clientX, y: e.clientY, ancora: alvo, ox: e.clientX - rr.left, oy: e.clientY - rr.top, pid: e.pointerId, ativo: false, base: somar ? [...selR.current] : [] };
         return;
       }
       if (!raiz()?.contains(el) || e.button > 0 || alvo.closest('.etq-x,.etq-ed,.etq-pzb')) return;
@@ -870,7 +884,9 @@ function SecLotes({ f, L }: { f: Ficha; L: Lotes }) {
     const ctx = (e: MouseEvent) => { if (A || (e.target as HTMLElement).closest?.('.etq[data-etq]')) e.preventDefault(); };
     document.addEventListener('pointerdown', down); document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
     document.addEventListener('pointercancel', cancel); document.addEventListener('touchmove', tm, { passive: false }); document.addEventListener('contextmenu', ctx);
+    document.addEventListener('scroll', rolou, true);
     return () => {
+      document.removeEventListener('scroll', rolou, true);
       document.removeEventListener('pointerdown', down); document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up);
       document.removeEventListener('pointercancel', cancel); document.removeEventListener('touchmove', tm); document.removeEventListener('contextmenu', ctx);
       Q?.div?.remove(); document.body.classList.remove('etq-lacando');
