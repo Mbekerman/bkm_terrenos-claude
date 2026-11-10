@@ -14,24 +14,26 @@ Não usa navegador. Fala direto com `https://geo.sjc.sp.gov.br/v1` (o repasse do
 
 Freio: 5xx, 429 e tempo esgotado esperam (15 s, 30 s, … até 5 min). Na quinta falha seguida, a noite para. 403 ou 401 depois de renovar o token de visitante para na hora. O User-Agent é fixo (`BKMTerrenosVarredura/1.0`). Não há proxy, troca de IP nem troca de agente.
 
+## Onde roda
+
+A varredura roda numa VPS da Hetzner, com cron às 19:00 `America/Sao_Paulo`. O Cloud Run Job `varredura-sjc` e o Scheduler `varredura-sjc-noite` ficam pausados.
+
 ## Horário
 
-Cloud Scheduler, todo dia às 22:00 `America/Sao_Paulo`. O processo olha o relógio e para às 06:55, antes das 07:00. O timeout do job é 9h10 (rede de segurança).
+Padrão das 19:00 às 09:00 `America/Sao_Paulo`. O processo olha o relógio e para às 08:55 (margem de 5 min, `VARREDURA_MARGEM_MIN`). As horas são `VARREDURA_INICIO_HORA` (19) e `VARREDURA_FIM_HORA` (9), inteiras de 0 a 23 e diferentes entre si. Janela que começa numa hora maior do que a de fim atravessa a meia-noite.
 
-Disparo manual de madrugada obedece o mesmo limite. De dia o job não faz nada, a menos que `VARREDURA_FORA_DA_JANELA=1` (aí vai até a próxima 07:00; o timeout do Cloud Run corta em 9h). Depois de um disparo diurno, tire a variável para ela não ficar no job:
-
-```sh
-gcloud run jobs update varredura-sjc --region=southamerica-east1 --remove-env-vars=VARREDURA_FORA_DA_JANELA
-```
+Disparo manual dentro da janela obedece o mesmo limite. Fora dela o processo não faz nada, a menos que `VARREDURA_FORA_DA_JANELA=1` (aí vai até a próxima hora de fim).
 
 ## Pausar e retomar
+
+No cron da VPS, comente a linha das 19:00. O que já foi gravado fica. A célula pela metade volta a pendente na próxima execução.
+
+O Scheduler do Cloud Run, se precisar mexer nele (ele está pausado):
 
 ```sh
 gcloud scheduler jobs pause varredura-sjc-noite --location=southamerica-east1
 gcloud scheduler jobs resume varredura-sjc-noite --location=southamerica-east1
 ```
-
-Pausar o Scheduler não apaga o que já foi gravado. A célula pela metade volta a pendente na próxima execução. Para cortar a execução que está no ar: `gcloud run jobs executions cancel EXEC --region=southamerica-east1`.
 
 ## Progresso
 
@@ -47,9 +49,9 @@ As células em si: `select situacao, count(*) from app.varredura_sjc_celulas whe
 
 ## Quanto tempo
 
-Uma noite (22h–7h, folga de 5 min) cabe cerca de 13 mil requisições a 2,5 s. A grade urbana fica na casa de alguns milhares de células de 200 m. No miolo, uma célula nova custa dezenas de pedidos (inscrição + desenho + a rua em volta); célula já coberta por lote conhecido quase não pede nada.
+Uma noite (19h–8h55, cerca de 14 h) cabe cerca de 20 mil requisições a 2,5 s. A grade urbana fica na casa de alguns milhares de células de 200 m. No miolo, uma célula nova custa dezenas de pedidos (inscrição + desenho + a rua em volta); célula já coberta por lote conhecido quase não pede nada.
 
-A grade de hoje tem **2.974 células** (cerca de 119 km²). Conta grossa, com 100 a 150 mil lotes urbanos e 3 a 5 pedidos por lote: **da ordem de 30 a 50 noites** (cerca de 6 a 8 semanas). As primeiras noites, no centro, são as mais lentas; célula já coberta por lote conhecido quase não pede nada. O `consultas` do relatório serve para recalibrar: noites × 13 mil ÷ consultas médias.
+A grade tem **2.974 células** (cerca de 119 km²). Conta grossa, com 100 a 150 mil lotes urbanos e 3 a 5 pedidos por lote: **da ordem de 20 a 35 noites**. As primeiras noites, no centro, são as mais lentas. O `consultas` do relatório serve para recalibrar: noites × 20 mil ÷ consultas médias.
 
 ## Segredos
 
@@ -62,7 +64,7 @@ Criar na tela do Secret Manager do projeto `bkm-terrenos`, nunca pelo terminal:
 
 Variável do job, não é segredo: `VARREDURA_EMPRESA_ID` (uuid da BKM).
 
-Opcionais: `VARREDURA_INTERVALO_MIN_MS` (padrão 2000, mínimo 1000), `VARREDURA_INTERVALO_MAX_MS` (3000), `VARREDURA_MARGEM_MIN` (5), `VARREDURA_ERROS_SEGUIDOS` (5), `GEOSANJA_BASE`.
+Opcionais: `VARREDURA_INICIO_HORA` (19), `VARREDURA_FIM_HORA` (9), `VARREDURA_INTERVALO_MIN_MS` (padrão 2000, mínimo 1000), `VARREDURA_INTERVALO_MAX_MS` (3000), `VARREDURA_MARGEM_MIN` (5), `VARREDURA_ERROS_SEGUIDOS` (5), `GEOSANJA_BASE`.
 
 ## Deploy
 
