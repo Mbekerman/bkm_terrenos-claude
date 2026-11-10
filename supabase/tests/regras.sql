@@ -3987,4 +3987,80 @@ select pg_temp.ok(:napag > 10
     and not exists (select 1 from fluxo.quadros q join app.terrenos_apagados a on a.terreno_id = q.objeto_id),
   'deletar funciona em todos os terrenos dos testes, sem sobrar processo, oferta, documento, reunião nem quadro');
 
+\echo '# varredura de São José dos Campos'
+select pg_temp.como(:'diretor');
+select pg_temp.falha(format($$insert into app.varredura_sjc_celulas (empresa_id, id, ordem, x0, y0, x1, y1, lat, lng) values (%L, 'c0_0', 0, 0, 0, 200, 200, -23.1, -45.8)$$, :'emp'),
+  'membro não grava célula da varredura à mão');
+select pg_temp.falha(format($$select app.varredura_sjc_guardar(%L, 'geosanja', '[]'::jsonb, '{}')$$, :'emp'), 'editor não grava lote da varredura');
+select pg_temp.como(:'intruso');
+select pg_temp.falha(format($$select * from app.varredura_sjc_relatorio(%L)$$, :'emp'), 'outra empresa não vê o relatório da varredura');
+reset role;
+set role anon;
+select pg_temp.falha(format($$select * from app.varredura_sjc_relatorio(%L)$$, :'emp'), 'anon não vê o relatório da varredura');
+reset role;
+set role service_role;
+select pg_temp.ok(app.varredura_sjc_tabelas_lotes(), 'as tabelas de lote do mapa existem e a varredura pode gravar');
+select app.varredura_sjc_garantir_celulas(:'emp', '[
+  {"id":"c1","ordem":2,"x0":0,"y0":0,"x1":200,"y1":200,"lat":-23.1,"lng":-45.8,"densidade":1000},
+  {"id":"c0","ordem":1,"x0":200,"y0":0,"x1":400,"y1":200,"lat":-23.2,"lng":-45.9,"densidade":8000}
+]'::jsonb) as ncel \gset
+select pg_temp.ok(:ncel = 2, 'a grade entra no controle');
+select app.varredura_sjc_abrir_execucao(:'emp') as ex1 \gset
+select (app.varredura_sjc_proxima_celula(:'emp')->>'id') as cid \gset
+select pg_temp.ok(:'cid' = 'c0', 'a próxima célula é a de menor ordem');
+select app.varredura_sjc_abrir_execucao(:'emp') as ex2 \gset
+reset role;
+select pg_temp.ok((select motivo = 'queda' and encerrada_em is not null from app.varredura_sjc_execucoes where id = :ex1)
+  and (select situacao = 'pendente' from app.varredura_sjc_celulas where empresa_id = :'emp' and id = 'c0'),
+  'execução que ficou aberta vira queda e a célula em andamento volta a pendente');
+set role service_role;
+select (app.varredura_sjc_proxima_celula(:'emp')->>'tentativas')::int as tent \gset
+select pg_temp.ok(:tent = 2, 'retomar a célula conta mais uma tentativa');
+select app.varredura_sjc_fechar_celula(:'emp', 'c0', 'concluida', 10, 3, null);
+select (app.varredura_sjc_proxima_celula(:'emp')->>'id') as cid2 \gset
+select app.varredura_sjc_fechar_celula(:'emp', :'cid2', 'vazia', 4, 0, null);
+select app.varredura_sjc_fechar_execucao(:ex2, 'horario', 14, 1, 0, 0, 1, 2, 'teste');
+reset role;
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select pct_celulas = 100 and celulas_feitas = 2 and celulas_total = 2 and motivo = 'horario' and consultas = 14
+    and lotes_na_base > 0 and (select count(*) from app.varredura_sjc_relatorio(:'emp') where motivo = 'queda') = 1
+  from app.varredura_sjc_relatorio(:'emp') limit 1),
+  'o relatório traz a noite, o porcento da grade e os lotes já guardados');
+select pg_temp.ok((select count(*) from app.varredura_sjc_celulas) = 2, 'membro lê as células da própria empresa');
+reset role;
+
+-- quadra só deste teste, para não mexer nos lotes da 41.0024 deixados pelo teste do mapa
+set role service_role;
+select pg_temp.ok((app.varredura_sjc_guardar(:'emp', 'geosanja',
+  '[{"inscricao":"41.9999.0001.0000","quadra":"419999","anel":[[100,100],[110,100],[110,110],[100,110],[100,100]],"area_m2":100}]'::jsonb, '{}')
+  ->> 'novos') = '1', 'lote novo entra na base');
+select pg_temp.ok((app.varredura_sjc_guardar(:'emp', 'geosanja',
+  '[{"inscricao":"41.9999.0001.0000","quadra":"419999","anel":[[100,100],[120,100],[120,110],[100,110],[100,100]],"area_m2":200}]'::jsonb, '{}')
+  ->> 'atualizados') = '1', 'o mesmo lote na segunda vez é atualização');
+reset role;
+update app.lotes_prefeitura set conferido_em = now() - interval '10 days'
+  where empresa_id = :'emp' and inscricao_norm = '41999900010000';
+set role service_role;
+select pg_temp.ok((app.varredura_sjc_guardar(:'emp', 'geosanja',
+  '[{"inscricao":"41.9999.0001.0000","quadra":"419999","da_base":true}]'::jsonb, '{419999}')->>'gravados') = '0',
+  'lote marcado da base não é regravado');
+reset role;
+select pg_temp.ok((select conferido_em < now() - interval '9 days' and area_m2 = 200 from app.lotes_prefeitura where inscricao_norm = '41999900010000')
+  and (select lotes = 1 and montada_em > now() - interval '1 minute' from app.quadras_prefeitura where quadra = '419999'),
+  'a conferência antiga fica, e a quadra fica montada');
+set role service_role;
+select pg_temp.ok((app.varredura_sjc_guardar(:'emp', 'geosanja', '[]'::jsonb, '{419999}')->>'apagados') = '1',
+  'quadra montada de novo apaga o lote que saiu do cadastro');
+reset role;
+select pg_temp.ok(not exists (select 1 from app.lotes_prefeitura where inscricao_norm = '41999900010000')
+  and exists (select 1 from app.lotes_prefeitura where inscricao_norm = '41002400110000'),
+  'o lote da varredura saiu; os lotes do teste do mapa ficam');
+set role service_role;
+select pg_temp.falha(format($$select app.varredura_sjc_guardar(%L, 'geosanja', '[{"inscricao":"x","quadra":"1","anel":[]}]'::jsonb, '{}')$$, :'emp'),
+  'lote inválido é recusado');
+reset role;
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select lotes_na_base = (select count(*) from app.lotes_prefeitura where empresa_id = :'emp' and base = 'geosanja')
+  from app.varredura_sjc_relatorio(:'emp') limit 1), 'o relatório conta os lotes da base');
+
 \echo 'TODOS OS TESTES PASSARAM'

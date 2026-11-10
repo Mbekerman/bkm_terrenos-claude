@@ -423,6 +423,22 @@ Sem `execute` para `authenticated`: o front não consegue chamá-las. Ou rodam c
 | `fluxo.gerar_recorrencias(p_hoje date)` | Rotina diária: cria as ocorrências com data até hoje (se a rotina falhou um dia, a data perdida também nasce, na ordem) e encerra as séries que chegaram ao fim. | outras funções do banco | `20261015000150_fluxo.sql:2515` |
 | `fluxo.reprogramar_sucessoras(p_tarefas uuid[])` | Reposiciona as sucessoras de uma tarefa (e, por elas, as seguintes). | outras funções do banco | `20261015000150_fluxo.sql:635` |
 
+### Varredura do GeoSanja (10/nov/2026)
+
+Só o job `tools/geosanja/varredura` (`service_role`), menos o relatório, que o membro da empresa também lê. A gravação repete a regra de `guardar_lotes_prefeitura` (PR #290) e falha com mensagem clara se aquelas tabelas ainda não existirem. Não há `execute` para `anon`.
+
+| Função | O que faz | Quem chama | Onde |
+| --- | --- | --- | --- |
+| `app.varredura_sjc_relatorio(p_empresa uuid)` | Uma linha por noite e o progresso da grade (`pct_celulas`, `lotes_na_base`). | `authenticated` da empresa e `service_role` | `20261015001900_varredura_sjc.sql` |
+| `app.varredura_sjc_guardar(p_empresa uuid, p_base text, p_lotes jsonb, p_quadras text[])` | Grava lotes e, nas quadras montadas, apaga o que saiu do cadastro. Devolve novos, atualizados e apagados. | `service_role` | `20261015001900_varredura_sjc.sql` |
+| `app.varredura_sjc_tabelas_lotes()` | As tabelas do PR #290 já existem? | `service_role` | `20261015001900_varredura_sjc.sql` |
+| `app.varredura_sjc_garantir_celulas(p_empresa uuid, p_celulas jsonb)` | Inclui a grade; célula já andada não muda de lugar. | `service_role` | `20261015001900_varredura_sjc.sql` |
+| `app.varredura_sjc_abrir_execucao(p_empresa uuid)` | Abre a noite. Execução aberta vira `queda`; célula em andamento volta a pendente. | `service_role` | `20261015001900_varredura_sjc.sql` |
+| `app.varredura_sjc_anotar_execucao(...)` / `app.varredura_sjc_fechar_execucao(...)` | Atualiza os contadores e encerra com o motivo. | `service_role` | `20261015001900_varredura_sjc.sql` |
+| `app.varredura_sjc_proxima_celula(p_empresa uuid)` | A próxima pendente, pela ordem, e marca em andamento. | `service_role` | `20261015001900_varredura_sjc.sql` |
+| `app.varredura_sjc_fechar_celula(...)` | Conclui, marca vazia ou devolve a pendente. | `service_role` | `20261015001900_varredura_sjc.sql` |
+| `app.varredura_sjc_lotes_conhecidos(...)` / `app.varredura_sjc_quadras_prontas(...)` | Lotes e quadras com menos de 90 dias, para não pedir de novo. | `service_role` | `20261015001900_varredura_sjc.sql` |
+
 ## Funções internas (prefixo _)
 
 Convenção do projeto: o prefixo `_` marca função de uso interno, chamada só por outras funções. Quase todas têm o `execute` tirado de `public`; as que aparecem com ✓ na coluna "logado executa" ficaram executáveis por `authenticated` (algumas de propósito, como `fluxo._copiar_automacoes`, que roda com os direitos de quem copia).

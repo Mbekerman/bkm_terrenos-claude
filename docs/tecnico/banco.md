@@ -74,6 +74,7 @@ Os arquivos rodam em ordem alfabética (é o que o `run.sh` e o `banco.yml` faze
 | `20261015001600_reunioes_agenda.sql` (324) | fila do Google Agenda para reuniões; ficha numa chamada só | `reuniao_agenda` | `agenda_confirmar` (servidor), `decidir_resumo_ia`, `ficha_dados` |
 | `20261015001700_exclusao_terreno.sql` | excluir (180 dias) e deletar terreno; políticas de leitura de `terrenos`, `processos` e `notificacoes` trocadas | `terrenos_apagados` | `excluir_terreno`, `restaurar_terreno`, `terrenos_excluidos`, `deletar_terreno`, `_apagar_terreno`, `purgar_terrenos_excluidos` |
 | `20261015001800_lotes_prefeitura.sql` | lotes da prefeitura guardados (as quadras de São José montadas pelo GeoSanja), por empresa; leitura pela empresa, gravação só pela RPC | `lotes_prefeitura`, `quadras_prefeitura` | `guardar_lotes_prefeitura` |
+| `20261015001900_varredura_sjc.sql` | controle da varredura noturna dos lotes de São José; grava nas tabelas da migration anterior | `varredura_sjc_celulas`, `varredura_sjc_execucoes` | `varredura_sjc_guardar`, `varredura_sjc_relatorio`, `varredura_sjc_proxima_celula` |
 
 **Por que a ordem importa.** Uma migration só pode usar o que as anteriores criaram. Duas consequências que já apareceram:
 
