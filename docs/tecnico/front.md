@@ -519,7 +519,8 @@ A primeira versão em uso é, por decisão do Moisés: login, mapa, novo terreno
 | Estudo de viabilidade: seções Terreno, Comercial, Obras, Gerais, Financeiras, Taxas, DRE; modelos; vínculo com estudo de massa | não | Próximos PRs do porte. |
 | Visita técnica e Viabilidades técnicas | sim | `ficha/Infra.tsx` (porte de `proto_infra.js` › `vtSecao`, `vtecSecao`), na aba Infraestrutura depois do Relevo. |
 | Topográfico preliminar fora de São Paulo | sim | `topo/gerar.ts` (porte de `proto_topo.js` sem laser, quadra inteira, calçadas nem larguras de via) e `topo/Topografico.tsx` (aba Infraestrutura, quadro Relevo); modelo do DXF em `topo/modelo.dxf` (cópia de `tools/prototipo/topo_modelo.dxf`, lido com `?raw`). Baixa na hora, sem gravar em Documentos. |
-| Topográfico em São Paulo (laser 2020, quadra inteira), relevo medido sozinho, visita técnica, viabilidades técnicas | não | O Resumo mostra o perfil se já estiver gravado (`topo_perfil`). |
+| Relevo medido sozinho | sim | `topo/relevo.ts` (porte de `proto_infra.js` › `tpAuto`, `tpMedir`, `tpPlano`): `useRelevoAuto` no componente `Ficha` mede ao abrir a ficha (quem edita, com poligonal e sem `topo_perfil`; uma tentativa por poligonal na sessão) e grava por `app.registrar_topografia`; laser em São Paulo (`cotasLaser` em `topo/gerar.ts`, laz-perf do npm), Google fora (`cotasGoogle`). Quadro Relevo em `topo/Topografico.tsx` (porte de `tpSecao`), "medindo..." no Resumo, log "Classificação topográfica" no painel. |
+| Topográfico em São Paulo (laser 2020, quadra inteira) | não | |
 | Logs com olhinho e lixeira (`app.desfazer_alteracao`) | não | Logs entram sem eles (decisão da sabatina). |
 | Seção Histórico sem painel, quadro de avanço na página no celular | parcial | O celular vem depois do computador. |
 | Reuniões com Google Agenda e Meet | não | Reunião fica só no sistema. |

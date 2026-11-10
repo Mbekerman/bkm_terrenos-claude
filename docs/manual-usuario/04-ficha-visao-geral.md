@@ -126,7 +126,7 @@ Cada linha tem uma **seta** que leva à aba onde o dado mora.
 | **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido (unidades somadas das tipologias e VGV bruto) | Estudos Técnicos › Estudos de viabilidade (a seta leva lá); vazias enquanto nenhum estudo for o válido. Ver [15](15-ficha-viabilidades.md). |
 | **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Entorno). |
 | **Valor pedido na entrada** | Valor da **primeira** oferta, com a data | Aba Comercial. |
-| **Perfil topográfico** | Plano, Inclinado, Acidentado... | A medição automática ainda não está no sistema real; a seta leva a Estudos Técnicos › Avaliação de infraestrutura, onde está o Topográfico. |
+| **Perfil topográfico** | Plano, Inclinado, Acidentado... e o desnível | Medido sozinho (veja Relevo, abaixo); enquanto mede, "medindo...". A seta leva a Estudos Técnicos › Avaliação de infraestrutura. |
 | **Corretor** | Corretor principal e imobiliária | Aba Comercial. |
 
 Linhas sem dado mostram "Não informado" ou "Falta preencher".
@@ -181,6 +181,23 @@ Cada mudança aparece nos Logs. Quem tem papel de Leitura só vê.
 
 **Avisos:** com a validade já passada, o serviço mostra "Vencida em …" em vermelho e o título do quadro conta quantas venceram; nos 30 dias antes, "Vence em …" em amarelo. A validade não pode ser antes da emissão.
 
+## Relevo (aba Infraestrutura)
+
+**Para que serve:** saber logo, sem levantamento, se o terreno é plano, inclinado ou acidentado.
+
+**Como funciona:** ao abrir a ficha de um terreno com poligonal e sem medição, o sistema mede sozinho as cotas dentro da poligonal (em qualquer aba; só para quem edita). Em São Paulo, pelo laser de 2020 da prefeitura; fora, pelo Google. Ao ajustar a poligonal, a medição antiga sai e o sistema mede de novo na próxima vez que a ficha abre.
+
+O quadro **Relevo** mostra:
+
+- A faixa com o **perfil**, na cor dele: Plano, Inclinado (com o %), Acidentado leve, mediano, intenso, agudo ou crítico, e a data da medição.
+- **Declividade média** (a média da inclinação em cada ponto do terreno; é ela que decide o perfil), **Inclinação do plano** (o plano que melhor se ajusta às cotas), **Terra mexida até o plano** (corte + aterro ÷ área, só com o laser), **Desnível** e de onde vieram as **Cotas**.
+- A escala dos 7 perfis, com o do terreno marcado, e a regra: Plano até 5%, Inclinado até 10%, Leve até 13%, Mediano até 19%, Intenso até 24%, Agudo até 30%; acima disso, ou com terra mexida acima de 1,5 m³/m², Crítico (os limites são os da empresa).
+- **Medir de novo**, para quem edita.
+
+**Fora de São Paulo** (cotas do Google, que erram de 1 a 4 m), o perfil fica só em Plano, Inclinado ou Crítico, com o aviso "Acidentado não avaliado". É uma triagem: não substitui o levantamento planialtimétrico.
+
+**Se der errado:** o quadro diz "Não deu para medir o relevo" com o motivo e **Tentar de novo**. Em São Paulo o sistema nunca usa o Google no lugar do laser.
+
 ## Topográfico preliminar (aba Infraestrutura)
 
 **Para que serve:** ter uma planta com as curvas de nível do terreno e da vizinhança para o estudo, antes do levantamento de campo.
@@ -207,7 +224,7 @@ Cada mudança aparece nos Logs. Quem tem papel de Leitura só vê.
 
 ## O que não é possível na ficha hoje
 
-- Parte do estudo de viabilidade (ver [15](15-ficha-viabilidades.md)), o PDF e o DWG dos estudos de massa, as abas Jornada e Documentos, e, em Avaliação de infraestrutura, a medição automática do perfil topográfico e o Topográfico de São Paulo.
+- Parte do estudo de viabilidade (ver [15](15-ficha-viabilidades.md)), o PDF e o DWG dos estudos de massa, as abas Jornada e Documentos, e, em Avaliação de infraestrutura, o Topográfico de São Paulo.
 - Digitar o endereço (CEP, rua, bairro, município) direto: ele vem do mapa.
 - Ver a ficha em tema escuro.
 - Imprimir ou exportar a ficha.
