@@ -320,6 +320,8 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 
 /* Partes da proposta (pedido do Moises, 9/nov/2026): escolha no formulário e etiquetas na lista */
 .pp-partes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.pp-area { margin-top: 8px; font-size: 14px }
+.pp-area .muted { font-size: 13px }
 .pp-pts { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px }
 .pp-pts .chip.ni { color: var(--texto-suave) }
 .pp-sobre { margin-bottom: 16px } .pp-sobre .bt { font-weight: 500 }

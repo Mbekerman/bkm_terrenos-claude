@@ -436,6 +436,13 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
     setV(r); setIni(o); setErrPt(false); abrirQuadro('comercial', 'propostas'); setForm(true);
   };
   const sel = (v.partes ?? '').split(',').filter(Boolean);
+  // área total da proposta (pedido do Moises, 10/nov/2026): soma das áreas das partes marcadas, a mesma do quadro Partes
+  // (Σ área do SQL × % do SQL × % da matrícula; senão a das matrículas); com uma parte só, a área adotada do terreno
+  const L = useLotes(f).data;
+  const areaPt = (id: string) => (ativas.length === 1 && f.area != null ? +f.area : L ? ptArea(L, id).area : null);
+  const semArea = sel.filter((id) => areaPt(id) == null);
+  const areaSel = sel.length > semArea.length ? sel.reduce((s, id) => s + (areaPt(id) ?? 0), 0) : null;
+  const valorSel = lerNum(v.valor ?? '');
   const marcar = (id: string) => { setErrPt(false); setV((x) => { const a = (x.partes ?? '').split(',').filter(Boolean); return { ...x, partes: (a.includes(id) ? a.filter((y) => y !== id) : [...a, id]).join(',') }; }); };
   const fref = useRef<HTMLFormElement>(null);
   const sujoPr = form && mudou(v, ini);
@@ -508,6 +515,12 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
                   })}
                   {ativas.length > 2 && sel.length < ativas.length && <button type="button" className="btn text sm" onClick={() => { setErrPt(false); setV((x) => ({ ...x, partes: ativas.map((y) => y.id).join(',') })); }}>Marcar todas</button>}</div>
                 ) : <div className="muted">O terreno não tem parte: cadastre uma na aba Terreno.</div>}
+                {sel.length > 0 && L && <div className="pp-area" aria-live="polite">
+                  Área total da proposta: <b>{areaSel != null ? m2(Math.round(areaSel * 100) / 100) : 'não informada'}</b>
+                  {ativas.length > 1 && <span className="muted"> · {sel.length} de {ativas.length} partes</span>}
+                  {areaSel && valorSel ? <span className="muted"> · {brl(valorSel / areaSel)}/m²</span> : null}
+                  {areaSel != null && semArea.length > 0 && <div className="muted">Sem área: {semArea.map(nomeParte).join(', ')} (fora da soma)</div>}
+                </div>}
                 {errPt && <div className="campo-msg">Escolha pelo menos uma parte.</div>}
               </div>
               <div className="field full"><label htmlFor="pp-c">Condições de pagamento</label><textarea id="pp-c" value={v.cond} onChange={m('cond')} placeholder="Entrada, parcelas, permuta, torna, condição suspensiva" /></div>
