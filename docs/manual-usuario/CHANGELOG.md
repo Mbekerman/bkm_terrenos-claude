@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 10/nov/2026
 
+- **Produção atualizada** (endereço de produção): o protótipo de produção passa a ser o mesmo do ambiente de desenvolvimento. O sistema real continua só no ambiente de desenvolvimento até ser ligado em produção. (#301)
 - **Arrastar o mapa enquanto arrasta um ponto** (página Mapa e mini-mapa da ficha): segurando um ponto ou pino com o botão esquerdo, aperte e segure a roda do mouse para arrastar o mapa; soltando a roda, volta a mover o ponto. Ver [Mapa](02-mapa.md#editar-a-poligonal-de-um-terreno). (#300)
 - **CEP com máscara** (aba Terreno, Endereço e localização; também no Log e no endereço das áreas contaminadas): o CEP aparece como 00.000-000 (ex.: 12.228-323) em vez dos 8 números colados. A busca de cima acha o CEP digitado dos dois jeitos. (#297)
 - **Rolar a tela durante o retângulo de seleção:** a roda do mouse rola a tela e o retângulo continua preso ao ponto onde você clicou, sem soltar etiquetas que já tinha pegado. (#299)
