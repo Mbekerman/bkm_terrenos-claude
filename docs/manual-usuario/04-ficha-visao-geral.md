@@ -144,6 +144,13 @@ Igual à página, com:
 
 A gaveta da ficha e a gaveta de filtros não abrem juntas.
 
+## Imóvel sobreposto e terreno escondido
+
+Quando o mesmo imóvel foi cadastrado mais de uma vez com lotes diferentes (ver [03](03-novo-terreno.md#se-outro-terreno-já-ocupa-a-área)), o alto da ficha mostra:
+
+- **"Sobreposição parcial com A112"**: o código abre a ficha do outro, e a **lupa** abre "Comparar os lotes", com o mapa das quadras da prefeitura dos dois cadastros lado a lado.
+- No terreno **escondido** (a tratativa ativa é a do outro), a faixa **"Terreno escondido"** diz se a outra tratativa está em andamento ou vencida. Enquanto isso, ele não aparece no mapa, no funil nem nas listas, mas a ficha abre pelo link ou pelo aviso. Quando pode (o responsável, com a outra vencida, ou o diretor), aparece **"Assumir a tratativa"**.
+
 ## Excluir ou deletar o terreno
 
 Só para **diretor** e **administrador**: no topo da ficha, à direita do responsável (na gaveta do Mapa, ao lado do ícone **Abrir página**), fica o botão **⋮ Mais ações**. Para os outros papéis o botão não aparece.

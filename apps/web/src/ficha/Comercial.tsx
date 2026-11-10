@@ -2,7 +2,9 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { mudou, comRasc, useGuardarRasc, apagarRasc, LimparRasc } from '../components/Rascunho';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { supabase, mensagemErro } from '../lib/supabase';
+import { EscolherCorretor } from '../components/Corretor';
+import { useTratativa } from './Tratativa';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
 import { Adorno } from '../lib/mascara';
@@ -41,12 +43,12 @@ export function useComercial(f: Ficha) {
     queryFn: async (): Promise<Com> => {
       const neg = f.negId, nada = Promise.resolve({ data: null, error: null });
       const [of, ng, pr, tc, co, pp, ru, pt] = await Promise.all([
-        supabase.from('ofertas').select('id,data_oferta,valor_pedido,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,validade,status,corretor_id,criado_em,oferta_partes(parte_id,valor_pedido,forma_pagamento)')
+        supabase.from('ofertas').select('id,numero,vigente,criado_por,data_oferta,valor_pedido,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,validade,status,corretor_id,criado_em,oferta_partes(parte_id,valor_pedido,forma_pagamento)')
           .eq('terreno_id', f.id).order('data_oferta').order('criado_em'),
         neg ? supabase.from('negociacoes').select('oferta_referencia_id').eq('processo_id', neg).maybeSingle() : nada,
         neg ? supabase.from('processos').select('id,status,etapa_atual,subetapa_atual,subetapa_desde,motivo_encerramento,detalhe_encerramento').eq('id', neg).maybeSingle() : nada,
         supabase.from('terreno_corretores').select('corretor_id,principal').eq('terreno_id', f.id),
-        supabase.from('corretores').select('id,creci,imobiliaria,ativo,pessoas(nome_razao_social)').eq('empresa_id', empresa!.id),
+        supabase.from('corretores').select('id,apelido,creci,imobiliaria,ativo,pessoas(nome_razao_social)').eq('empresa_id', empresa!.id),
         neg ? supabase.from('propostas').select('*,proposta_partes(parte_id)').eq('processo_id', neg).order('versao') : nada,
         supabase.from('reunioes').select('*,reuniao_participantes(id,lado,nome,email,user_id,pessoa_id,pessoas(nome_razao_social))').eq('terreno_id', f.id).order('inicio', { ascending: false }),
         // todas as partes, também as tiradas do terreno: a proposta antiga pode ter sido feita a uma delas
@@ -55,15 +57,16 @@ export function useComercial(f: Ficha) {
       for (const r of [of, ng, pr, tc, co, pp, ru, pt]) if (r.error) throw r.error;
       const ofertas = (of.data ?? []) as R[], proc = (pr.data as R) ?? null;
       const refId = (ng.data as R | null)?.oferta_referencia_id;
-      const ref = ofertas.find((o) => o.id === refId)
-        ?? ofertas.filter((o) => o.status === 'ativa').sort((a, b) => String(b.data_oferta).localeCompare(a.data_oferta))[0] ?? ofertas[0] ?? null;
+      /* a oferta ativa do terreno (pedido do Moises, 10/nov/2026); a de referência da negociação é ela */
+      const ref = ofertas.find((o) => o.id === refId) ?? ofertas.find((o) => o.vigente)
+        ?? ofertas.filter((o) => o.status === 'ativa').sort((a, b) => String(b.data_oferta).localeCompare(a.data_oferta))[0] ?? ofertas.find((o) => o.status !== 'aguardando') ?? null;
       let motivo: string | null = null;
       if (proc && ['perdido', 'descartado'].includes(proc.status) && proc.motivo_encerramento) {
         const m = await supabase.from('motivos_encerramento').select('nome').eq('status', proc.status).eq('codigo', proc.motivo_encerramento)
           .or(`empresa_id.eq.${empresa!.id},empresa_id.is.null`).order('empresa_id', { nullsFirst: false }).limit(1);
         motivo = (m.data as R[] | null)?.[0]?.nome ?? proc.motivo_encerramento;
       }
-      const corretores = ((co.data ?? []) as R[]).map((c) => ({ ...c, nome: c.pessoas?.nome_razao_social ?? '—' })).sort((a, b) => a.nome.localeCompare(b.nome));
+      const corretores = ((co.data ?? []) as R[]).map((c) => ({ ...c, nome: (c.pessoas?.nome_razao_social ?? '—') + (c.apelido ? ` (${c.apelido})` : '') })).sort((a, b) => a.nome.localeCompare(b.nome));
       return { ofertas, ref, proc, tcor: (tc.data ?? []) as R[], corretores, props: (pp.data ?? []) as R[], reus: (ru.data ?? []) as R[], motivo, partes: (pt.data ?? []) as R[] };
     },
   });
@@ -79,7 +82,7 @@ let ofertaPedida: { codigo: string; msg?: string } | null = null;
 /** pede a janela de oferta na aba Comercial do terreno indicado (ela abre quando a aba aparecer) */
 export function pedirOferta(codigo: string, msg?: string) { ofertaPedida = { codigo, msg }; window.dispatchEvent(new Event('ficha-oferta')); }
 
-export function JanelaOferta({ f, corretores, partes = [], fechar }: { f: Ficha; corretores: R[]; partes?: R[]; fechar: () => void }) {
+export function JanelaOferta({ f, partes = [], fechar }: { f: Ficha; corretores?: R[]; partes?: R[]; fechar: () => void }) {
   /* com duas ou mais partes, o valor pedido é de cada parte e o da oferta é a soma (pedido do Moises, 10/nov/2026) */
   const pts = partes.filter((p) => p.ativa !== false), varias = pts.length > 1;
   const toast = useToast(), recarregar = useRecarregar();
@@ -112,8 +115,7 @@ export function JanelaOferta({ f, corretores, partes = [], fechar }: { f: Ficha;
   return (
     <Dialogo titulo="Registrar oferta" onFechar={fechar} rodape={<><LimparRasc chave={kOf} mostrar={temOf} limpar={() => setV(OF0)} /><button className="btn text" onClick={fechar}>Cancelar</button><button className="btn primary" type="submit" form="f-of" disabled={grav}>Registrar</button></>}>
       <form id="f-of" ref={fref} onSubmit={enviar}><div className="fields">
-        <div className="field"><label htmlFor="o-c">Corretor</label><select id="o-c" value={v.cid} onChange={m('cid')}><option value="">Sem corretor / direto</option>
-          {corretores.filter((c) => c.ativo !== false).map((c) => <option key={c.id} value={c.id}>{c.nome}{c.imobiliaria ? ' · ' + c.imobiliaria : ''}</option>)}</select></div>
+        <div className="field"><label htmlFor="o-c">Corretor</label><EscolherCorretor id="o-c" value={v.cid} onChange={(x) => setV((o) => ({ ...o, cid: x }))} /></div>
         {!varias ? <div className="field"><label htmlFor="o-v">Valor pedido</label><Adorno t="moeda"><input id="o-v" inputMode="decimal" data-fmt="moeda" required value={v.valor} onChange={m('valor')} /></Adorno></div>
           : pts.map((p, i) => <div className="field" key={p.id}><label htmlFor={`o-v-${i}`}>Valor pedido · {p.nome}</label><Adorno t="moeda"><input id={`o-v-${i}`} inputMode="decimal" data-fmt="moeda" value={v['p:' + p.id] ?? ''} onChange={m('p:' + p.id)} /></Adorno></div>)}
         {varias && <div className="field full hint">Total da oferta: <b>{(() => { const t = pts.reduce((a, p) => a + (lerNum(v['p:' + p.id] ?? '') ?? 0), 0); return t ? brl(t) : '—'; })()}</b> (soma das partes)</div>}
@@ -255,7 +257,9 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
   const o = c.ref, ed = edita && !!o;
   const cp = c.corretores.find((x) => x.id === c.tcor.find((t) => t.principal)?.corretor_id);
   /* "Valor pedido" do que falta na ficha: o valor da primeira parte; sem oferta, a janela de registrar oferta */
-  usePedido(['cond'], () => {
+  /* "Corretor da oferta" (pedido do Moises, 10/nov/2026): o corretor da oferta ativa; sem oferta, o da janela */
+  usePedido(['cond'], (pd) => {
+    if (pd.campo === 'cid') { if (ed) { abrirQuadroJa('comercial', 'cond'); focar('c-cid'); } else if (edita) { registrar(); focar('o-c'); } return; }
     if (ed) { abrirQuadroJa('comercial', 'cond'); focar('c-valor'); } else if (edita) { registrar(); focar(c.partes.filter((p) => p.ativa !== false).length > 1 ? 'o-v-0' : 'o-v'); }
   });
   async function gravar(d: R) {
@@ -349,61 +353,46 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
 
 /* ---------- Ofertas recebidas ---------- */
 function SecOfertas({ f, c, registrar }: { f: Ficha; c: Com; registrar: () => void }) {
-  const { edita } = useSessao();
+  const { edita, session, membro } = useSessao();
   const toast = useToast(), recarregar = useRecarregar();
-  const os = c.ofertas.slice().sort((a, b) => String(a.data_oferta).localeCompare(b.data_oferta) || String(a.criado_em).localeCompare(b.criado_em));
-  async function usar(o: R) {
-    const { error } = await supabase.rpc('definir_oferta_referencia', { p_processo: f.negId, p_oferta: o.id });
-    if (error) toast(error.message, true); else { toast('Oferta de referência trocada.'); recarregar(); }
+  const eu = session?.user.id, dir = membro?.papel === 'diretor', resp = f.t.responsavel_id === eu;
+  /* a oferta que espera a tratativa vencer só aparece para quem a cadastrou e para o diretor */
+  const os = c.ofertas.filter((o) => o.status !== 'aguardando' || o.criado_por === eu || dir)
+    .sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0) || String(a.criado_em).localeCompare(b.criado_em));
+  const trat = useTratativa(f.id);
+  async function ativa(o: R) {
+    const { error } = await supabase.rpc('definir_oferta_vigente', { p_oferta: o.id });
+    if (error) toast(mensagemErro(error), true); else { toast(`Oferta ${f.codigo}-${o.numero} é a ativa.`); recarregar(); }
   }
-  const st = (s: string | null) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '—');
+  async function assumir(o: R) {
+    const { error } = await supabase.rpc('assumir_oferta', { p_oferta: o.id });
+    if (error) toast(mensagemErro(error), true); else { toast(`Você assumiu o ${f.codigo}: a oferta ${f.codigo}-${o.numero} é a ativa.`); recarregar(); trat.refetch(); }
+  }
+  const st = (s: string | null) => (s === 'aguardando' ? 'Aguardando' : s ? s.charAt(0).toUpperCase() + s.slice(1) : '—');
   return (
-    <Quadro aba="comercial" id="ofertas" titulo="Ofertas recebidas"
+    <Quadro aba="comercial" id="ofertas" titulo={<>Ofertas recebidas{os.length ? <> <span className="h-n">{os.length}</span></> : null}</>}
       acoes={edita ? <button className="btn sm" onClick={registrar}><Ic n="add" s={16} />Registrar oferta</button> : undefined}>
       <div className="sec-b">{os.length ? (
-        <div className="tblwrap"><table className="mini-tbl"><thead><tr><th>Data</th><th>Corretor</th><th className="r">Valor pedido</th><th>Forma</th><th>Status</th><th /></tr></thead><tbody>
-          {os.map((o, i) => {
+        <div className="tblwrap"><table className="mini-tbl"><thead><tr><th>Oferta</th><th>Data</th><th>Corretor</th><th className="r">Valor pedido</th><th>Forma</th><th>Status</th><th /></tr></thead><tbody>
+          {os.map((o) => {
             const co = c.corretores.find((x) => x.id === o.corretor_id);
+            const pode = (trat.data?.aguardando ?? []).find((x: R) => x.id === o.id)?.pode_assumir;
             return (
-              <tr key={o.id}>
-                <td>{fd(o.data_oferta)}{i === 0 && os.length > 1 && <div><span className="chip of-1a" style={{ margin: '4px 0 0' }}>Primeira</span></div>}</td>
-                <td className="nw">{co ? <>{co.nome}<div className="faint" style={{ fontSize: 12 }}>{co.imobiliaria}</div></> : 'Direto'}</td>
+              <tr key={o.id} className={o.vigente ? 'of-ativa' : undefined}>
+                <td className="nw num">{f.codigo}-{o.numero}</td>
+                <td>{fd(o.data_oferta)}</td>
+                <td className="nw">{co ? <>{co.nome}<div className="faint" style={{ fontSize: 12 }}>{[co.imobiliaria, co.creci && `Creci ${co.creci}`].filter(Boolean).join(' · ')}</div></> : 'Direto'}</td>
                 <td className="r">{brl(o.valor_pedido)}</td>
                 <td>{o.forma_pagamento_pedida ? FORMA[o.forma_pagamento_pedida] : '—'}</td>
-                <td><span className={`chip ${o.status === 'ativa' ? 'good' : ''}`}>{st(o.status)}</span></td>
-                <td className="r">{o.id === c.ref?.id ? <span className="chip blue">Referência</span>
-                  : f.negId && edita ? <button className="btn sm text of-ref" onClick={() => usar(o)}>Usar como referência</button> : null}</td>
+                <td><span className={`chip ${o.status === 'ativa' ? 'good' : o.status === 'aguardando' ? 'warn' : ''}`}>{st(o.status)}</span></td>
+                <td className="r">{o.vigente ? <span className="chip blue">Oferta ativa</span>
+                  : o.status === 'aguardando' ? (pode ? <button className="btn sm" onClick={() => assumir(o)}>Assumir</button> : <span className="faint" style={{ fontSize: 12 }}>Até a tratativa vencer</span>)
+                  : edita && (resp || dir) && o.status === 'ativa' ? <button className="btn sm text of-ref" onClick={() => ativa(o)}>Marcar como ativa</button> : null}</td>
               </tr>
             );
           })}
         </tbody></table></div>
       ) : <div className="muted">Nenhuma oferta.</div>}</div>
-    </Quadro>
-  );
-}
-
-/* ---------- Corretores do terreno ---------- */
-function SecCorretores({ f, c }: { f: Ficha; c: Com }) {
-  const { edita } = useSessao();
-  const toast = useToast(), recarregar = useRecarregar();
-  async function principal(cid: string) {
-    if (!edita) return;
-    const a = await supabase.from('terreno_corretores').update({ principal: false }).eq('terreno_id', f.id).eq('principal', true);
-    const b = a.error ? a : await supabase.from('terreno_corretores').update({ principal: true }).eq('terreno_id', f.id).eq('corretor_id', cid);
-    if (b.error) toast(b.error.message, true); else recarregar();
-  }
-  const lista = c.tcor.map((t) => ({ corretor_id: t.corretor_id as string, principal: !!t.principal, c: c.corretores.find((x) => x.id === t.corretor_id) })).filter((x) => x.c)
-    .sort((a, b) => Number(b.principal) - Number(a.principal) || a.c!.nome.localeCompare(b.c!.nome));
-  return (
-    <Quadro aba="comercial" id="corretores" titulo="Corretores do terreno">
-      <div className="sec-b">{lista.length ? lista.map((x) => (
-        <div key={x.corretor_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
-          <button className={`star ${x.principal ? 'on' : ''}`} disabled={!edita} onClick={() => !x.principal && principal(x.corretor_id)}
-            aria-label={`Marcar ${x.c!.nome} como principal`} title={x.principal ? 'Principal' : 'Marcar como principal'}>★</button>
-          <span style={{ minWidth: 0 }}><b>{x.c!.nome}</b>{x.principal && <> <span className="chip blue cfg-tag">Principal</span></>}
-            <span className="muted" style={{ display: 'block', fontSize: 13 }}>{[x.c!.imobiliaria, x.c!.creci && `CRECI ${x.c!.creci}`].filter(Boolean).join(' · ')}</span></span>
-        </div>
-      )) : <div className="muted">Entram automaticamente quando apresentam uma oferta.</div>}</div>
     </Quadro>
   );
 }
@@ -732,10 +721,9 @@ export default function AbaComercial({ f, cor }: { f: Ficha; cor: string }) {
     <div className="stack">
       {c.proc && <SecNegociacao f={f} c={c} cor={cor} />}
       <SecCondicoes f={f} c={c} registrar={reg} primeiro={!c.proc} />
-      <SecOfertas f={f} c={c} registrar={reg} />
-      <SecCorretores f={f} c={c} />
       {c.proc && <SecPropostas f={f} c={c} />}
       {c.proc && <SecReunioes f={f} c={c} />}
+      <SecOfertas f={f} c={c} registrar={reg} />
       {janela && <JanelaOferta f={f} corretores={c.corretores} partes={c.partes} fechar={() => setJanela(false)} />}
     </div>
   );

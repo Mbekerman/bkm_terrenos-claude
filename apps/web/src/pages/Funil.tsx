@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { escondidos } from '../lib/escondidos';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { data as fd, diasEntre, hojeISO, somarDias } from '../lib/format';
@@ -45,7 +46,8 @@ async function carregar(emp: string): Promise<Dados> {
       subs: (s.data as R[]).filter((z) => z.fase === x.codigo && z.etapa === y.codigo && z.ativo !== false).map((z) => ({ k: z.codigo, nome: z.nome, prazo: z.prazo_dias })),
     })),
   }));
-  const vs = v.data as R[];
+  const esc = await escondidos(emp);
+  const vs = (v.data as R[]).filter((x) => !esc.has(x.id));
   const ids = [...new Set(vs.map((x) => x.responsavel_id).filter(Boolean))];
   const us = ids.length ? await supabase.from('usuarios').select('user_id,nome,email,foto_url').in('user_id', ids) : { data: [], error: null };
   if (us.error) throw us.error;

@@ -4,6 +4,7 @@ import { useSessao } from '../lib/sessao';
 import { data as fd, milhoes, m2 } from '../lib/format';
 import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
+import FaixaTratativa from './Tratativa';
 import { carregarFicha, completude, dispensados, type Falta, FONTE_AREA, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
 import { useEstRelevo, useRelevoAuto } from '../topo/relevo';
 import MiniMapa from './MiniMapa';
@@ -529,6 +530,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
         <div className="fi-head-d"><Resp r={f.resp} />{!naGaveta && <MenuTerreno t={f} aoSair={() => navegar('/mapa', { replace: true })} />}</div>
       </div>
       <div className="stack">
+        <FaixaTratativa f={f} />
         {c.pct < 100 && (
           <div className="complete">
             <span className="progress"><span className="bar"><span style={{ width: `${c.pct}%` }} /></span><Faltam f={f} c={c} irAba={irAba} /></span>
