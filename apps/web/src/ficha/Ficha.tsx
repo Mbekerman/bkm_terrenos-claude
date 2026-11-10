@@ -13,7 +13,7 @@ import { LapisMapa, verificarEndereco } from '../novo/TrocarEndereco';
 import Temperatura from './Temperatura';
 import AbaComercial from './Comercial';
 import Painel, { Avancos, Historico, usePN } from './Painel';
-import AbaEntorno, { EntornoAuto } from './Entorno';
+import AbaEntorno, { AbaMercado, EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
 import AbaInfra from '../topo/Topografico';
 import AbaViabilidade, { PopEstudo } from '../viab/Viabilidade';
@@ -38,8 +38,9 @@ import { BarraChips, SecoesChips } from './Chips';
     Avaliação de infraestrutura, que viram as subabas dela (pedido do Moises, 10/nov/2026). O endereço continua o da
     subaba (`/terrenos/A123/entorno`), e `/terrenos/A123/estudos` abre a última subaba vista na sessão. */
 export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['viabilidade', 'Estudos de viabilidade'], ['entorno', 'Entorno'], ['infra', 'Avaliação de infraestrutura']];
+/** Mercado e Demografia: renda, perfil da população e concorrência, que saíram do Entorno (pedido do Moises, 10/nov/2026) */
 export const BARRA: [string, string, [string, string][]?][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'],
-  ['estudos', 'Estudos Técnicos', ESTUDOS], ['jornada', 'Jornada'], ['documentos', 'Documentos'], ['historico', 'Histórico']];
+  ['estudos', 'Estudos Técnicos', ESTUDOS], ['mercado', 'Mercado e Demografia'], ['jornada', 'Jornada'], ['documentos', 'Documentos'], ['historico', 'Histórico']];
 /** Histórico só sem o painel (a classe o esconde onde o painel aparece) */
 const HIST = (k: string) => (k === 'historico' ? 'tab-hist' : undefined);
 /** as abas de conteúdo, na ordem (cada subaba é uma aba própria no endereço) */
@@ -420,6 +421,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
     : aba === 'terreno' ? <AbaTerreno key={f.id} f={f} />
     : aba === 'comercial' ? <AbaComercial key={f.id} f={f} cor={corPino(f)[0]} />
     : aba === 'entorno' ? <AbaEntorno key={f.id} f={f} />
+    : aba === 'mercado' ? <AbaMercado key={f.id} f={f} />
     : aba === 'infra' ? <AbaInfra key={f.id} f={f} />
     : aba === 'viabilidade' ? <AbaViabilidade key={f.id} f={f} />
     : aba === 'massa' ? <AbaMassa key={f.id} f={f} irAba={irAba} />
@@ -456,9 +458,13 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
       </div>
       <Abas f={f} aba={aba} irAba={irAba} />
       {grupo(aba) === 'estudos' && <BarraChips itens={ESTUDOS} ativo={aba} ir={irAba} rotulo="Estudos Técnicos" />}
-      <SecoesChips key={aba} aba={aba} rotulo={ABAS.find((x) => x[0] === aba)?.[1] ?? aba} sub={grupo(aba) === 'estudos'}>
-        <section className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
-      </SecoesChips>
+      {/* em Estudos Técnicos, uma fileira só (as subabas); dentro de cada subaba os quadros continuam abrindo e fechando pela
+          seta (pedido do Moises, 10/nov/2026) */}
+      {grupo(aba) === 'estudos'
+        ? <section key={aba} className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
+        : <SecoesChips key={aba} aba={aba} rotulo={ABAS.find((x) => x[0] === aba)?.[1] ?? aba}>
+          <section className="bl fi-aba" id={`bl-${aba}`} role="tabpanel"><div className="bl-c">{corpo}</div></section>
+        </SecoesChips>}
       {aba !== 'entorno' && f.lat != null && <EntornoAuto f={f} />}
       <CartorioAuto f={f} />
       <PopEstudo f={f} />

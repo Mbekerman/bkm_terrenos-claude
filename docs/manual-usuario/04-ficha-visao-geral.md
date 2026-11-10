@@ -57,7 +57,7 @@ Quando você rola e o topo sai da vista, a barra das abas mostra um **botão de 
 
 ## Barra das abas
 
-As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viabilidades, Infraestrutura, Entorno, Jornada, Documentos**.
+As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mercado e Demografia, Jornada, Documentos**.
 
 | Aba | Situação | Seção do manual |
 |---|---|---|
@@ -67,8 +67,9 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos de massa, Viab
 | Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
 | Estudos Técnicos › Estudos de massa | Disponível | [14](14-ficha-estudos-de-massa.md) |
 | Estudos Técnicos › Estudos de viabilidade | Disponível em parte: lista, Resumo da viabilidade e a seção Tipologias do estudo | [15](15-ficha-viabilidades.md) |
-| Estudos Técnicos › Entorno | Disponível | [08](08-ficha-entorno.md) |
+| Estudos Técnicos › Entorno | Disponível: Pontos de interesse | [08](08-ficha-entorno.md) |
 | Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico**), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
+| Mercado e Demografia | Disponível: Renda e população, Perfil da população e Concorrência | [08](08-ficha-entorno.md) |
 | Jornada | Disponível: linha do tempo e fases do terreno | [16](16-ficha-jornada.md) |
 | Documentos | **Ainda não disponível** (mostra "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
@@ -88,7 +89,7 @@ Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos T�
 
 Em todas as abas menos a Visão geral, cada **seção** (Identificação, Endereço e localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra.
 
-Em Estudos Técnicos ficam duas fileiras: em cima as quatro partes, embaixo, menores, as seções da parte aberta (em Entorno, por exemplo: Pontos de interesse, Renda e população, Perfil da população e Concorrência).
+Em Estudos Técnicos a barra é uma só, com as quatro partes; dentro de cada parte, os quadros (Relevo, Visita técnica, Viabilidades técnicas, Resumo da viabilidade...) continuam abrindo e fechando pela seta. Em Estudos de massa, o estudo aberto aparece embaixo da lista, também como quadro que abre e fecha.
 
 **Para ver os botões que não cabem**, a barra gira como uma roleta, igual à barra das abas: segure o botão do mouse e arraste para o lado; solte com força e ela continua girando e vai freando. Também funciona com Shift + roda do mouse, o deslize de lado do trackpad e, no celular, o dedo. Arrastar não troca de seção; só o clique troca. Quando **mais de um botão** fica de fora, aparecem os **três pontinhos (⋮)** no fim da barra, com a lista de todas as seções e a atual marcada.
 

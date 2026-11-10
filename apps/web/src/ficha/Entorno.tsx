@@ -86,13 +86,20 @@ export function EntornoAuto({ f }: { f: Ficha }) {
   return null;
 }
 
+/** Estudos Técnicos › Entorno: os pontos de interesse (pedido do Moises, 10/nov/2026; renda, perfil e concorrência foram
+    para a aba Mercado e Demografia, abaixo) */
 export default function AbaEntorno({ f }: { f: Ficha }) {
+  if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Endereço e localização) para ver o entorno.</div></section>;
+  return <div className="stack"><SecPontos f={f} /></div>;
+}
+
+/** aba Mercado e Demografia (pedido do Moises, 10/nov/2026): renda, perfil da população e concorrência, cada um num chip */
+export function AbaMercado({ f }: { f: Ficha }) {
   /* um raio para cada quadro (pedido do Moisés, 6/nov/2026: antes era o mesmo nos dois) */
   const [raioR, setRaioR] = useState<Raio>(1000), [raioP, setRaioP] = useState<Raio>(1000);
-  if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Endereço e localização) para ver o entorno.</div></section>;
+  if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Endereço e localização) para ver o mercado e a demografia.</div></section>;
   return (
     <div className="stack">
-      <SecPontos f={f} />
       <SecRenda f={f} raio={raioR} setRaio={setRaioR} />
       <SecPerfil f={f} raio={raioP} setRaio={setRaioP} />
       <SecConcorrencia f={f} />
@@ -102,6 +109,7 @@ export default function AbaEntorno({ f }: { f: Ficha }) {
 
 /* ---------- Pontos de interesse ---------- */
 interface Linha { tp: 'g' | 'e'; id: string; nome: string; cat: string; ord: number; dist: string; modo: string; url: string }
+
 function SecPontos({ f }: { f: Ficha }) {
   const { edita } = useSessao();
   const qc = useQueryClient(), toast = useToast();
@@ -230,7 +238,7 @@ function SecRenda({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Rai
     </>;
   }
   return (
-    <Quadro aba="entorno" id="rd" chip="Renda e população" titulo="Renda e população do entorno">
+    <Quadro aba="mercado" id="rd" chip="Renda e população" titulo="Renda e população do entorno">
       <Raios f={f} raio={raio} setRaio={setRaio} />
       <div className="sec-b">{corpo}</div>
       {met && <Metodologia camada="renda" fechar={() => setMet(false)} />}
@@ -290,7 +298,7 @@ function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Ra
     }
   }
   return (
-    <Quadro aba="entorno" id="pf" chip="Perfil da população" titulo="Perfil da população do entorno">
+    <Quadro aba="mercado" id="pf" chip="Perfil da população" titulo="Perfil da população do entorno">
       <Raios f={f} raio={raio} setRaio={setRaio} />
       <div className="sec-b">{corpo}</div>
       {met && <Dialogo titulo="Perfil da população: os dados" onFechar={() => setMet(false)} rodape={<button type="button" className="btn primary" onClick={() => setMet(false)}>Fechar</button>}>
@@ -375,7 +383,7 @@ function SecConcorrencia({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="entorno" id="mk" chip="Concorrência" titulo="Concorrência no entorno">
+    <Quadro aba="mercado" id="mk" chip="Concorrência" titulo="Concorrência no entorno">
       <div className="sec-b mk-sec">{corpo}</div>
     </Quadro>
   );
