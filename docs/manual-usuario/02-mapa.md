@@ -193,7 +193,7 @@ O passo a passo do cadastro está em [03. Novo terreno](03-novo-terreno.md). Lei
    - escolha **"Minha localização"** (o navegador pede permissão);
    - **clique no mapa**: num ponto qualquer (vale o endereço dali), num lugar do Google (loja, escola, estação), no pino ou na poligonal de outro terreno, ou num quadrado da concorrência. Ao abrir o quadro, o clique no mapa já escolhe a chegada (o cursor vira o dedo indicador); depois de escolhida, o mapa volta ao normal, e para escolher de novo no mapa clique na **mira** ao lado do campo. Enquanto a mira está ligada, o clique não abre a ficha, o card da concorrência nem o quadro do lugar.
 3. A rota aparece no mapa (a pé, pontilhada), com o tempo e a distância, e a chegada é um pino quadriculado preto e branco. O mapa se ajusta para mostrar a rota inteira, e os quadrados da concorrência ficam apagados enquanto a rota está aberta.
-4. **Arraste os pontos** para ajustar a rota: passe o mouse sobre a bolinha da saída ou sobre o pino quadriculado da chegada (o cursor vira o dedo e o ponto cresce um pouco), segure e solte em outro lugar. A rota é recalculada a partir do endereço de onde o ponto foi solto, sem mudar o enquadramento do mapa.
+4. **Arraste os pontos** para ajustar a rota: passe o mouse sobre a bolinha da saída ou sobre o pino quadriculado da chegada (o cursor vira o dedo e o ponto cresce um pouco), segure e solte em outro lugar. A rota é recalculada a partir do endereço de onde o ponto foi solto, sem mudar o enquadramento do mapa. Se o lugar que você quer está fora da tela, **segure a roda do mouse** enquanto arrasta (ver abaixo).
 5. O botão **⇅**, ao lado do X, **inverte o sentido**: a rota passa a ir do ponto escolhido até o ponto do clique direito ("Rota até …"), e o campo vira "Saindo de". Clique de novo para voltar.
 6. Troque a forma de condução nos botões **Carro, Moto, A pé, Bicicleta e Transporte**: a rota se refaz na hora. O sistema lembra a última escolha.
 7. **"Abrir no Google Maps"** abre a mesma rota no Google Maps, com o trânsito e as alternativas de lá.
@@ -219,6 +219,7 @@ Bom saber:
 - Todos os pontos aparecem e se arrastam direto.
 - **Clique direito** ou **dois cliques** num ponto abrem o menu do ponto: **"Adicionar ponto depois"**, **"Excluir ponto"** (mínimo de 3 pontos), **"Desfazer"** e **"Cancelar"**.
 - O **pino** também se arrasta. Se você não o arrastar, ele fica onde estava se continuar dentro da poligonal; senão vai para o centro.
+- **Arrastar o mapa no meio do arraste:** com o botão esquerdo segurando um ponto ou pino, **aperte e segure a roda do mouse** (o botão do meio): o mouse passa a arrastar o mapa, e o ponto fica parado no lugar dele. Soltando a roda, o mouse volta a levar o ponto. Vale para todo ponto que se arrasta no mapa: pontos e pino da poligonal (na página Mapa e no mini-mapa da ficha) e a saída e a chegada da rota.
 - **Ctrl+Z** e **Ctrl+Y** desfazem e refazem cada movimento de ponto.
 - A barra pequena no canto de baixo à direita mostra os pontos, a área, **Cancelar** e **Concluir**. A legenda, os botões do canto e os três pontinhos somem enquanto você edita.
 
