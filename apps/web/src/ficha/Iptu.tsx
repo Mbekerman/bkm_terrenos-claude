@@ -170,7 +170,7 @@ export default function SecIptu({ f }: { f: Ficha }) {
       acoes={podeBuscar ? <div className="qd-acoes"><button className="btn sm text" disabled={ocupado} onClick={() => buscar(insc)}><Ic n="search" s={16} />{busc ? 'Consultando a Prefeitura...' : insc.length > 1 ? 'Buscar todos de novo' : 'Buscar de novo'}</button></div> : undefined}>
       <div className="sec-b">
         {!q.data ? <div className="muted">{q.error ? 'Não foi possível carregar os SQLs.' : 'Carregando...'}</div>
-          : !insc.length ? <div className="muted">{sp ? 'Sem SQL no terreno. Inclua os SQLs em Matrículas e SQLs.' : 'Sem inscrição no terreno. Inclua as inscrições em Matrículas e SQLs.'}</div> : (
+          : !insc.length ? <div className="muted">{sp ? 'Sem SQL no terreno. Inclua os SQLs em Matrículas e Lotes.' : 'Sem inscrição no terreno. Inclua as inscrições em Matrículas e Lotes.'}</div> : (
             <div className={`iptu-corpo${carregando ? ' carregando' : ''}`} aria-busy={carregando || undefined}>
               {carregando && <div className="iptu-load" role="status"><span className="iptu-spin" aria-hidden="true" />
                 {pend.length ? `Buscando o IPTU na Prefeitura: ${insc.length - pend.length} de ${insc.length} SQL${insc.length > 1 ? 's' : ''}` : 'Carregando o IPTU...'}</div>}

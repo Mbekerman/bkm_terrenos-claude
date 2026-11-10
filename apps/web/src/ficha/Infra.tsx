@@ -69,7 +69,7 @@ function Visita({ f, itens }: { f: Ficha; itens: R[] }) {
     return true;
   };
   return (
-    <Quadro aba="infra" id="visita" titulo={<>Visita técnica{nv ? <span className="faint" style={{ fontSize: 13, fontWeight: 400, marginLeft: 8 }}>{nv} não verificado{nv > 1 ? 's' : ''}</span> : null}</>}>
+    <Quadro aba="infra" id="visita" chip="Visita técnica" titulo={<>Visita técnica{nv ? <span className="faint" style={{ fontSize: 13, fontWeight: 400, marginLeft: 8 }}>{nv} não verificado{nv > 1 ? 's' : ''}</span> : null}</>}>
       <div className="sec-b vt-b">
         <div className="field vt-data"><label htmlFor="vt-dt">Data da visita</label>
           <Vivo ini={visita} imediato gravar={(v) => salvar({ visita_tecnica_em: v || null })}>
@@ -121,7 +121,7 @@ function Viabilidades({ f, viabs }: { f: Ficha; viabs: R[] }) {
   };
   const d = !edita;
   return (
-    <Quadro aba="infra" id="vtec" titulo={<>Viabilidades técnicas{venc ? <span className="chip crit" style={{ marginLeft: 8 }}>{venc} vencida{venc > 1 ? 's' : ''}</span> : null}</>}>
+    <Quadro aba="infra" id="vtec" chip="Viabilidades técnicas" titulo={<>Viabilidades técnicas{venc ? <span className="chip crit" style={{ marginLeft: 8 }}>{venc} vencida{venc > 1 ? 's' : ''}</span> : null}</>}>
       <div className="sec-b"><div className="vtec-l">{viabs.map((v) => {
         const o = VTEC_S.find((x) => x[0] === v.situacao) ?? VTEC_S[0], vv = vence(v), k = v.servico;
         const campo = (c: string, rot: string, tipo: 'text' | 'date', extra: R = {}) => (

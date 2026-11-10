@@ -79,7 +79,7 @@ export default function AbaMassa({ f, irAba }: { f: Ficha; irAba: (k: string) =>
   const ped = janela && ms.find((m) => m.id === janela.id);
   return (
     <div className="stack">
-      <Quadro aba="massa" id="massa-lista" primeiro titulo={<>Estudos de massa <span className="h-n">{ms.length}</span></>}
+      <Quadro aba="massa" id="massa-lista" primeiro chip="Estudos de massa" titulo={<>Estudos de massa <span className="h-n">{ms.length}</span></>}
         acoes={edita && !form ? <button className="btn sm" onClick={() => setForm(true)}><Ic n="add" s={16} />Solicitar estudo</button> : null}>
         <div className="sec-b">
           {form && edita ? <FormSolicitar f={f} membros={membros} fechar={() => setForm(false)} criado={(id) => { setSel(id); setForm(false); recarregar(); }} /> : null}
@@ -269,7 +269,7 @@ function FichaEstudo({ m, viabs, edita, irAba, recarregar, abrir, marcarValido }
     {!m.valido && !viabs.some((v) => v.estudo_massa_id === m.id) ? <button className="btn text sm danger" onClick={() => abrir('apagar')}>Apagar</button> : null}
   </> : null;
   return (
-    <Quadro aba="massa" id="massa" primeiro titulo={m.nome}
+    <Quadro aba="massa" id="massa" primeiro chip={false} titulo={m.nome}
       acoes={<><span className={`chip ${cor}`}>{st}</span>{m.valido ? <span className="chip good"><span className="d" />Válido</span> : null}
         <button type="button" className="btn text sm ems-vped" onClick={() => abrir('pedido')}><Ic n="doc" s={16} />Ver pedido</button></>}>
       <div className="sec-b ems">

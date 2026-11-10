@@ -1,14 +1,14 @@
-# 08. Ficha: aba Entorno
+# 08. Ficha: aba Mercado
 
-**Disponível.** Ficha › aba **Entorno** (endereço `/terrenos/A123/entorno`).
+**Disponível.** Ficha › aba **Mercado** (endereço `/terrenos/A123/mercado`; o link antigo `/terrenos/A123/entorno` cai aqui). Cada quadro é um botão abaixo das abas.
 
 ## Para que serve
 
 Responder "a região é boa para um empreendimento MCMV?": o que tem perto a pé, quanto ganham e quantos são os moradores em volta e o que a concorrência está vendendo e a que preço.
 
-Quatro quadros: **Pontos de interesse**, **Renda e população do entorno**, **Perfil da população do entorno** e **Concorrência no entorno**.
+Quatro quadros, nesta ordem: **Concorrência no entorno**, **Renda e população do entorno**, **Perfil da população do entorno** e **Pontos de interesse**. O Entorno, que ficava em Estudos Técnicos, saiu.
 
-**Regra:** tudo depende de o terreno estar localizado. Sem ponto no mapa aparece "Localize o terreno (aba Terreno, Endereço e localização) para ver o entorno."
+**Regra:** tudo depende de o terreno estar localizado. Sem ponto no mapa aparece "Localize o terreno (aba Terreno, Localização) para ver o mercado."
 
 ## Pontos de interesse
 
@@ -65,7 +65,7 @@ Com o **seletor de raio próprio** (independente do quadro da renda): 500 m, 1, 
 
 **De onde vem:** do monitor de mercado (Órulo). Se ele não responder, aparece "Dados da concorrência indisponíveis agora."
 
-## O que não é possível na aba Entorno
+## O que não é possível na aba Mercado
 
 - Escolher outros raios além dos listados (os raios definitivos ainda serão escolhidos).
 - Renda e perfil fora de São Paulo e São José dos Campos.

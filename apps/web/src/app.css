@@ -121,9 +121,9 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 /* barra de abas da ficha: o mouse em cima mostra o dedinho, como em qualquer botão; a mão fechada só aparece com o botão
    do mouse apertado, quando a barra pode ser arrastada (pedido do Moisés, 9/nov/2026, trocando a mãozinha aberta de 6/nov) */
 .fi-abas.desliza, .fi-abas.desliza button { cursor: pointer }
-.fi-abas.segurando, .fi-abas.segurando button, .fi-abas.arrastando, .fi-abas.arrastando button { cursor: grabbing }
-.fi-abas.arrastando, .fi-abas.arrastando button { user-select: none }
-.fi-abas.arrastando button:hover { background: none }
+:is(.fi-abas, .fi-subabas).segurando, :is(.fi-abas, .fi-subabas).segurando button, :is(.fi-abas, .fi-subabas).arrastando, :is(.fi-abas, .fi-subabas).arrastando button { cursor: grabbing }
+:is(.fi-abas, .fi-subabas).arrastando, :is(.fi-abas, .fi-subabas).arrastando button { user-select: none }
+:is(.fi-abas, .fi-subabas).arrastando button:hover { background: none }
 
 /* unidade dentro do campo também em metros e m² (pedido do Moisés, 6/nov/2026); nos campos editados no lugar, sem recuo */
 .adorno.m > input { padding-right: 30px !important }
@@ -160,6 +160,8 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 :is(.area, .inl-c) .adorno:is(.m, .m2) > .adorno-t { position: static; transform: none; margin-left: 4px; color: inherit }
 .kv-vivo select.inl-x { field-sizing: content; padding-right: 22px !important; background-position: right 2px center !important; background-size: 16px 16px !important }
 /* barra das abas contínua, como roleta (pedido do Moisés, 6/nov/2026): rola de lado com as abas das pontas cortadas */
+/* a barra de chips das seções é a mesma roleta (10/nov/2026) */
+.fi-subabas.roleta { overscroll-behavior-x: contain; touch-action: pan-x pan-y }
 .fi-abas.roleta { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y }
 .fi-abas.roleta::-webkit-scrollbar { display: none }
 /* seletor de raio da renda e do perfil some com o quadro fechado (pedido do Moisés, 6/nov/2026; no celular, o display:flex !important do seletor passava por cima) */
