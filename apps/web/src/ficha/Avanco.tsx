@@ -111,7 +111,8 @@ type Modal =
   | { k: 'bloq' | 'forcar'; nome: string; itens: Item[]; exec: (forcar: boolean, j: string) => Promise<void> }
   | { k: 'comprar'; itens: Item[]; forcar: boolean; ap: string[] }
   | { k: 'stand_by' | 'perdido' | 'descartado'; ap: string[]; modo: string | null }
-  | { k: 'recusar' };
+  | { k: 'recusar' }
+  | { k: 'editar' };
 
 const SVG_DOTS = <svg className="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01" /></svg>;
 const CHEV = <svg className="adv-ch" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>;
@@ -144,19 +145,6 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
   const ro = !edita;
   const pref = entrada ? '' : `${fase?.nome ?? proc.fase} · `;
 
-  /* faixas: encerrado ou parado */
-  if (p.status === 'perdido' || p.status === 'descartado') return (
-    <section className="sec sec-adv"><div className={`banner ${p.status === 'perdido' ? 'crit' : ''}`}><Ic n="block" />
-      <div><div className="bt">{pref}{stN(p.status)} em {etN(p.etapa_atual)}{p.motivo_encerramento ? ' · ' + moN(p.status, p.motivo_encerramento) : ''}</div>
-        <div>{p.detalhe_encerramento ?? ''}</div><div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{fd(p.data_encerramento)}</div></div></div></section>
-  );
-  if (p.status === 'concluido') return (
-    <section className="sec sec-adv"><div className="banner good"><Ic n="check" />
-      <div style={{ minWidth: 0 }}><div className="bt">{pref}{stN('concluido')} em {fd(p.data_encerramento)}</div>
-        <div className="relato" dangerouslySetInnerHTML={{ __html: limpaHtml(p.detalhe_encerramento ?? '') }} />
-        {p.pontos_sucesso && <div style={{ marginTop: 6 }}><b>Pontos de sucesso:</b> {p.pontos_sucesso}</div>}</div></div></section>
-  );
-
   const rodar = async (fn: () => PromiseLike<{ data: unknown; error: { message: string } | null }>, ok?: (d: R) => string | null) => {
     setGrav(true);
     const { data, error } = await fn();
@@ -169,11 +157,39 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
   };
   const resMsg = (nome: string) => (d: R) => (d.resultado === 'aguardando_aprovacao' ? 'Pedido de aprovação enviado.' : `Foi para ${nome}.`);
 
+  /* faixas: encerrado ou parado */
+  // o que ficou em branco ao encerrar (tudo é opcional, pedido do Moises de 10/nov/2026) e o lápis para completar depois
+  const faltaEnc = [
+    (p.status === 'perdido' || p.status === 'descartado') && !p.motivo_encerramento && 'motivo',
+    p.status !== 'stand_by' && !textoDe(p.detalhe_encerramento ?? '') && (p.status === 'descartado' ? 'detalhe' : 'relato'),
+    p.status === 'concluido' && entrada && !p.pontos_sucesso && 'pontos de sucesso',
+    p.status === 'stand_by' && !p.retomar_em && 'data para retomar',
+    p.status === 'stand_by' && !p.detalhe_encerramento && 'justificativa',
+  ].filter(Boolean) as string[];
+  const lapis = !ro && (
+    <button className="iconbtn sm adv-enc-ed" aria-label="Editar" title={faltaEnc.length ? `Completar: ${faltaEnc.join(', ')}` : 'Editar'} onClick={() => setModal({ k: 'editar' })}><Ic n="edit" s={18} /></button>
+  );
+  const falta = faltaEnc.length > 0 && <div className="faint adv-enc-falta">Em branco: {faltaEnc.join(', ')}{!ro && <> · <button type="button" className="adv-enc-lk" onClick={() => setModal({ k: 'editar' })}>Completar</button></>}</div>;
+  if (p.status === 'perdido' || p.status === 'descartado') return (
+    <section className="sec sec-adv"><div className={`banner ${p.status === 'perdido' ? 'crit' : ''}`}><Ic n="block" />
+      <div style={{ minWidth: 0, flex: 1 }}><div className="bt">{pref}{stN(p.status)} em {etN(p.etapa_atual)}{p.motivo_encerramento ? ' · ' + moN(p.status, p.motivo_encerramento) : ''}</div>
+        <div>{p.detalhe_encerramento ?? ''}</div>{falta}<div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{fd(p.data_encerramento)}</div></div>{lapis}</div>
+      {modal && createPortal(dlg(), document.body)}</section>
+  );
+  if (p.status === 'concluido') return (
+    <section className="sec sec-adv"><div className="banner good"><Ic n="check" />
+      <div style={{ minWidth: 0, flex: 1 }}><div className="bt">{pref}{stN('concluido')} em {fd(p.data_encerramento)}</div>
+        <div className="relato" dangerouslySetInnerHTML={{ __html: limpaHtml(p.detalhe_encerramento ?? '') }} />
+        {p.pontos_sucesso && <div style={{ marginTop: 6 }}><b>Pontos de sucesso:</b> {p.pontos_sucesso}</div>}{falta}</div>{lapis}</div>
+      {modal && createPortal(dlg(), document.body)}</section>
+  );
+
+
   if (p.status === 'stand_by') return (
     <section className="sec sec-adv"><div className="banner warn" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-      <span style={{ display: 'flex', gap: 12 }}><Ic n="pause" /><span><b>{pref}Stand By em {etN(p.etapa_atual)} · revisitar em {fd(p.retomar_em)}</b>{p.detalhe_encerramento && <><br /><span>{p.detalhe_encerramento}</span></>}</span></span>
-      {!ro && <button className="btn sm" disabled={grav} onClick={() => rodar(() => supabase.rpc('retomar_processo', { p_processo: p.id }), () => 'Negociação retomada.')}>Retomar</button>}
-    </div></section>
+      <span style={{ display: 'flex', gap: 12 }}><Ic n="pause" /><span><b>{pref}Stand By em {etN(p.etapa_atual)}{p.retomar_em ? ` · revisitar em ${fd(p.retomar_em)}` : ''}</b>{p.detalhe_encerramento && <><br /><span>{p.detalhe_encerramento}</span></>}{falta}</span></span>
+      <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>{lapis}{!ro && <button className="btn sm" disabled={grav} onClick={() => rodar(() => supabase.rpc('retomar_processo', { p_processo: p.id }), () => 'Negociação retomada.')}>Retomar</button>}</span>
+    </div>{modal && createPortal(dlg(), document.body)}</section>
   );
 
   /* tentar uma passagem: confere antes; com pendência, a justificativa (quem pode) ou a lista do que falta */
@@ -289,14 +305,14 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
       <Dialogo titulo={`Ainda não dá para ${modal.nome.startsWith('concluir') ? modal.nome : 'ir para ' + modal.nome}`} sub="Resolva o que falta. Gestor e diretor podem passar sem os requisitos, com justificativa." onFechar={fechar}
         rodape={<button className="btn primary" onClick={fechar}>Entendi</button>}><Itens itens={modal.itens} modal /></Dialogo>
     );
-    if (modal.k === 'forcar') return (
+    if (modal.k === 'forcar') { const exige = modal.itens.some((x) => x.justifica); return (
       <Dialogo titulo={`Ir para ${modal.nome} sem os requisitos?`} onFechar={fechar} rodape={rod('f-fc', 'Avançar')}>
         <ul className="pend">{modal.itens.map((x, i) => <li key={i}><Ic n="close" s={16} />{x.texto}</li>)}</ul>
         <form id="f-fc" onSubmit={async (ev) => { ev.preventDefault(); const j = val(ev, 'j'); const m = modal; setModal(null); await m.exec(true, j); }}>
-          <div className="field"><label htmlFor="fc-j">Justificativa (vai para o histórico)</label><textarea id="fc-j" name="j" required /></div>
+          <div className="field"><label htmlFor="fc-j">Justificativa{exige ? '' : ' (opcional)'}, vai para o histórico</label><textarea id="fc-j" name="j" required={exige} /></div>
         </form>
       </Dialogo>
-    );
+    ); }
     if (modal.k === 'recusar') return (
       <Dialogo titulo={`Recusar ${ped?.destino_nome ?? ''}?`} sub={`${niveis[0]?.pedido_por_nome ?? 'Quem pediu'} recebe o motivo no sino.`} onFechar={fechar} rodape={rod('f-rc', 'Recusar')}>
         <form id="f-rc" onSubmit={async (ev) => { ev.preventDefault(); const c = val(ev, 'coment'); if (await rodar(() => supabase.rpc('decidir_aprovacao', { p_pedido: ped!.pedido_id, p_aprovar: false, p_comentario: c }), () => 'Pedido recusado.')) fechar(); }}>
@@ -308,37 +324,76 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
       const ok = await rodar(() => supabase.rpc('encerrar_processo', { p_processo: p.id, p_status: st, ...a }), (d) => (d.resultado === 'aguardando_aprovacao' ? 'Pedido de aprovação enviado.' : msg));
       if (ok) fechar();
     };
-    const motivosSel = (st: string) => (
-      <select id="mo-m" name="motivo" required defaultValue=""><option value="">Escolha</option>
+    const motivosSel = (st: string, atual = '') => (
+      <select id="mo-m" name="motivo" defaultValue={atual}><option value="">Não informado</option>
         {motivos.filter((m) => m.status === st && m.ativo !== false).map((m) => <option key={m.codigo} value={m.codigo}>{m.nome}</option>)}</select>
     );
     if (modal.k === 'stand_by') return (
       <Dialogo titulo="Colocar em Stand By" onFechar={fechar} rodape={rod('f-s', 'Colocar em Stand By')}>
-        <form id="f-s" onSubmit={(ev) => { ev.preventDefault(); encerrar('stand_by', { p_retomar_em: val(ev, 'retomar'), p_detalhe: val(ev, 'detalhe') }, 'Em Stand By.'); }}>
-          <div className="fields"><div className="field"><label htmlFor="sp-d">Retomar em</label><input id="sp-d" name="retomar" type="date" min={somarDias(hojeISO(), 1)} defaultValue={somarDias(hojeISO(), 30)} required /></div>
-            <div className="field full"><label htmlFor="sp-t">Justificativa</label><textarea id="sp-t" name="detalhe" required /></div></div>
+        <form id="f-s" onSubmit={(ev) => { ev.preventDefault(); encerrar('stand_by', { p_retomar_em: val(ev, 'retomar') || null, p_detalhe: val(ev, 'detalhe') || null }, 'Em Stand By.'); }}>
+          <div className="fields"><div className="field"><label htmlFor="sp-d">Retomar em</label><input id="sp-d" name="retomar" type="date" min={somarDias(hojeISO(), 1)} defaultValue={somarDias(hojeISO(), 30)} /></div>
+            <div className="field full"><label htmlFor="sp-t">Justificativa</label><textarea id="sp-t" name="detalhe" /></div></div>
           {apInfo(modal.ap, modal.modo)}
         </form>
       </Dialogo>
     );
     if (modal.k === 'perdido') return (
       <Dialogo titulo="Marcar como Perdido" sub="O vendedor não quis seguir com a BKM." onFechar={fechar} rodape={rod('f-p', 'Marcar como Perdido')}>
-        <form id="f-p" onSubmit={(ev) => { ev.preventDefault(); encerrar('perdido', { p_motivo: val(ev, 'motivo'), p_detalhe: val(ev, 'detalhe'), p_tarefas: 'arquivar' }, 'Marcado como Perdido.'); }}>
+        <form id="f-p" onSubmit={(ev) => { ev.preventDefault(); encerrar('perdido', { p_motivo: val(ev, 'motivo') || null, p_detalhe: val(ev, 'detalhe') || null, p_tarefas: 'arquivar' }, 'Marcado como Perdido.'); }}>
           <div className="fields"><div className="field full"><label htmlFor="mo-m">Motivo</label>{motivosSel('perdido')}</div>
-            <div className="field full"><label htmlFor="pd-d">Relato</label><textarea id="pd-d" name="detalhe" required placeholder="O que aconteceu, com quem e quando" /></div></div>
+            <div className="field full"><label htmlFor="pd-d">Relato</label><textarea id="pd-d" name="detalhe" placeholder="O que aconteceu, com quem e quando" /></div></div>
           {apInfo(modal.ap, modal.modo)}
         </form>
       </Dialogo>
     );
     if (modal.k === 'descartado') return (
       <Dialogo titulo="Descartar" sub="A BKM decidiu não seguir." onFechar={fechar} rodape={rod('f-ds', 'Descartar')}>
-        <form id="f-ds" onSubmit={(ev) => { ev.preventDefault(); encerrar('descartado', { p_motivo: val(ev, 'motivo'), p_detalhe: val(ev, 'detalhe') || null, p_tarefas: 'arquivar' }, 'Descartado.'); }}>
+        <form id="f-ds" onSubmit={(ev) => { ev.preventDefault(); encerrar('descartado', { p_motivo: val(ev, 'motivo') || null, p_detalhe: val(ev, 'detalhe') || null, p_tarefas: 'arquivar' }, 'Descartado.'); }}>
           <div className="fields"><div className="field full"><label htmlFor="mo-m">Motivo</label>{motivosSel('descartado')}</div>
-            <div className="field full"><label htmlFor="ds-d">Detalhe</label><textarea id="ds-d" name="detalhe" placeholder="Obrigatório quando o motivo é Outros" /></div></div>
+            <div className="field full"><label htmlFor="ds-d">Detalhe</label><textarea id="ds-d" name="detalhe" /></div></div>
           {apInfo(modal.ap, modal.modo)}
         </form>
       </Dialogo>
     );
+    /* completar depois o que ficou em branco ao encerrar (app.editar_encerramento) */
+    if (modal.k === 'editar') {
+      const st = p.status as string;
+      const salvarEd = async (d: R) => {
+        if (await rodar(() => supabase.rpc('editar_encerramento', { p_processo: p.id, p_dados: d }), () => 'Salvo.')) fechar();
+      };
+      return (
+        <Dialogo titulo={`Editar ${stN(st)}`} sub={f.nome} onFechar={fechar} rodape={rod('f-ed', 'Salvar')}>
+          <form id="f-ed" onSubmit={(ev) => {
+            ev.preventDefault();
+            if (st === 'stand_by') { salvarEd({ retomar_em: val(ev, 'retomar') || null, detalhe: val(ev, 'detalhe') }); return; }
+            if (st === 'concluido') {
+              const rel = limpaHtml((document.getElementById('cp-rel') as HTMLElement).innerHTML);
+              salvarEd({ detalhe: textoDe(rel) ? rel : '', ...(entrada ? { pontos_sucesso: val(ev, 'pontos') } : {}) });
+              return;
+            }
+            salvarEd({ motivo: val(ev, 'motivo') || null, detalhe: val(ev, 'detalhe') });
+          }}>
+            <div className="fields">
+              {st === 'stand_by' && <>
+                <div className="field"><label htmlFor="sp-d">Retomar em</label><input id="sp-d" name="retomar" type="date" min={somarDias(hojeISO(), 1)} defaultValue={p.retomar_em ?? ''} /></div>
+                <div className="field full"><label htmlFor="sp-t">Justificativa</label><textarea id="sp-t" name="detalhe" defaultValue={p.detalhe_encerramento ?? ''} /></div></>}
+              {(st === 'perdido' || st === 'descartado') && <>
+                <div className="field full"><label htmlFor="mo-m">Motivo</label>{motivosSel(st, p.motivo_encerramento ?? '')}</div>
+                <div className="field full"><label htmlFor="pd-d">{st === 'perdido' ? 'Relato' : 'Detalhe'}</label><textarea id="pd-d" name="detalhe" defaultValue={p.detalhe_encerramento ?? ''} /></div></>}
+              {st === 'concluido' && <>
+                <div className="field full"><span className="lbl-f" id="cp-l">{entrada ? 'Relato da compra' : 'Relato da conclusão'}</span>
+                  <div className="rt"><div className="rt-bar" role="toolbar" aria-label="Formatação">
+                    <button type="button" className="iconbtn sm" aria-label="Negrito" onMouseDown={(e) => { e.preventDefault(); document.execCommand('bold'); }}><b>N</b></button>
+                    <button type="button" className="iconbtn sm" aria-label="Itálico" onMouseDown={(e) => { e.preventDefault(); document.execCommand('italic'); }}><i>I</i></button>
+                    <button type="button" className="iconbtn sm" aria-label="Lista" onMouseDown={(e) => { e.preventDefault(); document.execCommand('insertUnorderedList'); }}>•</button>
+                  </div><div id="cp-rel" className="rt-ed" contentEditable suppressContentEditableWarning role="textbox" aria-multiline="true" aria-labelledby="cp-l"
+                    dangerouslySetInnerHTML={{ __html: limpaHtml(p.detalhe_encerramento ?? '') }} /></div></div>
+                {entrada && <div className="field full"><label htmlFor="cp-p">Pontos de sucesso</label><textarea id="cp-p" name="pontos" defaultValue={p.pontos_sucesso ?? ''} /></div>}</>}
+            </div>
+          </form>
+        </Dialogo>
+      );
+    }
     /* comprar: relato com formatação, pontos de sucesso e, com pendência, a justificativa */
     const m = modal as Extract<Modal, { k: 'comprar' }>;
     return (
@@ -346,8 +401,7 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
         <form id="f-cp" onSubmit={(ev) => {
           ev.preventDefault();
           const rel = limpaHtml((document.getElementById('cp-rel') as HTMLElement).innerHTML);
-          if (!textoDe(rel)) { toast('Escreva o relato da compra.', true); return; }
-          encerrar('concluido', { p_detalhe: rel, p_pontos_sucesso: val(ev, 'pontos') || null, p_forcar: m.forcar, p_comentario: m.forcar ? val(ev, 'j') : null }, `Concluído como ${stN('concluido')}.`);
+          encerrar('concluido', { p_detalhe: textoDe(rel) ? rel : null, p_pontos_sucesso: val(ev, 'pontos') || null, p_forcar: m.forcar, p_comentario: m.forcar ? val(ev, 'j') || null : null }, `Concluído como ${stN('concluido')}.`);
         }}>
           <div className="fields">
             <div className="field full"><span className="lbl-f" id="cp-l">Relato da compra</span>
@@ -356,11 +410,11 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
                 <button type="button" className="iconbtn sm" aria-label="Itálico" onMouseDown={(e) => { e.preventDefault(); document.execCommand('italic'); }}><i>I</i></button>
                 <button type="button" className="iconbtn sm" aria-label="Lista" onMouseDown={(e) => { e.preventDefault(); document.execCommand('insertUnorderedList'); }}>•</button>
               </div><div id="cp-rel" className="rt-ed" contentEditable suppressContentEditableWarning role="textbox" aria-multiline="true" aria-labelledby="cp-l" data-ph="Como foi a negociação, condições finais, quem participou" /></div></div>
-            {entrada && <div className="field full"><label htmlFor="cp-p">Pontos de sucesso</label><textarea id="cp-p" name="pontos" required placeholder="O que fez a compra dar certo e vale repetir" /></div>}
+            {entrada && <div className="field full"><label htmlFor="cp-p">Pontos de sucesso</label><textarea id="cp-p" name="pontos" placeholder="O que fez a compra dar certo e vale repetir" /></div>}
             {m.itens.length > 0 && <>
               <div className="field full"><div className="banner warn"><Ic n="warn" /><div><div className="bt">Comprar sem os requisitos</div>
                 <ul className="pend">{m.itens.map((x, i) => <li key={i}><Ic n="close" s={16} />{x.texto}</li>)}</ul></div></div></div>
-              <div className="field full"><label htmlFor="cp-j">Justificativa (vai para o histórico)</label><textarea id="cp-j" name="j" required /></div>
+              <div className="field full"><label htmlFor="cp-j">Justificativa{m.itens.some((x) => x.justifica) ? '' : ' (opcional)'}, vai para o histórico</label><textarea id="cp-j" name="j" required={m.itens.some((x) => x.justifica)} /></div>
             </>}
           </div>
           {apInfo(m.ap, r.aprovacao_modo)}
