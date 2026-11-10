@@ -1108,7 +1108,7 @@ function JanelaEtq({ f, L, k, fechar, ops }: { f: Ficha; L: Lotes; k: string; fe
   async function buscar() {
     setBusc(true);
     try {
-      const ok = await buscando(f.id, 'geosampa', sjc ? consultarLoteSjc(x!.id, x!.inscricao) : consultarLote(x!.id, x!.inscricao));
+      const ok = await buscando(f.id, sjc ? 'geosanja' : 'geosampa', sjc ? consultarLoteSjc(x!.id, x!.inscricao) : consultarLote(x!.id, x!.inscricao));
       toast(ok ? `${nomeBase} consultado.` : `O ${nomeBase} não achou o lote ${sjc ? 'desta inscrição' : 'deste SQL'}.`, !ok); recarregar();
       /* em SJC a poligonal do lote só chega pela consulta: refaz a do terreno pela soma dos lotes */
       if (ok && sjc) { await refazerPoligonal(f, `${x!.inscricao} consultada`, toast); recarregar('tudo'); }

@@ -248,7 +248,7 @@ export async function consultarTerreno(terrenoId: string, poly: P[] | null, ins:
   /* São José dos Campos: a mesma consulta pelo GeoSanja, sem IPTU nem consulta pela poligonal (o GeoSanja só responde por lote) */
   if (base === 'geosanja') {
     if (!GSJ_BASE || A || !ins.length) return;
-    return buscando(terrenoId, 'geosampa', consultarTudo(terrenoId, null, ins, aviso, true));
+    return buscando(terrenoId, 'geosanja', consultarTudo(terrenoId, null, ins, aviso, true));
   }
   /* o IPTU de cada SQL vem da Prefeitura em segundo plano, pelo serviço do IPTU (pedido do Moises, 9/nov/2026) */
   if (GEO_BASE && ins.length) void filaIptu(ins.map((i) => i.id));
