@@ -4077,4 +4077,15 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select lotes_na_base = (select count(*) from app.lotes_prefeitura where empresa_id = :'emp' and base = 'geosanja')
   from app.varredura_sjc_relatorio(:'emp') limit 1), 'o relatório conta os lotes da base');
 
+-- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
+-- e os catálogos sem empresa continuam legíveis por quem está logado.
+reset role;
+select pg_temp.ok(not exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname in ('app','fluxo') and c.relkind in ('r','p') and not c.relrowsecurity),
+  'nenhuma tabela de app ou fluxo fica sem RLS');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.campos_catalogo) > 0 and (select count(*) from fluxo.objeto_tipos) > 0,
+  'o usuário logado lê o catálogo de campos e os tipos de objeto');
+reset role;
+
 \echo 'TODOS OS TESTES PASSARAM'
