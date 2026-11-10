@@ -3,18 +3,27 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 /** faixa de botões que rola de lado como uma roleta (pedido do Moisés, 6/nov/2026; levada às barras de seções da ficha
     em 10/nov/2026): o dedo, o mouse arrastado, Shift + roda (ou Ctrl + Shift + roda) e o deslize de lado do trackpad a
     movem pixel a pixel, e solta com força ela segue rodando e freia aos poucos (inércia). Arrastar não aperta o botão;
-    trocar o ativo (`ativo`, o `data-t` do botão) traz ele para a vista, com o vizinho de cada lado quando cabe.
+    trocar o ativo (`ativo`, o `data-t` do botão) traz ele para a vista, com 70% do vizinho de cada lado quando cabe.
     Devolve se há botões fora da vista. `conta` refaz a medida quando muda o número de botões. */
 export function useRoleta(barra: RefObject<HTMLDivElement>, ativo: string | null, conta = 0) {
   const [sobra, setSobra] = useState(false);
-  const anim = useRef(0);
+  const anim = useRef(0), ultimo = useRef(-1);
   useLayoutEffect(() => {
     const b = barra.current, a = ativo != null ? b?.querySelector<HTMLElement>(`[data-t="${CSS.escape(ativo)}"]`) : null;
     if (!b || !a || !b.firstElementChild) return;
     const ant = a.previousElementSibling as HTMLElement | null, prox = a.nextElementSibling as HTMLElement | null;
     const L = b.clientWidth, x0 = a.offsetLeft - (b.firstElementChild as HTMLElement).offsetLeft, aw = a.offsetWidth;
-    let e = ant ? x0 - ant.offsetWidth * 0.6 : 0, d = prox ? x0 + aw + prox.offsetWidth * 0.6 : b.scrollWidth;
-    if (d - e > L) { e = x0 - (L - aw) / 2; d = e + L; } // não cabem os vizinhos: o ativo no meio
+    /* o ativo nunca fica na ponta da vista: aparecem pelo menos 70% do vizinho de cada lado (pedido do Moises, 10/nov/2026) */
+    const V = 0.7, gap = parseFloat(getComputedStyle(b).columnGap) || 0;
+    let e = ant ? x0 - gap - ant.offsetWidth * V : 0, d = prox ? x0 + aw + gap + prox.offsetWidth * V : b.scrollWidth;
+    if (d - e > L) {
+      /* não cabem os dois: vale o vizinho do lado para onde a pessoa foi (para a direita, o próximo); nem ele cabe, o ativo no meio */
+      const idx = [...b.children].indexOf(a), praTras = idx < ultimo.current;
+      if (praTras && ant && x0 + aw - e <= L) d = e + L;
+      else if (prox && d - x0 <= L) e = d - L;
+      else { e = x0 - (L - aw) / 2; d = e + L; }
+    }
+    ultimo.current = [...b.children].indexOf(a);
     let alvo = b.scrollLeft;
     if (e < alvo) alvo = e; else if (d > alvo + L) alvo = d - L;
     if (alvo !== b.scrollLeft) { cancelAnimationFrame(anim.current); b.scrollTo({ left: alvo, behavior: 'smooth' }); }

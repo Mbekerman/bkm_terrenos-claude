@@ -89,7 +89,7 @@ type D = NonNullable<ReturnType<typeof useParam>['data']>;
 export default function SecParametros({ f }: { f: Ficha }) {
   const q = useParam(f);
   if (q.isLoading || q.error || !q.data) return (
-    <Quadro aba="terreno" id="indices" primeiro chip="Índices urbanísticos" titulo="Índices urbanísticos">
+    <Quadro aba="terreno" id="indices" primeiro chip="Índices" titulo="Índices">
       <div className="sec-b"><div className="muted">{q.isLoading ? 'Carregando…' : `Não foi possível carregar os parâmetros: ${String((q.error as any)?.message ?? q.error)}`}</div></div>
     </Quadro>
   );
@@ -131,7 +131,7 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
   const fontes = [...new Map(d.lz.filter((r) => r.parametro_id && (!um || r.tipo === 'mercado')).map((r) => [r.parametro_id, d.cat.get(r.parametro_id)] as [unknown, R | undefined]).filter((x) => x[1])).values()] as R[];
   const sig = new Map(d.lz.map((r) => [r.zoneamento_id, r.sigla]));
   return (
-    <Quadro aba="terreno" id="indices" primeiro chip="Índices urbanísticos" titulo={<>Índices urbanísticos<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} aberto={reg || undefined}
+    <Quadro aba="terreno" id="indices" primeiro chip="Índices" titulo={<>Índices<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} aberto={reg || undefined}
       acoes={edita && !reg ? <button className="btn sm zn-reg" aria-label="Registrar zonas" title="Registrar zonas" onClick={() => setReg(true)}><Ic n="add" s={16} /><span className="oc-m">Registrar zonas</span></button> : null}>
       <div className="sec-b">
         {reg ? <FormZonas f={f} d={d} sjc={sjc} fechar={() => setReg(false)} /> : null}
@@ -494,7 +494,7 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
     } catch (e) { console.error(e); toast('Não foi possível consultar o GeoSampa agora. Tente de novo em instantes.'); } finally { setBusc(false); }
   };
   const acoes = sp && edita && f.poly ? <button className="btn sm text" disabled={busc} onClick={consultar}><Ic n="search" s={16} />{busc ? 'Consultando...' : d.area ? 'Consultar de novo' : 'Consultar pela poligonal'}</button> : null;
-  if (!sp) return <Quadro aba="restricoes" id="rest" primeiro titulo="Restrições e entorno"><div className="sec-b"><div className="muted">Não disponível nesta cidade. O que a prefeitura traz está em cada lote, em Terreno › Índices urbanísticos.</div></div></Quadro>;
+  if (!sp) return <Quadro aba="restricoes" id="rest" primeiro titulo="Restrições e entorno"><div className="sec-b"><div className="muted">Não disponível nesta cidade. O que a prefeitura traz está em cada lote, em Terreno › Índices.</div></div></Quadro>;
   const orig = r ? (r.fonte === 'poligonal' ? `GeoSampa pela poligonal do terreno, ${fdh(r.em)}${r.user ? ' por ' + r.user : ''}` : `GeoSampa por ${r.n} lote${r.n! > 1 ? 's' : ''} (inscrições), último em ${fdh(r.em)}`) : '';
   const linha = ([tema, o]: Item) => {
     const cel = (v: ReactNode) => <div className="rs-l" key={tema}><span className="k">{tema}</span><span className="v">{v}</span></div>;

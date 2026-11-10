@@ -8,7 +8,7 @@ Responder "a região é boa para um empreendimento MCMV?": o que tem perto a pé
 
 Quatro quadros: **Pontos de interesse**, **Renda e população do entorno**, **Perfil da população do entorno** e **Concorrência no entorno**. O Entorno, que ficava em Estudos Técnicos, saiu.
 
-**Regra:** tudo depende de o terreno estar localizado. Sem ponto no mapa aparece "Localize o terreno (aba Terreno, Endereço e localização) para ver o mercado e a demografia."
+**Regra:** tudo depende de o terreno estar localizado. Sem ponto no mapa aparece "Localize o terreno (aba Terreno, Localização) para ver o mercado e a demografia."
 
 ## Pontos de interesse
 

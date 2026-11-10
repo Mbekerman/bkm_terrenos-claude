@@ -44,7 +44,7 @@ O SQL entra sempre dentro de uma matrícula. Leve primeiro a matrícula para a p
 Cada SQL incluído ou excluído refaz a poligonal pela soma dos lotes da prefeitura. Ctrl+Z volta. Ver [05](05-ficha-terreno.md#efeitos-de-incluir-ou-tirar-sql).
 
 **Qual área vale?**
-A área adotada, em azul em Áreas e dimensões. Clique em outro cartão para trocar. Ver [05](05-ficha-terreno.md#áreas-e-dimensões).
+A área adotada, em azul em Dimensões. Clique em outro cartão para trocar. Ver [05](05-ficha-terreno.md#áreas-e-dimensões).
 
 **Não consigo avançar a etapa.**
 Há pendência (o analista vê a lista) ou a passagem pede aprovação ("Pedir aprovação"). Gestor e diretor podem passar com justificativa. Também não se move com pedido de aprovação aberto. Ver [09](09-avanco-e-logs.md#avançar-com-pendência).

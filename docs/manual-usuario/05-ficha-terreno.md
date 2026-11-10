@@ -6,7 +6,7 @@
 
 Guardar o que o terreno **é**: nome, endereço, quem são os donos (partes), as matrículas e os SQLs de cada um e as áreas. Os dados comerciais (valor, oferta, proposta) ficam na aba Comercial.
 
-A aba tem, nesta ordem, as seções: **Identificação**, **Endereço e localização**, **Índices urbanísticos** (ver [07](07-ficha-parametros.md)), **Partes**, **Matrículas e Lotes** (as matrículas e os SQLs ou inscrições, com o quadro de cada parte; até 10/nov/2026, Matrículas e SQLs), **Áreas e dimensões** e **IPTU**. Cada seção é um botão na barra logo abaixo das abas, e aparece uma de cada vez (ver [04](04-ficha-visao-geral.md#quadros-que-abrem-e-fecham)). Todos os campos se editam no lugar (ver [04](04-ficha-visao-geral.md#editar-no-lugar)).
+A aba tem, nesta ordem, as seções: **Identificação**, **Localização**, **Índices** (ver [07](07-ficha-parametros.md)), **Partes**, **Matrículas e Lotes** (as matrículas e os SQLs ou inscrições, com o quadro de cada parte; até 10/nov/2026, Matrículas e SQLs), **Dimensões** e **IPTU**. Cada seção é um botão na barra logo abaixo das abas, e aparece uma de cada vez (ver [04](04-ficha-visao-geral.md#quadros-que-abrem-e-fecham)). Todos os campos se editam no lugar (ver [04](04-ficha-visao-geral.md#editar-no-lugar)).
 
 ## Identificação
 
@@ -20,7 +20,7 @@ A aba tem, nesta ordem, as seções: **Identificação**, **Endereço e localiza
 | **Identificado em** | Data em que o terreno chegou. |
 | **Observações gerais** | Texto livre. |
 
-## Endereço e localização
+## Localização
 
 **Regra:** **CEP, logradouro, bairro e município não se digitam na ficha.** Eles vêm da posição da poligonal no mapa. O CEP aparece no formato 00.000-000. Para mudar, use o lápis **"Editar no mapa"** (no título deste quadro ou ao lado do endereço no Resumo). Ele abre a página Mapa com a poligonal em edição.
 
@@ -84,7 +84,7 @@ O quadro tem duas metades:
 - **Matrículas**: digite o **Nº da matrícula**, confira o **Cartório** (já vem preenchido) e a **Área registrada**, e clique em **Incluir**. Vira uma etiqueta **amarela**.
 - **SQLs** (ou o nome da inscrição na sua cidade): digite e clique em **Incluir**, ou use **"Escolher no mapa"**. Vira uma etiqueta **roxa**.
 
-**Em São José dos Campos**, a inscrição imobiliária é consultada sozinha no **GeoSanja** assim que é incluída: vêm a poligonal do lote, a zona com a área no lote, a macrozona e as restrições (centralidade, setor, riscos, parques, linha de transmissão...), e a poligonal do terreno é refeita pela soma dos lotes, como em São Paulo. A janela da etiqueta tem **"Buscar no GeoSanja"** (ou **"Buscar de novo"**). O GeoSanja **não traz** área cadastral, endereço e número, testada, valor venal nem IPTU: esses você digita (na janela da etiqueta e na aba Terreno). O **cartório** (1º ou 2º Registro de Imóveis) e a **Zona** (região da cidade pela LC 612: Centro, Norte, Sul, Leste, Oeste ou Sudeste) vêm sozinhos do GeoSanja pelo ponto do terreno, ao abrir a ficha, e o que você digitar não é trocado. Nos Índices urbanísticos, fora de São Paulo, aparecem um **Potencial** e um **CA máximo** só (a lei da cidade não separa HIS e HMP). **"Escolher no mapa"** também existe em São José: abre o mapa de lotes do GeoSanja das quadras da poligonal (ver [03](03-novo-terreno.md#lotes-da-prefeitura-são-paulo-e-são-josé-dos-campos)); as marcadas entram sem parte e as desmarcadas das quadras abertas saem.
+**Em São José dos Campos**, a inscrição imobiliária é consultada sozinha no **GeoSanja** assim que é incluída: vêm a poligonal do lote, a zona com a área no lote, a macrozona e as restrições (centralidade, setor, riscos, parques, linha de transmissão...), e a poligonal do terreno é refeita pela soma dos lotes, como em São Paulo. A janela da etiqueta tem **"Buscar no GeoSanja"** (ou **"Buscar de novo"**). O GeoSanja **não traz** área cadastral, endereço e número, testada, valor venal nem IPTU: esses você digita (na janela da etiqueta e na aba Terreno). O **cartório** (1º ou 2º Registro de Imóveis) e a **Zona** (região da cidade pela LC 612: Centro, Norte, Sul, Leste, Oeste ou Sudeste) vêm sozinhos do GeoSanja pelo ponto do terreno, ao abrir a ficha, e o que você digitar não é trocado. Nos Índices, fora de São Paulo, aparecem um **Potencial** e um **CA máximo** só (a lei da cidade não separa HIS e HMP). **"Escolher no mapa"** também existe em São José: abre o mapa de lotes do GeoSanja das quadras da poligonal (ver [03](03-novo-terreno.md#lotes-da-prefeitura-são-paulo-e-são-josé-dos-campos)); as marcadas entram sem parte e as desmarcadas das quadras abertas saem.
 
 Cada etiqueta mostra o número e um **x**. Em tela estreita, as duas metades ficam uma sobre a outra e cada uma recolhe pela seta.
 
@@ -154,7 +154,7 @@ Se a matrícula ou o SQL já está em outro terreno, o sistema não deixa inclui
 
 Mostra a **área da parte** e a **divergência Matrícula × Prefeitura** (a área cadastral dos SQLs comparada com a das matrículas).
 
-## Áreas e dimensões
+## Dimensões
 
 Quatro cartões de área, nesta ordem: lado a lado quando cabem, senão em dois pares (Documental e Cadastral em cima, Topográfica e Poligonal embaixo).
 
@@ -187,9 +187,9 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 
 ## IPTU
 
-Logo abaixo de Áreas e dimensões. Nasce fechado, como os outros quadros da aba (abre pela seta do título). Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
+Logo abaixo de Dimensões. Nasce fechado, como os outros quadros da aba (abre pela seta do título). Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
 
-- três caixas, como as de Áreas e dimensões: **valor venal do terreno**, **da construção** e **total**, este em destaque (três por linha, também na gaveta da ficha);
+- três caixas, como as de Dimensões: **valor venal do terreno**, **da construção** e **total**, este em destaque (três por linha, também na gaveta da ficha);
 - embaixo, em dupla: **área total do terreno** e **área construída** (da Prefeitura);
 - por último, em destaque: **IPTU anual** e **IPTU mensal** (anual ÷ 10, as 10 prestações da Prefeitura).
 

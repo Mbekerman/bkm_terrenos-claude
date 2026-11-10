@@ -232,7 +232,7 @@ function SecAreas({ f }: { f: Ficha }) {
     try { await salvarT({ fonte_area_adotada: d.fonte_area_adotada, area_adotada_m2: d.area_adotada_m2 }); } finally { setGrav(false); }
   };
   return (
-    <Quadro aba="terreno" id="areas" chip="Áreas e dimensões" titulo={<>Áreas e dimensões<Busca terreno={f.id} fontes={['geosampa', 'frentes']} /></>}>
+    <Quadro aba="terreno" id="areas" chip="Dimensões" titulo={<>Dimensões<Busca terreno={f.id} fontes={['geosampa', 'frentes']} /></>}>
       <div className="sec-b">
         <div className="areas4"><div className="areas">{cards.map(([v, l, fo, s], i) => {
           const k = i < AREAS.length ? AREAS[i][0] : '', pode = edita && v != null, sel = fonte === fo;

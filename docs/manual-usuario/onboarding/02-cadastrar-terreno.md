@@ -17,13 +17,13 @@
 | 9 | 2:35 | Passo 2: mostrar o nome sugerido "Bairro - Rua" e o acesso principal. | "Falta o nome. Ele já vem como Bairro e Rua. Se o terreno tem mais de uma frente, escolha a rua principal." |
 | 10 | 2:55 | Clicar em **"Cadastrar terreno"**. Mostrar o código novo e "Consultando o GeoSampa: N de M" na lista. | "Cadastrado. Ele ganhou um código, e o sistema está consultando o GeoSampa para trazer zoneamento e restrições. Pode seguir enquanto isso." |
 | 11 | 3:20 | Abrir a ficha › aba **Terreno**. Apontar Identificação; trocar a Prioridade e o Responsável. | "Na aba Terreno, tudo se edita no lugar: clique, mude e saia do campo. Não tem botão Salvar; grava sozinho." |
-| 12 | 3:45 | Endereço e localização: apontar o lápis "Editar no mapa" e o campo Número. | "O endereço vem do mapa. Para mudar, use Editar no mapa. Número, complemento, zona e referência se digitam aqui." |
+| 12 | 3:45 | Localização: apontar o lápis "Editar no mapa" e o campo Número. | "O endereço vem do mapa. Para mudar, use Editar no mapa. Número, complemento, zona e referência se digitam aqui." |
 | 13 | 4:05 | Partes: apontar "Vendedor 1"; clicar no lápis e cadastrar um proprietário (nome, telefone, %, Relação). | "Todo terreno nasce com uma parte, Vendedor 1. No lápis você põe as pessoas: o dono, o cônjuge, o procurador, o contato." |
 | 14 | 4:40 | Matrículas e Lotes: incluir a matrícula. **Precisa regravar a partir deste passo** (10/nov/2026: a seção se chamava Matrículas e SQLs). Mostrar a etiqueta amarela e as etiquetas roxas dos SQLs. | "Agora a matrícula: número, cartório, que já vem preenchido, e área. Ela vira uma etiqueta amarela. Os SQLs são as roxas." |
 | 15 | 5:05 | Clicar em **"Enviar tudo para Vendedor 1"** (ou arrastar a matrícula e depois o SQL para dentro dela). | "Leve as etiquetas para a parte. A matrícula vira um quadro da parte, e o SQL entra sempre dentro de uma matrícula. Com uma parte só, Enviar tudo resolve." |
 | 16 | 5:35 | Clicar na mini pizza de uma etiqueta; mostrar a barra do percentual; fechar. | "Se o lote é só em parte desta parte, a pizza dá o percentual. Normalmente é 100%." |
 | 17 | 5:55 | Abrir a janela do SQL: GeoSampa consultado e "Lançar IPTU". | "Na janela do SQL, o que veio do GeoSampa e o IPTU, que você lança pelo carnê." |
-| 18 | 6:20 | Áreas e dimensões: mostrar os cinco cartões, clicar no Cadastral para adotá-lo; digitar a Testada. | "Em Áreas, as cinco fontes. Clique na que vale: ela fica azul e vira a área adotada. Digite também a testada." |
+| 18 | 6:20 | Dimensões: mostrar os cinco cartões, clicar no Cadastral para adotá-lo; digitar a Testada. | "Em Áreas, as cinco fontes. Clique na que vale: ela fica azul e vira a área adotada. Digite também a testada." |
 | 19 | 6:50 | Ctrl+Z fora de um campo; mostrar "Desfeito: …"; Ctrl+Y. | "Mudou algo sem querer? Clique fora e Ctrl+Z. Ctrl+Y refaz." |
 | 20 | 7:10 | Mostrar "Ficha N% completa" subindo. | "Repare como a ficha foi se completando. No próximo vídeo: registrar a oferta e acompanhar a negociação." |
 

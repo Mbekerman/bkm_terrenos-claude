@@ -38,11 +38,11 @@ Os 12 itens:
 
 | Item | Onde se preenche |
 |---|---|
-| Endereço completo (logradouro, número, bairro) | Terreno › Endereço e localização |
-| Zona | Terreno › Endereço e localização |
+| Endereço completo (logradouro, número, bairro) | Terreno › Localização |
+| Zona | Terreno › Localização |
 | Ponto no mapa | Poligonal no mapa |
-| Área adotada | Terreno › Áreas e dimensões |
-| Testada | Terreno › Áreas e dimensões |
+| Área adotada | Terreno › Dimensões |
+| Testada | Terreno › Dimensões |
 | Matrícula | Terreno › Matrículas e Lotes |
 | Inscrição e IPTU | Terreno › Matrículas e Lotes |
 | Proprietário (cada parte com proprietários somando 100%) | Terreno › Partes (lápis da parte) |
@@ -87,11 +87,11 @@ Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos T�
 
 <a id="quadros-que-abrem-e-fecham"></a>
 
-Em todas as abas menos a Visão geral, cada **seção** (Identificação, Endereço e localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra.
+Em todas as abas menos a Visão geral, cada **seção** (Identificação, Localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra.
 
 Em Estudos Técnicos a barra é uma só, com as cinco partes; dentro de cada parte, os quadros (Relevo, Visita técnica, Viabilidades técnicas, Resumo da viabilidade...) continuam abrindo e fechando pela seta. Em Estudos de massa, o estudo aberto aparece embaixo da lista, também como quadro que abre e fecha.
 
-**Para ver os botões que não cabem**, a barra gira como uma roleta, igual à barra das abas: segure o botão do mouse e arraste para o lado; solte com força e ela continua girando e vai freando. Também funciona com Shift + roda do mouse, o deslize de lado do trackpad e, no celular, o dedo. Arrastar não troca de seção; só o clique troca. Quando **mais de um botão** fica de fora, aparecem os **três pontinhos (⋮)** no fim da barra, com a lista de todas as seções e a atual marcada.
+**Para ver os botões que não cabem**, a barra gira como uma roleta, igual à barra das abas: segure o botão do mouse e arraste para o lado; solte com força e ela continua girando e vai freando. Também funciona com Shift + roda do mouse, o deslize de lado do trackpad e, no celular, o dedo. Arrastar não troca de seção; só o clique troca. Quando **mais de um botão** fica de fora, aparecem os **três pontinhos (⋮)** no fim da barra, com a lista de todas as seções e a atual marcada. O botão escolhido nunca fica na ponta da barra: ao clicar no último que aparece, a barra gira um pouco para mostrar pelo menos 70% do botão seguinte (e, voltando, do anterior). O mesmo vale para a barra das abas.
 
 Se você trocar de seção com a página rolada para baixo, ela volta para o começo da seção.
 
@@ -131,7 +131,7 @@ Cada linha tem uma **seta** que leva à aba onde o dado mora.
 |---|---|---|
 | **Endereço** | Logradouro, número, bairro | Lápis **"Editar no mapa"**: abre a página Mapa com a poligonal em edição (ver [05](05-ficha-terreno.md#endereço-e-localização)). |
 | **Município e região** | Município · UF · Zona | O seletor de **Zona** (Norte, Sul, Leste, Oeste, Centro...) se edita ali mesmo. Em São Paulo a zona vem sozinha do GeoSampa (região oficial da subprefeitura); trocada à mão, fica a sua. |
-| **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Terreno › Parâmetros urbanísticos (a seta abre a seção em Índices urbanísticos). |
+| **Zoneamento** | As zonas, separadas por barra ("ZC / ZM / ZEU") | Terreno › Parâmetros urbanísticos (a seta abre a seção em Índices). |
 | **Área adotada** | Área e a fonte | O seletor de **fonte** troca a área adotada ali mesmo (a Cadastral aparece sempre; as outras, quando preenchidas). |
 | **Unidades do estudo válido** e **VGV do estudo válido** | Do estudo de viabilidade válido (unidades somadas das tipologias e VGV bruto) | Estudos Técnicos › Estudos de viabilidade (a seta leva lá); vazias enquanto nenhum estudo for o válido. Ver [15](15-ficha-viabilidades.md). |
 | **Distância do metrô ou trem** | Estação mais próxima, minutos a pé | Automático (aba Mercado e Demografia, Pontos de interesse). |

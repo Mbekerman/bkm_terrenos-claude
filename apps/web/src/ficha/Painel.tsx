@@ -157,7 +157,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       if (!linhas.length) return null;
       if (topoComp && !secs.size) return { txt: linhas.length === 1 ? linhas[0] : 'Falta preencher alterado', det: linhas.length > 1 ? linhas : undefined, topo: '.fi-comp-b' };
       const s1 = secs.size === 1 ? [...secs][0] : null;
-      const txt = linhas.length === 1 ? linhas[0] : s1 && SECOES[s1] ? `${SECOES[s1].titulo} editado` : s1 === 'areas' ? 'Áreas e dimensões editadas' : 'Ficha editada';
+      const txt = linhas.length === 1 ? linhas[0] : s1 && SECOES[s1] ? `${SECOES[s1].titulo} editado` : s1 === 'areas' ? 'Dimensões editadas' : 'Ficha editada';
       return { txt, det: linhas.length > 1 ? linhas : undefined, aba: s1 === 'visita' || s1 === 'relevo' ? 'infra' : s1 === 'histuso' ? 'historico-uso' : 'terreno', q: q0 };
     }
     case 'matriculas':
