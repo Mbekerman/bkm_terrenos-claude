@@ -5,8 +5,8 @@ import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { data as fd, diasEntre, hojeISO, m2, milhoes, somarDias, FORMA } from '../lib/format';
 import { Ic } from '../components/Moldura';
-import { abrirQuadro, OPT, pedirCampo, SECOES } from './edicao';
-import { completude, ITEM_COMPLETUDE, TEMP, type Ficha as F, type R } from './dados';
+import { abrirQuadro, OPT, pedirCampo, Quadro, SECOES } from './edicao';
+import { completude, ITEM_COMPLETUDE, TEMP, TP_N, type Ficha as F, type R } from './dados';
 import { Avanco, procsAvanco, useAvanco } from './Avanco';
 import { useComercial } from './Comercial';
 
@@ -126,6 +126,15 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
         if (k === 'area_adotada_m2') {
           continue;
         }
+        /* relevo medido sozinho (topo/relevo.ts › app.registrar_topografia): um log com o perfil e a fonte das cotas; a poligonal
+           nova apaga a medição (fica no log do ajuste) */
+        if (k.startsWith('topo_')) {
+          if (k === 'topo_calculado_em' && d?.topo_perfil) {
+            const nm = d.topo_perfil === 'inclinado' && d.topo_declividade_pct != null ? `Inclinado · ${Number(d.topo_declividade_pct).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` : TP_N[d.topo_perfil] ?? d.topo_perfil;
+            linhas.push(`Classificação topográfica: ${nm} (${d.topo_fonte === 'laser' ? 'laser 2020 da prefeitura' : 'cotas do Google'})`); secs.add('relevo'); q0 ??= 'relevo';
+          }
+          continue;
+        }
         if (k === 'historico_uso') { linhas.push('Histórico de uso alterado'); secs.add('histuso'); q0 ??= 'histuso'; continue; }
         /* data da visita técnica: mora na aba Infraestrutura (ficha/Infra.tsx) */
         if (k === 'visita_tecnica_em') { linhas.push(`Data da visita técnica: ${x?.[k] ? fd(x[k]) : '—'} → ${d?.[k] ? fd(d[k]) : '—'}`); secs.add('visita'); q0 ??= 'visita'; continue; }
@@ -149,7 +158,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       if (topoComp && !secs.size) return { txt: linhas.length === 1 ? linhas[0] : 'Falta preencher alterado', det: linhas.length > 1 ? linhas : undefined, topo: '.fi-comp-b' };
       const s1 = secs.size === 1 ? [...secs][0] : null;
       const txt = linhas.length === 1 ? linhas[0] : s1 && SECOES[s1] ? `${SECOES[s1].titulo} editado` : s1 === 'areas' ? 'Áreas e dimensões editadas' : 'Ficha editada';
-      return { txt, det: linhas.length > 1 ? linhas : undefined, aba: s1 === 'visita' ? 'infra' : 'terreno', q: q0 };
+      return { txt, det: linhas.length > 1 ? linhas : undefined, aba: s1 === 'visita' || s1 === 'relevo' ? 'infra' : 'terreno', q: q0 };
     }
     case 'matriculas':
       return { txt: ins ? `Matrícula adicionada: ${o.numero}` : del ? `Matrícula removida: ${o.numero}` : `Matrícula alterada (${o.numero}): ${lista(mudou(x, d))}`,
@@ -578,6 +587,12 @@ function Logs({ f, pn, set, irAba }: { f: F; pn: PN; set: (p: Partial<PN>) => vo
       {H.length ? linhas : <div className="empty">Nenhum registro {us.length ? 'destes usuários ' : ''}neste período.</div>}
     </div>
   );
+}
+
+/** sem o painel (celular ou tela estreita), os mesmos Logs viram a aba Histórico da ficha */
+export function Historico({ f, irAba }: { f: F; irAba: (k: string) => void }) {
+  const [pn, set] = usePN();
+  return <Quadro aba="historico" id="logs" primeiro titulo="Histórico"><div className="fi-hist"><Logs f={f} pn={pn} set={set} irAba={irAba} /></div></Quadro>;
 }
 
 /* ---------- ações: próximas ações da negociação (proto_painel.js › proximasAcoes; tarefas entram com o porte das tarefas) ---------- */

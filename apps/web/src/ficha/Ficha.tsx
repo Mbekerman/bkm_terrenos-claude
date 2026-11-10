@@ -6,17 +6,19 @@ import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
 import FaixaTratativa from './Tratativa';
 import { carregarFicha, completude, dispensados, type Falta, FONTE_AREA, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
+import { useEstRelevo, useRelevoAuto } from '../topo/relevo';
 import MiniMapa from './MiniMapa';
 import { fixa, geojson } from '../novo/geo';
 import { LapisMapa, verificarEndereco } from '../novo/TrocarEndereco';
 import Temperatura from './Temperatura';
 import AbaComercial from './Comercial';
-import Painel, { Avancos, usePN } from './Painel';
+import Painel, { Avancos, Historico, usePN } from './Painel';
 import AbaEntorno, { EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
 import AbaInfra from '../topo/Topografico';
 import AbaViabilidade, { PopEstudo } from '../viab/Viabilidade';
 import AbaMassa from './Massa';
+import AbaJornada from './Jornada';
 import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
 import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
@@ -35,7 +37,9 @@ import { useNavigate } from 'react-router-dom';
     subaba (`/terrenos/A123/entorno`), e `/terrenos/A123/estudos` abre a última subaba vista na sessão. */
 export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['viabilidade', 'Estudos de viabilidade'], ['entorno', 'Entorno'], ['infra', 'Avaliação de infraestrutura']];
 export const BARRA: [string, string, [string, string][]?][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'],
-  ['estudos', 'Estudos Técnicos', ESTUDOS], ['jornada', 'Jornada'], ['documentos', 'Documentos']];
+  ['estudos', 'Estudos Técnicos', ESTUDOS], ['jornada', 'Jornada'], ['documentos', 'Documentos'], ['historico', 'Histórico']];
+/** Histórico só sem o painel (a classe o esconde onde o painel aparece) */
+const HIST = (k: string) => (k === 'historico' ? 'tab-hist' : undefined);
 /** as abas de conteúdo, na ordem (cada subaba é uma aba própria no endereço) */
 export const ABAS: [string, string][] = BARRA.flatMap(([k, l, s]) => s ?? [[k, l] as [string, string]]);
 /** o item da barra de uma aba (a subaba dá o grupo) */
@@ -306,7 +310,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
     <div className="fi-abas-w">
       <div className={`fi-abas roleta${sobra ? ' desliza' : ''}`} role="tablist" aria-label="Seções do terreno" ref={barra}>
         {BARRA.map(([k, l]) => (
-          <button key={k} role="tab" data-t={k} aria-selected={k === g} aria-controls={`bl-${k === g ? aba : k}`} onClick={() => irG(k)}>{l}</button>
+          <button key={k} role="tab" data-t={k} className={HIST(k)} aria-selected={k === g} aria-controls={`bl-${k === g ? aba : k}`} onClick={() => irG(k)}>{l}</button>
         ))}
       </div>
       <div className="fi-fim">
@@ -316,7 +320,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
           <div className="adv-menu" role="menu">
             {BARRA.map(([k, l, s]) => s
               ? [<div key={k} className="fi-mais-g">{l}</div>, ...s.map(([sk, sl]) => <button key={sk} role="menuitemradio" aria-checked={sk === aba} className={`fi-mais-sub${sk === aba ? ' atual' : ''}`} onClick={() => { setMenu(false); if (sk !== aba) irAba(sk); }}>{sl}</button>)]
-              : <button key={k} role="menuitemradio" aria-checked={k === aba} className={k === aba ? 'atual' : undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{l}</button>)}
+              : <button key={k} role="menuitemradio" aria-checked={k === aba} className={[k === aba ? 'atual' : '', HIST(k) ?? ''].join(' ').trim() || undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{l}</button>)}
           </div>
         </div>
       </div>
@@ -349,6 +353,7 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
   );
   const dois = (a: ReactNode, b: ReactNode) => <span>{a}{b ? <span className="kv-2">{b}</span> : null}</span>;
   const [cor, fg] = corPino(f);
+  const rel = useEstRelevo(f.id);
   const end = [f.logradouro && f.logradouro + (f.numero ? ', ' + f.numero : ''), f.bairro].filter(Boolean).join(' · ');
   const mun = [[f.municipio, f.uf].filter(Boolean).join(' · '), f.zona && 'Zona ' + (ZONA[f.zona] ?? f.zona)].filter(Boolean).join(' · ');
   const e = f.estacao;
@@ -358,7 +363,7 @@ function VisaoGeral({ f, irAba, abrirMapa }: { f: F; irAba: (k: string) => void;
   const tp = f.topo
     ? <span id="rs-topo"><span className={`tp-chip tp-${f.topo.perfil}`}>{f.topo.perfil === 'inclinado' ? `Inclinado · ${num(f.topo.decl, 1)}%` : TP_N[f.topo.perfil] ?? f.topo.perfil}</span>
       {f.topo.desnivel != null && <span className="kv-2">desnível {num(f.topo.desnivel, 1)} m</span>}</span>
-    : '';
+    : rel.em ? <span id="rs-topo"><span className="faint">medindo...</span></span> : '';
   return (
     <div className="geral">
       <div className="geral-c">
@@ -491,6 +496,8 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
 }) {
   const [pn] = usePN();
   const navegar = useNavigate();
+  /* relevo medido sozinho ao abrir a ficha, em qualquer aba (topo/relevo.ts) */
+  useRelevoAuto(f);
   const c = completude(f);
   const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
   const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;
@@ -505,6 +512,8 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
     : aba === 'infra' ? <AbaInfra key={f.id} f={f} />
     : aba === 'viabilidade' ? <AbaViabilidade key={f.id} f={f} />
     : aba === 'massa' ? <AbaMassa key={f.id} f={f} irAba={irAba} />
+    : aba === 'jornada' ? <AbaJornada key={f.id} f={f} />
+    : aba === 'historico' ? <Historico f={f} irAba={irAba} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
     <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main">
