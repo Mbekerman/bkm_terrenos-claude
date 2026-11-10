@@ -105,7 +105,7 @@ apps/web/
 | Arquivo | Papel |
 | --- | --- |
 | `dados.ts` | `carregarFicha(empresa, codigo)`: tenta `app.ficha_dados` (uma chamada) e, se a função não existir no banco, cai nos pedidos separados (`semFuncao`, `dados.ts:105`). Monta o objeto `Ficha` (topo, linha do tempo, contagens, completude). A completude tem 12 itens, com a "Visita técnica" (os 8 itens da visita verificados; `INFRA_PORTADA = true` desde que a aba Infraestrutura tem a visita). Constantes de rótulo (`FONTE_AREA`, `ZONA`, `TEMP`, `TP_N`). |
-| `Ficha.tsx` | Topo (código, nome, fase · etapa · subetapa, temperatura), linha do tempo, barra de abas em "roleta" com inércia e ⋮ (`BARRA`: o item Estudos Técnicos junta as abas `ESTUDOS`, que aparecem como chips `.fi-subabas` abaixo da barra; sem setas de anterior/próxima desde 10/nov/2026), Visão geral (mini-mapa e Resumo), alerta do que falta. `useFicha` e `usePreCarregarFicha` (`Ficha.tsx:338`, `:345`). |
+| `Ficha.tsx` | Topo (código, nome, fase · etapa · subetapa, temperatura), linha do tempo (encolhe pela largura com `useEncolher`: `data-nivel` 0 a 3 tira os nomes das concluídas, das futuras menos a próxima e, no fim, de todas menos a atual), barra de abas em "roleta" com inércia e ⋮ (`BARRA`: o item Estudos Técnicos junta as abas `ESTUDOS`, que aparecem como chips `.fi-subabas` abaixo da barra; sem setas de anterior/próxima desde 10/nov/2026), Visão geral (mini-mapa e Resumo), alerta do que falta. `useFicha` e `usePreCarregarFicha` (`Ficha.tsx:338`, `:345`). |
 | `Gaveta.tsx` | A ficha na gaveta da direita da página Mapa (`/mapa/A123/ficha`), com largura arrastável; lembra aba, rolagem e quadros abertos por terreno (`lembrar.ts`). Passa `naGaveta` à `Ficha`, que então não repete código, nome, temperatura nem fase · etapa · subetapa no topo (os três primeiros vão no cabeçalho da gaveta; a fase fica em cima da linha do tempo). |
 | `lembrar.ts` | `lerPos`/`guardarPos`: onde a pessoa parou na gaveta de cada terreno, em `localStorage`, nos 50 terrenos mais recentes. |
 | `edicao.tsx` | Edição no lugar: `SECOES` (campos de cada quadro), `useSalvar` (fila de gravações por `app.salvar_terreno`), `useVivo`/`Vivo`/`CampoVivo`, `Quadro` (abre e fecha pela seta), `CamposEndereco`, `pedirCampo`/`focar`/`acender` (levar a um campo e acendê-lo). |
@@ -184,7 +184,7 @@ Como funciona:
 - **Páginas com sub-rotas** usam `path="mapa/*"` e leem `useParams()['*']` e dividem por `/` (`Mapa.tsx`, `Funil.tsx`, `FichaPagina.tsx`).
 - **De onde veio**: abrir a ficha pelo Funil passa `state: { de: 'funil', volta: <caminho> }`; o botão de voltar da ficha usa isso (`FichaPagina.tsx`).
 - **Filtros** ficam depois do `#`, como `#f=<json>`, sem entrar no histórico (`history.replaceState`).
-- A especificação (CLAUDE.md, "Endereço de cada tela") lista mais endereços (`/terrenos`, `/tarefas/...`, `/dashboard`, `/configuracoes/...`, `/terrenos/A123/viabilidade/2`, `/terrenos/A123/gaveta`); eles existem só no protótipo por enquanto.
+- A especificação (CLAUDE.md, "Endereço de cada tela") lista mais endereços (`/terrenos`, `/tarefas/...`, `/dashboard`, `/configuracoes/...`, `/terrenos/A123/gaveta`); eles existem só no protótipo por enquanto.
 
 ---
 
@@ -513,8 +513,9 @@ A primeira versão em uso é, por decisão do Moisés: login, mapa, novo terreno
 | Tarefas (Lista, Quadro, Cronograma, Calendário, Funil, cartão, modelos, automações, aprovação, pausa, recorrência) | não | A ficha só **lê** as tarefas abertas do quadro do terreno (`Painel.tsx`, aba Tarefas). As tarefas devem ir para um banco próprio (`bkm_tarefas`, ADR 0002). |
 | Configurações (Funil, Jornada, Fases, Campos, Viabilidade, Parâmetros, Topografia, Tarefas, Equipe, Notificações) | não | Ajuste urgente direto no banco, a pedido do Moisés. |
 | Aba Estudos de massa | sim | `ficha/Massa.tsx`, sem o envio do PDF e do DWG (entram com Documentos). |
-| Abas da ficha Viabilidades, Jornada, Documentos | não | Mostram "Esta aba entra depois da primeira versão" (`Ficha.tsx`, fim). |
-| Estudo de viabilidade (popup, DRE, modelos) | não | |
+| Abas da ficha Jornada, Documentos | não | Mostram "Esta aba entra depois da primeira versão" (`Ficha.tsx`, fim). |
+| Estudos de viabilidade: Resumo da viabilidade, lista, popup com indicadores e Tipologias | sim | `viab/Viabilidade.tsx`, `viab/calc.ts`, `viab/dados.ts`; o popup abre por `abrirEstudo(id)` de qualquer lugar da ficha e fica em `/terrenos/A123/viabilidade/N` na página. |
+| Estudo de viabilidade: seções Terreno, Comercial, Obras, Gerais, Financeiras, Taxas, DRE; modelos; vínculo com estudo de massa | não | Próximos PRs do porte. |
 | Visita técnica e Viabilidades técnicas | sim | `ficha/Infra.tsx` (porte de `proto_infra.js` › `vtSecao`, `vtecSecao`), na aba Infraestrutura depois do Relevo. |
 | Topográfico preliminar fora de São Paulo | sim | `topo/gerar.ts` (porte de `proto_topo.js` sem laser, quadra inteira, calçadas nem larguras de via) e `topo/Topografico.tsx` (aba Infraestrutura, quadro Relevo); modelo do DXF em `topo/modelo.dxf` (cópia de `tools/prototipo/topo_modelo.dxf`, lido com `?raw`). Baixa na hora, sem gravar em Documentos. |
 | Relevo medido sozinho | sim | `topo/relevo.ts` (porte de `proto_infra.js` › `tpAuto`, `tpMedir`, `tpPlano`): `useRelevoAuto` no componente `Ficha` mede ao abrir a ficha (quem edita, com poligonal e sem `topo_perfil`; uma tentativa por poligonal na sessão) e grava por `app.registrar_topografia`; laser em São Paulo (`cotasLaser` em `topo/gerar.ts`, laz-perf do npm), Google fora (`cotasGoogle`). Quadro Relevo em `topo/Topografico.tsx` (porte de `tpSecao`), "medindo..." no Resumo, log "Classificação topográfica" no painel. |

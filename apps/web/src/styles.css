@@ -987,11 +987,19 @@ body.menu-min .side > .menu-tg { align-self: center; margin-left: 0 }
 .tl-topo { display: none }
 @media (min-width: 768px) {
   .tl-topo { display: block; margin: 0 0 20px }
-  .tl-topo .stepper { padding: 0; overflow: visible; display: flex; align-items: center; min-width: 0 }
-  .tl-topo .step { flex: 1 1 0; min-width: 0 }
-  .tl-topo .step:last-child { flex: 0 1 auto }
-  .tl-topo .step:not(:last-child)::after { min-width: 12px }
-  .tl-topo .sl { white-space: normal; min-width: 0; font-size: 13px; line-height: 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+  /* os nomes não quebram nem encolhem: quando não cabem, useEncolher (ficha/Ficha.tsx) sobe o data-nivel e tira nomes,
+     das concluídas, depois das futuras menos a próxima, e por fim de todas menos a atual (opção A, 10/nov/2026) */
+  .tl-topo .stepper { padding: 0; overflow: hidden; display: flex; align-items: center; min-width: 0 }
+  .tl-topo .step { flex: 1 0 auto; min-width: auto }
+  .tl-topo .step:last-child { flex: 0 0 auto }
+  .tl-topo .step { gap: 6px }
+  .tl-topo .step:not(:last-child)::after { min-width: 8px; margin-left: 6px; margin-right: 6px }
+  .tl-topo .sl, .tl-topo .sd { white-space: nowrap; font-size: 13px; line-height: 16px }
+  .tl-topo[data-nivel="1"] .step.done .sl-w,
+  .tl-topo[data-nivel="2"] .step.done .sl-w, .tl-topo[data-nivel="2"] .step.fut:not(.prox) .sl-w,
+  .tl-topo[data-nivel="3"] .step:not(.cur) .sl-w { display: none }
+  .tl-topo[data-nivel="3"] .step.cur { flex: 0 1 auto; min-width: 96px }
+  .tl-topo[data-nivel="3"] .step.cur .sl { overflow: hidden; text-overflow: ellipsis }
   .tl-topo .dot { width: 24px; height: 24px; font-size: 11px }
 }
 /* quadro de avanço: no painel lateral (desktop e tablet); volta para a página quando o painel está recolhido e no celular */
