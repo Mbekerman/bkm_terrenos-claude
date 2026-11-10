@@ -190,7 +190,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
     }
     case 'oferta_partes': {
       const n = c.partes.get(o.parte_id) ?? 'parte';
-      return { txt: del ? `Valor da parte removido: ${n}` : `Valor da parte (${n}): ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'partes-com' };
+      return { txt: del ? `Valor da parte removido: ${n}` : `Valor da parte (${n}): ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'cond' };
     }
     case 'propostas': {
       if (del) return { txt: `Proposta v${o.versao} excluída (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${milhoes(o.valor_total)}`, aba: 'comercial', q: 'propostas' };
