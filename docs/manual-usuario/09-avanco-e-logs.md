@@ -30,7 +30,9 @@ Terreno sem oferta mostra "Terreno sem negociação. Registre uma oferta para ab
 Pendência é algo que a etapa exige e ainda falta (um pré-requisito, um documento, uma tarefa que trava).
 
 - **Analista**: o Avançar mostra **"Ainda não dá para…"** com a lista do que falta e o botão **"Entendi"**. Resolva o que falta. ("Resolva o que falta. Gestor e diretor podem passar sem os requisitos, com justificativa.")
-- **Gestor e diretor**: o Avançar pergunta **"Ir para X sem os requisitos?"** e pede a **Justificativa (vai para o histórico)**. Na última etapa, o botão é **"Comprar sem os requisitos"**.
+- **Gestor e diretor**: o Avançar pergunta **"Ir para X sem os requisitos?"** com a **Justificativa (opcional)**: dá para avançar com ela em branco, e o histórico marca a passagem como feita sem os requisitos. Só quando o administrador marcou um item da Jornada como **"Avança com justificativa"** ela é obrigatória. Na última etapa, o botão é **"Comprar sem os requisitos"**.
+
+**Regra (10/nov/2026):** nenhum campo dos formulários do avanço é obrigatório (justificativa, Stand By, Perdido, Descartado, Comprado). O que ficar em branco se completa depois, na faixa do quadro de avanço (ver [Completar depois](#completar-depois-o-que-ficou-em-branco)).
 
 ### Pedido de aprovação
 
@@ -48,8 +50,8 @@ Algumas passagens exigem aprovação do gestor, do diretor ou dos dois (no padr�
 Para pausar uma negociação de propósito (o vendedor pediu um tempo, falta um documento que demora).
 
 1. ⋮ › **"Colocar em Stand By"**.
-2. **"Retomar em"**: a data para retomar (vem com 30 dias).
-3. Justificativa.
+2. **"Retomar em"**: a data para retomar (vem com 30 dias; pode apagar e deixar sem data).
+3. Justificativa (opcional).
 
 O quadro mostra a faixa de Stand By com **"Retomar"**. Ao retomar, a negociação volta para onde estava.
 
@@ -58,14 +60,14 @@ O quadro mostra a faixa de Stand By com **"Retomar"**. Ao retomar, a negociaçã
 Quando o terreno foi para outro comprador ou o vendedor não quis seguir com a BKM.
 
 1. ⋮ › **"Marcar como Perdido"**.
-2. Escolha o **Motivo**. O **Relato** ("O que aconteceu, com quem e quando") é obrigatório quando o motivo é Outros.
+2. **Motivo** e **Relato** ("O que aconteceu, com quem e quando"), os dois opcionais.
 
 ### Descartar
 
 Quando **a BKM** decidiu não seguir.
 
 1. ⋮ › **"Descartar"**.
-2. Escolha o **Motivo** e escreva o **Detalhe** (obrigatório quando o motivo é Outros).
+2. **Motivo** e **Detalhe**, os dois opcionais.
 
 **Regra:** Perdido e Descartado **arquivam as tarefas abertas** do terreno.
 
@@ -73,14 +75,22 @@ Quando **a BKM** decidiu não seguir.
 
 Na última etapa, **"Concluir como Comprado"** pede:
 
-- **Relato da compra** (obrigatório): "Como foi a negociação, condições finais, quem participou";
+- **Relato da compra**: "Como foi a negociação, condições finais, quem participou";
 - **Pontos de sucesso**: "O que fez a compra dar certo e vale repetir".
+
+Os dois são opcionais.
 
 Os dois aceitam formatação simples (negrito, itálico, lista).
 
 ### Faixas de situação
 
 Com a negociação parada ou encerrada, o quadro mostra uma faixa: **Stand By** (com Retomar), **Perdido**, **Descartado** ou **Comprado** (com o relato e os pontos de sucesso).
+
+### Completar depois o que ficou em branco
+
+A faixa mostra **"Em branco: …"** com o que não foi preenchido (por exemplo "motivo, relato") e o link **"Completar"**. O **lápis** no canto da faixa abre a mesma janela, já com o que foi preenchido, para completar ou corrigir: data para retomar e justificativa (Stand By), motivo e relato (Perdido), motivo e detalhe (Descartado), relato e pontos de sucesso (Comprado). Cada alteração fica nos **Logs**. Leitura não vê o lápis.
+
+A justificativa de um avanço sem os requisitos e o motivo de voltar de etapa ficam só no histórico (Logs), e não se editam depois.
 
 ### Terreno com partes
 

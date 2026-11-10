@@ -129,9 +129,8 @@ create table app.processos (
   foreign key (empresa_id, fase) references app.fases_modelo(empresa_id, codigo),
   foreign key (empresa_id, fase, etapa_atual) references app.etapas_modelo(empresa_id, fase, codigo),
   foreign key (empresa_id, fase, etapa_atual, subetapa_atual) references app.subetapas_modelo(empresa_id, fase, etapa, codigo),
-  check (status not in ('perdido','descartado') or motivo_encerramento is not null),
-  check (status not in ('concluido','perdido') or detalhe_encerramento is not null),
-  check (status <> 'stand_by' or (retomar_em is not null and detalhe_encerramento is not null)),
+  -- motivo, relato, pontos de sucesso e data de retomar são opcionais (pedido do Moises, 10/nov/2026):
+  -- quem encerra preenche o que souber e completa depois na faixa da ficha (app.editar_encerramento)
   check ((parte_id is null) = (principal_id is null))
 );
 create index on app.processos (empresa_id, fase, status, etapa_atual, subetapa_atual);

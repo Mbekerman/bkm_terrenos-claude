@@ -1,12 +1,13 @@
 // Aba Infraestrutura, por enquanto só o quadro Relevo com o perfil e o botão Topográfico (proto_topo.js › topoBotao,
 // topoModal): a janela mostra o plano, o andamento passo a passo, a prévia e os botões para baixar o PDF e o ZIP.
-// Visita técnica, viabilidades técnicas e a medição automática do perfil entram depois.
+// Visita técnica e viabilidades técnicas em ficha/Infra.tsx; a medição automática do perfil entra depois.
 import { useState } from 'react';
 import { useSessao } from '../lib/sessao';
 import { Dialogo } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { Quadro } from '../ficha/edicao';
 import { TP_N, type Ficha } from '../ficha/dados';
+import { QuadrosInfra } from '../ficha/Infra';
 import { gerarTopografico, TOPO_FOLGA, type Resultado } from './gerar';
 
 const num = (v: number, d = 0) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -27,10 +28,10 @@ export default function AbaInfra({ f }: { f: Ficha }) {
         </dl>
           <div className="hint" style={{ marginTop: 12 }}>
             {sp ? 'Em São Paulo o topográfico usa o laser da prefeitura e entra numa próxima entrega.' : f.poly ? 'O botão Topográfico gera a planta preliminar com as curvas de nível do Google sobre a imagem de satélite.' : 'Desenhe a poligonal do terreno para gerar o topográfico.'}
-            {' '}A visita técnica e as viabilidades técnicas ainda não estão no sistema novo.
           </div>
         </div>
       </Quadro>
+      <QuadrosInfra f={f} />
       {aberto ? <JanelaTopo f={f} sp={sp} fechar={() => setAberto(false)} /> : null}
     </>
   );
