@@ -107,7 +107,7 @@ function Perfil() {
    depois; "Configurar notificações" entra com Configurações. */
 interface Aviso { id: string; texto: string; criada_em: string; lida_em: string | null; autor_id: string | null; origem_tabela: string;
   email_status: string | null; terrenos: { codigo: string; nome: string | null } | null }
-const ABA_ORIGEM: Record<string, string> = { reunioes: 'comercial', propostas: 'comercial', ofertas: 'comercial', reuniao_agenda: 'comercial' };
+const ABA_ORIGEM: Record<string, string> = { reunioes: 'comercial', propostas: 'comercial', ofertas: 'comercial', reuniao_agenda: 'comercial', estudos_massa: 'massa' };
 
 function Sino() {
   const { session, empresa } = useSessao();
