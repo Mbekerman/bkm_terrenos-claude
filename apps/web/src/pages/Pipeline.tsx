@@ -26,7 +26,7 @@ import { alternar } from '../filtros/ordem';
 type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 interface Linha {
   id: string; codigo: string; nome: string; endereco: string; cidade: string | null; zona: string | null; area: number | null;
-  zonas: string | null; topo: string | null; vgv: number | null; un: number | null; temEstudo: boolean; pedido: number | null; proposta: number | null;
+  zonas: string | null; topo: string | null; vgv: number | null; un: number | null; temEstudo: boolean; ll: number | null; pedido: number | null; proposta: number | null;
   corretores: { nome: string; imob: string | null }[]; temp: number | null; resp: { nome: string; foto: string | null } | null;
   /* só para a busca da barra superior */
   busca: TerrenoMapa;
@@ -34,7 +34,7 @@ interface Linha {
 
 async function carregar(emp: string): Promise<Linha[]> {
   const [v, t, pr, cor, mat, ins] = await Promise.all([
-    supabase.from('v_terrenos').select('id,codigo,nome,logradouro,numero,bairro,zona,municipio,area_adotada_m2,zonas_siglas,vgv,valor_pedido,proposta_ativa_valor,corretor_ids,temperatura,responsavel_id,negociacao_id').eq('empresa_id', emp),
+    supabase.from('v_terrenos').select('id,codigo,nome,logradouro,numero,bairro,zona,municipio,area_adotada_m2,zonas_siglas,vgv,margem_pct,valor_pedido,proposta_ativa_valor,corretor_ids,temperatura,responsavel_id,negociacao_id').eq('empresa_id', emp),
     supabase.from('terrenos').select('id,topo_perfil,topo_declividade_pct').eq('empresa_id', emp),
     supabase.from('processos').select('id,viabilidade_id').eq('empresa_id', emp).not('viabilidade_id', 'is', null),
     supabase.from('corretores').select('id,imobiliaria,pessoas(nome_razao_social)').eq('empresa_id', emp),
@@ -71,7 +71,7 @@ async function carregar(emp: string): Promise<Linha[]> {
     return {
       id: x.id, codigo: x.codigo ?? '', nome: x.nome ?? x.codigo ?? '', endereco, cidade: x.municipio ?? null, zona: x.zona ?? null,
       area: x.area_adotada_m2 == null ? null : +x.area_adotada_m2, zonas: zs(x.zonas_siglas), topo,
-      vgv: x.vgv == null ? null : +x.vgv, un: vid ? unDe[vid] ?? null : null, temEstudo: !!vid,
+      vgv: x.vgv == null ? null : +x.vgv, un: vid ? unDe[vid] ?? null : null, temEstudo: !!vid, ll: x.margem_pct == null ? null : +x.margem_pct,
       pedido: x.valor_pedido == null ? null : +x.valor_pedido, proposta: x.proposta_ativa_valor == null ? null : +x.proposta_ativa_valor,
       corretores, temp: x.temperatura ?? null, resp: uN[x.responsavel_id] ?? null,
       busca: { codigo: x.codigo, nome: x.nome, bairro: x.bairro, zona: x.zona, municipio: x.municipio, corretor: corretores.map((c) => c.nome).join(' '),
@@ -98,12 +98,11 @@ function Av({ r }: { r: NonNullable<Linha['resp']> }) {
     {r.foto ? <img src={r.foto} alt="" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : ini}</span>;
 }
 
-interface Col { k: string; l: string; cls?: string; v: (t: Linha, abrirGav: (t: Linha) => void) => React.ReactNode }
+interface Col { k: string; l: string; cls?: string; v: (t: Linha) => React.ReactNode }
 /* títulos do Moisés (4/nov/2026, segunda versão); as chaves são as da ordenação (filtros/ordem.ts) */
 const COLS: Col[] = [
-  { k: 'ter', l: 'Terreno', cls: 'esq', v: (t, g) => (
+  { k: 'ter', l: 'Terreno', cls: 'esq', v: (t) => (
     <div className="tb-c1">
-      <button className="iconbtn tb-olho" aria-label={`Ver a ficha de ${t.nome}`} title="Ver a ficha" onClick={(e) => { e.stopPropagation(); g(t); }}><Ic n="olho" s={20} /></button>
       <div className="tb-c1t"><div className="t1">{t.nome}</div><div className="t2 num">{t.codigo}</div>{t.endereco && <div className="t2">{t.endereco}</div>}</div>
     </div>) },
   { k: 'cid', l: 'Cidade', v: (t) => t.cidade ?? <Nada s="—" /> },
@@ -114,7 +113,8 @@ const COLS: Col[] = [
     <div className="t2">{t.topo ?? 'Topografia não medida'}</div></> },
   { k: 'estudo', l: 'Projeto', cls: 'num', v: (t) => (t.temEstudo ? <>
     <div>{t.vgv != null ? 'VGV ' + mi(t.vgv) : <Nada s="Sem VGV" />}</div>
-    <div className="t2">{t.un != null ? num(t.un) + ' unidades' : 'Sem unidades'}</div></> : <Nada s="Sem estudo válido" />) },
+    <div className="t2">{t.un != null ? num(t.un) + ' unidades' : 'Sem unidades'}</div>
+    {t.ll != null && <div className="t2" title="Margem líquida do estudo válido: lucro líquido ÷ receita líquida">L.L. {t.ll.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</div>}</> : <Nada s="Sem estudo válido" />) },
   { k: 'preco', l: 'Negociação', cls: 'num', v: (t) => <>
     <div>Pedida: {t.pedido != null ? mi(t.pedido) : <Nada s="—" />}</div>
     <div className="t2">Proposta: {t.proposta != null ? mi(t.proposta) : '—'}</div></> },
@@ -187,8 +187,7 @@ export default function Pipeline() {
   }, [gav, q.data]);
 
   const abrirGav = (t: Linha) => navegar(gav === t.codigo ? '/terrenos' + location.hash : `/terrenos/${t.codigo}/gaveta${location.hash}`, { replace: !!gav });
-  const abrirLinha = (t: Linha) => { if (gav) abrirGav(t); else navegar(`/terrenos/${t.codigo}`, { state: { de: 'terrenos' } }); };
-  const total = todos.length, n = passam.length;
+    const total = todos.length, n = passam.length;
   const L = fx.o;
   const cab = (c: Col) => {
     const i = L.findIndex((x) => x.k === c.k), st = L[i];
@@ -222,8 +221,8 @@ export default function Pipeline() {
             <thead><tr>{COLS.map(cab)}</tr></thead>
             <tbody>{linhas.map((t) => (
               <tr key={t.id} data-cod={t.codigo} tabIndex={0} className={gav === t.codigo ? 'tb-sel' : undefined} aria-current={gav === t.codigo ? 'true' : undefined}
-                onClick={() => abrirLinha(t)} onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) abrirLinha(t); }} onMouseEnter={() => parado(t.codigo)} onMouseLeave={() => clearTimeout(preT.current)}>
-                {COLS.map((c) => <td key={c.k} className={`col-${c.k} ${c.cls ?? ''}`}>{c.v(t, abrirGav)}</td>)}
+                onClick={() => abrirGav(t)} onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) abrirGav(t); }} onMouseEnter={() => parado(t.codigo)} onMouseLeave={() => clearTimeout(preT.current)}>
+                {COLS.map((c) => <td key={c.k} className={`col-${c.k} ${c.cls ?? ''}`}>{c.v(t)}</td>)}
               </tr>
             ))}</tbody>
           </table></div>}

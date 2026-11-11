@@ -12,11 +12,11 @@ No menu lateral, **Terrenos** (o primeiro item). A página se chama **Pipeline**
 
 | Coluna | O que mostra | Ordena por |
 |---|---|---|
-| **Terreno** | Nome em cima; código e endereço embaixo; o olhinho à esquerda | nome |
+| **Terreno** | Nome em cima; código e endereço embaixo | nome |
 | **Cidade** | Município | cidade |
 | **Região** | Zona Norte, Zona Sul, Centro... | região |
 | **Imóvel** | Área adotada, zoneamento ("ZM / ZC") e perfil topográfico | área |
-| **Projeto** | VGV e unidades do estudo de viabilidade válido; "Sem estudo válido" quando não há | VGV |
+| **Projeto** | VGV, unidades e **L.L.** (margem líquida: lucro líquido ÷ receita líquida, o mesmo número de "Margem líquida" no popup do estudo) do estudo de viabilidade válido; "Sem estudo válido" quando não há | VGV |
 | **Negociação** | Pedida (valor pedido da oferta de referência) e Proposta (a proposta ativa) | valor pedido |
 | **Corretor** | O corretor principal e a imobiliária; com mais de um, "+N corretores" (o mouse em cima mostra os nomes) | primeiro corretor |
 | **Temperatura** | As barrinhas de 1 a 5 | temperatura |
@@ -40,11 +40,11 @@ O que ainda não foi preenchido aparece em cinza: "Sem área", "Zoneamento não 
 
 ## Abrir a ficha
 
-- **Olhinho** (coluna Terreno): abre a ficha completa e editável numa gaveta à direita, que cobre a tabela a partir da primeira coluna. A linha do terreno fica acesa. O endereço vira `/terrenos/A123/gaveta`, e o link abre direto assim.
-- Com a gaveta aberta, **clicar noutra linha** troca o terreno da gaveta. O olhinho do mesmo terreno, o **X** ou o **Esc** fecham.
+- **Clicar em qualquer lugar da linha** abre a ficha completa e editável numa gaveta à direita, que cobre a tabela a partir da primeira coluna. A linha do terreno fica acesa. O endereço vira `/terrenos/A123/gaveta`, e o link abre direto assim.
+- Com a gaveta aberta, **clicar noutra linha** troca o terreno da gaveta. Clicar de novo na mesma linha, o **X** ou o **Esc** fecham.
 - A largura da gaveta se arrasta pela borda esquerda (dois cliques voltam ao padrão), como a gaveta do Mapa.
 - O botão de tela, no alto da gaveta, abre a ficha na página dela.
-- Sem gaveta, **clicar na linha** abre a ficha na página dela; o botão de voltar da ficha volta para **Terrenos**.
+- Aberta a ficha na página, o botão de voltar dela volta para **Terrenos**.
 
 ## Tela cheia
 

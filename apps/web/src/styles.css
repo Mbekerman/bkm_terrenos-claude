@@ -4963,10 +4963,8 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .tb-c1 { display: flex; gap: 8px; align-items: flex-start }
 .tb-c1t { min-width: 0 }
 .tb-c1t .t1 { font-weight: 500; overflow-wrap: anywhere }
-.tb-olho { flex: none; width: 36px; height: 36px; margin: -4px 0 0 -8px; color: var(--m-on-var, #444746) }
 .tb-ord { display: inline-grid; place-items: center; min-width: 16px; height: 16px; margin-left: 2px; padding: 0 4px; border-radius: 8px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500; line-height: 16px }
 .lista-ter tr.tb-sel > td { background: #d3e3fd !important }
-.lista-ter tr.tb-sel .tb-olho { color: #0b57d0; background: rgba(11,87,208,.12) }
 /* tela cheia: a tabela cobre a página, acima do menu e abaixo das janelas */
 .ter-pg.on { position: fixed; inset: 0; z-index: 31; overflow: auto; background: var(--m-surface, #f8fafd); padding: 16px 24px 24px }
 .ter-pg.on .page-h { margin-bottom: 16px }
@@ -5002,7 +5000,6 @@ html[data-tema="escuro"] .tgav-h { border-color: #2d2f31 }
 html[data-tema="escuro"] .ter-pg.on { background: #131314 }
 html[data-tema="escuro"] .lista-ter tr.tb-sel > td { background: #004a77 !important; color: #c2e7ff }
 html[data-tema="escuro"] .lista-ter tr.tb-sel .t2 { color: #c2e7ff }
-html[data-tema="escuro"] .lista-ter tr.tb-sel .tb-olho { color: #c2e7ff; background: rgba(194,231,255,.12) }
 html[data-tema="escuro"] .tb-ord { background: #004a77; color: #c2e7ff }
 /* filtros: uma seção por vez, com os botões das seções no cabeçalho (4/nov/2026) */
 .fx-abas { flex: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 12px 24px; border-bottom: 1px solid #e3e3e3 }
