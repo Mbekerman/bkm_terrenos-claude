@@ -20,14 +20,14 @@ O primeiro quadro da parte.
 | **Abrir estudo** | Abre o estudo válido. |
 | **Novo estudo** | Cria um estudo e já o abre. Com algum modelo salvo, pergunta antes o nome e o modelo (ver [Modelos de estudo](#modelos-de-estudo)). |
 | **Margem líquida** e **Mínima da empresa** | A margem do estudo válido e a rentabilidade mínima da empresa (quando o administrador definiu uma). |
-| Tabela | VGV vendido, valor pedido, última proposta e lucro líquido, cada um em % do VGV vendido. |
+| Tabela | VGV líquido, valor pedido, última proposta e lucro líquido, cada um em % do VGV líquido. |
 | Aviso **Rentabilidade abaixo da mínima** | Quando a margem do estudo válido fica abaixo da mínima da empresa. O mesmo aviso aparece no formulário de Nova proposta (aba Comercial), como "Levar ao comitê" nas Próximas ações do painel e no cartão do terreno no Funil. |
 
 Sem estudo, o quadro mostra "Sem estudo" e o link **Montar estudo**.
 
 ## Quadro Viabilidade
 
-A lista dos estudos do terreno, com VGV vendido, lucro líquido, margem, a data da última alteração e a coluna **Válido** (clique no círculo para marcar o válido). O nome abre o estudo. **Novo estudo** no título cria outro.
+A lista dos estudos do terreno, com VGV líquido, lucro líquido, margem, a data da última alteração e a coluna **Válido** (clique no círculo para marcar o válido). O nome abre o estudo. **Novo estudo** no título cria outro.
 
 ## O estudo (janela sobre a ficha)
 
@@ -42,7 +42,7 @@ A lista dos estudos do terreno, com VGV vendido, lucro líquido, margem, a data 
 - **Salvar como modelo**: guarda o estudo como modelo para os próximos (ver [Modelos de estudo](#modelos-de-estudo)).
 - **Apagar**: pede confirmação. O estudo válido não se apaga (marque outro como válido antes).
 
-**Indicadores** (ficam presos no topo ao rolar): **VGV**, **VGV vendido**, **Lucro líquido** e **Margem líquida**. Eles se refazem enquanto você digita. A receita do estudo é o **VGV vendido** (o VGV sem as unidades de permuta e de comissão), e a margem líquida é o lucro líquido ÷ VGV vendido.
+**Indicadores** (ficam presos no topo ao rolar): **VGV**, **VGV líquido**, **Lucro líquido** e **Margem líquida**. Eles se refazem enquanto você digita. A receita do estudo é o **VGV líquido** (o VGV sem as unidades de permuta e de comissão), e a margem líquida é o lucro líquido ÷ VGV líquido.
 
 **Botões das seções** (logo abaixo, também presos): Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE, cada um com o total e o % do VGV. Financeiras e Taxas só aparecem para a diretoria e o administrador. No fim de cada seção, os botões levam à anterior e à próxima.
 
@@ -73,8 +73,8 @@ O custo do terreno no estudo.
 | Campo | Observação |
 |---|---|
 | **Permuta física** e **Comissão em unidades** | Só leitura: vêm das unidades em permuta e em comissão das Tipologias, pelo preço delas. |
-| **Permuta financeira** | Percentual do VGV líquido que vai ao dono do terreno. |
-| **Dedução do VGV** | Percentual tirado do VGV vendido só para chegar ao **VGV líquido**, a base da permuta financeira. Não sai da receita nem do lucro. |
+| **Permuta financeira** | Percentual da base da permuta que vai ao dono do terreno. |
+| **Dedução do VGV** | Percentual tirado do VGV líquido só para chegar à **base da permuta**, sobre a qual se calcula a permuta financeira. Não sai da receita nem do lucro. |
 | **Mínimo garantido** | Valor mínimo da permuta financeira: vale o maior entre ele e o percentual. |
 | **Deduzir da base da permuta** | Caixas para tirar da base da permuta financeira o ITBI e o registro das unidades vendidas. A despesa continua inteira em Comercial; só a permuta fica menor (o percentual da permuta sobre essas verbas). |
 | **Valor da permuta financeira** | Só leitura, já com o mínimo garantido quando ele vale. |
@@ -82,7 +82,7 @@ O custo do terreno no estudo.
 
 ### Comercial
 
-Despesas de venda (corretagem, marketing, stand...). Cada linha tem a **base**: % do VGV, verba total, verba por unidade (pelas unidades vendidas, sem permuta e comissão) ou verba mensal, com a coluna **Meses**. "% do VGV" é sempre sobre o VGV vendido.
+Despesas de venda (corretagem, marketing, stand...). Cada linha tem a **base**: % do VGV, verba total, verba por unidade (pelas unidades vendidas, sem permuta e comissão) ou verba mensal, com a coluna **Meses**. "% do VGV" é sempre sobre o VGV líquido.
 
 ### Obras
 
@@ -103,11 +103,11 @@ Despesas gerais em quatro quadros, como em Obras: **Terreno**, **Incorporação*
 
 ### Taxas (só diretoria e administrador)
 
-Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascidos com o valor padrão da empresa. Saem por último, depois do resultado sem as taxas.
+Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascidos com o valor padrão da empresa. Saem por último, depois do resultado sem as taxas. Os itens em **% do lucro líquido** (como o custo de alavancagem e a taxa de desenvolvimento) incidem sobre o lucro do projeto antes deles: 30% de alavancagem custa 30% do lucro calculado sem contar a própria alavancagem.
 
 ### DRE
 
-O resultado do estudo, do VGV ao lucro, com o valor e o % da receita de cada linha: receita bruta, permuta e comissão em unidades, receita (VGV vendido), terreno, obras, lucro bruto, comerciais, gerais, EBITDA, despesas financeiras, resultado e margem sem as taxas, taxas e lucro líquido. Cada grupo mostra o detalhe embaixo. Fora da diretoria, Financeiras e Taxas aparecem só pelo total. Só leitura: muda conforme as outras seções.
+O resultado do estudo, do VGV ao lucro, com o valor e o % da receita de cada linha: receita bruta, permuta e comissão em unidades, receita (VGV líquido), terreno, obras, lucro bruto, comerciais, gerais, EBITDA, despesas financeiras, resultado e margem sem as taxas, taxas e lucro líquido. Cada grupo mostra o detalhe embaixo. Fora da diretoria, Financeiras e Taxas aparecem só pelo total. Só leitura: muda conforme as outras seções.
 
 ### Vínculo com o estudo de massa
 

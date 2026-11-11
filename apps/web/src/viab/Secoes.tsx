@@ -82,8 +82,8 @@ export function SecTerreno({ x }: { x: Ctx }) {
     <div className="vb-ro"><Ro itens={[['Unidades permutadas', nf(c.unp)], ['Área privativa permutada', c.ap ? m2(c.ap) : '—'], ['% das unidades', pctTxt(c.unp, c.un)], ['% da área privativa', pctTxt(c.ap, c.A)]]} /></div>
     <h3 className="vb-h3">Permuta financeira</h3>
     <div className="editgrid vb-campos">
-      <CampoHd x={x} k="permuta_fin_pct" rot="Permuta financeira (% do VGV líquido)" d={4} />
-      <CampoHd x={x} k="deducao_vgv_pct" rot="Dedução do VGV para o VGV líquido (%)" d={4} />
+      <CampoHd x={x} k="permuta_fin_pct" rot="Permuta financeira (% da base da permuta)" d={4} />
+      <CampoHd x={x} k="deducao_vgv_pct" rot="Dedução do VGV para a base da permuta (%)" d={4} />
       <CampoHd x={x} k="minimo_garantido" rot="Valor mínimo garantido (R$)" />
     </div>
     <fieldset className="vb-chks"><legend>Deduzir também da base da permuta a verba prevista em {VB_SECAO.comercial}</legend>
@@ -96,10 +96,10 @@ export function SecTerreno({ x }: { x: Ctx }) {
       })}
     </fieldset>
     <div className="vb-ro"><Ro itens={[
-      ['VGV vendido', brl(c.vv), 'sem permuta e comissão'],
+      ['VGV líquido', brl(c.vv), 'sem permuta e comissão'],
       ['Deduções', brl(r2(c.dedp + c.dedc)), `${v.deducao_vgv_pct ? nf(v.deducao_vgv_pct, 2) + '% = ' + brl(c.dedp) : 'sem %'}${c.dedc ? ' + ' + brl(c.dedc) + ' comerciais' : ''}`],
-      ['VGV líquido', brl(c.liq), 'só a base da permuta financeira'],
-      ['Permuta financeira', brl(c.pf), c.minimo ? `mínimo garantido (o % daria ${brl(c.pfc)})` : v.permuta_fin_pct ? `${nf(v.permuta_fin_pct, 2)}% do VGV líquido` : ''],
+      ['Base da permuta', brl(c.liq), 'VGV líquido menos a dedução e as despesas marcadas'],
+      ['Permuta financeira', brl(c.pf), c.minimo ? `mínimo garantido (o % daria ${brl(c.pfc)})` : v.permuta_fin_pct ? `${nf(v.permuta_fin_pct, 2)}% da base da permuta` : ''],
     ]} /></div>
     <h3 className="vb-h3">Pagamento em dinheiro</h3>
     <div className="editgrid vb-campos"><CampoHd x={x} k="pagamento_dinheiro" rot="Valor pago em dinheiro (R$)" /></div>
@@ -121,11 +121,11 @@ function linhasGrupo(x: Ctx, g: string) {
 function baseTxt(l: Linha, c: Calc) {
   const L = c.L[l.id], b = L?.base ?? null, d = L?.ded ? ' · deduzida da base da permuta' : '';
   switch (l.tipo) {
-    case 'pct_vgv': return `sobre o VGV vendido (${mi(b)})${d}`;
+    case 'pct_vgv': return `sobre o VGV líquido (${mi(b)})${d}`;
     case 'pct_obra_tipica': return `sobre a obra raso (${mi(b)})`;
     case 'pct_obra_raso': return `sobre a obra incidente (${mi(b)})`;
     case 'pct_obra_total': return `sobre a obra total (${mi(b)})`;
-    case 'pct_lucro': return `sobre o lucro líquido (${mi(b)})`;
+    case 'pct_lucro': return `sobre o lucro antes dos itens em % do lucro (${mi(b)})`;
     case 'pct_aporte_permuta': return `sobre a permuta financeira em dinheiro (${mi(b)})`;
     case 'pct_aporte_pagamento': return `sobre o pagamento em dinheiro (${mi(b)})`;
     case 'area': return `× ${m2(b)}`;
@@ -323,7 +323,7 @@ export function SecObra({ x }: { x: Ctx }) {
 }
 
 /* ---------- DRE (decisão do Moisés, 26/out/2026; vbResHtml): da receita bruta ao lucro líquido, com o detalhe de cada
-   grupo; análise vertical sobre a receita (VGV vendido; o VGV líquido é só a base da permuta financeira, decisão do
+   grupo; análise vertical sobre a receita (VGV líquido; a base da permuta só serve à permuta financeira, decisão do
    Moises de 11/nov/2026). Mesmos números do cálculo: só muda a apresentação.
    Fora da diretoria, Despesas financeiras e Taxas só com o total. ---------- */
 export function SecDre({ x }: { x: Ctx }) {
@@ -347,7 +347,7 @@ export function SecDre({ x }: { x: Ctx }) {
       {ln(`Receita bruta de vendas (VGV, ${nf(c.un)} unidades)`, c.vgv, 'forte')}
       {c.vp ? ln(`(−) Permuta física (${nf(c.unp)} unidades)`, c.vp) : null}
       {c.vc ? ln(`(−) Unidades dadas na comissão (${nf(c.unc)})`, c.vc) : null}
-      {ln('(=) Receita (VGV vendido)', c.vv, 'vb-tt')}
+      {ln('(=) Receita (VGV líquido)', c.vv, 'vb-tt')}
       {ln('(−) ' + VB_SECAO.terreno, c.SEC.terreno)}
       {sub(c.minimo ? 'Permuta financeira (mínimo garantido)' : 'Permuta financeira', c.pf)}
       {sub('Pagamento em dinheiro', v.pagamento_dinheiro)}
