@@ -19,12 +19,13 @@ Os terrenos ficam sempre **agrupados por cidade**, com um título para cada cida
 | **Imóvel** | Área adotada, zoneamento ("ZM / ZC") e perfil topográfico | área |
 | **Estudo de massa** | Unidades e área privativa total do estudo de massa válido, com o **olho** à direita, que abre o estudo numa janela | unidades |
 | **Viabilidade** | VGV e **L.L.** (margem líquida: lucro líquido ÷ VGV líquido, o mesmo número de "Margem líquida" no popup do estudo) do estudo de viabilidade válido, com o **olho** à direita, que abre o estudo no popup | VGV |
-| **Negociação** | Pedida (valor pedido da oferta de referência) e Proposta (a proposta ativa) | valor pedido |
+| **Pedida** | O que a oferta de referência pede, em três linhas: dinheiro, permuta financeira ("6% VGVL") e permuta física ("8 Unid." ou "12% física"); a linha do que não foi pedido fica com o traço | dinheiro pedido |
+| **Proposta** | O que a proposta ativa oferece, nas mesmas três linhas e na mesma ordem; dividido em partes, a soma das propostas ativas das partes | dinheiro da proposta |
 | **Corretor** | O corretor principal e a imobiliária; com mais de um, "+N corretores" (o mouse em cima mostra os nomes) | primeiro corretor |
 | **Temperatura** | As barrinhas de 1 a 5 e o número | temperatura |
 | **Responsável** | A foto (ou as iniciais) de quem cuida do terreno; o mouse em cima mostra o nome | nome |
 
-As células de **Estudo de massa**, **Viabilidade**, **Empreendimento** e **Negociação** mostram só os valores, um por linha, sem rótulo. O **ⓘ** depois do título dessas colunas abre um balão com o que é cada linha, de cima para baixo (fecha no clique fora, no Esc ou no ⓘ). O mouse parado sobre um valor também diz o que ele é. Em **Estudo de massa** e **Viabilidade**, a coluna tem a largura do que mostra, e o olho fica na mesma reta do ⓘ do título: logo depois do título ou, quando os valores são mais largos que ele, logo depois dos valores. Cada cidade tem uma linha cinza em cima e embaixo da sua faixa.
+As células de **Estudo de massa**, **Viabilidade**, **Empreendimento**, **Pedida** e **Proposta** mostram só os valores, um por linha, sem rótulo. O **ⓘ** depois do título dessas colunas abre um balão com o que é cada linha, de cima para baixo (fecha no clique fora, no Esc ou no ⓘ). O mouse parado sobre um valor também diz o que ele é. Em **Estudo de massa** e **Viabilidade**, a coluna tem a largura do que mostra, e o olho fica na mesma reta do ⓘ do título: logo depois do título ou, quando os valores são mais largos que ele, logo depois dos valores. Cada cidade tem uma linha cinza em cima e embaixo da sua faixa.
 
 O que não foi preenchido aparece como um traço cinza (—); o mouse em cima diz o que falta ("Sem corretor", "Sem estudo de massa válido"...).
 
@@ -32,7 +33,7 @@ Os olhos não abrem a ficha: a janela do estudo abre sobre a tabela. Na janela d
 
 ## Tela menor
 
-Quando a tabela não cabe na largura, as colunas saem nesta ordem: **Responsável**, **Temperatura**, **Corretor**; depois **Estudo de massa** e **Viabilidade** viram uma coluna só, **Empreendimento** (VGV, unidades e L.L., com um olho para cada estudo); depois saem **Região**, **Negociação** e **Empreendimento**. Terreno e Imóvel ficam sempre. No celular, cada linha mostra só o terreno e o imóvel.
+Quando a tabela não cabe na largura, as colunas saem nesta ordem: **Responsável**, **Temperatura**, **Corretor**; depois **Estudo de massa** e **Viabilidade** viram uma coluna só, **Empreendimento** (VGV, unidades e L.L., com um olho para cada estudo); depois saem **Região**, **Proposta**, **Pedida** e **Empreendimento**. Terreno e Imóvel ficam sempre. No celular, cada linha mostra só o terreno e o imóvel.
 
 ## Cidades
 

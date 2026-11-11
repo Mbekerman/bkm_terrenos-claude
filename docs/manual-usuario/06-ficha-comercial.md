@@ -23,14 +23,15 @@ Para mover a negociação (avançar, Stand By, Perdido...), use o quadro de avan
 
 Mostra o que o vendedor pede, na **oferta de referência** (a primeira, até alguém escolher outra em Ofertas recebidas), e quanto cada parte pede. Tudo se edita no lugar e grava na própria oferta.
 
-**O valor pedido é sempre o de cada parte.** O total não se digita: os blocos do alto são o resumo das partes.
+**O pedido é sempre o de cada parte**, e pode combinar três modalidades: **dinheiro**, **permuta financeira** (em % do VGV líquido, o VGVL) e **permuta física** (em % ou em número de unidades). O normal é ter duas, por exemplo parte em dinheiro e parte em permuta. Preencha só o que foi pedido; o que ficar em branco não foi pedido. O total não se digita: os blocos do alto são o resumo das partes.
 
-- **Valor total** (com uma parte só, **Valor pedido**): a soma dos valores das partes.
-- **Por m²**: o valor total ÷ a área **só das partes que já têm valor** (com uma parte só, a área adotada do terreno). Enquanto falta alguma parte, embaixo aparece "sobre N m² com valor".
+- **Em dinheiro** (com duas ou mais partes, **Em dinheiro, total**): a soma do dinheiro pedido pelas partes.
+- **Dinheiro por m²**: o dinheiro ÷ a área **só das partes que pediram dinheiro** (com uma parte só, a área adotada do terreno). Enquanto falta alguma parte, embaixo aparece "sobre N m² com valor".
+- **Em permuta**: a permuta financeira ("6% VGVL") e a permuta física ("8 Unid." ou "12% física") pedidas, somadas entre as partes.
 
-O número diminui de tamanho quando não cabe no bloco, até valores de R$ 999 milhões. Em tela estreita (celular), os dois blocos ficam um embaixo do outro.
+O número diminui de tamanho quando não cabe no bloco, até valores de R$ 999 milhões. Em tela estreita, os blocos se empilham.
 
-Com duas ou mais partes, se alguma ainda não tem valor, aparece logo abaixo dos blocos o aviso amarelo **"Falta o valor pedido de Vendedor 3."** (ou "das partes …" quando são várias).
+Com duas ou mais partes, se alguma ainda não tem pedido nenhum, aparece logo abaixo dos blocos o aviso amarelo **"Falta o pedido de Vendedor 3."** (ou "das partes …" quando são várias).
 
 O corretor fica em cada oferta (ver Ofertas recebidas); Aceita permuta e Pagamento saíram deste quadro.
 
@@ -38,12 +39,15 @@ Embaixo, uma linha por parte (ver [05](05-ficha-terreno.md#partes)), com:
 
 - as **matrículas da parte**, em etiquetas amarelas com a mini pizza do percentual (os SQLs não aparecem na linha). A etiqueta não se tira daqui; o clique abre a janela da matrícula, com a área registrada, o percentual da parte, a área da parte nela e os SQLs (ou inscrições) que estão dentro dela, cada um com a área do lote, o % da parte e a área da parte;
 - a **área da parte** (pelos SQLs; sem eles, pelas matrículas). Com uma parte só, é a área adotada do terreno. Logo abaixo, em cinza claro, o zoneamento dos SQLs da parte;
-- o **valor pedido** e o **valor por m²**, que se calculam um pelo outro (digite um e o outro muda). Aceita "12 mi" e precisa ser maior que zero;
-- a **condição de pagamento**: Dinheiro, Permuta física, Permuta financeira, Permuta geral ou Permuta com torna;
-- **Informações gerais**, no fim de cada parte: um texto livre para o que aquele vendedor pediu (permuta, entrada, prazos). Vale para a parte naquela oferta: outra oferta tem o seu próprio texto, porque as partes podem mudar de uma oferta para outra. Não é o texto da oferta (as impressões sobre o corretor e a firmeza ficam no card da oferta). Grava ao sair do campo.
-No celular, a área e o valor por m² ficam lado a lado, e o valor pedido e a condição de pagamento ocupam a linha inteira.
+- o **dinheiro** e o **dinheiro por m²**, que se calculam um pelo outro (digite um e o outro muda). Aceita "12 mi" e precisa ser maior que zero;
+- a **permuta financeira**, em % do VGV líquido (de 0 a 100);
+- a **permuta física**, em **%** ou em **unidades**: o botão **% | Unid.** ao lado do campo escolhe. É uma ou outra, nunca as duas; trocar o botão leva o número junto.
 
-Com duas ou mais partes, embaixo vem o **Total**, com "(faltam N)" enquanto alguma parte não tem valor.
+A forma de pagamento sai sozinha do que foi preenchido: só dinheiro, só uma permuta, **Permuta geral** (as duas permutas) ou **Permuta com torna** (dinheiro com alguma permuta). É ela que os filtros e as condições das tarefas usam.
+- **Informações gerais**, no fim de cada parte: um texto livre para o que aquele vendedor pediu (permuta, entrada, prazos). Vale para a parte naquela oferta: outra oferta tem o seu próprio texto, porque as partes podem mudar de uma oferta para outra. Não é o texto da oferta (as impressões sobre o corretor e a firmeza ficam no card da oferta). Grava ao sair do campo.
+No celular, a área e o dinheiro por m² ficam lado a lado, o dinheiro ocupa a linha inteira, e as duas permutas ficam lado a lado embaixo.
+
+Com duas ou mais partes, embaixo vem o **Total**, com a soma de cada modalidade.
 
 **Valor antigo para o terreno inteiro:** se a oferta foi registrada com um valor só antes de existir o valor por parte, os blocos mostram esse valor com o aviso "O valor de R$ … foi registrado para o terreno inteiro. Informe o valor de cada parte abaixo". Quando a primeira parte ganha valor, o total passa a ser a soma das partes.
 
@@ -56,8 +60,7 @@ Com duas ou mais partes, embaixo vem o **Total**, com "(faltam N)" enquanto algu
 1. Clique em **"Nova proposta"**.
 2. Preencha:
    - **Origem**: **BKM** (a BKM propõe) ou **Vendedor** (contraproposta);
-   - **Valor total**;
-   - **Forma de pagamento**;
+   - o que a proposta oferece, nas mesmas modalidades das Condições pedidas: **Dinheiro**, **Permuta financeira (% VGVL)** e **Permuta física** (em % ou em unidades, pelo botão **% | Unid.**). Preencha só o que vale; pelo menos uma precisa ser preenchida. A forma de pagamento sai delas;
    - **Status**: Apresentada, Em análise ou Rascunho;
    - **Partes da proposta**: para qual parte (dono) a proposta é feita. Pode ser uma, várias ou todas (**"Marcar todas"**, com três partes ou mais). Se o terreno tem **uma parte só**, ela já vem marcada; com **duas ou mais**, nenhuma vem marcada e o sistema **não deixa registrar** sem escolher pelo menos uma: o campo fica vermelho com o aviso "Escolha pelo menos uma parte". Logo abaixo das partes aparece a **área total da proposta**, que se refaz a cada parte marcada ou desmarcada: a soma das áreas das partes escolhidas (a mesma área que cada parte mostra no quadro Partes; com uma parte só, a área adotada do terreno), quantas partes de quantas e, com o valor total digitado, o valor por m². Parte sem área fica fora da soma e é citada embaixo ("Sem área: …"). As partes são as cadastradas na aba Terreno;
    - **Apresentada em** (data) e **Validade** (vem com 15 dias depois);
@@ -65,9 +68,9 @@ Com duas ou mais partes, embaixo vem o **Total**, com "(faltam N)" enquanto algu
 
    Se a margem do estudo de viabilidade válido está abaixo da mínima da empresa, o formulário mostra o aviso **"Rentabilidade abaixo da mínima"**, com a margem e a mínima. Ele só avisa: a proposta pode ser registrada.
 3. Clique em **Registrar**.
-4. O valor pedido e a forma de pagamento de cada parte se preenchem em **Condições pedidas**.
+4. O que cada parte pede se preenche em **Condições pedidas**.
 
-**Na lista**, cada proposta mostra as partes a que foi feita, em etiquetas logo abaixo do valor. Proposta registrada antes de 9/nov/2026 num terreno com duas ou mais partes aparece com **"Parte não informada"** (conta como de todas as partes). Parte que foi tirada do terreno aparece com "(saiu)".
+**Na lista**, cada proposta mostra o que oferece numa linha ("R$ 1,2 mi + 6% VGVL + 8 Unid.") e as partes a que foi feita, em etiquetas logo abaixo do valor. Proposta registrada antes de 9/nov/2026 num terreno com duas ou mais partes aparece com **"Parte não informada"** (conta como de todas as partes). Parte que foi tirada do terreno aparece com "(saiu)".
 
 **Versões:** cada proposta ganha um número (v1, v2, v3...), numa sequência só para o terreno.
 
