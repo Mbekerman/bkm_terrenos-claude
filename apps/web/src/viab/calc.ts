@@ -60,13 +60,13 @@ export interface Calc {
 }
 
 /** cálculo, na ordem (vbCalc do protótipo):
-    VGV vendido = VGV − permuta física − unidades da comissão (é o "VGV" das bases % do VGV);
-    VGV líquido = vendido − % de dedução − despesas comerciais marcadas para deduzir: só a base da permuta financeira, nunca
-    a receita (decisão do Moises, 11/nov/2026; a receita é o VGV vendido e as despesas marcadas continuam nas comerciais);
+    VGV líquido = VGV − permuta física − unidades da comissão (é o "VGV" das bases % do VGV);
+    base da permuta = líquido − % de dedução − despesas comerciais marcadas para deduzir: só a base da permuta financeira, nunca
+    a receita (decisão do Moises, 11/nov/2026; a receita é o VGV líquido e as despesas marcadas continuam nas comerciais);
     obra: típico = R$/m² × área (privativa ou construída); incidente (raso) = típico + atípicos; total = raso + não incidente;
-    + projetos e pós-obra; terreno: permuta financeira = % × VGV líquido, nunca abaixo do mínimo garantido; + dinheiro +
+    + projetos e pós-obra; terreno: permuta financeira = % × base da permuta, nunca abaixo do mínimo garantido; + dinheiro +
     comissão em dinheiro; % do lucro líquido: lucro = L0 ÷ (1 + Σ%), zero quando L0 ≤ 0; custo de capital: % sobre o Aporte;
-    margem líquida = lucro ÷ VGV vendido.
+    margem líquida = lucro ÷ VGV líquido.
     `restritoGuardado`: fora da diretoria as linhas de Taxas e Despesas financeiras não chegam (RLS); entram os totais
     que o banco guardou na última gravação. */
 export function calcular(v: Viab, desp: Desp[], restritoGuardado: boolean): Calc {
@@ -136,5 +136,5 @@ export const brl = (v: number | null | undefined) => (v == null ? '—' : Number
 export const mi = (v: number | null | undefined) => (v == null ? '—' : 'R$\u00a0' + (v / 1e6).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '\u00a0mi');
 export const nf = (v: number | null | undefined, d = 0) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d }));
 export const vin = (v: number | null | undefined, d = 2) => (v == null ? '' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d }));
-/** % do VGV vendido, a mesma base dos itens em % do VGV e da margem */
+/** % do VGV líquido, a mesma base dos itens em % do VGV e da margem */
 export const pctVgv = (x: number, c: Calc) => (c.vv > 0 ? nf(x / c.vv * 100, 1) + '% do VGV' : '');

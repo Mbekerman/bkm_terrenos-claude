@@ -116,7 +116,7 @@ const COLS: Col[] = [
     <div className="tb-vgv"><button type="button" className="iconbtn tb-viab" aria-label={`Ver a viabilidade válida de ${t.nome}`} title="Ver a viabilidade válida"
       onClick={(e) => { e.stopPropagation(); ver(t); }}><Ic n="olho" s={18} /></button>{t.vgv != null ? 'VGV ' + mi(t.vgv) : <Nada s="Sem VGV" />}</div>
     <div className="t2">{t.un != null ? num(t.un) + ' unidades' : 'Sem unidades'}</div>
-    {t.ll != null && <div className="t2" title="Margem líquida do estudo válido: lucro líquido ÷ VGV vendido">L.L. {t.ll.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</div>}</> : <Nada s="Sem estudo válido" />) },
+    {t.ll != null && <div className="t2" title="Margem líquida do estudo válido: lucro líquido ÷ VGV líquido">L.L. {t.ll.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</div>}</> : <Nada s="Sem estudo válido" />) },
   { k: 'preco', l: 'Negociação', cls: 'num', v: (t) => <>
     <div>Pedida: {t.pedido != null ? mi(t.pedido) : <Nada s="—" />}</div>
     <div className="t2">Proposta: {t.proposta != null ? mi(t.proposta) : '—'}</div></> },

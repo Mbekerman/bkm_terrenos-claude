@@ -123,7 +123,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
               {margemMin != null && <div><div className="lbl">Mínima da empresa</div><div className="big">{nf(margemMin, 1)}%</div></div>}
             </div>
             <div className="dt-wrap"><table className="dt compacta"><thead><tr><th className="esq"><span className="sr-only">Item</span></th><th className="num">Valor</th><th className="num">% do VGV</th></tr></thead><tbody>
-              <tr><td className="esq">VGV vendido</td><td className="num">{mi(vl)}</td><td className="num">100%</td></tr>
+              <tr><td className="esq">VGV líquido</td><td className="num">{mi(vl)}</td><td className="num">100%</td></tr>
               <tr><td className="esq">Valor pedido</td><td className="num">{f.valorPedido ? mi(f.valorPedido) : '—'}</td><td className="num">{f.valorPedido ? pc(f.valorPedido, vl) : '—'}</td></tr>
               {q.data.ultProposta != null && <tr><td className="esq">Última proposta</td><td className="num">{mi(q.data.ultProposta)}</td><td className="num">{pc(q.data.ultProposta, vl)}</td></tr>}
               {vi.lucro != null && <tr><td className="esq">Lucro líquido</td><td className="num">{mi(vi.lucro)}</td><td className="num">{pc(vi.lucro, vl)}</td></tr>}
@@ -136,7 +136,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
         <div className="sec-b">
           {vi && <>
             <div className="metrics vb-met">
-              <div className="metric"><div className="ml">VGV vendido</div><div className="mv">{mi(vi.vv ?? vi.vgv)}</div></div>
+              <div className="metric"><div className="ml">VGV líquido</div><div className="mv">{mi(vi.vv ?? vi.vgv)}</div></div>
               <div className="metric"><div className="ml">Margem líquida</div><div className="mv">{pct1(vi.margem)}</div></div>
               <div className="metric"><div className="ml">Mínima da empresa</div><div className="mv">{margemMin == null ? '—' : nf(margemMin, 1) + '%'}</div></div>
             </div>
@@ -145,7 +145,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
             {lista.length > 0 && <div style={{ height: 16 }} />}
           </>}
           {lista.length ? (
-            <div className="dt-wrap vb-lista"><table className="dt compacta"><thead><tr><th className="esq">Estudo</th><th>VGV vendido</th><th>Lucro líquido</th><th>Margem</th><th>Atualizado</th><th>Válido</th></tr></thead><tbody>
+            <div className="dt-wrap vb-lista"><table className="dt compacta"><thead><tr><th className="esq">Estudo</th><th>VGV líquido</th><th>Lucro líquido</th><th>Margem</th><th>Atualizado</th><th>Válido</th></tr></thead><tbody>
               {lista.map((v) => {
                 const lig = vi?.id === v.id;
                 return (
@@ -159,7 +159,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
               })}
             </tbody></table></div>
           ) : (
-            <div className="banner blue"><Ic n="money" /><div style={{ flex: 1 }}><div className="bt">Nenhum estudo</div><div>Monte o estudo de viabilidade estática: tipologias, custos e resultado (VGV vendido, lucro e margem).</div></div></div>
+            <div className="banner blue"><Ic n="money" /><div style={{ flex: 1 }}><div className="bt">Nenhum estudo</div><div>Monte o estudo de viabilidade estática: tipologias, custos e resultado (VGV líquido, lucro e margem).</div></div></div>
           )}
         </div>
       </Quadro>
@@ -354,7 +354,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
     <>
       <div className="vb-fixo">
         <div className="kpis vb-kpis" id="vb-kpis">
-          {([['VGV', mi(c.vgv)], ['VGV vendido', mi(c.vv)], ['Lucro líquido', mi(c.lucro)], ['Margem líquida', pct1(c.margem)]] as const).map(([l, x]) => (
+          {([['VGV', mi(c.vgv)], ['VGV líquido', mi(c.vv)], ['Lucro líquido', mi(c.lucro)], ['Margem líquida', pct1(c.margem)]] as const).map(([l, x]) => (
             <div key={l} className="kpi"><span className="v sm">{kpiV(x)}</span><span className="l">{l}</span></div>
           ))}
         </div>

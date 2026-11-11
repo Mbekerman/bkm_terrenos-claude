@@ -16,7 +16,7 @@ No menu lateral, **Terrenos** (o primeiro item). A página se chama **Pipeline**
 | **Cidade** | Município | cidade |
 | **Região** | Zona Norte, Zona Sul, Centro... | região |
 | **Imóvel** | Área adotada, zoneamento ("ZM / ZC") e perfil topográfico | área |
-| **Projeto** | VGV, unidades e **L.L.** (margem líquida: lucro líquido ÷ VGV vendido, o mesmo número de "Margem líquida" no popup do estudo) do estudo de viabilidade válido, com o **olho** ao lado do VGV, que abre o estudo válido no popup sem abrir a ficha; "Sem estudo válido" quando não há | VGV |
+| **Projeto** | VGV, unidades e **L.L.** (margem líquida: lucro líquido ÷ VGV líquido, o mesmo número de "Margem líquida" no popup do estudo) do estudo de viabilidade válido, com o **olho** ao lado do VGV, que abre o estudo válido no popup sem abrir a ficha; "Sem estudo válido" quando não há | VGV |
 | **Negociação** | Pedida (valor pedido da oferta de referência) e Proposta (a proposta ativa) | valor pedido |
 | **Corretor** | O corretor principal e a imobiliária; com mais de um, "+N corretores" (o mouse em cima mostra os nomes) | primeiro corretor |
 | **Temperatura** | As barrinhas de 1 a 5 | temperatura |
