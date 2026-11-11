@@ -540,6 +540,5 @@ html[data-tema="escuro"] .ems-lin:hover { background: rgba(168, 199, 250, .08) }
 .rd-raios .rd-cust-u { font-size: 13px; font-weight: 500 }
 .rd-raios .rd-cust .ic, .rd-raios .rd-cust svg { margin-left: 2px; flex: none }
 /* Resumo do estudo de massa válido (pedido do Moises, 11/nov/2026) */
-.ems-res-h { margin-bottom: 8px; font-size: 14px }
 .ems-res tfoot td { font-weight: 500; border-top: 1px solid #c4c7c5 }
 html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }

@@ -10,7 +10,7 @@ A aba mostra, em cima, o **Resumo do estudo de massa** válido e, embaixo, a lis
 
 ## Resumo do estudo de massa
 
-No alto da aba, o estudo válido (o nome abre o estudo) com uma linha por tipologia: **quantidade**, **área privativa** e **área total** (quantidade × área privativa). Na linha **Total**, a soma das unidades e a soma das áreas totais. Sem estudo válido, o quadro diz "Nenhum estudo marcado como válido".
+No alto da aba, como no Resumo da viabilidade: o seletor **Estudo válido** (só os estudos entregues; escolher um o torna o válido), **"Abrir estudo"** e **"+ Novo estudo"**. Embaixo, em destaque, as **Unidades** e a **Área privativa total** do estudo válido e uma linha por tipologia: **quantidade**, **área privativa** e **área total** (quantidade × área privativa). Na linha **Total**, a soma das unidades e a soma das áreas totais. Sem estudo válido, o quadro diz "Nenhum estudo marcado como válido".
 
 ## Pedir um estudo
 

@@ -86,7 +86,7 @@ export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void 
   const { ms } = q.data!;
   return (
     <div className="stack">
-      <ResumoMassa m={ms.find((x) => x.valido) ?? null} temEstudos={ms.length > 0} abrir={setAberto} />
+      <ResumoMassa ms={ms} edita={edita} abrir={setAberto} novo={() => setForm('lancar')} marcar={marcar} />
       <Quadro aba="massa" id="massa-lista" primeiro chip="Estudos de massa" titulo={<>Estudos de massa <span className="h-n">{ms.length}</span></>}
         acoes={edita ? <span style={{ display: 'flex', gap: 4, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button className="btn sm" onClick={() => setForm('lancar')} title="Para o estudo que já está pronto: cria o estudo e abre a janela para lançar as tipologias, as áreas e os índices"><Ic n="add" s={16} />Novo estudo</button>
@@ -133,33 +133,53 @@ export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void 
   );
 }
 
-/** Resumo do estudo de massa válido, acima da lista, como o Resumo da viabilidade (pedido do Moises, 11/nov/2026):
+/** Resumo do estudo de massa válido, acima da lista, no visual do Resumo da viabilidade (pedidos do Moises, 11/nov/2026):
+    o seletor do estudo válido (só os entregues), Abrir estudo e Novo estudo; unidades e área privativa total em destaque;
     cada tipologia com a quantidade, a área privativa e a área total (quantidade × área), e no fim as somas */
-function ResumoMassa({ m, temEstudos, abrir }: { m: R | null; temEstudos: boolean; abrir: (id: string) => void }) {
+function ResumoMassa({ ms, edita, abrir, novo, marcar }: {
+  ms: R[]; edita: boolean; abrir: (id: string) => void; novo: () => void; marcar: (m: R, valido: boolean) => void;
+}) {
+  const m = ms.find((x) => x.valido) ?? null;
+  const entregues = ms.filter((x) => x.situacao === 'entregue');
   const tips = (m?.tips ?? []) as R[];
   const linhas = tips.map((t) => {
     const q = t.quantidade != null ? Number(t.quantidade) : null, a = t.area_privativa != null ? Number(t.area_privativa) : null;
     return { id: t.id as string, nome: (t.nome as string) || '—', q, a, tot: q != null && a != null ? r2(q * a) : null };
   });
   const somaU = linhas.reduce((s, l) => s + (l.q ?? 0), 0);
-  const somaA = linhas.reduce((s, l) => s + (l.tot ?? 0), 0);
+  const somaA = r2(linhas.reduce((s, l) => s + (l.tot ?? 0), 0));
   const falta = linhas.some((l) => l.tot == null);
   return (
     <Quadro aba="massa" id="massa-res" primeiro titulo="Resumo do estudo de massa">
       <div className="sec-b">
+        {ms.length > 0 && (
+          <div className="vb-escolha">
+            <label htmlFor="ems-val">Estudo válido</label>
+            <select id="ems-val" value={m?.id ?? ''} disabled={!edita || !entregues.length}
+              onChange={(e) => { const x = ms.find((y) => y.id === e.target.value); if (x) marcar(x, true); }}>
+              {!m && <option value="">{entregues.length ? 'Escolha o estudo' : 'Nenhum estudo entregue'}</option>}
+              {entregues.map((x) => <option key={x.id} value={x.id}>{x.nome} · {Number(x.unidades) ? `${num(Number(x.unidades))} Unid.` : 'sem unidades'}</option>)}
+            </select>
+            {m && <button className="btn sm" onClick={() => abrir(m.id)}>Abrir estudo</button>}
+            {edita && <button className="btn text sm" onClick={novo}><Ic n="add" s={16} />Novo estudo</button>}
+          </div>
+        )}
         {m ? <>
-          <div className="ems-res-h"><span className="faint">Estudo válido</span> <button className="linkbtn" onClick={() => abrir(m.id)}>{m.nome}</button></div>
+          <div className="cond2 vb-res2">
+            <div><div className="lbl">Unidades</div><div className="big">{linhas.length ? num(somaU) : '—'}</div></div>
+            <div><div className="lbl">Área privativa total</div><div className="big">{linhas.length ? m2(somaA) : '—'}</div></div>
+          </div>
           {linhas.length ? (
             <div className="dt-wrap"><table className="dt compacta ems-res"><thead><tr><th className="esq">Tipologia</th><th className="num">Quantidade</th><th className="num">Área privativa</th><th className="num">Área total</th></tr></thead>
               <tbody>{linhas.map((l) => (
                 <tr key={l.id}><td className="esq">{l.nome}</td><td className="num">{l.q != null ? num(l.q) : '—'}</td>
                   <td className="num">{l.a != null ? m2(l.a) : '—'}</td><td className="num">{l.tot != null ? m2(l.tot) : '—'}</td></tr>
               ))}</tbody>
-              <tfoot><tr><td className="esq">Total</td><td className="num">{num(somaU)} Unid.</td><td /><td className="num">{m2(r2(somaA))}{falta ? ' *' : ''}</td></tr></tfoot>
+              <tfoot><tr><td className="esq">Total</td><td className="num">{num(somaU)} Unid.</td><td /><td className="num">{m2(somaA)}{falta ? ' *' : ''}</td></tr></tfoot>
             </table></div>
           ) : <div className="muted">O estudo válido ainda não tem tipologias.</div>}
           {falta && linhas.length ? <div className="faint" style={{ fontSize: 12, marginTop: 8 }}>* Sem as tipologias que não têm quantidade ou área.</div> : null}
-        </> : <div className="muted">{temEstudos ? 'Nenhum estudo marcado como válido.' : 'Sem estudo.'}</div>}
+        </> : <div className="muted">{ms.length ? 'Nenhum estudo marcado como válido.' : <>Sem estudo.{edita && <> <button className="linkbtn ed" onClick={novo}>Novo estudo</button></>}</>}</div>}
       </div>
     </Quadro>
   );
