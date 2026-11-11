@@ -6,11 +6,11 @@
 
 Pedir a um arquiteto da equipe o estudo do que cabe no terreno e guardar o resultado: as tipologias (quantos apartamentos de cada tamanho), as áreas, as vagas, a área construída e os coeficientes de aproveitamento. O estudo entregue e marcado como **válido** é a base do estudo de viabilidade.
 
-Dois quadros: **Estudos de massa** (a lista) e, logo abaixo, a **ficha do estudo** escolhido.
+A aba mostra só a lista dos estudos, como a de Estudos de viabilidade. Pedir, lançar, ver e editar um estudo acontece numa janela por cima da ficha.
 
 ## Pedir um estudo
 
-1. No quadro **Estudos de massa**, clique em **"Solicitar estudo"**.
+1. No quadro **Estudos de massa**, clique em **"Solicitar estudo"**. Abre a janela do pedido.
 2. Escolha o **Arquiteto** (alguém da equipe), o **Prazo** (opcional) e escreva o **Briefing**, uma linha por item ("Torre única", "Só 2 dormitórios"...).
 3. Clique em **"Solicitar"**.
 
@@ -20,21 +20,26 @@ O estudo nasce como **Solicitado**, com o nome "Estudo de massa 1", 2, 3..., e o
 
 Quando o estudo já chegou pronto (de um arquiteto de fora, por e-mail, ou feito antes do sistema), não precisa pedir:
 
-1. No quadro **Estudos de massa**, clique em **"Lançar estudo"**.
+1. No quadro **Estudos de massa**, clique em **"Lançar estudo"**. Abre a janela.
 2. Dê um **Nome** (em branco, vira "Estudo de massa 1", 2, 3...) e escolha o **Responsável na equipe** (vem marcado com você; é quem responde pelo estudo dentro da BKM).
 3. Clique em **"Criar e lançar"**.
 
-O estudo nasce **Em elaboração**, ninguém recebe aviso, e a ficha do estudo abre logo abaixo para você digitar as tipologias, as áreas, as vagas e os índices. Depois, **"Salvar"** (no fim do estudo) e, se for o caso, **"Marcar como válido"**, como num estudo pedido.
+O estudo nasce **Em elaboração**, ninguém recebe aviso, e o estudo abre na janela para você digitar as tipologias, as áreas, as vagas e os índices. Depois, **"Salvar"** (no fim do estudo) e, se for o caso, **"Marcar como válido"**, como num estudo pedido.
 
 ## A lista
 
-Uma linha por estudo: nome, arquiteto, situação (**Solicitado**, **Em elaboração** ou **Entregue**), unidades, área privativa, área construída, eficiência e a bolinha **Válido**. Clique no nome para abrir a ficha dele embaixo. Sem escolher, abre o válido (ou o último).
+Uma linha por estudo, só com o resumo: **nome**, **unidades**, quantidade de **tipologias**, **área privativa total**, **área privativa média** por unidade (a total dividida pelas unidades), a data da última alteração (**Atualizado**) e o selo **Válido** ou **Inválido**. O estudo ainda não entregue mostra a situação (**Solicitado** ou **Em elaboração**) ao lado do nome. Clique no nome para abrir o estudo na janela.
 
-**Regra:** só um estudo é o válido por terreno, e só um estudo **entregue** pode ser o válido. Clicar na bolinha de outro estudo entregue o torna o válido.
+**O selo é clicável** (para quem edita):
 
-## A ficha do estudo
+- Clicar em **Inválido** torna aquele estudo o válido, e o que era o válido passa a inválido. Os estudos de viabilidade que seguem o válido passam a usar o novo.
+- Clicar em **Válido** tira a marca: o terreno fica **sem estudo de massa válido**. Os estudos de viabilidade que seguem o válido ficam com os dados que tinham até outro estudo ser marcado.
 
-No título: o nome, a situação, o selo **Válido** e **"Ver pedido"**, que abre a janela com a data do pedido, quem pediu, o nome do estudo, o arquiteto, o prazo e o briefing. Quem edita muda ali o nome, o arquiteto (o novo arquiteto é avisado), o prazo e o briefing e clica em **"Salvar"**.
+**Regra:** só um estudo é o válido por terreno, e só um estudo **entregue** pode ser o válido (no estudo ainda não entregue, o selo não clica).
+
+## A janela do estudo
+
+A janela fecha no **X** ou com **Esc**. No título: o nome, a situação, o selo **Válido** e **"Ver pedido"**, que abre a janela com a data do pedido, quem pediu, o nome do estudo, o arquiteto, o prazo e o briefing. Quem edita muda ali o nome, o arquiteto (o novo arquiteto é avisado), o prazo e o briefing e clica em **"Salvar"**.
 
 Os campos se editam no lugar, sem botão de salvar: cada um grava ao sair dele.
 
@@ -47,12 +52,12 @@ Os campos se editam no lugar, sem botão de salvar: cada um grava ao sair dele.
 
 **Regra:** o primeiro dado lançado passa o estudo de **Solicitado** para **Em elaboração**.
 
-## Botões da ficha
+## Botões da janela
 
 - **"Salvar"**, no fim do estudo: o estudo passa a **Entregue**. Só pede pelo menos uma unidade lançada nas tipologias; o resto (áreas, vagas, área construída, índices) pode ficar em branco e ser completado depois. Quem pediu o estudo é avisado no sino. Os campos gravam sozinhos ao sair deles; o Salvar é o que dá o estudo por pronto.
 - **"Marcar como válido"**: no estudo entregue que ainda não é o válido.
 - **"Criar estudo de viabilidade"**: no estudo entregue. Cria o estudo de viabilidade com o modelo padrão da empresa, já com as tipologias (título, área e quantidade) e a área construída deste estudo, que lá não se editam; preços, permuta e comissão são da viabilidade. No estudo válido, a janela pergunta se a viabilidade **segue o estudo de massa válido** (trocou o válido, ela troca junto) ou **fica presa a este estudo**. Criado, o estudo de viabilidade abre na hora.
-- **"Apagar"**: só no estudo que não é o válido e não tem estudo de viabilidade preso a ele, com confirmação.
+- **"Apagar"**: só no estudo que não é o válido e não tem estudo de viabilidade preso a ele, com confirmação. Apagado, a janela fecha.
 
 Leitura vê tudo, sem editar.
 

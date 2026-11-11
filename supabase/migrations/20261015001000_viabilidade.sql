@@ -752,6 +752,11 @@ begin
   if p.fase is distinct from app._fase_entrada(p.empresa_id) then
     raise exception 'Estudo de viabilidade é da negociação (fase de entrada)' using errcode = '23514';
   end if;
+  -- sem estudo, tira a marca: a negociação fica sem estudo válido (pedido do Moises, 11/nov/2026)
+  if p_viabilidade is null then
+    update app.processos set viabilidade_id = null where id = p.id;
+    return;
+  end if;
   select * into v from app.viabilidades where id = p_viabilidade and empresa_id = p.empresa_id;
   if not found then raise exception 'Estudo não encontrado' using errcode = 'P0002'; end if;
   if v.terreno_id is distinct from p.terreno_id then raise exception 'O estudo é de outro terreno' using errcode = '23514'; end if;
