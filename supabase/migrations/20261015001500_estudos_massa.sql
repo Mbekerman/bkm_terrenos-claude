@@ -8,7 +8,7 @@
 -- construída total e os CAs legal e venal (digitados), e envia o PDF e o DWG.
 -- Área privativa total = Σ área × quantidade das tipologias; eficiência =
 -- privativa ÷ construída. Situação: solicitado → em elaboração (ao lançar o
--- primeiro dado) → entregue (com tipologias e a área construída). O analista
+-- primeiro dado) → entregue (Salvar; basta uma unidade lançada). O analista
 -- marca o estudo válido (um por terreno, só entregue) e escreve observações.
 -- Tudo pelas RPCs (as tabelas só se leem).
 --
@@ -278,12 +278,11 @@ begin
     perform set_config('app.massa_sync', '', true);
   end if;
   select sum(area_privativa * quantidade), coalesce(sum(quantidade), 0) into v_area, v_un from app.estudo_massa_tipologias where estudo_id = m.id;
-  -- situação: o primeiro dado põe em elaboração; entregue pede tipologias e a área construída
+  -- situação: o primeiro dado põe em elaboração; entregue (o Salvar do estudo) só pede uma unidade lançada
   v_sit := coalesce(p_dados->>'situacao', case when m.situacao = 'solicitado' and (p_dados ?| CAMPOS or p_dados ? 'tipologias') then 'em_elaboracao' else m.situacao end);
   if v_sit not in ('solicitado','em_elaboracao','entregue') then raise exception 'Situação inválida' using errcode = '22023'; end if;
-  if v_sit = 'entregue' and (v_un = 0 or exists (select 1 from app.estudo_massa_tipologias where estudo_id = m.id and area_privativa is null)
-                             or (select area_construida_m2 is null from app.estudos_massa where id = m.id)) then
-    raise exception 'Para entregar, lance as tipologias (com área e quantidade) e a área construída total' using errcode = '23514';
+  if v_sit = 'entregue' and v_un = 0 then
+    raise exception 'Para salvar, lance pelo menos uma unidade' using errcode = '23514';
   end if;
   if v_sit <> 'entregue' and m.valido then
     raise exception 'O estudo válido continua entregue: marque outro como válido antes' using errcode = '23514';

@@ -3679,11 +3679,14 @@ select pg_temp.ok((select nome = 'Estudo de massa 1' and situacao = 'solicitado'
   'pedido ao arquiteto com briefing e prazo nasce Solicitado, numerado no terreno');
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'massa_solicitado' and origem_id = :'em1') = 1, 'o arquiteto é avisado do pedido');
+select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"situacao":"entregue"}')$$, :'em1'), 'sem nenhuma unidade lançada não se salva');
 select app.salvar_estudo_massa(:'em1', '{"tipologias":[{"nome":"2 dormitórios","area_privativa":40,"quantidade":100},{"nome":"2 dormitórios com suíte","area_privativa":50,"quantidade":50}],
   "lazer_coberto_torre_m2":300,"vagas_cobertas":0,"vagas_descobertas":30,"ca_legal":4,"ca_venal":3.2}');
 select pg_temp.ok((select situacao = 'em_elaboracao' and area_privativa_m2 = 6500 and unidades = 150 and eficiencia_pct is null from app.estudos_massa where id = :'em1'),
   'o primeiro dado põe em elaboração; área privativa total = Σ área × quantidade (6.500 m², 150 unidades)');
-select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"situacao":"entregue"}')$$, :'em1'), 'sem a área construída total não se entrega');
+select app.salvar_estudo_massa(:'em1', '{"situacao":"entregue"}');
+select pg_temp.ok((select situacao = 'entregue' and area_construida_m2 is null from app.estudos_massa where id = :'em1'),
+  'com uma unidade lançada já se salva (entregue), mesmo sem a área construída');
 select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"tipologias":[{"nome":" "}]}')$$, :'em1'), 'tipologia sem título é recusada');
 select app.salvar_estudo_massa(:'em1', '{"area_construida_m2":10000,"situacao":"entregue"}');
 select pg_temp.ok((select situacao = 'entregue' and eficiencia_pct = 65 and entregue_em is not null from app.estudos_massa where id = :'em1'),
