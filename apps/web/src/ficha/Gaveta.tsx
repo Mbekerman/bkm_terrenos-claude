@@ -10,8 +10,9 @@ import { guardarPos, lerPos } from './lembrar';
 // Gaveta da ficha na página Mapa (/mapa/A123/ficha; proto_tabela.js › pgFicha com UI.gav, tgavPosMapa): à direita, sobre o
 // mapa, do fim da lista mais 240 px até a borda (entre 600 e 900 px); X ou Esc fecham; "Abrir página" leva à ficha própria.
 // A aba fica só na gaveta, como no protótipo. A largura se arrasta pela borda esquerda, como a da lista do mapa (pedido do
-// Moisés, 5/nov/2026): guardada no navegador, nunca cobre a lista nem fica abaixo de 640 px; dois cliques voltam ao padrão.
-const GAV_KEY = 'bkm-terrenos-ficha-gaveta', GAV_MIN = 640;
+// Moisés, 5/nov/2026): guardada no navegador, nunca cobre a lista nem fica abaixo de 800 px, a largura em que a barra das abas cabe inteira, com o Histórico, o alerta,
+// a pastinha e o ⋮ (pedido do Moises, 11/nov/2026; antes 640); dois cliques voltam ao padrão.
+const GAV_KEY = 'bkm-terrenos-ficha-gaveta', GAV_MIN = 800;
 const lerW = () => { try { return Number(localStorage.getItem(GAV_KEY)) || null; } catch { return null; } };
 // No Pipeline (/terrenos/A123/gaveta; proto_tabela.js › tgavPos), `naTabela`: a gaveta cobre a tabela a partir do fim da
 // coluna 1 (`lado` é o título dela) e, com a tabela em tela cheia, começa no alto da tela.
@@ -73,7 +74,7 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
     const g = el.current;
     if (!g) return;
     const top = innerWidth < 900 || cheia ? 0 : (document.querySelector('.top')?.getBoundingClientRect().bottom || 0), l = lado?.getBoundingClientRect().right || 0;
-    const w = Math.min(900, Math.max(600, Math.round(innerWidth * 0.5)));
+    const w = Math.min(900, Math.max(GAV_MIN, Math.round(innerWidth * 0.5)));
     const left = innerWidth < 900 ? 0 : wG ? innerWidth - limitar(wG) : naTabela ? Math.round(l) : Math.max(Math.round(l) + 240, innerWidth - w);
     g.style.left = Math.max(0, Math.min(left, innerWidth - GAV_MIN)) + 'px';
     g.style.top = top + 'px';

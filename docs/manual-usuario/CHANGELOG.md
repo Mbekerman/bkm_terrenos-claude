@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
+- **Ficha: a página não rola mais ao trocar de aba, de seção ou de parte de Estudos Técnicos.** Se a seção nova for mais curta que a tela, sobra um espaço vazio embaixo, que some quando você rola para cima. **Jornada** saiu da barra das abas e fica só no ⋮ (agora sempre visível); **Documentos** virou o ícone da pastinha, ao lado do alerta. No computador, o painel da direita só aparece quando a barra das abas cabe inteira, e a gaveta da ficha tem no mínimo 800 px. (#332)
 - **Estudo de massa: botão "Salvar" no fim do estudo** (Estudos Técnicos › Estudos de massa), no lugar de "Marcar como entregue" no alto. Salvar dá o estudo por entregue e só exige uma unidade lançada; a área construída e o resto podem ficar para depois. (#331)
 - **Página Terrenos (Pipeline)** (menu lateral, primeiro item): a tabela de todos os terrenos com as colunas Terreno, Cidade, Região, Imóvel, Projeto, Negociação, Corretor, Temperatura e Responsável; ordenação clicando no título das colunas (várias juntas), Filtros e Visões próprios da página, a busca da barra de cima filtrando a tabela, Tela cheia e o olhinho que abre a ficha numa gaveta à direita. Ver [18. Pipeline](18-pipeline.md). (#330)
 - **Correção: estudo de viabilidade no celular** (ficha aberta pelo Mapa ou pelo Pipeline › Estudos Técnicos › Estudos de viabilidade): tocar no estudo ou em "Novo estudo" não mostrava nada, porque o estudo abria por trás da ficha. Agora abre por cima. (#329)
