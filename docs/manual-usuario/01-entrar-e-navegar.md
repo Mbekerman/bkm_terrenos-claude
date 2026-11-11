@@ -10,6 +10,8 @@
 
 Na primeira vez, a pessoa entra com o papel **Básico** (só consulta) até um administrador promovê-la. Se o cadastro dela ainda não foi feito, aparece a tela **"Seu acesso ainda não foi liberado"**, com os botões **"Sair"** e **"Tentar de novo"**. Peça a liberação ao Moises ou ao Rafael e depois clique em "Tentar de novo".
 
+O navegador **guarda o seu login**: ao abrir o sistema de novo no mesmo computador e navegador, você já entra sem passar pelo Google. Só se ficar **mais de 30 dias sem abrir o sistema** naquele navegador é que ele pede o login de novo. Para sair antes, use **"Sair"** no menu da sua foto (num computador emprestado, saia sempre).
+
 **Dica:** se alguém mandou um link (por exemplo, `/terrenos/A123/comercial`) e você ainda não estava logado, o login aparece no próprio link e, ao entrar, a tela pedida abre direto.
 
 ## A moldura: o que fica sempre na tela
