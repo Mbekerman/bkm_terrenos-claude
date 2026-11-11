@@ -333,12 +333,12 @@ export default function Pipeline() {
     const i = L.findIndex((x) => x.k === c.k), st = L[i];
     return (
       <th key={c.k} ref={c.k === 'ter' ? setTh : undefined} className={`col-${c.k} ${c.cls ?? ''}`} scope="col" aria-sort={st ? (st.dir === 'desc' ? 'descending' : 'ascending') : 'none'}>
-        {c.info && <InfoCol c={c} />}
         <button type="button" className="dt-sort" onClick={() => fx.setO(alternar(L, c.k))}
           title={st ? (st.dir === 'asc' ? 'Crescente: clique para decrescente' : 'Decrescente: clique para tirar a ordem') : 'Ordenar em ordem crescente'}>
           {c.l}<span className="dt-ar" aria-hidden="true">{st ? (st.dir === 'desc' ? '↓' : '↑') : '↕'}</span>
           {st && L.length > 1 && <span className="tb-ord" aria-label={`${i + 1}ª ordem`}>{i + 1}</span>}
         </button>
+        {c.info && <InfoCol c={c} />}
       </th>
     );
   };
