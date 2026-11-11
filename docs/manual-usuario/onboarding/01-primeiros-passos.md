@@ -8,7 +8,7 @@
 |---|---|---|---|
 | 1 | 0:00 | Tela de login. | "Este é o BKM Terrenos, onde a BKM guarda cada terreno desde a primeira oferta até a compra. Neste vídeo você vai entrar, achar um terreno e entender a ficha dele." |
 | 2 | 0:15 | Clicar em **"Entrar com o Google"** e escolher a conta @bkm.com.br. | "Para entrar, use sua conta Google da BKM. Na primeira vez você entra só para consultar, até alguém da diretoria liberar a edição." |
-| 3 | 0:35 | Página Mapa aberta. Passar o mouse pelo menu lateral. | "À esquerda fica o menu: o botão Novo terreno, o Mapa e o Funil. Hoje a gente vai ficar no Mapa." |
+| 3 | 0:35 | Página Mapa aberta. Passar o mouse pelo menu lateral. **Precisa regravar a partir deste passo** (11/nov/2026: o menu ganhou Terrenos, a tabela Pipeline, no alto, e Corretores; a fala precisa citá-los). | "À esquerda fica o menu: o botão Novo terreno, o Mapa e o Funil. Hoje a gente vai ficar no Mapa." |
 | 4 | 0:50 | Apontar a barra de cima: selo, busca, sino, avatar. Clicar no avatar e fechar. | "Em cima, a busca, o sino de avisos e a sua foto. Clicando na foto você vê seu nome, seu papel e o botão Sair." |
 | 5 | 1:10 | Apontar a lista à esquerda; passar o mouse por uma bolinha. | "Esta é a lista de terrenos. A bolinha tem o código do terreno, numa cor que diz em que etapa ele está. Do lado, o nome, a área e a etapa." |
 | 6 | 1:30 | Parar o mouse sobre a legenda até abrir; clicar no nome de uma fase para abrir as etapas. | "A legenda explica as cores. Ela abre quando você para o mouse em cima. Clicando no nome de uma fase, você vê as etapas dela." |

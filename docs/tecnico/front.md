@@ -95,6 +95,7 @@ apps/web/
 | `SemAcesso.tsx` | Entrou pelo Google mas não está em `app.membros`, ou o vínculo não pôde ser lido (erro). |
 | `Setup.tsx` | Mostrado quando não há URL ou chave do Supabase (falta o `.env.local`). |
 | `Mapa.tsx` | Página Mapa (1.049 linhas): lista, legenda em árvore, pinos, busca de endereço, desenho e edição da poligonal, régua, camadas por setor, concorrência, gaveta da ficha, filtros. Também atende `/terrenos/novo`. |
+| `Pipeline.tsx` | `/terrenos` e `/terrenos/A123/gaveta` (11/nov/2026; porte de `proto_tabela.js`): tabela de Terrenos com as 9 colunas de `COLS_TER`, ordenação pelo título das colunas (a mesma `fx.o` da aba Ordenação, `filtros/ordem.ts`; sem ordem, temperatura e código), filtros com `useFiltros('terrenos')`, busca da barra superior (`bate` de `mapa/dados.ts`), Tela cheia (`requestFullscreen` e `body.tb-cheia`) e a ficha na `GavetaFicha` com `naTabela` (começa no fim do título da coluna 1). Dados próprios em `carregar` (`v_terrenos`, `terrenos.topo_perfil`, `processos.viabilidade_id` → `viabilidades.unidades`, `corretores` com a imobiliária, `usuarios` com a foto, matrículas e SQLs para a busca); a chave `['mapa', 'pipeline', empresa]` começa por `mapa` para recarregar junto com o mapa quando a ficha grava. |
 | `FichaPagina.tsx` | Ficha em página própria (`/terrenos/A123/<aba>`); código inexistente volta ao mapa com aviso; links antigos viram a aba nova. |
 | `Funil.tsx` | Funil em três níveis (fases, etapas, subetapas) com arrastar. |
 | `Corretores.tsx` | `/corretores` e `/corretores/<id>` (11/nov/2026; o protótipo não tinha esta tela): lista de `v_corretores` com busca e situação; ficha com os campos editados no lugar (`Vivo` de `ficha/edicao.tsx`, cada campo chama `salvar_corretor` com só a chave dele), Desativar/Reativar, Terrenos e ofertas (`oferta_corretores` + `terreno_corretores` + `v_terrenos`) e Histórico (`auditoria` de `corretores` e da `pessoas` do corretor). O ícone do menu está em `BI_EXTRA` (`components/Moldura.tsx`), porque o protótipo não tem um. |
@@ -107,7 +108,7 @@ apps/web/
 | --- | --- |
 | `dados.ts` | `carregarFicha(empresa, codigo)`: tenta `app.ficha_dados` (uma chamada) e, se a função não existir no banco, cai nos pedidos separados (`semFuncao`, `dados.ts:105`). Monta o objeto `Ficha` (topo, linha do tempo, contagens, completude). A completude tem 12 itens, com a "Visita técnica" (os 8 itens da visita verificados; `INFRA_PORTADA = true` desde que a aba Infraestrutura tem a visita). Constantes de rótulo (`FONTE_AREA`, `ZONA`, `TEMP`, `TP_N`). |
 | `Ficha.tsx` | Topo (código, nome, fase · etapa · subetapa, temperatura), linha do tempo (encolhe pela largura com `useEncolher`: `data-nivel` 0 a 3 tira os nomes das concluídas, das futuras menos a próxima e, no fim, de todas menos a atual), barra de abas em "roleta" com inércia e ⋮ (`BARRA`: o item Estudos Técnicos junta as abas `ESTUDOS`, que aparecem como chips `.fi-subabas` abaixo da barra; sem setas de anterior/próxima desde 10/nov/2026), Visão geral (mini-mapa e Resumo), alerta do que falta. `useFicha` e `usePreCarregarFicha` (`Ficha.tsx:338`, `:345`). |
-| `Gaveta.tsx` | A ficha na gaveta da direita da página Mapa (`/mapa/A123/ficha`), com largura arrastável; lembra aba, rolagem e quadros abertos por terreno (`lembrar.ts`). Passa `naGaveta` à `Ficha`, que então não repete código, nome, temperatura nem fase · etapa · subetapa no topo (os três primeiros vão no cabeçalho da gaveta; a fase fica em cima da linha do tempo). |
+| `Gaveta.tsx` | A ficha na gaveta da direita da página Mapa (`/mapa/A123/ficha`) e do Pipeline (`/terrenos/A123/gaveta`, com `naTabela`: começa no fim da coluna 1, sem `tgav-mapa`, sem mexer no `data-rota`; `cheia` a sobe ao alto da tela; `aoSair` diz para onde ir depois de excluir), com largura arrastável (a mesma guardada para as duas); lembra aba, rolagem e quadros abertos por terreno (`lembrar.ts`). Passa `naGaveta` à `Ficha`, que então não repete código, nome, temperatura nem fase · etapa · subetapa no topo (os três primeiros vão no cabeçalho da gaveta; a fase fica em cima da linha do tempo). |
 | `lembrar.ts` | `lerPos`/`guardarPos`: onde a pessoa parou na gaveta de cada terreno, em `localStorage`, nos 50 terrenos mais recentes. |
 | `Chips.tsx` | Seções da aba em chips (10/nov/2026): `SecoesChips` (contexto `ChipsCtx` onde cada `Quadro` se registra com o `chip`, ordenado pela posição no DOM; só o do chip escolhido aparece, `hidden` nos demais) e `BarraChips` (roleta de `components/Roleta.ts` + ⋮ quando mais de um chip fica fora da vista, contado com a largura sem o ⋮, `foraDaVista`). A barra de subabas de Estudos Técnicos usa o mesmo `BarraChips`.; a barra fica `sticky` logo abaixo de `.fi-abas-w` (`--chips-top` medido em `BarraChips`) e trocar de chip não rola a página (11/nov/2026). |
 | `edicao.tsx` | Edição no lugar: `SECOES` (campos de cada quadro), `useSalvar` (fila de gravações por `app.salvar_terreno`), `useVivo`/`Vivo`/`CampoVivo`, `Quadro` (seção da aba: em chips dentro de `ChipsCtx`, abre e fecha pela seta fora dele), `CamposEndereco`, `pedirCampo`/`focar`/`acender` (levar a um campo e acendê-lo). |
@@ -170,6 +171,8 @@ As rotas ficam em `src/App.tsx`. Todas moram dentro da `Moldura` (barra e menu).
 | `/mapa` | Mapa | |
 | `/mapa/A123` | Mapa com o terreno A123 selecionado | O estado `{ centro: {lat, lng, z} }` na navegação centra o mapa (vem do mini-mapa). |
 | `/mapa/A123/ficha` | Mapa com a ficha na gaveta da direita | A aba da gaveta **não** vai para o endereço (fica só na gaveta, como no protótipo). |
+| `/terrenos` | Pipeline (tabela de terrenos) | Ordenação em `#o=` e filtros em `#f=`, como no Mapa. |
+| `/terrenos/A123/gaveta` | Pipeline com a ficha na gaveta | A rota estática `gaveta` vence `terrenos/:codigo/*`. A aba da gaveta não vai para o endereço. |
 | `/terrenos/novo` | Mapa com a janela do Novo terreno aberta | Fechar a janela volta para `/mapa`. |
 | `/terrenos/A123` | Ficha, aba Visão geral | O código é aceito em minúsculas (vira maiúsculas). |
 | `/terrenos/A123/<aba>` | Ficha na aba | Abas: `geral`, `terreno`, `comercial`, `massa`, `viabilidade`, `infra`, `restricoes`, `historico-uso`, `mercado`, `jornada`, `documentos` (`massa`, `viabilidade`, `infra`, `restricoes` e `historico-uso` são as subabas de Estudos Técnicos; `estudos` abre a última vista na sessão). Links antigos (`cadastro`, `negociacao`, `urbanismo`, `parametros`, `fases`, `viabilidades`, `entorno`) viram a aba nova (`Ficha.tsx`, `ANTIGA`). |
@@ -187,9 +190,9 @@ Como funciona:
 - **Um `BrowserRouter`** em `main.tsx`; o Caddy devolve o `index.html` para qualquer caminho (`try_files {path} /index.html`), então link direto funciona.
 - **Portão de entrada** em `App.tsx`: sem Supabase configurado → `Setup`; carregando a sessão → `Carregando`; sem sessão → `Login` **no próprio endereço** (o link continua valendo depois do login, porque o `redirectTo` do OAuth é `window.location.href`); sem empresa → `SemAcesso`.
 - **Páginas com sub-rotas** usam `path="mapa/*"` e leem `useParams()['*']` e dividem por `/` (`Mapa.tsx`, `Funil.tsx`, `FichaPagina.tsx`).
-- **De onde veio**: abrir a ficha pelo Funil passa `state: { de: 'funil', volta: <caminho> }`; o botão de voltar da ficha usa isso (`FichaPagina.tsx`).
+- **De onde veio**: abrir a ficha pelo Funil passa `state: { de: 'funil', volta: <caminho> }` e pelo Pipeline `state: { de: 'terrenos' }`; o botão de voltar da ficha usa isso (`FichaPagina.tsx`), e o menu acende o item de onde a pessoa veio (`ativo` em `Moldura.tsx`; sem `de`, nenhum).
 - **Filtros** ficam depois do `#`, como `#f=<json>`, sem entrar no histórico (`history.replaceState`).
-- A especificação (CLAUDE.md, "Endereço de cada tela") lista mais endereços (`/terrenos`, `/tarefas/...`, `/dashboard`, `/configuracoes/...`, `/terrenos/A123/gaveta`); eles existem só no protótipo por enquanto.
+- A especificação (CLAUDE.md, "Endereço de cada tela") lista mais endereços (`/tarefas/...`, `/dashboard`, `/configuracoes/...`); eles existem só no protótipo por enquanto.
 
 ---
 
@@ -289,6 +292,7 @@ A chave começa por um nome curto e depois o que a identifica. Invalidar pelo no
 | `['ficha-massa', terreno]` | estudos de massa, tipologias e viabilidades presas | `ficha/Massa.tsx` |
 | `['parametros', ...]`, `['entorno', ...]` | seção Parâmetros urbanísticos (aba Terreno) e aba Mercado | `ficha/Parametros.tsx`, `ficha/Entorno.tsx` |
 | `['funil', empresa]` | quadro do funil | `pages/Funil.tsx` |
+| `['mapa', 'pipeline', empresa]` | linhas da tabela de Terrenos (começa por `mapa` de propósito) | `pages/Pipeline.tsx` |
 | `['filtros', empresa]`, `['visoes', ...]` | dados dos filtros e visões salvas | `filtros/Filtros.tsx` |
 | `['avisos', usuário, empresa]` | sino (recarrega a cada 60 s e pelo Realtime) | `components/Moldura.tsx` |
 
@@ -435,14 +439,14 @@ A planta (PDF) e o desenho (DXF) do lote, que o protótipo guarda em Documentos,
 
 `filtros/Filtros.tsx` e `filtros/dados.ts`, portados de `proto_filtros.js`.
 
-- `useFiltros(ctx)` (`Filtros.tsx:35`) com `ctx` `'mapa'` ou `'kanban'`: cada página tem a sua seleção (pedido do Moisés, 4/nov/2026).
+- `useFiltros(ctx)` (`Filtros.tsx:35`) com `ctx` `'mapa'`, `'kanban'` (Funil) ou `'terrenos'` (Pipeline): cada página tem a sua seleção (pedido do Moisés, 4/nov/2026).
 - A seleção fica no `sessionStorage` (`bkm-terrenos-filtros-pag`, um objeto por página) e no endereço (`#f=`); o endereço vale primeiro (link recebido abre com o filtro).
 - Filtro antigo ou desconhecido é descartado (`soValidos`).
 - **Visões salvas** em `app.filtros_salvos`: cada um salva as suas; as da empresa, só o administrador (a RLS confere).
-- **Ordenação** (pedido do Moises, 9/nov/2026; só com `ctx === 'mapa'`, `fx.ordena`): `fx.o` é a fila `[{k, dir}]`, `fx.setO`, `fx.cmp(idA, idB)` compara pelos dados de `carregarFx` (que passou a ler `nome`). Guardada no `localStorage` (`bkm-terrenos-ordem`, um objeto por página; a página sempre abre com ela) e no endereço (`#o=`, que vale primeiro); fora das visões salvas. Em `Mapa.tsx`, com `fx.o` cheia a lista é uma só pela ordem pedida (desempate pela legenda e pelo nome); vazia, a ordem de antes.
+- **Ordenação** (pedido do Moises, 9/nov/2026; com `ctx` `'mapa'` ou `'terrenos'`, `fx.ordena`): `fx.o` é a fila `[{k, dir}]`, `fx.setO`, `fx.cmp(idA, idB)` compara pelos dados de `carregarFx` (que passou a ler `nome`). Guardada no `localStorage` (`bkm-terrenos-ordem`, um objeto por página; a página sempre abre com ela) e no endereço (`#o=`, que vale primeiro); fora das visões salvas. Em `Mapa.tsx`, com `fx.o` cheia a lista é uma só pela ordem pedida (desempate pela legenda e pelo nome); vazia, a ordem de antes.
 - `ok(id)`: terreno que ainda não está nos dados dos filtros (acabou de entrar) passa, para não sumir logo depois de cadastrado.
 - A gaveta dos filtros, a do filtro da concorrência e a da ficha não abrem juntas (`Mapa.tsx:161`).
-- A página Pipeline (tabela de Terrenos), que também teria filtro próprio no protótipo, não foi portada.
+- No Pipeline a mesma `fx.o` ordena a tabela pelo clique no título das colunas, e o chip "Ordem:" da `BarraFx` não aparece (`ctx !== 'terrenos'`).
 
 ---
 
@@ -482,7 +486,7 @@ Tudo em `localStorage` (vale entre sessões, por navegador), salvo onde está di
 | `bkm-terrenos-mapa-filtro-conc` | filtro da concorrência; expira | `Mapa.tsx:55` |
 | `bkm-terrenos-mapa-visto` | última vez na página Mapa; passados 30 min fora, camada e filtro da concorrência se apagam | `Mapa.tsx:55` |
 | `bkm-terrenos-concorrencia-fixa` | card do empreendimento fixado pelo olhinho | `Concorrencia.tsx:204` |
-| `bkm-terrenos-ficha-gaveta` | largura da gaveta da ficha no Mapa | `Gaveta.tsx:12` |
+| `bkm-terrenos-ficha-gaveta` | largura da gaveta da ficha no Mapa e no Pipeline | `Gaveta.tsx:12` |
 | `bkm-terrenos-gaveta-pos` | por terreno (código), onde a pessoa parou na gaveta: aba, rolagem e quadros abertos por aba; só os 50 mais recentes | `lembrar.ts:5` |
 | `bkm-terrenos-painel` | painel lateral da ficha: aberto, aba (Ações, Tarefas, Logs), filtro de usuários e período dos logs | `Painel.tsx:19` |
 | `bkm-terrenos-entorno-concorrencia` | raio (1, 2, 3 km) e situações do quadro Concorrência no entorno | `Entorno.tsx:310` |
@@ -513,7 +517,7 @@ A primeira versão em uso é, por decisão do Moisés: login, mapa, novo terreno
 | Do protótipo | No React | Observação |
 | --- | --- | --- |
 | Início (indicadores) | não | `/` vai para `/mapa`. |
-| Pipeline (tabela de Terrenos, `proto_tabela.js`) e `/terrenos/A123/gaveta` | não | O menu tem só Mapa e Funil. |
+| Pipeline (tabela de Terrenos, `proto_tabela.js`) e `/terrenos/A123/gaveta` | sim | `pages/Pipeline.tsx` (11/nov/2026). |
 | Dashboard | não | |
 | Tarefas (Lista, Quadro, Cronograma, Calendário, Funil, cartão, modelos, automações, aprovação, pausa, recorrência) | não | A ficha só **lê** as tarefas abertas do quadro do terreno (`Painel.tsx`, aba Tarefas). As tarefas devem ir para um banco próprio (`bkm_tarefas`, ADR 0002). |
 | Configurações (Funil, Jornada, Fases, Campos, Viabilidade, Parâmetros, Topografia, Tarefas, Equipe, Notificações) | não | Ajuste urgente direto no banco, a pedido do Moisés. |

@@ -40,6 +40,7 @@ Quando o texto fala de "clicar", no celular vale "tocar". A primeira versão do 
 | 15 | [Ficha: Estudos de viabilidade](15-ficha-viabilidades.md) | Estudo de viabilidade: lista, estudo válido, Resumo da viabilidade, tipologias. |
 | 16 | [Ficha: Jornada](16-ficha-jornada.md) | Linha do tempo da negociação e fases do terreno, com Abrir e Abrir antes da hora. |
 | 17 | [Corretores](17-corretores.md) | Lista de corretores com busca, cadastro, ficha do corretor, desativar, terrenos e ofertas, histórico. |
+| 18 | [Pipeline](18-pipeline.md) | Tabela de terrenos: colunas, ordenação por várias colunas, filtros, busca, ficha na gaveta, tela cheia. |
 | — | [Registro de mudanças](CHANGELOG.md) | O que mudou para o usuário, por data. |
 | — | [Roteiros de vídeo de onboarding](onboarding/README.md) | Três roteiros para novos usuários. |
 
