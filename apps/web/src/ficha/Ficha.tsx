@@ -205,7 +205,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
   }, [menu]);
   const g = grupo(aba);
   useEffect(() => { if (ESTUDOS.some((x) => x[0] === aba)) try { sessionStorage.setItem(SUB_LEMBRA, aba); } catch { /* sem sessão */ } }, [aba]);
-  /* trocar de aba não mexe na rolagem (segurarRolagem; pedido do Moises, 11/nov/2026); o "o que falta" segue rolando ao campo */
+  /* trocar de aba deixa as barras onde estão e volta a seção à última posição dela (segurarRolagem; pedido do Moises, 11/nov/2026); o "o que falta" segue rolando ao campo */
   const irT = (k: string) => { segurarRolagem(); irAba(k); };
   const irG = (k: string) => { if (k === 'estudos') { if (g !== 'estudos') irT(subVista()); } else if (k !== aba) irT(k); };
   /* sem número nas abas: rolado o topo para fora da vista, o que falta aparece num botão de alerta na barra das abas,
@@ -443,7 +443,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
     : aba === 'historico' ? <Historico f={f} irAba={irAba} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
-    <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main">
+    <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main" data-terreno={f.codigo}>
       <LinhaTopo f={f} rotulo={naGaveta} />
       {voltar && <button className="back" onClick={voltar.ir}><Ic n="back" s={20} />{voltar.rotulo}</button>}
       <div className="dhead fi-head">
