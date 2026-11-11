@@ -7,6 +7,7 @@ import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { Adorno } from '../lib/mascara';
+import { SeloValido } from '../components/SeloValido';
 import { data as fd } from '../lib/format';
 import { lerNum, Quadro } from '../ficha/edicao';
 import type { Ficha } from '../ficha/dados';
@@ -72,7 +73,14 @@ function useAcoes(f: Ficha) {
     if (error) { toast(erroTxt(error), true); return; }
     recarregar(); toast(`${nome} é o estudo válido.`);
   };
-  return { novo, duplicar, vincular, dlgNovo };
+  /** o selo do válido clicado tira a marca: a negociação fica sem estudo válido (pedido do Moises, 11/nov/2026) */
+  const desvincular = async (nome: string) => {
+    if (!f.negId) { toast('A negociação não está ativa.', true); return; }
+    const { error } = await supabase.rpc('vincular_estudo', { p_processo: f.negId, p_viabilidade: null });
+    if (error) { toast(erroTxt(error), true); return; }
+    recarregar(); toast(`${nome} deixou de ser o válido. O terreno fica sem estudo válido.`);
+  };
+  return { novo, duplicar, vincular, desvincular, dlgNovo };
 }
 
 /* ---------- aba Viabilidades: Resumo da viabilidade e a lista dos estudos ---------- */
@@ -152,8 +160,8 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
                   <tr key={v.id}>
                     <td className="esq"><button className="linkbtn" onClick={() => abrirEstudo(v.id)}>{v.nome}</button></td>
                     <td className="num">{mi(v.vv)}</td><td className="num">{mi(v.lucro)}</td><td className="num">{pct1(v.margem)}</td><td>{fd(v.atualizado)}</td>
-                    <td><label className="vb-radio"><input type="radio" name={`vb-valido-${f.id}`} checked={lig} disabled={!lig && (!negAtiva || ro)}
-                      onChange={() => { if (!lig) void ac.vincular(v.id, v.nome); }} aria-label={`${v.nome} é o estudo válido`} /></label></td>
+                    <td><SeloValido valido={lig} pode={!ro && negAtiva} nome={v.nome} porque={ro ? '' : 'Sem negociação ativa, o estudo não se marca como válido'}
+                      clicar={() => (lig ? ac.desvincular(v.nome) : ac.vincular(v.id, v.nome))} /></td>
                   </tr>
                 );
               })}

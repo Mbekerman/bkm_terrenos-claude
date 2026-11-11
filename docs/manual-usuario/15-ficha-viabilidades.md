@@ -27,7 +27,7 @@ Sem estudo, o quadro mostra "Sem estudo" e o link **Montar estudo**.
 
 ## Quadro Viabilidade
 
-A lista dos estudos do terreno, com VGV líquido, lucro líquido, margem, a data da última alteração e a coluna **Válido** (clique no círculo para marcar o válido). O nome abre o estudo. **Novo estudo** no título cria outro.
+A lista dos estudos do terreno, com VGV líquido, lucro líquido, margem, a data da última alteração e o selo **Válido** ou **Inválido**. O selo é clicável para quem edita, com a negociação ativa: clicar em **Inválido** torna aquele estudo o válido (o que era passa a inválido); clicar em **Válido** tira a marca, e o terreno fica **sem estudo válido** (Unidades, VGV e margem somem do Resumo, do Pipeline e do filtro até outro ser marcado). O nome abre o estudo. **Novo estudo** no título cria outro.
 
 ## O estudo (janela sobre a ficha)
 
