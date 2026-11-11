@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
+- **Mercado, Renda e população e Perfil da população: raio Personalizado.** No lugar da opção Poligonal, que saiu por ora, o botão **Personalizado** com o lápis deixa você digitar o raio em km, de 0,1 a 20 km, e os números são refeitos para ele. O lápis fica sempre no botão. O raio escolhido fica guardado na sua conta (vale em qualquer computador) e vale para todos os terrenos. Ver [8. Entorno](08-ficha-entorno.md). (#346)
 - **Pipeline: o clique fora da tabela e da gaveta fecha a ficha**, como o Esc. Com um menu, balão, janela ou campo em edição aberto, o primeiro Esc ou clique fecha só isso. Ver [18. Pipeline](18-pipeline.md). (#344)
 - **Pipeline: o olho da Viabilidade volta a abrir o estudo**: o popup abria e fechava na hora quando a ficha do terreno já estava carregada. As colunas Estudo de massa e Viabilidade ficaram na medida, com o ⓘ e o olho na mesma reta, perto do título; o ⓘ ficou um pouco mais afastado do título nas três colunas; e toda faixa de cidade tem a linha cinza também em cima. (#344)
 - **Ícone da aba do navegador** com o miolo da casinha transparente: na aba que não está selecionada, o meio da casinha mostra a cor da aba, em vez de um triângulo branco. (#343)
