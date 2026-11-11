@@ -63,7 +63,7 @@ export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void 
   const membros = L.data?.membros ?? [];
   const nome = (id: string | null | undefined) => (id ? membros.find((x) => x.user_id === id)?.nome ?? '—' : '—');
   const [sel, setSel] = useState<string | null>(null);
-  const [form, setForm] = useState(false);
+  const [form, setForm] = useState<false | 'pedir' | 'lancar'>(false);
   const [janela, setJanela] = useState<null | { t: 'pedido' | 'viab' | 'apagar'; id: string }>(null);
   const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-massa', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); };
   if (q.isLoading) return <section className="sec"><div className="empty">Carregando…</div></section>;
@@ -81,9 +81,14 @@ export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void 
   return (
     <div className="stack">
       <Quadro aba="massa" id="massa-lista" primeiro chip="Estudos de massa" titulo={<>Estudos de massa <span className="h-n">{ms.length}</span></>}
-        acoes={edita && !form ? <button className="btn sm" onClick={() => setForm(true)}><Ic n="add" s={16} />Solicitar estudo</button> : null}>
+        acoes={edita && !form ? <span style={{ display: 'flex', gap: 4, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button className="btn sm" onClick={() => setForm('lancar')} title="Para o estudo que já está pronto: cria o estudo e abre a ficha para lançar as tipologias, as áreas e os índices"><Ic n="upload" s={16} />Lançar estudo</button>
+          <button className="btn sm" onClick={() => setForm('pedir')}><Ic n="add" s={16} />Solicitar estudo</button></span> : null}>
         <div className="sec-b">
-          {form && edita ? <FormSolicitar f={f} membros={membros} fechar={() => setForm(false)} criado={(id) => { setSel(id); setForm(false); recarregar(); }} /> : null}
+          {form && edita ? <FormSolicitar key={form} modo={form} f={f} membros={membros} fechar={() => setForm(false)} criado={(id) => {
+            setSel(id); setForm(false); recarregar();
+            if (form === 'lancar') setTimeout(() => document.getElementById('sec-massa')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+          }} /> : null}
           {ms.length ? (
             <div className="dt-wrap"><table className="dt compacta ems-lista"><thead><tr><th className="esq">Estudo</th><th className="esq">Arquiteto</th><th className="esq">Situação</th><th>Unidades</th><th>Área privativa</th><th>Área construída</th><th>Eficiência</th><th>Válido</th></tr></thead>
               <tbody>{ms.map((m) => {
@@ -105,7 +110,7 @@ export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void 
               })}</tbody></table></div>
           ) : form ? null : (
             <div className="banner blue"><Ic n="layers" /><div style={{ flex: 1 }}><div className="bt">Nenhum estudo de massa</div>
-              <div>Peça o estudo ao arquiteto: ele lança as tipologias, as áreas e os índices.</div></div></div>
+              <div>Peça o estudo ao arquiteto em Solicitar estudo, ou, com o estudo já pronto em mãos, use Lançar estudo para digitar as tipologias, as áreas e os índices.</div></div></div>
           )}
         </div>
       </Quadro>
@@ -128,33 +133,46 @@ export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void 
 }
 
 /* ---------- Solicitar estudo (formulário de inclusão, com rascunho no navegador) ---------- */
-function FormSolicitar({ f, membros, fechar, criado }: { f: Ficha; membros: R[]; fechar: () => void; criado: (id: string) => void }) {
+function FormSolicitar({ modo, f, membros, fechar, criado }: { modo: 'pedir' | 'lancar'; f: Ficha; membros: R[]; fechar: () => void; criado: (id: string) => void }) {
   const toast = useToast();
-  const V0 = { arq: '', prazo: '', briefing: '' }, k = `${f.id}:massa-pedido`;
+  const { usuario } = useSessao();
+  const lancar = modo === 'lancar';
+  /* Lançar estudo: o estudo já pronto (de um arquiteto da equipe ou de fora) entra direto em elaboração, sem pedido;
+     o arquiteto é obrigatório no banco e vem marcado com quem lança (avisar a si mesmo não gera aviso) */
+  const V0: Record<string, string> = lancar ? { arq: usuario?.user_id ?? '', nome: '' } : { arq: '', prazo: '', briefing: '' };
+  const k = `${f.id}:${lancar ? 'massa-lancar' : 'massa-pedido'}`;
   const [v, setV] = useState<Record<string, string>>(() => comRasc(k, V0));
   const [grav, setGrav] = useState(false);
-  const tem = Object.values(v).some((x) => x.trim() !== '');
+  const tem = lancar ? (v.nome ?? '').trim() !== '' : Object.values(v).some((x) => x.trim() !== '');
   useGuardarRasc(k, v, tem);
   const m = (c: string) => (e: { target: { value: string } }) => setV((o) => ({ ...o, [c]: e.target.value }));
   async function enviar(e: FormEvent) {
     e.preventDefault();
-    if (!v.arq) { toast('Marque o arquiteto.', true); return; }
+    if (!v.arq) { toast(lancar ? 'Marque o responsável na equipe.' : 'Marque o arquiteto.', true); return; }
     setGrav(true);
-    const { data, error } = await supabase.rpc('solicitar_estudo_massa', { p_terreno: f.id, p_arquiteto: v.arq, p_briefing: v.briefing.trim() || null, p_prazo: v.prazo || null });
+    const { data, error } = await supabase.rpc('solicitar_estudo_massa', lancar
+      ? { p_terreno: f.id, p_arquiteto: v.arq, p_nome: v.nome.trim() || null }
+      : { p_terreno: f.id, p_arquiteto: v.arq, p_briefing: v.briefing.trim() || null, p_prazo: v.prazo || null });
+    if (error) { setGrav(false); toast(error.message, true); return; }
+    if (lancar) {
+      const r = await supabase.rpc('salvar_estudo_massa', { p_id: data, p_dados: { situacao: 'em_elaboracao' } });
+      if (r.error) toast(r.error.message, true);
+    }
     setGrav(false);
-    if (error) { toast(error.message, true); return; }
     apagarRasc(k);
-    toast(`Estudo pedido a ${membros.find((x) => x.user_id === v.arq)?.nome ?? 'o arquiteto'}.`);
+    toast(lancar ? 'Estudo criado. Lance as tipologias, as áreas e os índices.' : `Estudo pedido a ${membros.find((x) => x.user_id === v.arq)?.nome ?? 'o arquiteto'}.`);
     criado(data as string);
   }
   return (
     <form className="inline-form ems-form" onSubmit={enviar}>
-      <div className="field"><label htmlFor="ems-arq">Arquiteto</label><select id="ems-arq" value={v.arq} onChange={m('arq')} autoFocus>
+      {lancar ? <div className="field"><label htmlFor="ems-nome">Nome do estudo</label><input id="ems-nome" value={v.nome} onChange={m('nome')} placeholder="Em branco, numera sozinho" autoFocus /></div> : null}
+      <div className="field"><label htmlFor="ems-arq">{lancar ? 'Responsável na equipe' : 'Arquiteto'}</label><select id="ems-arq" value={v.arq} onChange={m('arq')} autoFocus={!lancar}>
         <option value="">Escolha o arquiteto</option>{membros.map((x) => <option key={x.user_id} value={x.user_id}>{x.nome}</option>)}</select></div>
-      <div className="field" style={{ flex: '0 1 170px' }}><label htmlFor="ems-prazo">Prazo</label><input id="ems-prazo" type="date" value={v.prazo} onChange={m('prazo')} /></div>
-      <div className="field full" style={{ flexBasis: '100%' }}><label htmlFor="ems-brief">Briefing</label>
-        <textarea id="ems-brief" rows={3} placeholder="O que o estudo precisa considerar. Uma linha por item." value={v.briefing} onChange={m('briefing')} /></div>
-      <button className="btn sm primary" disabled={grav}><Ic n="add" s={16} />Solicitar</button>
+      {lancar ? null : <>
+        <div className="field" style={{ flex: '0 1 170px' }}><label htmlFor="ems-prazo">Prazo</label><input id="ems-prazo" type="date" value={v.prazo} onChange={m('prazo')} /></div>
+        <div className="field full" style={{ flexBasis: '100%' }}><label htmlFor="ems-brief">Briefing</label>
+          <textarea id="ems-brief" rows={3} placeholder="O que o estudo precisa considerar. Uma linha por item." value={v.briefing} onChange={m('briefing')} /></div></>}
+      <button className="btn sm primary" disabled={grav}><Ic n={lancar ? 'upload' : 'add'} s={16} />{lancar ? 'Criar e lançar' : 'Solicitar'}</button>
       <button type="button" className="btn text sm" onClick={fechar}>Cancelar</button>
       <LimparRasc chave={k} mostrar={tem} limpar={() => setV(V0)} />
     </form>
