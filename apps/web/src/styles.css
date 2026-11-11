@@ -5435,3 +5435,4 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 .lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-b { margin: 0 }
 .lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-pop { left: auto; right: -8px }
 .lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-pop::before { left: auto; right: 14px }
+.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo):last-child .tb-info { right: 30px }
