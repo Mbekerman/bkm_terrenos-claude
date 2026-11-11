@@ -28,10 +28,10 @@ import { ComMencoes, MarcarPessoas, TextoMencao, useGente, type Gente, type Marc
 export const FORMA: Record<string, string> = {
   dinheiro: 'Dinheiro', permuta_fisica: 'Permuta física', permuta_financeira: 'Permuta financeira', permuta_geral: 'Permuta geral', permuta_com_torna: 'Permuta com torna',
 };
-const ST_PROP: Record<string, string> = {
+export const ST_PROP: Record<string, string> = {
   rascunho: 'Rascunho', apresentada: 'Apresentada', em_analise: 'Em análise', aceita: 'Aceita', recusada: 'Recusada', expirada: 'Expirada', retirada: 'Retirada', substituida: 'Substituída',
 };
-const ST_PROP_COR: Record<string, string> = { aceita: 'good', recusada: 'crit', expirada: 'crit', apresentada: 'blue', em_analise: 'blue' };
+export const ST_PROP_COR: Record<string, string> = { aceita: 'good', recusada: 'crit', expirada: 'crit', apresentada: 'blue', em_analise: 'blue' };
 const brl = (v: number | null | undefined) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }));
 const numTxt = (v: number | null | undefined) => (v == null ? '' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
 const ni = (x = 'Não informado') => <span className="ni">{x}</span>;

@@ -540,3 +540,13 @@ html[data-tema="escuro"] .ems-lista .ems-nome { color: #a8c7fa }
 /* Resumo do estudo de massa válido (pedido do Moises, 11/nov/2026) */
 .ems-res tfoot td { font-weight: 500; border-top: 1px solid #c4c7c5 }
 html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
+/* Pipeline, coluna Etapa: etapa e subetapa em até 3 linhas, sem o tracinho (pedido do Moises, 11/nov/2026) */
+.lista-ter .tb-et { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; overflow-wrap: normal }
+.lista-ter .tb-et-e, .lista-ter .tb-et-s { display: block }
+/* Pipeline: nome do corretor em até 2 linhas e imobiliária numa só, com reticências no que passar (pedido do Moises, 11/nov/2026) */
+.lista-ter .tb-nome2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: normal }
+.lista-ter .tb-corte { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+/* Pipeline: janela das propostas do terreno (olho da coluna Proposta; pedido do Moises, 11/nov/2026) */
+.pp-pop { width: min(920px, calc(100vw - 32px)) }
+.pp-tbl td { vertical-align: top }
+.pp-cond { max-width: 260px; white-space: pre-wrap }
