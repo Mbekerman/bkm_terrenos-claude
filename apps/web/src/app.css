@@ -506,7 +506,11 @@ html[data-tema="escuro"] .mt-mais > .iconbtn.atual, html[data-tema="escuro"] .mt
 .chip.selo-val:disabled { opacity: .6; cursor: default }
 html[data-tema="escuro"] .chip.selo-val:not(.good) { color: #c4c7c5 }
 /* lista dos estudos de massa (como a de viabilidade): o nome abre o estudo na janela */
-.ems-lista td.esq .ems-sit { margin-left: 8px; vertical-align: 1px }
+/* lista dos estudos de massa: a tabela da viabilidade, com a linha toda clicável (pedidos do Moises, 11/nov/2026) */
+.ems-lista tr.ems-lin { cursor: pointer }
+.ems-lista tr.ems-lin:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
+.ems-lista .ems-nome { color: #0b57d0; font-weight: 500 }
+html[data-tema="escuro"] .ems-lista .ems-nome { color: #a8c7fa }
 /* janela do estudo de massa (as mesmas regras do PR #339 no styles.css, para valer também da aba) */
 .dialog.ems-pop { width: min(1100px, 100%); padding: 24px 0 }
 .dialog.ems-pop > .dh { padding: 0 24px }
@@ -523,3 +527,6 @@ html[data-tema="escuro"] .chip.selo-val:not(.good) { color: #c4c7c5 }
 .rd-raios .rd-cust input::placeholder { color: inherit; opacity: .6; font-weight: 400 }
 .rd-raios .rd-cust-u { font-size: 13px; font-weight: 500 }
 .rd-raios .rd-cust .ic, .rd-raios .rd-cust svg { margin-left: 2px; flex: none }
+/* Resumo do estudo de massa válido (pedido do Moises, 11/nov/2026) */
+.ems-res tfoot td { font-weight: 500; border-top: 1px solid #c4c7c5 }
+html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
