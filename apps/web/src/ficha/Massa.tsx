@@ -202,7 +202,7 @@ function FichaEstudo({ m, viabs, edita, recarregar, abrir, marcarValido }: {
   const c = calc(tips, constr);
   const vs = viabs.filter((v) => v.estudo_massa_id === m.id || (m.valido && v.segue_massa_valido));
 
-  /* toda gravação do estudo vai na mesma fila: "Marcar como entregue" logo depois de digitar a área espera ela gravar */
+  /* toda gravação do estudo vai na mesma fila: "Salvar" logo depois de digitar a área espera ela gravar */
   function salvar(d: R): Promise<boolean> {
     const p = fila.current.then(async () => {
       const { error } = await supabase.rpc('salvar_estudo_massa', { p_id: m.id, p_dados: d });
@@ -269,9 +269,10 @@ function FichaEstudo({ m, viabs, edita, recarregar, abrir, marcarValido }: {
     );
   };
   const ler = (rot: string, x: string) => <div className="field"><span className="lbl-f">{rot}</span><span className="v">{x}</span></div>;
+  /* Salvar = entregar (avisa quem pediu); a única exigência é uma unidade lançada (pedido do Moises, 11/nov/2026) */
   async function entregar() {
-    if (!c.un || tips.some((p) => p.area_privativa == null) || constr == null) { toast('Para entregar, lance as tipologias (com área e quantidade) e a área construída total.', true); return; }
-    if (await salvar({ situacao: 'entregue' })) toast('Estudo entregue.');
+    if (!c.un) { toast('Para salvar, lance pelo menos uma unidade.', true); return; }
+    if (await salvar({ situacao: 'entregue' })) toast('Estudo salvo.');
   }
   /* do válido, a janela pergunta se segue o válido; de outro estudo, já cria preso a ele (emsCriarViab) */
   async function criarViab() {
@@ -282,7 +283,6 @@ function FichaEstudo({ m, viabs, edita, recarregar, abrir, marcarValido }: {
     recarregar(); abrirEstudo(data as string);
   }
   const acoes = edita ? <>
-    {m.situacao !== 'entregue' ? <button className="btn sm" onClick={entregar}>Marcar como entregue</button> : null}
     {m.situacao === 'entregue' && !m.valido ? <button className="btn sm" onClick={marcarValido}>Marcar como válido</button> : null}
     {m.situacao === 'entregue' ? <button className="btn sm primary" onClick={criarViab}><Ic n="add" s={16} />Criar estudo de viabilidade</button> : null}
     {!m.valido && !viabs.some((v) => v.estudo_massa_id === m.id) ? <button className="btn text sm danger" onClick={() => abrir('apagar')}>Apagar</button> : null}
@@ -333,6 +333,7 @@ function FichaEstudo({ m, viabs, edita, recarregar, abrir, marcarValido }: {
         <div className="ems-vbs"><span className="lbl-f">Estudos de viabilidade com este estudo de massa</span>
           {vs.length ? vs.map((v, i) => <span key={v.id}>{i ? ' · ' : ''}<button className="linkbtn" onClick={() => abrirEstudo(v.id)}>{v.nome}</button>{v.segue_massa_valido ? <span className="faint"> (segue o válido)</span> : null}</span>)
             : <span className="faint">Nenhum.</span>}</div>
+        {edita && m.situacao !== 'entregue' ? <div className="ems-salvar"><button className="btn primary" onClick={entregar}>Salvar</button></div> : null}
         {m.entregue_em ? <div className="hint" style={{ marginTop: 12 }}>Entregue em {fd(m.entregue_em)}.</div> : null}
       </div>
     </Quadro>

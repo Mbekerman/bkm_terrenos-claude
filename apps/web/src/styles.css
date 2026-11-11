@@ -4749,6 +4749,7 @@ html[data-tema="escuro"] .ptcom-r { border-top-color: #2d2f31 } html[data-tema="
 .ems-arq { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 0; border-top: 1px solid #e3e3e3 }
 .ems-arq:first-child { border-top: 0 }
 .ems-arq-t { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; min-width: 0 } .ems-arq-t b { font-weight: 500 }
+.ems-salvar { display: flex; justify-content: flex-end; margin-top: 16px }
 .ems-vbs { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: baseline }
 .ems-vbs .lbl-f { flex-basis: 100% }
 .ems-lista tr.ems-sel td { background: rgba(11, 87, 208, .06) }

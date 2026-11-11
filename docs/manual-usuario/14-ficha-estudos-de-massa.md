@@ -24,7 +24,7 @@ Quando o estudo já chegou pronto (de um arquiteto de fora, por e-mail, ou feito
 2. Dê um **Nome** (em branco, vira "Estudo de massa 1", 2, 3...) e escolha o **Responsável na equipe** (vem marcado com você; é quem responde pelo estudo dentro da BKM).
 3. Clique em **"Criar e lançar"**.
 
-O estudo nasce **Em elaboração**, ninguém recebe aviso, e a ficha do estudo abre logo abaixo para você digitar as tipologias, as áreas, as vagas e os índices. Depois, **"Marcar como entregue"** e, se for o caso, **"Marcar como válido"**, como num estudo pedido.
+O estudo nasce **Em elaboração**, ninguém recebe aviso, e a ficha do estudo abre logo abaixo para você digitar as tipologias, as áreas, as vagas e os índices. Depois, **"Salvar"** (no fim do estudo) e, se for o caso, **"Marcar como válido"**, como num estudo pedido.
 
 ## A lista
 
@@ -49,7 +49,7 @@ Os campos se editam no lugar, sem botão de salvar: cada um grava ao sair dele.
 
 ## Botões da ficha
 
-- **"Marcar como entregue"**: pede as tipologias com área e quantidade e a área construída total; sem isso, o sistema avisa o que falta. Quem pediu o estudo é avisado no sino.
+- **"Salvar"**, no fim do estudo: o estudo passa a **Entregue**. Só pede pelo menos uma unidade lançada nas tipologias; o resto (áreas, vagas, área construída, índices) pode ficar em branco e ser completado depois. Quem pediu o estudo é avisado no sino. Os campos gravam sozinhos ao sair deles; o Salvar é o que dá o estudo por pronto.
 - **"Marcar como válido"**: no estudo entregue que ainda não é o válido.
 - **"Criar estudo de viabilidade"**: no estudo entregue. Cria o estudo de viabilidade com o modelo padrão da empresa, já com as tipologias (título, área e quantidade) e a área construída deste estudo, que lá não se editam; preços, permuta e comissão são da viabilidade. No estudo válido, a janela pergunta se a viabilidade **segue o estudo de massa válido** (trocou o válido, ela troca junto) ou **fica presa a este estudo**. Criado, o estudo de viabilidade abre na hora.
 - **"Apagar"**: só no estudo que não é o válido e não tem estudo de viabilidade preso a ele, com confirmação.
