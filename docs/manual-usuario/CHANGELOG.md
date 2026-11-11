@@ -8,8 +8,8 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 2026-11-11 (produção)
 
-- **Login guardado**: o navegador lembra quem entrou; o sistema só pede o Google de novo depois de 30 dias sem uso naquele navegador. (#NNN)
-- **Início do uso real**: os terrenos e corretores de teste foram apagados; o primeiro terreno cadastrado a partir de agora é o A001. (#NNN)
+- **Login guardado**: o navegador lembra quem entrou; o sistema só pede o Google de novo depois de 30 dias sem uso naquele navegador. (#354)
+- **Início do uso real**: os terrenos e corretores de teste foram apagados; o primeiro terreno cadastrado a partir de agora é o A001. (#354)
 
 ## 11/nov/2026
 
