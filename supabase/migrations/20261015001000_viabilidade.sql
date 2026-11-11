@@ -9,7 +9,9 @@
 --                     (o "VGV" das bases % do VGV)
 --     VGV líquido   = VGV vendido − % de dedução × VGV vendido − as despesas
 --                     comerciais marcadas para deduzir (ITBI e registro de
---                     unidades vendidas, Produto Caixa)
+--                     unidades vendidas). Só a base da permuta financeira: a
+--                     receita é o VGV vendido, e as despesas marcadas continuam
+--                     nas comerciais (decisão do Moises, 11/nov/2026)
 --   Custo de obras, em camadas:
 --     obra incidente (típico) = valor unitário (R$/m²) × área privativa total,
 --                     ou × área construída total (obra_base 'construida'; decisão
@@ -36,11 +38,11 @@
 --   Despesas comerciais: % do VGV, verba total, verba por unidade (× unidades
 --     líquidas: total − permuta − comissão; decisão do Moisés, 26/out/2026)
 --     ou verba mensal (× meses).
---   EBITDA = VGV líquido − terreno − obras − despesas gerais
---            − despesas comerciais não deduzidas
+--   EBITDA = VGV vendido − terreno − obras − despesas gerais
+--            − despesas comerciais (todas)
 --   resultado sem taxas = EBITDA − despesas financeiras
 --   lucro líquido = resultado sem taxas − taxas (as taxas saem por último)
---   margem líquida = lucro ÷ VGV líquido
+--   margem líquida = lucro ÷ VGV vendido
 -- O grupo do item define a seção, as bases aceitas e se é fixo (Taxas,
 -- Despesas financeiras e Despesas comerciais aparecem sempre no estudo). Mesmos grupos e itens de
 -- tools/viabilidade/despesas.json, que o protótipo lê.
@@ -130,7 +132,7 @@ insert into app.viabilidade_despesas (codigo, nome, grupo, tipo_padrao, deduz_vg
   ('itbi_vendas', 'ITBI de unidades vendidas', 'comercial', 'pct_vgv', true, 35),
   ('registro_vendas', 'Registro de unidades vendidas', 'comercial', 'pct_vgv', true, 36),
   ('contratos_cef', 'Taxa de emissão de contratos CEF', 'comercial', 'verba', false, 37),
-  ('produto_caixa', 'Produto Caixa', 'comercial', 'pct_vgv', true, 38),
+  ('produto_caixa', 'Produto Caixa', 'comercial', 'pct_vgv', false, 38),
   ('outros_comercial', 'Outros', 'comercial', 'verba', false, 39);
 
 alter table app.viabilidade_despesas enable row level security;
@@ -355,7 +357,8 @@ begin
     from app.viabilidade_tipologias where viabilidade_id = p_id;
   v_vv := v_vgv - v_vp - v_vc;
   b := jsonb_build_object('area', v_area, 'unidades', v_un - v_unp - v_unc, 'pct_vgv', v_vv);
-  -- VGV líquido: dedução em % e as despesas comerciais marcadas para deduzir
+  -- VGV líquido: dedução em % e as despesas comerciais marcadas para deduzir. Só a base da permuta financeira:
+  -- a receita é o VGV vendido e as despesas marcadas continuam nas comerciais (decisão do Moises, 11/nov/2026)
   v_com := app._viab_soma(p_id, array['comercial'], b);
   select coalesce(sum(app._viab_valor(l.tipo, l.valor, l.quantidade, b)), 0) into v_dedc
     from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
@@ -380,7 +383,7 @@ begin
   select coalesce(sum(l.valor), 0) into v_pl
     from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
    where l.viabilidade_id = p_id and l.tipo = 'pct_lucro' and d.grupo = any (DT);
-  v_l0 := v_liq - v_terr - v_obras - (v_com - v_dedc) - app._viab_soma(p_id, DT, b, true);
+  v_l0 := v_vv - v_terr - v_obras - v_com - app._viab_soma(p_id, DT, b, true);
   v_lb := case when v_l0 > 0 then round(v_l0 / (1 + v_pl / 100), 2) else 0 end;
   b := b || jsonb_build_object('pct_lucro', v_lb);
   select coalesce(jsonb_agg(jsonb_build_object('id', y.id, 'grupo', y.grupo, 'secao', y.secao, 'base', y.base, 'valor', y.valor) order by y.ordem, y.criado_em)
@@ -409,7 +412,7 @@ begin
     'secoes', v_sec, 'despesas', v_terr + v_obras + v_com + (v_sec->>'despesas')::numeric + (v_sec->>'taxas')::numeric + (v_sec->>'financeiro')::numeric,
     'ebitda', v_lucro + (v_sec->>'taxas')::numeric + (v_sec->>'financeiro')::numeric,
     'lucro_sem_taxas', v_lucro + (v_sec->>'taxas')::numeric, 'lucro_liquido', v_lucro,
-    'margem_pct', case when v_liq > 0 then round(v_lucro / v_liq * 100, 2) end,
+    'margem_pct', case when v_vv > 0 then round(v_lucro / v_vv * 100, 2) end,
     'linhas', v_linhas);
 end $$;
 
