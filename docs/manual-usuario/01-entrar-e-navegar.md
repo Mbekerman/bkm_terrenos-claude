@@ -19,7 +19,7 @@ Na primeira vez, a pessoa entra com o papel **Básico** (só consulta) até um a
 Na primeira versão o menu tem:
 
 - **Botão "Novo terreno"** (o botão de criar, no alto do menu): abre o cadastro de terreno. Ver [03. Novo terreno](03-novo-terreno.md).
-- **Terrenos**: a tabela Pipeline, com todos os terrenos lado a lado. Ver [18. Pipeline](18-pipeline.md).
+- **Pipeline**: a tabela de terrenos (a página se chama **Terrenos**), com todos os terrenos lado a lado. Ver [18. Pipeline](18-pipeline.md).
 - **Mapa**: a página com o mapa e a lista de terrenos. Ver [02. Mapa](02-mapa.md).
 - **Funil**: o quadro das fases, etapas e subetapas. Ver [10. Funil](10-funil.md).
 - **Corretores**: a lista dos corretores, com a ficha de cada um. Ver [17. Corretores](17-corretores.md).

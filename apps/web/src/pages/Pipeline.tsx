@@ -11,7 +11,7 @@ import { abrirNovo } from '../novo/estado';
 import { TEMP, TP_N, ZONA } from '../ficha/dados';
 import { usePreCarregarFicha, useFicha } from '../ficha/Ficha';
 import { abrirEstudo, PopEstudo, useAberto } from '../viab/Viabilidade';
-import GavetaFicha from '../ficha/Gaveta';
+import GavetaFicha, { expandirGaveta, gavetaEncolhida } from '../ficha/Gaveta';
 import { PopMassa } from '../ficha/Massa';
 import { PropostasPop } from '../components/PropostasPop';
 import { bate, faseAtual } from '../mapa/dados';
@@ -375,7 +375,8 @@ export default function Pipeline() {
     if (!t.vid) return; if (gav === t.codigo) abrirEstudo(t.vid); else setViab({ cod: t.codigo, vid: t.vid });
   };
   const fecharViab = () => { setViab(null); void qc.invalidateQueries({ queryKey: ['mapa', 'pipeline'] }); };
-  const abrirGav = (t: Linha) => navegar(gav === t.codigo ? '/terrenos' + location.hash : `/terrenos/${t.codigo}/gaveta${location.hash}`, { replace: !!gav });
+  /* a mesma linha com a gaveta encolhida volta a abrir a gaveta em vez de fechar */
+  const abrirGav = (t: Linha) => gav === t.codigo && gavetaEncolhida() ? expandirGaveta() : navegar(gav === t.codigo ? '/terrenos' + location.hash : `/terrenos/${t.codigo}/gaveta${location.hash}`, { replace: !!gav });
   const total = todos.length, n = passam.length;
   const L = fx.o;
   const nv = useNivel();
@@ -438,7 +439,7 @@ export default function Pipeline() {
   return (
     <div className={`ter-pg${cheia ? ' on' : ''}`}>
       <div className="page-h ph-barra">
-        <div><h1>Pipeline</h1><div className="sub">{q.data ? (n === total ? `${total} terrenos` : `${n} de ${total} terrenos`) : ' '}</div></div>
+        <div><h1>Terrenos</h1><div className="sub">{q.data ? (n === total ? `${total} terrenos` : `${n} de ${total} terrenos`) : ' '}</div></div>
         <div className="ph-l"><BarraFx fx={fx} />
           <div className="ter-ac">
             {L.length > 0 && <button className="btn text sm" title="Volta à ordem padrão (temperatura e código)" onClick={() => fx.setO([])}>Tirar ordenação</button>}

@@ -31,6 +31,9 @@ const POR_CIMA = '.adv-mais.aberto,.mp-ctx,.dialog,.scrim,[role=dialog]:not(#tga
 const CAMPO = 'input,textarea,select,[contenteditable=""],[contenteditable="true"]';
 /** os menus ⋮ ficam montados e escondidos pelo CSS: só conta o que aparece */
 const visivel = (e: HTMLElement) => (e.checkVisibility ? e.checkVisibility({ visibilityProperty: true }) : e.getClientRects().length > 0);
+/** pede à gaveta encolhida que volte a abrir (o clique no mesmo pino ou na mesma linha) */
+export const expandirGaveta = () => dispatchEvent(new Event('bkm-gaveta-expandir'));
+export const gavetaEncolhida = () => document.body.classList.contains('tgav-encolhida');
 const lerW = () => { try { return Number(localStorage.getItem(GAV_KEY)) || null; } catch { return null; } };
 // No Pipeline (/terrenos/A123/gaveta; proto_tabela.js › tgavPos), `naTabela`: a gaveta cobre a tabela a partir do fim da
 // coluna 1 (`lado` é o título dela) e, com a tabela em tela cheia, começa no alto da tela.
@@ -84,6 +87,20 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
     for (const e of ['wheel', 'touchstart', 'pointerdown', 'keydown']) c.addEventListener(e, parar, { passive: true });
     return parar;
   }, [codigo, pronto]);
+  /* encolher sem fechar, como o painel do Google Maps (pedido do Moises, 11/nov/2026): a aba com a seta na borda esquerda
+     tira a gaveta para fora da tela, ficando só a aba, e o clique nela traz de volta; outro terreno, o mesmo pino ou a
+     mesma linha também a abrem. Não fica guardada: a gaveta sempre abre aberta. */
+  const [encolhida, setEncolhida] = useState(false);
+  useEffect(() => { setEncolhida(false); }, [codigo]);
+  useEffect(() => {
+    const ab = () => setEncolhida(false);
+    addEventListener('bkm-gaveta-expandir', ab);
+    return () => removeEventListener('bkm-gaveta-expandir', ab);
+  }, []);
+  useEffect(() => {
+    document.body.classList.toggle('tgav-encolhida', encolhida);
+    return () => document.body.classList.remove('tgav-encolhida');
+  }, [encolhida]);
   const [wG, setWG] = useState(lerW);
   /* a largura mínima, medida depois que a ficha aparece (antes dela, 800) */
   const minR = useRef(GAV_MIN);
@@ -151,7 +168,7 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
       if (ev.button > 0) return;
       const t = ev.target as Element | null;
       if (!t?.isConnected || !document.getElementById('root')?.contains(t)) return; // janelas e listas soltas no body
-      if (t.closest('#tgav,table.lista-ter') || temPorCima() || editando()) return;
+      if (t.closest('#tgav,table.lista-ter') || temPorCima() || editando() || gavetaEncolhida()) return;
       fecharR.current();
     };
     document.addEventListener('pointerdown', p, true);
@@ -164,9 +181,11 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
     guardarPos(codigo, { aba: k, top: Math.round(corpo.current?.scrollTop ?? 0) });
   };
   return (
-    <aside className={naTabela ? 'tgav' : 'tgav tgav-mapa'} id="tgav" role="dialog" aria-label={`Ficha de ${f?.nome ?? codigo}`} ref={el}>
+    <aside className={(naTabela ? 'tgav' : 'tgav tgav-mapa') + (encolhida ? ' encolhida' : '')} id="tgav" role="dialog" aria-label={`Ficha de ${f?.nome ?? codigo}`} ref={el}>
       <div className="tgav-redim" role="separator" aria-orientation="vertical" aria-label="Largura da ficha" tabIndex={0}
         title="Arraste para mudar a largura da ficha (dois cliques voltam ao padrão)" onPointerDown={arrastar} onDoubleClick={() => guardar(null)} onKeyDown={tecla} />
+      <button type="button" className="tgav-aba" aria-expanded={!encolhida} aria-label={encolhida ? 'Expandir a ficha' : 'Recolher a ficha'}
+        title={encolhida ? 'Expandir a ficha' : 'Recolher a ficha'} onClick={() => setEncolhida((e) => !e)}><Ic n="chev" s={20} /></button>
       <div className="tgav-h"><span className="num">{codigo}</span><span className="tgav-n">{f?.nome ?? ''}</span>
         {f && <span className="fi-temp tgav-temp"><TempTopo f={f} /></span>}
         {f && <MenuTerreno t={f} aba={aba} ir={(k) => { segurarRolagem(corpo.current?.querySelector('.ficha-main')); irAba(k); }} aoSair={aoSair ?? (() => navegar('/mapa', { replace: true }))} />}

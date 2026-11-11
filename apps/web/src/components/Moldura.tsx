@@ -16,7 +16,7 @@ import { abrirNovo } from '../novo/estado';
 
 /** Itens do menu na primeira versão: [rota, rótulo, ícone]. */
 const NAV: [string, string, keyof typeof BI | keyof typeof BI_EXTRA][] = [
-  ['terrenos', 'Terrenos', 'terrenos'],
+  ['terrenos', 'Pipeline', 'terrenos'],
   ['mapa', 'Mapa', 'mapa'],
   ['funil', 'Funil', 'funil'],
   ['corretores', 'Corretores', 'corretores'],
