@@ -139,22 +139,22 @@ const COLS: Col[] = [
   { k: 'area', l: 'Imóvel', w: 200, v: (t) => <>
     <div>{t.area != null ? m2(t.area) : <Nada s="Sem área" />}</div>
     <div className="t2 tb-zt" title={[t.zonas, t.topo].filter(Boolean).join(' · ') || undefined}>{[t.zonas, t.topo].filter(Boolean).join(' · ') || <Nada s="Sem zoneamento" />}</div></> },
-  { k: 'massa', l: 'Estudo de massa', cls: 'num', w: 208, info: [
+  { k: 'massa', l: 'Estudo de massa', w: 208, info: [
     { t: 'Unidades', d: 'quantidade de unidades', forte: true }, { t: 'Área privativa total', d: 'soma das áreas privativas das tipologias' }], v: (t, ver) => (t.temMassa ? <ComOlho olhos={[olhoMassa(t, ver)]}>
     <Kv l="Unidades" v={t.mUn != null ? num(t.mUn) : '—'} />
     <Kv fraco l="Área privativa total" v={t.mArea != null ? m2(Math.round(t.mArea)) : '—'} /></ComOlho> : <Vazio s="Sem estudo de massa válido" />) },
-  { k: 'viab', l: 'Viabilidade', cls: 'num', w: 212, info: [
+  { k: 'viab', l: 'Viabilidade', w: 212, info: [
     { t: 'VGV', d: 'valor geral de vendas', forte: true }, { t: 'L.L.', d: 'margem líquida: lucro líquido ÷ VGV líquido' }], v: (t, ver) => (t.temEstudo ? <ComOlho olhos={[olhoViab(t, ver)]}>
     <Kv l="VGV" v={t.vgv != null ? mi(t.vgv) : <Nada s="—" />} />
     <Kv fraco l="L.L., margem líquida" v={t.ll != null ? pct2(t.ll) : '—'} /></ComOlho> : <Vazio s="Sem estudo de viabilidade válido" />) },
   /* a junção das duas, quando a tela estreita: VGV e L.L. da viabilidade; unidades da viabilidade ou, sem ela, do estudo de
      massa; cada olho na linha do dado que ele abre (VGV: viabilidade; Unidades: estudo de massa) */
-  { k: 'estudo', l: 'Empreendimento', cls: 'num', w: 212, info: [
+  { k: 'estudo', l: 'Empreendimento', w: 212, info: [
     { t: 'VGV', d: 'valor geral de vendas da viabilidade válida', forte: true }, { t: 'Unidades', d: 'da viabilidade; sem ela, do estudo de massa' }, { t: 'L.L.', d: 'margem líquida: lucro líquido ÷ VGV líquido' }], v: (t, ver) => (t.temEstudo || t.temMassa ? <div className="tb-emp">
     {t.temEstudo && <><Kv l="VGV" v={t.vgv != null ? mi(t.vgv) : <Nada s="—" />} />{olhoViab(t, ver)}</>}
     <Kv fraco l="Unidades" v={(t.temEstudo ? t.un : t.mUn) != null ? num((t.temEstudo ? t.un : t.mUn)!) : '—'} />{t.temMassa ? olhoMassa(t, ver) : <span />}
     {t.temEstudo && <><Kv fraco l="L.L., margem líquida" v={t.ll != null ? pct2(t.ll) : '—'} /><span /></>}</div> : <Vazio s="Sem estudo de massa nem de viabilidade válido" />) },
-  { k: 'preco', l: 'Negociação', cls: 'num', w: 176, info: [
+  { k: 'preco', l: 'Negociação', w: 176, info: [
     { t: 'Pedida', d: 'valor pedido na oferta de referência', forte: true }, { t: 'Proposta', d: 'valor da proposta ativa' }], v: (t) => (t.pedido == null && t.proposta == null ? <Vazio s="Sem valor pedido nem proposta" /> : <>
     <Kv l="Pedida" v={t.pedido != null ? mi(t.pedido) : <Nada s="—" />} />
     <Kv fraco l="Proposta" v={t.proposta != null ? mi(t.proposta) : '—'} /></>) },

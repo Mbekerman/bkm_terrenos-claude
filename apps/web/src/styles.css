@@ -4971,7 +4971,7 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .tb-cod { font-weight: 500; color: var(--m-on-surface, #1f1f1f) }
 .tb-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; white-space: nowrap }
 .tb-kv .tb-kl { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--m-on-var, #444746) }
-.tb-kv .tb-kvv { font-variant-numeric: tabular-nums; text-align: right }
+.tb-kv .tb-kvv { font-variant-numeric: tabular-nums; text-align: left }
 .tb-kv.fraco { font-size: 12px; line-height: 18px } .tb-kv.fraco .tb-kvv { color: var(--m-on-var, #444746) }
 .lista-ter td > .tb-kv + .tb-kv { margin-top: 0 }
 .tb-viab { flex: none; width: 24px; height: 24px; margin: -4px 0 -4px 0; color: var(--m-on-var, #444746) }
@@ -5010,34 +5010,30 @@ html[data-tema="escuro"] .tb-info-n { background: #004a77; color: #c2e7ff }
 .tb-ord { display: inline-grid; place-items: center; min-width: 16px; height: 16px; margin-left: 2px; padding: 0 4px; border-radius: 8px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500; line-height: 16px }
 .lista-ter tbody tr { cursor: pointer }
 /* revisão de design de 11/nov/2026: o quadro vai de borda a borda (texto a 24 px, 16 no celular), cidade e região numa linha,
-   valores colados ao rótulo e alinhados à direita, vazios como traço */
+   tudo alinhado à esquerda, só o Responsável no centro (pedido do Moises, 11/nov/2026), vazios como traço */
 .sec.lista:has(> #rows > .tb-wrap) { padding-left: 0 !important; padding-right: 0 !important; overflow: clip !important }
 .lista-ter td.col-cid, .lista-ter td.col-zona { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-.lista-ter .tb-kv { justify-content: flex-end }
+.lista-ter .tb-kv { justify-content: flex-start }
 .lista-ter .tb-kv .tb-kl { margin-right: auto; min-width: 0 }
 .lista-ter .tb-kv:not(.fraco) .tb-kvv { font-weight: 500 }
 .lista-ter .tb-vazio { color: #747775 }
 .lista-ter td.col-resp .avatar.sm { width: 28px; height: 28px; font-size: 12px; margin-top: -4px }
 .lista-ter .tb-end { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 .tb-wrap.estreito .lista-ter .tb-zt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-/* celular: cada linha divide a largura pelo que tem; o Imóvel cresce só onde há perfil (até 47%) e o Terreno fica com o resto */
+/* celular: o Imóvel fica com 42% em toda linha, para os valores começarem na mesma reta (tudo à esquerda), e o Terreno com o resto */
 .tb-wrap.estreito .dt.lista-ter, .tb-wrap.estreito .lista-ter :is(thead, tbody) { display: block }
 .tb-wrap.estreito .lista-ter colgroup { display: none }
 .tb-wrap.estreito .lista-ter tr { display: flex }
 .tb-wrap.estreito .lista-ter :is(td, th).col-ter { flex: 1 1 auto; min-width: 0 }
-.tb-wrap.estreito .lista-ter :is(td, th).col-area { flex: 0 0 auto; min-width: 96px; max-width: 47% }
+.tb-wrap.estreito .lista-ter :is(td, th).col-area { flex: 0 0 42%; min-width: 0 }
 .tb-wrap.estreito .lista-ter tr.tb-grp > th { flex: 1 1 auto; display: flex; align-items: center }
 .tb-wrap.estreito .lista-ter tbody tr:not(.tb-grp) { border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
 .tb-wrap.estreito .lista-ter tbody tr:not(.tb-grp) > td { border-bottom: 0 !important }
 .tb-wrap.estreito .lista-ter thead th { height: 40px; padding-bottom: 8px !important; font-weight: 500 }
-/* colunas alinhadas à direita: a seta da ordem vem antes do título, e título e valor terminam na mesma borda */
-.tb-wrap.estreito .lista-ter th.col-area .dt-sort { flex-direction: row-reverse }
 /* colunas de números: a seta da ordem fica no recuo, à direita, para o ⓘ encostar no título e o título terminar com os valores */
 .lista-ter th.num .dt-sort { position: relative }
 .lista-ter th.num .dt-ar { position: absolute; left: 100%; margin-left: 1px }
 .lista-ter th.meio .dt-sort { display: flex; justify-content: center; margin: 0 auto }
-.tb-wrap.estreito .lista-ter td.col-area, .tb-wrap.estreito .lista-ter th.col-area { text-align: right !important }
-.tb-wrap.estreito .lista-ter th.col-area .dt-sort { margin-left: auto }
 @media (max-width: 599px) {
   .ter-pg .ter-ac .tb-tela { display: none }
   .ter-pg { padding-bottom: 96px }
@@ -5052,7 +5048,6 @@ html[data-tema="escuro"] .tb-info-n { background: #004a77; color: #c2e7ff }
 .lista-ter thead th { top: var(--tb-top, 0px) !important; z-index: 3 !important }
 .tb-wrap.estreito .lista-ter thead { position: sticky; top: var(--tb-top, 0px); z-index: 3 }
 .tb-wrap.estreito .lista-ter thead th { position: static !important; display: flex; align-items: center; height: 40px; padding-top: 0 !important; padding-bottom: 0 !important }
-.tb-wrap.estreito .lista-ter thead th.col-area { justify-content: flex-end }
 /* no celular o arraste não serve ao toque: as setas de subir e descer a cidade, com alvo de 40 px */
 .tb-mov { display: none }
 .tb-wrap.estreito .tb-alca { display: none }
