@@ -6,7 +6,11 @@
 
 Pedir a um arquiteto da equipe o estudo do que cabe no terreno e guardar o resultado: as tipologias (quantos apartamentos de cada tamanho), as áreas, as vagas, a área construída e os coeficientes de aproveitamento. O estudo entregue e marcado como **válido** é a base do estudo de viabilidade.
 
-A aba mostra só a lista dos estudos, como a de Estudos de viabilidade. Pedir, lançar, ver e editar um estudo acontece numa janela por cima da ficha.
+A aba mostra, em cima, o **Resumo do estudo de massa** válido e, embaixo, a lista dos estudos, como a de Estudos de viabilidade. Pedir, lançar, ver e editar um estudo acontece numa janela por cima da ficha.
+
+## Resumo do estudo de massa
+
+No alto da aba, o estudo válido (o nome abre o estudo) com uma linha por tipologia: **quantidade**, **área privativa** e **área total** (quantidade × área privativa). Na linha **Total**, a soma das unidades e a soma das áreas totais. Sem estudo válido, o quadro diz "Nenhum estudo marcado como válido".
 
 ## Pedir um estudo
 
@@ -20,7 +24,7 @@ O estudo nasce como **Solicitado**, com o nome "Estudo de massa 1", 2, 3..., e o
 
 Quando o estudo já chegou pronto (de um arquiteto de fora, por e-mail, ou feito antes do sistema), não precisa pedir:
 
-1. No quadro **Estudos de massa**, clique em **"Lançar estudo"**. Abre a janela.
+1. No quadro **Estudos de massa**, clique em **"Novo estudo"** (o botão com o +). Abre a janela.
 2. Dê um **Nome** (em branco, vira "Estudo de massa 1", 2, 3...) e escolha o **Responsável na equipe** (vem marcado com você; é quem responde pelo estudo dentro da BKM).
 3. Clique em **"Criar e lançar"**.
 
@@ -28,7 +32,9 @@ O estudo nasce **Em elaboração**, ninguém recebe aviso, e o estudo abre na ja
 
 ## A lista
 
-Uma linha por estudo, só com o resumo: **nome**, **unidades**, quantidade de **tipologias**, **área privativa total**, **área privativa média** por unidade (a total dividida pelas unidades), a data da última alteração (**Atualizado**) e o selo **Válido** ou **Inválido**. O estudo ainda não entregue mostra a situação (**Solicitado** ou **Em elaboração**) ao lado do nome. Clique no nome para abrir o estudo na janela.
+Uma linha só por estudo: **nome**, unidades (**"200 Unid."**), **A.P.** (área privativa total), **A.P. Média** (a área privativa por unidade: a total dividida pelas unidades), a data da última alteração e o selo **Válido** ou **Inválido**. O estudo ainda não entregue mostra a situação (**Solicitado** ou **Em elaboração**) ao lado do nome. Na tela estreita, o nome encurta com reticências para a linha caber.
+
+**Clique em qualquer lugar da linha** para abrir o estudo na janela (o cursor vira a mãozinha). O selo é a exceção: ele só liga e desliga o válido, sem abrir o estudo.
 
 **O selo é clicável** (para quem edita):
 
