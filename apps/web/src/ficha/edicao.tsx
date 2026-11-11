@@ -381,6 +381,38 @@ export function segurarRolagem(de?: Element | null) {
   /* o primeiro scroll vem do próprio ajuste: espera a troca assentar */
   t = window.setTimeout(() => { if (main._folga === solta) ouve.addEventListener('scroll', encolher, { passive: true }); }, 400);
 }
+/** a seção aberta ocupa pelo menos a altura da vista abaixo das barras presas, para sempre dar para rolar até as barras
+ *  travarem lá em cima, mesmo com a seção vazia (pedido do Moises, 11/nov/2026): mede e põe `--fi-sobra` na .ficha-main */
+export function useSobraSecao(ref: { current: HTMLElement | null }, dep: unknown) {
+  useEffect(() => {
+    const main = ref.current;
+    if (!main) return;
+    let sc: HTMLElement | null = main.parentElement;
+    while (sc && sc !== document.body && !/auto|scroll/.test(getComputedStyle(sc).overflowY)) sc = sc.parentElement;
+    const pag = !sc || sc === document.body;
+    const rol = pag ? (document.scrollingElement as HTMLElement) : sc!;
+    let quadro = 0;
+    const medir = () => {
+      cancelAnimationFrame(quadro);
+      quadro = requestAnimationFrame(() => {
+        const abas = main.querySelector<HTMLElement>(':scope > .fi-abas-w');
+        if (!abas) return;
+        const r = pag ? null : rol.getBoundingClientRect(), cr = pag ? null : getComputedStyle(rol);
+        const topo = pag ? 0 : r!.top + rol.clientTop + (parseFloat(cr!.paddingTop) || 0);
+        const fundoVista = pag ? document.documentElement.clientHeight : r!.top + rol.clientTop + rol.clientHeight;
+        let barras = parseFloat(getComputedStyle(abas).top) || 0;
+        for (const b of main.querySelectorAll<HTMLElement>(':scope > .fi-abas-w, :scope > .fi-chips-w')) barras += b.offsetHeight;
+        const v = `${Math.max(0, Math.floor(fundoVista - topo - barras))}px`;
+        if (main.style.getPropertyValue('--fi-sobra') !== v) main.style.setProperty('--fi-sobra', v);
+      });
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(main); if (!pag) ro.observe(rol);
+    addEventListener('resize', medir);
+    return () => { cancelAnimationFrame(quadro); ro.disconnect(); removeEventListener('resize', medir); };
+  }, [ref, dep]);
+}
 export function abrirQuadroJa(aba: string, id: string) { abrirQuadro(aba, id); }
 /** abre o quadro da seção: com as seções em chips (pedido do Moises, 10/nov/2026) é o chip escolhido da aba, guardado
     como "@id" no mesmo conjunto da aba; avisa a barra e os quadros na tela */
