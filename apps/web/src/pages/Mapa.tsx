@@ -8,7 +8,7 @@ import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Bi, Ic, type ContextoMoldura } from '../components/Moldura';
 import { carregarGoogle, googleRecusado } from '../mapa/google';
-import GavetaFicha from '../ficha/Gaveta';
+import GavetaFicha, { expandirGaveta } from '../ficha/Gaveta';
 import { usePreCarregarFicha } from '../ficha/Ficha';
 import { MenuPonto } from '../mapa/MenuPonto';
 import { QuadroRota, type DestinoRota, type PontoMapa } from '../mapa/Rota';
@@ -205,6 +205,7 @@ export default function Mapa() {
     const t = todos.find((x) => x.id === id);
     if (!t) return;
     setSelId(id); setMkBox(null);
+    expandirGaveta();
     navegar(`/mapa/${t.codigo}/ficha`, { replace: gav });
   }, [todos, navegar, gav]);
   const selecionar = useCallback((id: string | null) => {

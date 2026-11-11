@@ -550,3 +550,21 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
 .pp-pop { width: min(920px, calc(100vw - 32px)) }
 .pp-tbl td { vertical-align: top }
 .pp-cond { max-width: 260px; white-space: pre-wrap }
+/* aba de encolher a gaveta da ficha, como a do painel do Google Maps (pedido do Moises, 11/nov/2026): na borda esquerda,
+   no meio da altura; encolhida, a gaveta sai pela direita e só a aba fica na tela, com a seta virada para dentro.
+   Só no computador (no celular a gaveta cobre a tela e fecha no X). */
+.tgav-aba { display: none }
+@media (min-width: 900px) {
+  .tgav { transition: transform .2s cubic-bezier(.2,0,0,1) }
+  .tgav.encolhida { transform: translateX(100%); box-shadow: none }
+  .tgav > .tgav-h, .tgav > .tgav-b { transition: visibility 0s }
+  .tgav.encolhida > .tgav-h, .tgav.encolhida > .tgav-b, .tgav.encolhida > .tgav-redim { visibility: hidden; transition: visibility 0s .2s }
+  .tgav-aba { display: flex; align-items: center; justify-content: center; position: absolute; z-index: 41; left: -23px; top: 50%;
+    width: 23px; height: 48px; margin-top: -24px; padding: 0 0 0 1px; border: 0; border-radius: 8px 0 0 8px; cursor: pointer;
+    background: #fff; color: #444746; box-shadow: -1px 1px 3px rgba(0,0,0,.25), -2px 2px 6px rgba(0,0,0,.10) }
+  .tgav-aba:hover { background: #f1f3f4; color: #1f1f1f }
+  .tgav-aba:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
+  .tgav.encolhida .tgav-aba svg { transform: rotate(180deg) }
+  :root[data-tema="escuro"] .tgav-aba { background: #1e1f20; color: #c4c7c5; box-shadow: -1px 1px 3px rgba(0,0,0,.6) }
+  :root[data-tema="escuro"] .tgav-aba:hover { background: #282a2c; color: #e3e3e3 }
+}
