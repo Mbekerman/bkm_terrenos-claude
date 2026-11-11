@@ -20,8 +20,9 @@ export interface Ctx {
 
 const VB_ADD: Record<string, string> = {
   obra_atipica: 'Adicionar item atípico', obra_nao_incidente: 'Adicionar item', projetos: 'Adicionar projeto', pos_obra: 'Adicionar item',
-  terreno: 'Adicionar despesa', incorporacao: 'Adicionar despesa', cef: 'Adicionar despesa', adm_financeiro: 'Adicionar despesa',
 };
+// Despesas gerais: um item fixo por grupo ("Despesas gerais com …", em % do VGV), na mesma tabela de Comercial
+// (pedido do Moises, 11/nov/2026); os grupos continuam, para a DRE.
 /** a aba Obras sempre abre com todos os quadros fechados (decisão do Moisés, 28/out/2026) */
 export const vbQPadrao = () => new Set(['raso', 'g-obra_nao_incidente', 'g-projetos', 'g-pos_obra']);
 const semAcento = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();

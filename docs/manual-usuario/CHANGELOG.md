@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
+- **Viabilidade, Gerais: uma linha fixa por grupo**, "Despesas gerais com terreno", "…com incorporação", "…com CEF" e "…com administrativo e financeiro", todas nascendo em % do VGV, numa tabela igual à de Comercial. Os estudos que já existiam ficaram com o valor que tinham. **Padrões novos:** Taxa de emissão de contratos CEF e Produto Caixa em verba por unidade; Taxa de desenvolvimento e Taxa de contingências em % do VGV. Ver [15. Viabilidades](15-ficha-viabilidades.md). (#341)
 - **Viabilidade: o % vem junto do número**, sempre com duas casas ("12,50%"), alinhado à direita como os valores; enquanto você digita, o que falta (",00%") aparece em cinza logo depois. A parte em cinza dos campos em metros não cobre mais o último dígito. Ver [15. Viabilidades](15-ficha-viabilidades.md). (#341)
 - **Ficha na gaveta: a largura mínima é a da barra das abas.** Ao estreitar a gaveta no Mapa ou no Pipeline, ela para exatamente onde a barra das abas, a pastinha e o alerta (quando falta algo) ainda cabem inteiros, em vez dos 800 px fixos. Ver [2. Mapa](02-mapa.md). (#340)
 - **Ficha: dá para rolar até as barras travarem em qualquer seção**, mesmo vazia ou curta: a seção ganha espaço vazio embaixo até a altura da tela. Ver [4. Visão geral](04-ficha-visao-geral.md). (#340)
