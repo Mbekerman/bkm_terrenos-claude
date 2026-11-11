@@ -249,7 +249,7 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 
 ## 13. IBGE, setores censitários (Censo 2022)
 
-**Para quê.** As camadas de **renda familiar estimada** e **densidade demográfica bruta** no mapa, e na ficha (aba Entorno) "Renda e população do entorno" e "Perfil da população" por raio (500 m, 1, 2, 3 km e Personalizado, de 100 m a 5 km; a Poligonal saiu do React por ora, 11/nov/2026). Cidades com dados: São Paulo (`3550308`) e São José dos Campos (`3549904`).
+**Para quê.** As camadas de **renda familiar estimada** e **densidade demográfica bruta** no mapa, e na ficha (aba Entorno) "Renda e população do entorno" e "Perfil da população" por raio (500 m, 1, 2, 3 km e Personalizado, de 100 m a 20 km, guardado no navegador; a Poligonal saiu do React por ora, 11/nov/2026). Cidades com dados: São Paulo (`3550308`) e São José dos Campos (`3549904`).
 
 **De onde vem.** O FTP público do IBGE (`https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022`): malha oficial dos setores, agregados de renda do responsável, demografia, domicílios e básico, e a composição das áreas de ponderação. Só a ferramenta de geração fala com o IBGE; o sistema lê arquivos prontos.
 

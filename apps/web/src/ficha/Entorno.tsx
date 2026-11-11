@@ -10,7 +10,6 @@ import { GMAPS_KEY } from '../lib/config';
 import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { m2 } from '../lib/format';
-import { Adorno } from '../lib/mascara';
 import DEMO_CFG from '../../../../tools/setores/demografia.json';
 import { carregarDemo, carregarSetores, estatArea, MUNICIPIOS_SETORES, perfilArea, RAIO_MAX, RAIO_MIN, RD_RAIOS, RENDA_MET, setores, temSetores, type Raio } from '../mapa/setores';
 import { carregarMercado, mercado, mkM2, mkPct, mkVso, MK_SIT, MK_GLIFO, brl, num as nmk, type Emp } from '../mapa/mercado';
@@ -91,14 +90,14 @@ export function EntornoAuto({ f }: { f: Ficha }) {
     pontos de interesse, cada um num chip; o Entorno de Estudos Técnicos saiu */
 export default function AbaMercado({ f }: { f: Ficha }) {
   /* um raio para cada quadro (pedido do Moisés, 6/nov/2026: antes era o mesmo nos dois) */
-  const [raioR, setRaioR] = useState<Raio>(1000), [raioP, setRaioP] = useState<Raio>(1000);
+  const rd = useRaioSalvo('rd'), pf = useRaioSalvo('pf');
   if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Localização) para ver o mercado.</div></section>;
   return (
     <div className="stack">
       {/* ordem pedida pelo Moises (10/nov/2026): Concorrência primeiro, Pontos de interesse por último */}
       <SecConcorrencia f={f} />
-      <SecRenda f={f} raio={raioR} setRaio={setRaioR} />
-      <SecPerfil f={f} raio={raioP} setRaio={setRaioP} />
+      <SecRenda f={f} r={rd} />
+      <SecPerfil f={f} r={pf} />
       <SecPontos f={f} />
     </div>
   );
@@ -195,14 +194,31 @@ function useSetores(demo: boolean) {
   return st;
 }
 /* seletor de raio: 500 m, 1, 2, 3 km e Personalizado com lápis, em que a pessoa digita o raio em metros,
-   de 100 m a 5 km (pedido do Moises, 11/nov/2026; a Poligonal saiu por ora) */
+   de 100 m a 20 km (pedidos do Moises, 11/nov/2026; a Poligonal saiu por ora). O raio escolhido e o personalizado
+   de cada quadro ficam guardados no navegador e valem para todos os terrenos. */
 const raioTxt = (m: number) => (m < 1000 ? num(m) + ' m' : num(m / 1000, 2) + ' km');
-function Raios({ raio, setRaio }: { raio: Raio; setRaio: (r: Raio) => void }) {
+const RAIO_LKEY = 'bkm-terrenos-mercado-raio';
+interface RaioSalvo { raio: Raio; cust: number | null; mudar: (raio: Raio, cust?: number | null) => void }
+const raioOk = (n: unknown): n is number => typeof n === 'number' && n >= RAIO_MIN && n <= RAIO_MAX;
+function useRaioSalvo(id: 'rd' | 'pf'): RaioSalvo {
+  const [v, setV] = useState<{ raio: Raio; cust: number | null }>(() => {
+    try {
+      const o = JSON.parse(localStorage.getItem(RAIO_LKEY) || '{}')[id];
+      if (o) return { raio: raioOk(o.raio) ? o.raio : 1000, cust: raioOk(o.cust) ? o.cust : null };
+    } catch { /* sem armazenamento */ }
+    return { raio: 1000, cust: null };
+  });
+  const mudar = (raio: Raio, cust?: number | null) => {
+    const n = { raio, cust: cust === undefined ? v.cust : cust };
+    setV(n);
+    try { const t = JSON.parse(localStorage.getItem(RAIO_LKEY) || '{}'); t[id] = n; localStorage.setItem(RAIO_LKEY, JSON.stringify(t)); } catch { /* sem armazenamento */ }
+  };
+  return { ...v, mudar };
+}
+function Raios({ r: { raio, cust, mudar } }: { r: RaioSalvo }) {
   const toast = useToast();
-  const fixo = (r: Raio) => RD_RAIOS.some(([k]) => k === r);
-  const [cust, setCust] = useState<number | null>(typeof raio === 'number' && !fixo(raio) ? raio : null);
   const [ed, setEd] = useState(false);
-  const ativo = typeof raio === 'number' && !fixo(raio);
+  const ativo = typeof raio === 'number' && !RD_RAIOS.some(([k]) => k === raio);
   const fim = useRef(false); // o blur da saída depois do Enter não aplica de novo
   const aplicar = (v: string) => {
     if (fim.current) return;
@@ -210,21 +226,21 @@ function Raios({ raio, setRaio }: { raio: Raio; setRaio: (r: Raio) => void }) {
     const s = v.replace(/\./g, '').replace(',', '.').trim();
     if (!s) return;
     const n = Math.round(Number(s));
-    if (!Number.isFinite(n) || n < RAIO_MIN || n > RAIO_MAX) { toast(`O raio vai de ${raioTxt(RAIO_MIN)} a ${raioTxt(RAIO_MAX)}.`, true); return; }
-    setCust(n); setRaio(n);
+    if (!raioOk(n)) { toast(`O raio vai de ${raioTxt(RAIO_MIN)} a ${raioTxt(RAIO_MAX)}.`, true); return; }
+    mudar(n, n);
   };
   return (
     <div className="rd-raios seg" role="group" aria-label="Raio">
-      {RD_RAIOS.map(([k, l]) => <button key={k} type="button" aria-pressed={raio === k} onClick={() => setRaio(k)}>{l}</button>)}
+      {RD_RAIOS.map(([k, l]) => <button key={k} type="button" aria-pressed={raio === k} onClick={() => mudar(k)}>{l}</button>)}
       {ed
         ? <form className="rd-cust" onSubmit={(e) => { e.preventDefault(); aplicar((e.currentTarget.elements.namedItem('r') as HTMLInputElement).value); }}>
-            <Adorno t="m"><input name="r" inputMode="numeric" data-fmt="int" aria-label="Raio personalizado (m)" placeholder={`${RAIO_MIN} a ${num(RAIO_MAX)}`}
+            <input name="r" inputMode="numeric" data-fmt="int" aria-label="Raio personalizado, em metros" placeholder="ex.: 1.500"
               defaultValue={cust != null ? num(cust) : ''} autoFocus onFocus={(e) => e.currentTarget.select()}
               onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fim.current = true; setEd(false); } }}
-              onBlur={(e) => aplicar(e.currentTarget.value)} /></Adorno>
+              onBlur={(e) => aplicar(e.currentTarget.value)} /><span className="rd-cust-u">m</span>
           </form>
-        : <button type="button" className="rd-cust-b" aria-pressed={ativo} title={cust == null ? 'Digitar o raio' : ativo ? 'Alterar o raio' : `Usar ${raioTxt(cust)} (clique de novo para alterar)`}
-            onClick={() => { if (cust != null && !ativo) setRaio(cust); else { fim.current = false; setEd(true); } }}>
+        : <button type="button" className="rd-cust-b" aria-pressed={ativo} title={cust == null ? `Digitar o raio, de ${raioTxt(RAIO_MIN)} a ${raioTxt(RAIO_MAX)}` : ativo ? 'Alterar o raio' : `Usar ${raioTxt(cust)} (clique de novo para alterar)`}
+            onClick={() => { if (cust != null && !ativo) mudar(cust); else { fim.current = false; setEd(true); } }}>
             {cust != null ? raioTxt(cust) : 'Personalizado'}<Ic n="edit" s={16} />
           </button>}
     </div>
@@ -234,7 +250,8 @@ const areaTxt = (raio: Raio, a: number) => (raio === 'poly' ? m2(Math.round(a)) 
 const pct = (v: number, d = 0) => num(v, d);
 
 /* ---------- Renda e população do entorno ---------- */
-function SecRenda({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Raio) => void }) {
+function SecRenda({ f, r: rs }: { f: Ficha; r: RaioSalvo }) {
+  const raio = rs.raio;
   const st = useSetores(false);
   const [met, setMet] = useState(false);
   const m = RENDA_MET;
@@ -265,14 +282,15 @@ function SecRenda({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Rai
   }
   return (
     <Quadro aba="mercado" id="rd" chip="Renda e população" titulo="Renda e população do entorno">
-      <Raios raio={raio} setRaio={setRaio} />
+      <Raios r={rs} />
       <div className="sec-b">{corpo}</div>
       {met && <Metodologia camada="renda" fechar={() => setMet(false)} />}
     </Quadro>
   );
 }
 /* ---------- Perfil da população do entorno ---------- */
-function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Raio) => void }) {
+function SecPerfil({ f, r: rs }: { f: Ficha; r: RaioSalvo }) {
+  const raio = rs.raio;
   const st = useSetores(true);
   const [met, setMet] = useState(false);
   const c: any = DEMO_CFG;
@@ -325,7 +343,7 @@ function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Ra
   }
   return (
     <Quadro aba="mercado" id="pf" chip="Perfil da população" titulo="Perfil da população do entorno">
-      <Raios raio={raio} setRaio={setRaio} />
+      <Raios r={rs} />
       <div className="sec-b">{corpo}</div>
       {met && <Dialogo titulo="Perfil da população: os dados" onFechar={() => setMet(false)} rodape={<button type="button" className="btn primary" onClick={() => setMet(false)}>Fechar</button>}>
         <div className="rd-mt">

@@ -32,7 +32,7 @@ Quatro quadros, nesta ordem: **Concorrência no entorno**, **Renda e população
 
 **Para que serve:** ver a renda familiar e quantas pessoas moram em volta do terreno.
 
-Escolha o **raio**: **500 m, 1 km, 2 km, 3 km** ou **Personalizado** (com o lápis). No Personalizado, digite o raio **em metros**, de **100 m a 5 km** (5.000), e aperte Enter ou clique fora; Esc desiste. O botão passa a mostrar o raio digitado ("1,5 km"); clique nele para voltar a esse raio e, com ele já escolhido, clique de novo para trocar o valor. A opção Poligonal saiu por ora. O quadro mostra:
+Escolha o **raio**: **500 m, 1 km, 2 km, 3 km** ou **Personalizado** (com o lápis). No Personalizado, digite o raio **em metros**, de **100 m a 20 km** (20.000), e aperte Enter ou clique fora; Esc desiste. Vazio, o campo mostra "ex.: 1.500 m" em cinza. O botão passa a mostrar o raio digitado ("1,5 km"); clique nele para voltar a esse raio e, com ele já escolhido, clique de novo para trocar o valor. O raio escolhido e o personalizado ficam **guardados neste navegador**, valem para todos os terrenos e voltam quando você abre outra ficha ou volta outro dia (cada quadro guarda o seu). A opção Poligonal saiu por ora. O quadro mostra:
 
 - **Renda familiar média estimada**;
 - **População**, densidade e domicílios;
@@ -42,7 +42,7 @@ Escolha o **raio**: **500 m, 1 km, 2 km, 3 km** ou **Personalizado** (com o láp
 
 ## Perfil da população do entorno
 
-Com o **seletor de raio próprio** (independente do quadro da renda): 500 m, 1, 2, 3 km ou Personalizado, que funciona como no quadro da renda (100 m a 5 km, em metros). Mostra:
+Com o **seletor de raio próprio** (independente do quadro da renda): 500 m, 1, 2, 3 km ou Personalizado, que funciona como no quadro da renda (100 m a 20 km, em metros, guardado no navegador). Mostra:
 
 - População residente, domicílios ocupados, **moradores por domicílio**;
 - **Homens · Mulheres**;

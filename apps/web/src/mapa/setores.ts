@@ -145,7 +145,7 @@ export type Raio = number | 'poly';
 /* a Poligonal saiu dos botões por ora e entrou o raio Personalizado (pedido do Moises, 11/nov/2026); estatArea continua aceitando 'poly' */
 export const RD_RAIOS: [number, string][] = [[500, '500 m'], [1000, '1 km'], [2000, '2 km'], [3000, '3 km']];
 /** limites do raio personalizado, em metros */
-export const RAIO_MIN = 100, RAIO_MAX = 5000;
+export const RAIO_MIN = 100, RAIO_MAX = 20000;
 export interface Estat { area: number; setores: number; pes: number; dom: number; dens: number; renda: number | null; cob: number | null; porF: number[]; dist: number; foraPct: number; frs: Map<number, number> }
 const dentroPoly = (lat: number, lng: number, p: [number, number][]) => {
   let d = false;
