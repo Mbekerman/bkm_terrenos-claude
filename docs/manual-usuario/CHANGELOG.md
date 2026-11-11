@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
+- **Estudo de viabilidade: a receita é o VGV vendido.** A dedução do VGV e o ITBI e o registro marcados servem só para calcular a permuta financeira e não saem mais da receita nem do lucro. A margem líquida passa a ser lucro ÷ VGV vendido (também no L.L. do Pipeline). O indicador VGV líquido virou VGV vendido, e Produto Caixa saiu das deduções. Ver [15. Viabilidades](15-ficha-viabilidades.md). (#335)
 - **Terrenos (Pipeline): a linha inteira abre a ficha** na gaveta da direita (o olhinho saiu), e a coluna Projeto ganha a terceira linha **L.L. xx,xx%**, a margem líquida do estudo válido. Ver [18. Pipeline](18-pipeline.md). (#332)
 - **Estudo de massa: botão "Salvar" no fim do estudo** (Estudos Técnicos › Estudos de massa), no lugar de "Marcar como entregue" no alto. Salvar dá o estudo por entregue e só exige uma unidade lançada; a área construída e o resto podem ficar para depois. (#331)
 - **Página Terrenos (Pipeline)** (menu lateral, primeiro item): a tabela de todos os terrenos com as colunas Terreno, Cidade, Região, Imóvel, Projeto, Negociação, Corretor, Temperatura e Responsável; ordenação clicando no título das colunas (várias juntas), Filtros e Visões próprios da página, a busca da barra de cima filtrando a tabela, Tela cheia e o olhinho que abre a ficha numa gaveta à direita. Ver [18. Pipeline](18-pipeline.md). (#330)
