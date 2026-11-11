@@ -6,7 +6,7 @@
 
 Mostrar o que a lei deixa construir no terreno (zoneamento e parâmetros urbanísticos) e o que pode atrapalhar (restrições ambientais, patrimônio, riscos, uso anterior do terreno). É a base para o estudo de massa e a viabilidade.
 
-São três seções: **Índices**, um botão da aba Terreno, e **Restrições e entorno** e **Histórico de uso**, duas partes de Estudos Técnicos (desde 10/nov/2026 não há mais o quadro Parâmetros urbanísticos que as juntava). A seta "Ver os parâmetros urbanísticos" do Zoneamento, na Visão geral, abre Índices.
+São três seções: **Índices** (o botão; o quadro se chama **Índices Urbanísticos**), da aba Terreno, e **Restrições e entorno** e **Histórico de uso**, duas partes de Estudos Técnicos (desde 10/nov/2026 não há mais o quadro Parâmetros urbanísticos que as juntava). A seta "Ver os parâmetros urbanísticos" do Zoneamento, na Visão geral, abre Índices.
 
 ## Índices
 

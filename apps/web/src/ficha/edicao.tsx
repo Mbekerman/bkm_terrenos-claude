@@ -324,6 +324,9 @@ function rolarAteOlhos(el: HTMLElement) {
   let linha = pag ? 0 : rol.getBoundingClientRect().top;
   const w = el.closest('.ficha-main')?.querySelector('.fi-abas-w') as HTMLElement | null;
   if (w) linha += (parseFloat(getComputedStyle(w).top) || 0) + w.offsetHeight;
+  /* e a barra de chips, presa logo abaixo das abas */
+  const cw = el.closest('.ficha-main')?.querySelector('.fi-chips-w') as HTMLElement | null;
+  if (cw && getComputedStyle(cw).position === 'sticky') linha += cw.offsetHeight;
   const sec = el.closest('.sec');
   const h = sec?.querySelector(':scope > .sec-h, :scope > form > .sec-h') as HTMLElement | null;
   if (h && getComputedStyle(h).position === 'sticky') linha += h.offsetHeight;

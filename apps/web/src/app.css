@@ -401,6 +401,14 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .iptu-venal .area.iptu-tot .al { color: #1f1f1f; font-weight: 500 }
 .iptu-venal .area.iptu-tot .av { font-weight: 600; color: #0b57d0 }
 .iptu-dest .area .al { color: #041e49 }
+/* Panorama do IPTU (pedido do Moises, 11/nov/2026): todos os cards no mesmo respiro, rótulo numa linha só (Rot troca pela forma
+   curta sem caber; reticências só em último caso) e o valor logo abaixo */
+.iptu-pan .areas.iptu-venal, .iptu-pan .iptu-pares { gap: 8px; margin-bottom: 8px }
+:root:not(#_) .iptu-pan .area { padding: 10px 12px; min-width: 0 }
+:root:not(#_) .iptu-pan .area .al { min-height: 0; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative }
+.iptu-pan .area .al:has(> span + span) > .al-m { position: absolute; visibility: hidden; left: 0; top: 0 }
+.iptu-pan .area .av { font-size: 17px; line-height: 22px; white-space: nowrap; overflow: hidden } /* o valor encolhe até caber (Cabe), nunca corta */
+.iptu-pan .iptu-dest .area .av { font-size: 20px; line-height: 26px }
 .iptu-dest .area .av { font-size: 24px; line-height: 30px; font-weight: 400; color: #041e49 }
 :root[data-tema="escuro"] .iptu-dest .area { background: #004a77 }
 :root[data-tema="escuro"] .iptu-venal .area.iptu-tot .al { color: #e3e3e3 }

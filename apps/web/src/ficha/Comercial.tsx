@@ -247,7 +247,7 @@ function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar, gravarOb
 }
 
 /* número que encolhe a fonte até caber no bloco (pedido do Moises, 10/nov/2026: até R$ 999.000.000,00) */
-function Cabe({ className, children }: { className: string; children: ReactNode }) {
+export function Cabe({ className, children }: { className: string; children: ReactNode }) {
   const r = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = r.current; if (!el) return;

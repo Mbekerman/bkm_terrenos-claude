@@ -2,6 +2,10 @@
 
 Toda mudança que entra na `develop` ganha uma linha aqui, no mesmo PR (ver [como-manter.md](como-manter.md)). Do mais recente ao mais antigo. O que aconteceu antes de 8/nov/2026 está resumido em [historico.md](historico.md).
 
+## 2026-11-11
+
+- #NNN Barra de chips presa e rolagem mantida (pedidos do Moises, 11/nov/2026): `.fi-chips-w` com `position: sticky` e `top: var(--chips-top)`, medido em `BarraChips` (`ficha/Chips.tsx`) pelo `top` + altura de `.fi-abas-w` (vale na página e nas gavetas); `SecoesChips.ir` não rola mais a página (o navegador limita ao fim do conteúdo); `rolarAteOlhos` (`ficha/edicao.tsx`) desconta a barra de chips. Quadro `indices` com o título "Índices Urbanísticos" (chip "Índices"). IPTU (`ficha/Iptu.tsx`): `Rot` troca o rótulo pela forma curta quando não cabe numa linha (ResizeObserver), cards do Panorama com o mesmo respiro (`app.css`, `.iptu-pan`), botão "Atualizar dados". Sem banco.
+
 ## 2026-11-10
 
 - #317 Viabilidades no React, partes 2 a 5: `viab/Secoes.tsx` com `SecTerreno` (campos de `app.salvar_viabilidade`), `SecLinhas` (Comercial, Gerais, Financeiras, Taxas), `SecObra` (raso por `obra_base`, atípico, não incidente, projetos, pós-obra; quadros fechados ao entrar, `vbQPadrao`), `SecDre` e `GrupoQ`/`LinhaRow` (item pela lista de `viabilidade_despesas` com busca, base, valor e meses; escrita direta em `viabilidade_linhas`, os gatilhos refazem os totais); `useRentabilidade` (Resumo, `SecPropostas` em `ficha/Comercial.tsx`, Ações em `ficha/Painel.tsx`); `viab/Modelos.tsx` (`modelos_viabilidade`, `salvar_modelo_viabilidade` com o `p_modelo` do mesmo nome, `marcar_modelo_padrao`, `apagar_modelo_viabilidade`, `criar_viabilidade` com `p_modelo`/`p_sem_modelo`); `MassaSel` (`app.vincular_massa`) e `ficha/Massa.tsx` abrindo o estudo por `abrirEstudo`. Porte de `proto_viab.js`. Sem SQL.

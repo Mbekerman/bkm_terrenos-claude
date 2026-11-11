@@ -191,15 +191,17 @@ Logo abaixo de Dimensões. Nasce fechado, como os outros quadros da aba (abre pe
 
 - três caixas, como as de Dimensões: **valor venal do terreno**, **da construção** e **total**, este em destaque (três por linha, também na gaveta da ficha);
 - embaixo, em dupla: **área total do terreno** e **área construída** (da Prefeitura);
-- por último, em destaque: **IPTU anual** e **IPTU mensal** (anual ÷ 10, as 10 prestações da Prefeitura).
+- por último, em destaque: **IPTU anual** e **IPTU Mensal** (o anual ÷ 10, as 10 prestações da Prefeitura).
+
+Os nomes das caixas nunca quebram linha: sem espaço (no celular), aparecem abreviados, como "Valor venal const.", e o nome inteiro aparece com o mouse parado em cima.
 
 O título do panorama diz o exercício e quantos SQLs ainda não têm IPTU. Em **Ver SQL por SQL**, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.
 
 - **Em São Paulo o IPTU vem sozinho**: ao cadastrar o terreno, ao incluir um SQL (digitado, pelo mapa de lotes ou em Selecionar lotes) e ao abrir a ficha de um SQL que ainda não tem o IPTU da Prefeitura, o sistema emite a notificação de lançamento (a "2ª via") no site da Prefeitura e grava o venal e o IPTU do exercício. Isso corre por trás: dá para continuar cadastrando. Enquanto não chega, a seção IPTU fica apagada, com um brilho passando e "Buscando o IPTU na Prefeitura: N de M SQLs". Cada SQL leva até um minuto, um de cada vez. Se a Prefeitura não tiver a notificação do ano ainda, vem a do ano anterior. Em São Paulo o valor venal e o IPTU **não se digitam**.
-- Se a busca de um SQL falha, o motivo aparece na coluna Fonte do SQL por SQL. **Buscar de novo** (no título do quadro, ou "Buscar" em cada linha; só quem edita) tenta outra vez.
+- Se a busca de um SQL falha, o motivo aparece na coluna Fonte do SQL por SQL. **Atualizar dados** (no título do quadro, ou "Buscar" em cada linha; só quem edita) tenta outra vez.
 - **Detalhe** (na linha trazida da Prefeitura): número da notificação, área do terreno, testada, área construída, uso, padrão, ano da construção, valor do m² do terreno e da construção, fatores, alíquota, descontos, impostos predial e territorial, total do ano e vencimento da 1ª prestação.
 - **PDF** (na mesma linha): emite a notificação e baixa o PDF, mesmo antes de o valor ter sido trazido (aí vale o exercício do ano corrente).
-- Buscar de novo no mesmo ano com os mesmos valores não muda nada; com valores diferentes, vira uma correção (a anterior fica no histórico).
+- Atualizar dados no mesmo ano com os mesmos valores não muda nada; com valores diferentes, vira uma correção (a anterior fica no histórico).
 - **Fora de São Paulo** não há busca: o valor venal e o IPTU se digitam em **Lançar** (ou **Atualizar**) na linha de cada inscrição, na lista "Ver inscrição por inscrição", que já vem aberta, ou na janela da inscrição (Matrículas e Lotes), onde o formulário já vem aberto enquanto não há IPTU lançado.
 - O que pode dar errado: a Prefeitura pedir captcha ("Tente mais tarde"), recusar a senha do sistema, não ter notificação para o SQL, ou o site estar fora. A mensagem aparece embaixo da tela.
 
