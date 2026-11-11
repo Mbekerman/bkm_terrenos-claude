@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Ic } from '../components/Moldura';
 import { Carregando, Erro } from '../components/ui';
 import Ficha, { abaN, TempTopo, useFicha } from './Ficha';
-import { ativarLojaQd, LojaQdCtx, type LojaQd } from './edicao';
+import { ativarLojaQd, LojaQdCtx, segurarRolagem, type LojaQd } from './edicao';
 import MenuTerreno from '../components/MenuTerreno';
 import { useNavigate } from 'react-router-dom';
 import { guardarPos, lerPos } from './lembrar';
@@ -118,23 +118,24 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
     return () => document.removeEventListener('keydown', k);
   }, []);
   const f = q.data;
+  const irAba = (k: string) => {
+    setAba(k); gravarRol();
+    corpo.current?.querySelector('.fi-abas')?.scrollIntoView({ block: 'nearest' });
+    guardarPos(codigo, { aba: k, top: Math.round(corpo.current?.scrollTop ?? 0) });
+  };
   return (
     <aside className={naTabela ? 'tgav' : 'tgav tgav-mapa'} id="tgav" role="dialog" aria-label={`Ficha de ${f?.nome ?? codigo}`} ref={el}>
       <div className="tgav-redim" role="separator" aria-orientation="vertical" aria-label="Largura da ficha" tabIndex={0}
         title="Arraste para mudar a largura da ficha (dois cliques voltam ao padrão)" onPointerDown={arrastar} onDoubleClick={() => guardar(null)} onKeyDown={tecla} />
       <div className="tgav-h"><span className="num">{codigo}</span><span className="tgav-n">{f?.nome ?? ''}</span>
         {f && <span className="fi-temp tgav-temp"><TempTopo f={f} /></span>}
-        {f && <MenuTerreno t={f} aoSair={aoSair ?? (() => navegar('/mapa', { replace: true }))} />}
+        {f && <MenuTerreno t={f} aba={aba} ir={(k) => { segurarRolagem(corpo.current?.querySelector('.ficha-main')); irAba(k); }} aoSair={aoSair ?? (() => navegar('/mapa', { replace: true }))} />}
         <button className="iconbtn" aria-label="Abrir página" title="Abrir página" onClick={() => abrirPagina(aba)}><Ic n="tela" s={20} /></button>
         <button className="iconbtn" aria-label="Fechar a ficha" title="Fechar (Esc)" onClick={fechar}><Ic n="close" s={22} /></button>
       </div>
       <div className="tgav-b" ref={corpo} onScroll={rolou}>
         {q.isLoading ? <Carregando /> : q.error ? <Erro erro={q.error} /> : !f ? <div className="empty">Terreno {codigo} não encontrado.</div>
-          : <LojaQdCtx.Provider value={loja}><Ficha f={f} aba={aba} irAba={(k) => {
-            setAba(k); gravarRol();
-            corpo.current?.querySelector('.fi-abas')?.scrollIntoView({ block: 'nearest' });
-            guardarPos(codigo, { aba: k, top: Math.round(corpo.current?.scrollTop ?? 0) });
-          }} abrirMapa={abrirMapa} naGaveta /></LojaQdCtx.Provider>}
+          : <LojaQdCtx.Provider value={loja}><Ficha f={f} aba={aba} irAba={irAba} abrirMapa={abrirMapa} naGaveta /></LojaQdCtx.Provider>}
       </div>
     </aside>
   );

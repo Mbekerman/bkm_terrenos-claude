@@ -6,7 +6,7 @@ Ver por onde o terreno já passou e o que falta para cada fase abrir: a **linha 
 
 ## Onde fica
 
-Ficha do terreno › aba **Jornada** (`/terrenos/A123/jornada`; o link antigo `/terrenos/A123/fases` cai aqui).
+Ficha do terreno › **⋮ do topo da ficha** (à direita do responsável; na gaveta, ao lado de Abrir página) › **Jornada** (`/terrenos/A123/jornada`; o link antigo `/terrenos/A123/fases` cai aqui).
 
 ## Linha do tempo
 

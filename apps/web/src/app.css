@@ -493,3 +493,8 @@ html[data-tema="escuro"] .etq-conta { background: #a8c7fa; color: #062e6f }
 /* Documentos (pastinha) e Jornada (no ⋮) fora da roleta: o ícone da aba aberta fica marcado (pedido do Moises, 11/nov/2026) */
 .fi-fim .iconbtn.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35) }
 html[data-tema="escuro"] .fi-fim .iconbtn.atual { background: #004a77; color: #c2e7ff }
+/* ⋮ do cabeçalho da ficha: Jornada e Histórico antes de Excluir (pedido do Moises, 11/nov/2026) */
+.mt-mais > .iconbtn.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35) }
+.mt-mais .adv-menu button.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35); font-weight: 500 }
+.mt-mais .adv-menu .mt-sep { height: 1px; margin: 4px 0; background: var(--m-outline-var, #c4c7c5) }
+html[data-tema="escuro"] .mt-mais > .iconbtn.atual, html[data-tema="escuro"] .mt-mais .adv-menu button.atual { background: #004a77; color: #c2e7ff }
