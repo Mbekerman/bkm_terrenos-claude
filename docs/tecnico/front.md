@@ -97,6 +97,7 @@ apps/web/
 | `Mapa.tsx` | Página Mapa (1.049 linhas): lista, legenda em árvore, pinos, busca de endereço, desenho e edição da poligonal, régua, camadas por setor, concorrência, gaveta da ficha, filtros. Também atende `/terrenos/novo`. |
 | `FichaPagina.tsx` | Ficha em página própria (`/terrenos/A123/<aba>`); código inexistente volta ao mapa com aviso; links antigos viram a aba nova. |
 | `Funil.tsx` | Funil em três níveis (fases, etapas, subetapas) com arrastar. |
+| `Corretores.tsx` | `/corretores` e `/corretores/<id>` (11/nov/2026; o protótipo não tinha esta tela): lista de `v_corretores` com busca e situação; ficha com os campos editados no lugar (`Vivo` de `ficha/edicao.tsx`, cada campo chama `salvar_corretor` com só a chave dele), Desativar/Reativar, Terrenos e ofertas (`oferta_corretores` + `terreno_corretores` + `v_terrenos`) e Histórico (`auditoria` de `corretores` e da `pessoas` do corretor). O ícone do menu está em `BI_EXTRA` (`components/Moldura.tsx`), porque o protótipo não tem um. |
 | `TerrenosExcluidos.tsx` | `/configuracoes/excluidos`, só administrador (pelo menu do avatar): lista de `terrenos_excluidos` com Restaurar e Deletar de vez. Vira seção de Configurações quando ela for portada. |
 | `EmPorte.tsx` | Aviso "tela sendo portada" (sem uso no momento). |
 
@@ -176,6 +177,8 @@ As rotas ficam em `src/App.tsx`. Todas moram dentro da `Moldura` (barra e menu).
 | `/funil/<fase>` | Etapas da fase | Ex.: `/funil/novos_negocios` (o código da fase, de `fases_modelo.codigo`). |
 | `/funil/<fase>/<etapa>` | Subetapas da etapa | |
 | `/configuracoes/excluidos` | Terrenos excluídos | Só administrador; os outros voltam ao Mapa. |
+| `/corretores` | Lista de corretores | Busca e Ativos/Inativos/Todos ficam só na tela (não vão ao endereço). |
+| `/corretores/<id>` | Ficha do corretor | Pelo id (uuid) do corretor; id que não existe mostra "Corretor não encontrado". |
 | `/fases/*` | redireciona para `/funil` | Perde o resto do caminho (ver armadilhas). |
 | qualquer outro | redireciona para `/mapa` | |
 

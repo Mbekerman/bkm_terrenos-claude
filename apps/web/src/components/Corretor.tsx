@@ -11,17 +11,17 @@ import { nota, norm } from './Marcar';
 // e-mail e celular obrigatórios e apelido, CPF, RG, Creci, imobiliária, Creci jurídico, CNPJ e endereço opcionais
 // (app.criar_corretor). O cadastro completo de corretores, com base própria, fica para depois.
 
-export interface CorretorOp { id: string; nome: string; apelido: string | null; imobiliaria: string | null; ativo: boolean }
+export interface CorretorOp { id: string; nome: string; apelido: string | null; imobiliaria: string | null; ativo: boolean; email: string | null }
 
 export function useCorretores() {
   const { empresa } = useSessao();
   return useQuery({
     queryKey: ['corretores', empresa?.id], enabled: !!empresa,
     queryFn: async (): Promise<CorretorOp[]> => {
-      const { data, error } = await supabase.from('corretores').select('id,apelido,imobiliaria,ativo,pessoas(nome_razao_social)').eq('empresa_id', empresa!.id);
+      const { data, error } = await supabase.from('corretores').select('id,apelido,imobiliaria,ativo,pessoas(nome_razao_social,email)').eq('empresa_id', empresa!.id);
       if (error) throw error;
-      return ((data ?? []) as unknown as { id: string; apelido: string | null; imobiliaria: string | null; ativo: boolean; pessoas: { nome_razao_social: string } | null }[])
-        .map((c) => ({ id: c.id, apelido: c.apelido, imobiliaria: c.imobiliaria, ativo: c.ativo, nome: c.pessoas?.nome_razao_social ?? '—' }))
+      return ((data ?? []) as unknown as { id: string; apelido: string | null; imobiliaria: string | null; ativo: boolean; pessoas: { nome_razao_social: string; email: string | null } | null }[])
+        .map((c) => ({ id: c.id, apelido: c.apelido, imobiliaria: c.imobiliaria, ativo: c.ativo, nome: c.pessoas?.nome_razao_social ?? '—', email: c.pessoas?.email ?? null }))
         .sort((a, b) => a.nome.localeCompare(b.nome));
     },
   });
@@ -97,6 +97,11 @@ export function NovoCorretor({ fechar, criado }: { fechar: () => void; criado: (
   const { empresa } = useSessao(), toast = useToast(), qc = useQueryClient();
   const [v, setV] = useState<Record<string, string>>({ nome: '', apelido: '', email: '', celular: '', cpf: '', rg: '', creci: '', imobiliaria: '', creci_juridico: '', cnpj: '', endereco: '' });
   const [grav, setGrav] = useState(false);
+  /* nome ou e-mail igual ao de um corretor já cadastrado: só avisa, não recusa (pedido do Moises, 11/nov/2026;
+     o CPF repetido o banco recusa) */
+  const lista = useCorretores().data ?? [];
+  const nn = norm(v.nome.trim()).replace(/\s+/g, ' '), ee = v.email.trim().toLowerCase();
+  const iguais = lista.filter((c) => (nn && norm(c.nome).replace(/\s+/g, ' ') === nn) || (ee && c.email === ee));
   const m = (k: string) => (e: { target: { value: string } }) => setV((o) => ({ ...o, [k]: e.target.value }));
   async function enviar(ev: FormEvent) {
     ev.preventDefault(); ev.stopPropagation();
@@ -128,7 +133,9 @@ export function NovoCorretor({ fechar, criado }: { fechar: () => void; criado: (
         {campo('creci_juridico', 'Creci jurídico')}
         {campo('cnpj', 'CNPJ', { inputMode: 'numeric', 'data-fmt': 'doc' })}
         {campo('endereco', 'Endereço', {}, true)}
-      </div></form>
+      </div>
+      {iguais.length > 0 && <div className="hint cr-igual" role="status">Já existe {iguais.length > 1 ? 'corretor' : 'um corretor'} com {iguais.some((c) => ee && c.email === ee) ? 'esse nome ou e-mail' : 'esse nome'}: {iguais.map((c) => c.nome + (c.imobiliaria ? ` (${c.imobiliaria})` : '') + (c.ativo ? '' : ', inativo')).join('; ')}. Confira antes de cadastrar outro.</div>}
+      </form>
     </Dialogo>
   );
 }

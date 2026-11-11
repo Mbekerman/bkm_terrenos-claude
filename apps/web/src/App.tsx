@@ -10,6 +10,7 @@ import Mapa from './pages/Mapa';
 import TerrenosExcluidos from './pages/TerrenosExcluidos';
 import FichaPagina from './pages/FichaPagina';
 import Funil from './pages/Funil';
+import Corretores from './pages/Corretores';
 
 // Porte tela a tela (docs/adr/0001): login, mapa, novo terreno, ficha e funil. Os endereços
 // seguem os do protótipo; o login aparece no próprio endereço do link e, entrando, a tela abre.
@@ -28,6 +29,8 @@ export default function App() {
         <Route path="fases/*" element={<Navigate to="/funil" replace />} />
         <Route path="terrenos/novo" element={<Mapa />} />
         <Route path="terrenos/:codigo/*" element={<FichaPagina />} />
+        <Route path="corretores" element={<Corretores />} />
+        <Route path="corretores/:id" element={<Corretores />} />
         <Route path="configuracoes/excluidos" element={<TerrenosExcluidos />} />
         <Route path="*" element={<Navigate to="/mapa" replace />} />
       </Route>

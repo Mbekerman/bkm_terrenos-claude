@@ -4240,6 +4240,27 @@ select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"X","email":"x@x.com","celular":"11999990000"}')$$, :'emp'), 'leitura não cria corretor');
 reset role;
 
+-- cadastro de corretores (pedido do Moises, 11/nov/2026): editar no lugar, desativar, auditoria e a lista com as contagens
+select pg_temp.como(:'analista');
+select app.salvar_corretor(:'cor1', '{"imobiliaria":"Zé Imóveis","creci":"999-F","cpf":"529.982.247-25"}');
+select pg_temp.ok((select c.imobiliaria = 'Zé Imóveis' and c.creci = '999-F' and p.cpf_cnpj = '52998224725' and p.email = 'ze@imob.com'
+  from app.corretores c join app.pessoas p on p.id = c.pessoa_id where c.id = :'cor1'), 'salvar_corretor grava só as chaves que vierem');
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"nome":"  "}')$$, :'cor1'), 'o nome do corretor não fica em branco');
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"email":"sem-arroba"}')$$, :'cor1'), 'e-mail inválido é recusado');
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"celular":"1234"}')$$, :'cor1'), 'celular sem DDD é recusado');
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"cnpj":"123"}')$$, :'cor1'), 'CNPJ com menos de 14 dígitos é recusado');
+select app.criar_corretor(:'emp', '{"nome":"Outro","email":"o@x.com","celular":"11977776666"}') as cor9 \gset
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"cpf":"52998224725"}')$$, :'cor9'), 'CPF de outra pessoa do cadastro é recusado');
+select app.salvar_corretor(:'cor9', '{"ativo":false}');
+select pg_temp.ok((select not ativo from app.corretores where id = :'cor9'), 'o corretor se desativa (não se apaga)');
+select pg_temp.ok(exists (select 1 from app.auditoria where tabela = 'corretores' and registro_id = :'cor1' and acao = 'update')
+  and exists (select 1 from app.auditoria where tabela = 'pessoas' and acao = 'update' and depois->>'cpf_cnpj' = '52998224725'),
+  'a edição do corretor e da pessoa dele fica nos logs');
+select pg_temp.ok((select qtd_terrenos = 0 and qtd_ofertas = 0 and nome = 'Outro' from app.v_corretores where id = :'cor9'), 'v_corretores conta zero sem oferta');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"creci":"1"}')$$, :'cor1'), 'leitura não edita corretor');
+reset role;
+
 -- vários corretores na oferta (pedido do Moises, 10/nov/2026): Registrar oferta só com corretor e observação
 select pg_temp.como(:'analista');
 select app.criar_corretor(:'emp', '{"nome":"Ana Corretora","email":"ana@imob.com","celular":"11988887777"}') as cor2 \gset
@@ -4259,6 +4280,9 @@ select pg_temp.ok(exists (select 1 from app.oferta_corretores where oferta_id = 
 select pg_temp.ok((select bool_and(automatico) from app.auditoria where tabela = 'oferta_corretores' and depois->>'oferta_id' = :'ofc' and depois->>'corretor_id' = :'cor1')
   and not (select automatico from app.auditoria where tabela = 'oferta_corretores' and depois->>'oferta_id' = :'ofc' and depois->>'corretor_id' = :'cor2'),
   'nos Logs, o corretor que entra junto com a oferta é consequência; o incluído à mão é ação da pessoa');
+select pg_temp.ok((select qtd_ofertas = 1 and qtd_terrenos = 1 from app.v_corretores where id = :'cor1')
+  and (select qtd_ofertas = 0 and qtd_terrenos = 1 from app.v_corretores where id = :'cor2'),
+  'v_corretores conta as ofertas e os terrenos de cada corretor (tirado da oferta, continua no terreno)');
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$insert into app.oferta_corretores (oferta_id, corretor_id, empresa_id) values (%L, %L, %L)$$, :'ofc', :'cor2', :'emp'), 'leitura não põe corretor na oferta');
 reset role;
