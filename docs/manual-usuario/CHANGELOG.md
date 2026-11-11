@@ -6,6 +6,10 @@ Quem desenvolve: toda mudança que o usuário vê ganha uma linha aqui, na data 
 
 Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era testado no protótipo. Este registro começa no porte das telas para o sistema real.
 
+## 11/nov/2026
+
+- **Barra das seções presa e rolagem mantida** (ficha, todas as abas com botões de seção): a barra dos botões fica presa logo abaixo das abas ao rolar, e trocar de seção não volta a página para o começo. O quadro Índices se chama **Índices Urbanísticos** (o botão continua Índices). No IPTU, os nomes das caixas não quebram linha (abreviam sem espaço, como "Valor venal const."), as caixas ficam alinhadas entre si a caixa do mensal se chama só **IPTU Mensal** e o botão do título passa a ser **Atualizar dados**. Ver [Seções em botões](04-ficha-visao-geral.md#seções-em-botões). (#325)
+
 ## 10/nov/2026
 
 - **Estudo de viabilidade completo** (ficha › Estudos Técnicos › Estudos de viabilidade): no estudo, as seções Terreno (permuta física e financeira, mínimo garantido, deduções, pagamento e comissão em dinheiro), Comercial, Obras (custo raso por área privativa ou construída, atípico, não incidente, projetos e pós-obra), Gerais, Financeiras e Taxas (só diretoria) e a DRE; o aviso "Rentabilidade abaixo da mínima" na Nova proposta e "Levar ao comitê" nas Ações do painel; "Salvar como modelo" e a escolha do modelo no Novo estudo; o vínculo com o estudo de massa (seguir o válido, trocar de estudo, quebrar o vínculo), e "Criar estudo de viabilidade" no estudo de massa abre o estudo criado. Ver [Estudos de viabilidade](15-ficha-viabilidades.md). (#317)

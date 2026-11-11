@@ -25,6 +25,17 @@ export function BarraChips({ itens, ativo, ir, rotulo, sub }: {
 }) {
   const barra = useRef<HTMLDivElement>(null), wrap = useRef<HTMLDivElement>(null);
   useRoleta(barra, ativo, itens.length);
+  /* a barra fica presa logo abaixo da barra das abas, como ela (pedido do Moises, 11/nov/2026): o "top" é o de lá + a altura */
+  useLayoutEffect(() => {
+    const w = wrap.current, abas = w?.closest('.ficha-main')?.querySelector('.fi-abas-w') as HTMLElement | null;
+    if (!w || !abas) return;
+    const medir = () => w.style.setProperty('--chips-top', `${(parseFloat(getComputedStyle(abas).top) || 0) + abas.offsetHeight}px`);
+    medir();
+    const ro = window.ResizeObserver ? new ResizeObserver(medir) : null;
+    ro?.observe(abas);
+    window.addEventListener('resize', medir);
+    return () => { ro?.disconnect(); window.removeEventListener('resize', medir); };
+  }, []);
   const [mais, setMais] = useState(false), [menu, setMenu] = useState(false);
   const chave = itens.map((x) => x.join('\u0001')).join('\u0002');
   useLayoutEffect(() => {
@@ -86,17 +97,9 @@ export function SecoesChips({ aba, rotulo, sub, children }: { aba: string; rotul
   const esc = chipEscolhido(L, aba);
   const ativo = esc && lista.some((x) => x[0] === esc) ? esc : lista[0]?.[0] ?? null;
   const ctx = useMemo(() => ({ reg, ativo }), [reg, ativo]);
-  const ir = (k: string) => {
-    abrirQuadro(aba, k);
-    /* rolada a página para baixo do começo da aba, ela volta até o que vem logo abaixo das abas presas */
-    const abas = document.querySelector('.ficha-main .fi-abas-w') as HTMLElement | null, alvo = abas?.nextElementSibling as HTMLElement | null;
-    if (!abas || !alvo) return;
-    const d = alvo.getBoundingClientRect().top - abas.getBoundingClientRect().bottom;
-    if (d >= 0) return;
-    let p: HTMLElement | null = alvo.parentElement;
-    while (p && p !== document.body && !(p.scrollHeight > p.clientHeight && /auto|scroll/.test(getComputedStyle(p).overflowY))) p = p.parentElement;
-    if (p && p !== document.body) p.scrollTop += d; else window.scrollBy(0, d);
-  };
+  /* trocar de chip não mexe na rolagem: a página fica onde estava; se a seção nova for mais curta, o navegador para no
+     fim do conteúdo (pedido do Moises, 11/nov/2026) */
+  const ir = (k: string) => abrirQuadro(aba, k);
   return (
     <ChipsCtx.Provider value={ctx}>
       {lista.length > 1 && <BarraChips itens={lista} ativo={ativo} ir={ir} rotulo={rotulo} sub={sub} />}
