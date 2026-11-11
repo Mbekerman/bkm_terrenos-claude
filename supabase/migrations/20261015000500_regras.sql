@@ -17,15 +17,23 @@ left join app.terreno_infraestrutura ti on ti.terreno_id = t.id and ti.item = i.
 where i.ativo;
 
 -- Viabilidades técnicas: todo serviço do catálogo para todo terreno; o que não foi registrado é "não solicitada".
+-- Depois, as incluídas pelo usuário no terreno (servico nulo, id e outra), na ordem em que entraram.
 -- Vencida: retorno viável ou condicionado com a validade já passada.
 create view app.v_terreno_viabilidades_tecnicas with (security_invoker = true) as
 select t.id as terreno_id, t.empresa_id, i.codigo as servico, i.nome, i.ordem,
        coalesce(v.situacao, 'nao_solicitada') as situacao, v.concessionaria, v.solicitada_em, v.emitida_em, v.validade, v.condicoes,
-       coalesce(v.situacao in ('viavel','condicionada') and v.validade < current_date, false) as vencida
+       coalesce(v.situacao in ('viavel','condicionada') and v.validade < current_date, false) as vencida,
+       null::uuid as id, false as outra
 from app.terrenos t
 cross join app.itens_infraestrutura i
 left join app.terreno_viabilidades_tecnicas v on v.terreno_id = t.id and v.servico = i.codigo
-where i.ativo and i.viabilidade_tecnica;
+where i.ativo and i.viabilidade_tecnica
+union all
+select o.terreno_id, o.empresa_id, null, o.nome, (1000 + row_number() over (partition by o.terreno_id order by o.criado_em, o.id))::int,
+       o.situacao, o.concessionaria, o.solicitada_em, o.emitida_em, o.validade, o.condicoes,
+       coalesce(o.situacao in ('viavel','condicionada') and o.validade < current_date, false),
+       o.id, true
+from app.terreno_viabilidades_outras o;
 
 -- Inscrição com a revisão vigente do exercício mais recente.
 create view app.v_inscricoes with (security_invoker = true) as

@@ -717,6 +717,42 @@ begin
 end $$;
 create trigger t_viab before insert or update on app.terreno_viabilidades_tecnicas for each row execute function app.tg_viab_tecnica();
 
+-- Viabilidades técnicas incluídas pelo usuário, com o nome digitado (pedido do Moises, 11/nov/2026):
+-- as do catálogo (Energia, Água, Esgoto, Gás) continuam fixas; estas são só do terreno e se apagam.
+create table app.terreno_viabilidades_outras (
+  id             uuid primary key default gen_random_uuid(),
+  terreno_id     uuid not null references app.terrenos(id) on delete cascade,
+  empresa_id     uuid not null references app.empresas(id),
+  nome           text not null,
+  situacao       text not null default 'nao_solicitada' check (situacao in ('nao_solicitada','solicitada','viavel','condicionada','nao_viavel')),
+  concessionaria text,
+  solicitada_em  date,
+  emitida_em     date,
+  validade       date,
+  condicoes      text,
+  criado_em      timestamptz not null default now(),
+  atualizado_em  timestamptz not null default now(),
+  check (situacao in ('nao_solicitada','solicitada') or emitida_em is not null),
+  check (validade is null or emitida_em is null or validade >= emitida_em)
+);
+create unique index terreno_viabilidades_outras_nome on app.terreno_viabilidades_outras (terreno_id, lower(nome));
+create or replace function app.tg_viab_outra()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  new.nome := nullif(regexp_replace(trim(new.nome), '\s+', ' ', 'g'), '');
+  if new.nome is null then
+    raise exception 'Digite o nome da viabilidade técnica' using errcode = '23514';
+  end if;
+  if exists (select 1 from app.itens_infraestrutura where viabilidade_tecnica and ativo and lower(nome) = lower(new.nome)) then
+    raise exception 'A viabilidade técnica % já existe no quadro', new.nome using errcode = '23505';
+  end if;
+  new.condicoes := nullif(trim(new.condicoes), '');
+  new.concessionaria := nullif(trim(new.concessionaria), '');
+  new.atualizado_em := now();
+  return new;
+end $$;
+create trigger t_viab before insert or update on app.terreno_viabilidades_outras for each row execute function app.tg_viab_outra();
+
 -- Limites da classificação topográfica, por empresa (Configurações › Topografia, só administrador,
 -- por app.salvar_topografia_config). Sem linha, valem os padrões das colunas: declividade média até
 -- 5% plano, 10% inclinado, 13% leve, 19% mediano, 24% intenso e 30% agudo; acima, ou com terra mexida
@@ -948,7 +984,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['terrenos','matriculas','inscricoes_municipais','matricula_partes','inscricao_partes','inscricao_valores','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores',
-                           'terreno_infraestrutura','terreno_viabilidades_tecnicas','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
+                           'terreno_infraestrutura','terreno_viabilidades_tecnicas','terreno_viabilidades_outras','analises_urbanisticas','analise_zoneamentos','areas_interesse','area_interesse_terrenos',
                            'terreno_entorno','terreno_entorno_buscas','terreno_ponto_distancias','terreno_pontos_excluidos','consultas_lote','consultas_area'] loop
     execute format('alter table app.%I enable row level security', t);
     execute format('create policy ver on app.%I for select to authenticated using (empresa_id in (select app.minhas_empresas()))', t);
@@ -960,7 +996,7 @@ begin
     end if;
   end loop;
   -- remover vínculos é permitido; terreno e análise nunca são apagados (arquivar / substituir)
-  foreach t in array array['matriculas','inscricoes_municipais','matricula_partes','inscricao_partes','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores','area_interesse_terrenos','analise_zoneamentos'] loop
+  foreach t in array array['matriculas','inscricoes_municipais','matricula_partes','inscricao_partes','confrontacoes','terreno_pessoas','terreno_corretores','parte_corretores','area_interesse_terrenos','analise_zoneamentos','terreno_viabilidades_outras'] loop
     execute format('create policy remover on app.%I for delete to authenticated using (empresa_id in (select app.empresas_edicao()))', t);
     execute format('grant delete on app.%I to authenticated', t);
   end loop;
@@ -1097,6 +1133,7 @@ create trigger t_aud after insert or update or delete on app.terreno_entorno_bus
 create trigger t_aud after insert or update or delete on app.consultas_lote for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.consultas_area for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.terreno_viabilidades_tecnicas for each row execute function app.tg_auditoria();
+create trigger t_aud after insert or update or delete on app.terreno_viabilidades_outras for each row execute function app.tg_auditoria();
 -- itens da visita técnica (aba Infraestrutura no React, 10/nov/2026): cada mudança vai para os Logs
 create trigger t_aud after insert or update or delete on app.terreno_infraestrutura for each row execute function app.tg_auditoria();
 create trigger t_aud after insert or update or delete on app.topografia_config for each row execute function app.tg_auditoria();

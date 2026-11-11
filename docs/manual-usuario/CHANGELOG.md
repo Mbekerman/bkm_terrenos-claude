@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
+- **Outras viabilidades técnicas** (ficha › Estudos Técnicos › Avaliação de infraestrutura): além de Energia, Água, Esgoto e Gás, "Adicionar viabilidade" inclui outra com o nome que você digitar, só naquele terreno; dá para renomear e excluir. Ver [Viabilidades técnicas](04-ficha-visao-geral.md#viabilidades-técnicas-aba-infraestrutura). (#326)
 - **Barra das seções presa e rolagem mantida** (ficha, todas as abas com botões de seção): a barra dos botões fica presa logo abaixo das abas ao rolar, e trocar de seção não volta a página para o começo. O quadro Índices se chama **Índices Urbanísticos** (o botão continua Índices). No IPTU, os nomes das caixas não quebram linha (abreviam sem espaço, como "Valor venal const."), as caixas ficam alinhadas entre si a caixa do mensal se chama só **IPTU Mensal** e o botão do título passa a ser **Atualizar dados**. Ver [Seções em botões](04-ficha-visao-geral.md#seções-em-botões). (#325)
 
 ## 10/nov/2026

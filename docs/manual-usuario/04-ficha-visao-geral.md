@@ -189,6 +189,14 @@ Cada mudança aparece nos Logs. Quem tem papel de Leitura só vê.
 2. Ao sair de "Não solicitada", aparecem a **Concessionária** e a data em que foi **Pedida**. Marcando "Solicitada", a data do pedido já vem como hoje.
 3. Com a resposta da concessionária (Viável, Condicionada ou Não viável), aparecem **Emitida em** (já vem como hoje) e **Validade**. Na Condicionada, escreva as **Condições**; nas outras, uma **Observação**.
 
+**Outras viabilidades:** além das quatro fixas, você pode incluir outras (Drenagem, Telefonia, o que o terreno pedir):
+
+1. Clique em **Adicionar viabilidade** no fim do quadro.
+2. Digite o **nome** e clique em **Incluir** (ou Enter). Esc cancela.
+3. Ela entra no fim da lista e funciona igual às fixas. O nome pode ser trocado clicando nele, e a **lixeira** no fim da linha a exclui (pede confirmação).
+
+Vale só para aquele terreno. O sistema não aceita um nome repetido no mesmo terreno nem o de uma das quatro fixas. Incluir, renomear e excluir aparecem nos Logs.
+
 **Avisos:** com a validade já passada, o serviço mostra "Vencida em …" em vermelho e o título do quadro conta quantas venceram; nos 30 dias antes, "Vence em …" em amarelo. A validade não pode ser antes da emissão.
 
 ## Relevo (aba Infraestrutura)

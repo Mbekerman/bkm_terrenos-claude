@@ -245,6 +245,12 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
     case 'terreno_viabilidades_tecnicas':
       return x?.situacao !== d?.situacao ? { txt: `Viabilidade técnica · ${VT_ITEM[o.servico] ?? o.servico}: ${VT_SIT[x?.situacao] ?? 'Não solicitada'} → ${VT_SIT[d?.situacao] ?? d?.situacao}`, aba: 'infra', q: 'vtec' }
         : mudou(x, d).length ? { txt: `Viabilidade técnica · ${VT_ITEM[o.servico] ?? o.servico}: ${lista(mudou(x, d))}`, aba: 'infra', q: 'vtec' } : null;
+    case 'terreno_viabilidades_outras':
+      if (ins) return { txt: `Viabilidade técnica incluída: ${o.nome}`, aba: 'infra', q: 'vtec' };
+      if (del) return { txt: `Viabilidade técnica excluída: ${o.nome}`, aba: 'infra', q: 'vtec' };
+      if (x?.nome !== d?.nome) return { txt: `Viabilidade técnica renomeada: ${x?.nome} → ${d?.nome}`, aba: 'infra', q: 'vtec' };
+      return x?.situacao !== d?.situacao ? { txt: `Viabilidade técnica · ${o.nome}: ${VT_SIT[x?.situacao] ?? 'Não solicitada'} → ${VT_SIT[d?.situacao] ?? d?.situacao}`, aba: 'infra', q: 'vtec' }
+        : mudou(x, d).length ? { txt: `Viabilidade técnica · ${o.nome}: ${lista(mudou(x, d))}`, aba: 'infra', q: 'vtec' } : null;
     case 'estudos_massa': {
       if (ins) return { txt: `Estudo de massa pedido: ${o.nome ?? ''}`, aba: 'massa' };
       if (del) return { txt: `Estudo de massa apagado: ${o.nome ?? ''}`, aba: 'massa' };
