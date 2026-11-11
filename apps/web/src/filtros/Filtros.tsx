@@ -40,7 +40,7 @@ function porNoEndereco(f: Filtro, o: Ord[]) {
 export interface Fx {
   ctx: Ctx; D: DadosFx | null; f: Filtro; mudar: (f: Filtro) => void; visao: string | null; setVisao: (v: string | null, f?: Filtro) => void; mudou: boolean;
   aberto: boolean; setAberto: (b: boolean) => void; ok: (id: string) => boolean; n: number; eu: string | null;
-  /** ordenação (só onde a página ordena uma lista: hoje, o Mapa); vazia = a ordem própria da página */
+  /** ordenação (só onde a página ordena uma lista: o Mapa e o Pipeline); vazia = a ordem própria da página */
   ordena: boolean; o: Ord[]; setO: (o: Ord[]) => void; cmp: (a: string, b: string) => number;
 }
 
@@ -49,7 +49,7 @@ export function useFiltros(ctx: Ctx): Fx {
   const { empresa, session } = useSessao();
   const eu = session?.user.id ?? null;
   const q = useQuery({ queryKey: ['filtros', empresa?.id], enabled: !!empresa, queryFn: () => carregarFx(empresa!.id) });
-  const ordena = ctx === 'mapa';
+  const ordena = ctx === 'mapa' || ctx === 'terrenos';
   const [st, setSt] = useState<{ f: Filtro; v: string | null; m: boolean }>(() => {
     const e = doEndereco();
     if (e) return { f: e, v: null, m: false };
@@ -118,7 +118,7 @@ export function BarraFx({ fx }: { fx: Fx }) {
       <button className="fx-btn" aria-pressed={at.length > 0} aria-expanded={fx.aberto} aria-controls="fx-dr" onClick={() => fx.setAberto(!fx.aberto)}>
         <Ic n="filtro" s={18} />Filtros{at.length ? <span className="fx-n">{at.length}</span> : null}</button>
       {D && at.map((d) => <span key={d.k} className="fx-chip">{chipTxt(d, f, D)}<button className="fx-cx" aria-label={`Tirar o filtro ${d.l}`} title="Tirar" onClick={() => fx.mudar(tira(f, d.k))}><Ic n="close" s={16} /></button></span>)}
-      {fx.o.length > 0 && <span className="fx-chip fx-chip-ord" title="Ordenação: abre na aba Ordenação dos filtros">Ordem: {ordTxt(fx.o)}<button className="fx-cx" aria-label="Tirar a ordenação" title="Tirar" onClick={() => fx.setO([])}><Ic n="close" s={16} /></button></span>}
+      {fx.o.length > 0 && ctx !== 'terrenos' && <span className="fx-chip fx-chip-ord" title="Ordenação: abre na aba Ordenação dos filtros">Ordem: {ordTxt(fx.o)}<button className="fx-cx" aria-label="Tirar a ordenação" title="Tirar" onClick={() => fx.setO([])}><Ic n="close" s={16} /></button></span>}
       {at.length > 0 && <button className="linkbtn fx-limpar" onClick={() => { fx.setVisao(null, {}); toast('Filtros limpos.'); }}>Limpar</button>}
       <span className="fx-visw">
         <label className="fx-vis"><span className="sr-only">Visão</span>

@@ -79,7 +79,7 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
 /* ---------- definição dos filtros ---------- */
 export type Filtro = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 /** onde o filtro vale: no quadro do Funil a descida fase › etapa já é o filtro do funil */
-export type Ctx = 'mapa' | 'kanban';
+export type Ctx = 'mapa' | 'kanban' | 'terrenos';
 export interface Def {
   k: string; g: string; l: string; tipo: 'lista' | 'faixa' | 'marca' | 'periodo' | 'numero'; funil?: boolean; busca?: boolean; dica?: string; dica2?: string;
   un?: string; op?: (d: DadosFx, f: Filtro) => [string, string, string?][]; v?: (t: TerFx) => unknown; p?: (t: TerFx, eu: string | null) => boolean;

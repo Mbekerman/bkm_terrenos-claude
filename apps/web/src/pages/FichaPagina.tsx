@@ -23,7 +23,7 @@ export default function FichaPagina() {
   return (
     <Ficha f={q.data} aba={aba}
       irAba={(k) => navegar(`/terrenos/${codigo}${k === 'geral' ? '' : '/' + k}`, { state: loc.state })}
-      voltar={{ rotulo: de === 'funil' ? 'Funil' : 'Mapa', ir: () => navegar(de === 'funil' ? st?.volta ?? '/funil' : `/mapa/${codigo}`) }}
+      voltar={{ rotulo: de === 'funil' ? 'Funil' : de === 'terrenos' ? 'Terrenos' : 'Mapa', ir: () => navegar(de === 'funil' ? st?.volta ?? '/funil' : de === 'terrenos' ? '/terrenos' : `/mapa/${codigo}`) }}
       abrirMapa={(lat, lng, z) => navegar(`/mapa/${codigo}`, { state: { centro: { lat, lng, z } } })} />
   );
 }
