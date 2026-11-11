@@ -109,9 +109,9 @@ Quem for mudar algo que pareça exigir quebrar uma dessas regras deve parar e fa
 ## Estado atual (8/nov/2026)
 
 - **Banco:** aplicado no projeto Supabase BKM_Desenvolvimento_Imobiliario em 5/nov/2026, pelo workflow `banco.yml`. Esse projeto é o de produção, mas está sendo usado como desenvolvimento até o primeiro uso de verdade; na véspera, os esquemas `app` e `fluxo` serão apagados e recriados limpos. Enquanto isso, as migrations são editadas no lugar.
-- **Front React:** portados login, mapa, novo terreno (com lotes da prefeitura), ficha (Visão geral, Terreno, Comercial, Parâmetros, Entorno, quadro de avanço, painel de Logs), funil, edição da poligonal, filtros e sino. Só no ambiente de desenvolvimento.
+- **Front React:** portados login, mapa, novo terreno (com lotes da prefeitura), ficha (Visão geral, Terreno, Comercial, Parâmetros, Entorno, Estudos de massa, quadro de avanço, painel de Logs), funil, edição da poligonal, filtros e sino. Só no ambiente de desenvolvimento.
 - **Produção (`main`):** recebeu a `develop` em 10/nov (até o #300), mas continua servindo o protótipo, porque o serviço não tem `SUPABASE_URL`. Ligar o sistema real é um passo à parte ([deploy-e-ambientes.md](deploy-e-ambientes.md)).
-- **Ainda no protótipo, sem porte:** tarefas e quadros, viabilidade, estudos de massa, reuniões, documentos, Configurações, Dashboard, Início, topografia, tema escuro e celular.
+- **Ainda no protótipo, sem porte:** tarefas e quadros, viabilidade, reuniões, documentos, Configurações, Dashboard, Início, topografia, tema escuro e celular.
 - **Planejado e não feito:** funções de servidor para Google Agenda, Gmail e Drive; envio de e-mail; banco próprio das tarefas.
 
 Para a lista detalhada do que foi portado e quando, ver [historico.md](historico.md) e [front.md](front.md).

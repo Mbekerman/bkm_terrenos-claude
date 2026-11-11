@@ -36,6 +36,11 @@ Quando o texto fala de "clicar", no celular vale "tocar". A primeira versão do 
 | 11 | [Filtros e visões salvas](11-filtros-e-visoes.md) | Filtrar terrenos no Mapa e no Funil, salvar visões. |
 | 12 | [Ainda não disponível](12-ainda-nao-disponivel.md) | O que existe só no protótipo e o que está planejado. |
 | 13 | [Perguntas frequentes e problemas](13-perguntas-frequentes.md) | Respostas curtas para as dúvidas mais comuns e o que fazer quando algo não funciona. |
+| 14 | [Ficha: aba Estudos de massa](14-ficha-estudos-de-massa.md) | Pedir o estudo ao arquiteto, tipologias, áreas, índices, estudo válido, criar a viabilidade. |
+| 15 | [Ficha: Estudos de viabilidade](15-ficha-viabilidades.md) | Estudo de viabilidade: lista, estudo válido, Resumo da viabilidade, tipologias. |
+| 16 | [Ficha: Jornada](16-ficha-jornada.md) | Linha do tempo da negociação e fases do terreno, com Abrir e Abrir antes da hora. |
+| 17 | [Corretores](17-corretores.md) | Lista de corretores com busca, cadastro, ficha do corretor, desativar, terrenos e ofertas, histórico. |
+| 18 | [Pipeline](18-pipeline.md) | Tabela de terrenos: colunas, ordenação por várias colunas, filtros, busca, ficha na gaveta, tela cheia. |
 | — | [Registro de mudanças](CHANGELOG.md) | O que mudou para o usuário, por data. |
 | — | [Roteiros de vídeo de onboarding](onboarding/README.md) | Três roteiros para novos usuários. |
 

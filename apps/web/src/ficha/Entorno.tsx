@@ -11,7 +11,7 @@ import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { m2 } from '../lib/format';
 import DEMO_CFG from '../../../../tools/setores/demografia.json';
-import { carregarDemo, carregarSetores, estatArea, MUNICIPIOS_SETORES, perfilArea, RD_RAIOS, RENDA_MET, setores, temSetores, type Raio } from '../mapa/setores';
+import { carregarDemo, carregarSetores, estatArea, MUNICIPIOS_SETORES, perfilArea, RAIO_MAX, RAIO_MIN, RD_RAIOS, RENDA_MET, setores, temSetores, type Raio } from '../mapa/setores';
 import { carregarMercado, mercado, mkM2, mkPct, mkVso, MK_SIT, MK_GLIFO, brl, num as nmk, type Emp } from '../mapa/mercado';
 import { Resumo, TabelaEmp } from '../mapa/Concorrencia';
 import { Metodologia } from '../mapa/CamadasSetor';
@@ -86,22 +86,26 @@ export function EntornoAuto({ f }: { f: Ficha }) {
   return null;
 }
 
-export default function AbaEntorno({ f }: { f: Ficha }) {
+/** aba Mercado (pedido do Moises, 10/nov/2026): concorrência, renda, perfil da população e
+    pontos de interesse, cada um num chip; o Entorno de Estudos Técnicos saiu */
+export default function AbaMercado({ f }: { f: Ficha }) {
   /* um raio para cada quadro (pedido do Moisés, 6/nov/2026: antes era o mesmo nos dois) */
-  const [raioR, setRaioR] = useState<Raio>(1000), [raioP, setRaioP] = useState<Raio>(1000);
-  if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Endereço e localização) para ver o entorno.</div></section>;
+  const { rd, pf } = useRaiosSalvos();
+  if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Localização) para ver o mercado.</div></section>;
   return (
     <div className="stack">
-      <SecPontos f={f} />
-      <SecRenda f={f} raio={raioR} setRaio={setRaioR} />
-      <SecPerfil f={f} raio={raioP} setRaio={setRaioP} />
+      {/* ordem pedida pelo Moises (10/nov/2026): Concorrência primeiro, Pontos de interesse por último */}
       <SecConcorrencia f={f} />
+      <SecRenda f={f} r={rd} />
+      <SecPerfil f={f} r={pf} />
+      <SecPontos f={f} />
     </div>
   );
 }
 
 /* ---------- Pontos de interesse ---------- */
 interface Linha { tp: 'g' | 'e'; id: string; nome: string; cat: string; ord: number; dist: string; modo: string; url: string }
+
 function SecPontos({ f }: { f: Ficha }) {
   const { edita } = useSessao();
   const qc = useQueryClient(), toast = useToast();
@@ -173,7 +177,7 @@ function SecPontos({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="entorno" id="ent" primeiro titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
+    <Quadro aba="mercado" id="ent" chip="Pontos de interesse" titulo={<>Pontos de interesse <span className="faint" style={{ fontSize: 12, fontWeight: 400 }}>distâncias a pé</span><Busca terreno={f.id} fontes={['entorno']} /></>}>
       <div className="sec-b">{corpo}</div>
     </Quadro>
   );
@@ -189,10 +193,84 @@ function useSetores(demo: boolean) {
   }, [demo]);
   return st;
 }
-function Raios({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Raio) => void }) {
+/* seletor de raio: 500 m, 1, 2, 3 km e Personalizado com lápis, em que a pessoa digita o raio em km,
+   de 0,1 a 20 km (pedidos do Moises, 11/nov/2026; a Poligonal saiu por ora). O raio escolhido e o personalizado
+   de cada quadro ficam guardados no banco, por pessoa (app.preferencias_usuario), e valem para todos os terrenos. */
+const raioTxt = (m: number) => num(m / 1000, 2) + ' km'; // sempre em km (pedido do Moises, 11/nov/2026)
+const RAIO_LKEY = 'bkm-terrenos-mercado-raio'; // cópia no navegador: abre na hora, antes do banco responder
+const RAIO_CHAVE = 'mercado_raio'; // app.preferencias_usuario: acompanha a pessoa em qualquer computador
+interface RaioVal { raio: Raio; cust: number | null }
+interface RaioSalvo extends RaioVal { mudar: (raio: Raio, cust?: number | null) => void }
+type Raios2 = { rd: RaioVal; pf: RaioVal };
+const raioOk = (n: unknown): n is number => typeof n === 'number' && n >= RAIO_MIN && n <= RAIO_MAX;
+function lerRaios(o: unknown): Raios2 {
+  const um = (x: unknown): RaioVal => {
+    const v = (x ?? {}) as { raio?: unknown; cust?: unknown };
+    return { raio: raioOk(v.raio) ? v.raio : 1000, cust: raioOk(v.cust) ? v.cust : null };
+  };
+  const t = (o ?? {}) as { rd?: unknown; pf?: unknown };
+  return { rd: um(t.rd), pf: um(t.pf) };
+}
+function useRaiosSalvos(): { rd: RaioSalvo; pf: RaioSalvo } {
+  const { session } = useSessao();
+  const uid = session?.user.id;
+  const [v, setV] = useState<Raios2>(() => {
+    try { return lerRaios(JSON.parse(localStorage.getItem(RAIO_LKEY) || '{}')); } catch { return lerRaios(null); }
+  });
+  const mexeu = useRef(false); // escolha feita antes de o banco responder vale mais que a lida
+  useEffect(() => {
+    if (!uid) return;
+    let vivo = true;
+    supabase.from('preferencias_usuario').select('valor').eq('chave', RAIO_CHAVE).maybeSingle().then(({ data, error }) => {
+      if (!vivo || error || !data || mexeu.current) return;
+      const n = lerRaios(data.valor);
+      setV(n);
+      try { localStorage.setItem(RAIO_LKEY, JSON.stringify(n)); } catch { /* sem armazenamento */ }
+    });
+    return () => { vivo = false; };
+  }, [uid]);
+  const gravar = (n: Raios2) => {
+    mexeu.current = true;
+    setV(n);
+    try { localStorage.setItem(RAIO_LKEY, JSON.stringify(n)); } catch { /* sem armazenamento */ }
+    if (uid) void supabase.from('preferencias_usuario')
+      .upsert({ user_id: uid, chave: RAIO_CHAVE, valor: n, atualizado_em: new Date().toISOString() }, { onConflict: 'user_id,chave' })
+      .then(({ error }) => { if (error) console.error(error); });
+  };
+  const um = (id: 'rd' | 'pf'): RaioSalvo => ({
+    ...v[id],
+    mudar: (raio, cust) => gravar({ ...v, [id]: { raio, cust: cust === undefined ? v[id].cust : cust } }),
+  });
+  return { rd: um('rd'), pf: um('pf') };
+}
+function Raios({ r: { raio, cust, mudar } }: { r: RaioSalvo }) {
+  const toast = useToast();
+  const [ed, setEd] = useState(false);
+  const ativo = typeof raio === 'number' && !RD_RAIOS.some(([k]) => k === raio);
+  const fim = useRef(false); // o blur da saída depois do Enter não aplica de novo
+  const aplicar = (v: string) => {
+    if (fim.current) return;
+    fim.current = true; setEd(false);
+    const s = v.replace(/\./g, '').replace(',', '.').trim();
+    if (!s) return;
+    const n = Math.round(Number(s) * 1000); // digitado em km, guardado em metros
+    if (!raioOk(n)) { toast(`O raio vai de ${raioTxt(RAIO_MIN)} a ${raioTxt(RAIO_MAX)}.`, true); return; }
+    mudar(n, n);
+  };
   return (
-    <div className="rd-raios seg" role="group" aria-label="Área">
-      {RD_RAIOS.map(([k, l]) => <button key={k} type="button" aria-pressed={raio === k} disabled={k === 'poly' && !f.poly} onClick={() => setRaio(k)}>{l}</button>)}
+    <div className="rd-raios seg" role="group" aria-label="Raio">
+      {RD_RAIOS.map(([k, l]) => <button key={k} type="button" aria-pressed={raio === k} onClick={() => mudar(k)}>{l}</button>)}
+      {ed
+        ? <form className="rd-cust" onSubmit={(e) => { e.preventDefault(); aplicar((e.currentTarget.elements.namedItem('r') as HTMLInputElement).value); }}>
+            <input name="r" inputMode="decimal" data-fmt="num" data-dec={2} aria-label="Raio personalizado, em km" placeholder="ex.: 1,5"
+              defaultValue={cust != null ? num(cust / 1000, 2) : ''} autoFocus onFocus={(e) => e.currentTarget.select()}
+              onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fim.current = true; setEd(false); } }}
+              onBlur={(e) => aplicar(e.currentTarget.value)} /><span className="rd-cust-u">km</span><Ic n="edit" s={16} />
+          </form>
+        : <button type="button" className="rd-cust-b" aria-pressed={ativo} title={cust == null ? `Digitar o raio, de ${raioTxt(RAIO_MIN)} a ${raioTxt(RAIO_MAX)}` : ativo ? 'Alterar o raio' : `Usar ${raioTxt(cust)} (clique de novo para alterar)`}
+            onClick={() => { if (cust != null && !ativo) mudar(cust); else { fim.current = false; setEd(true); } }}>
+            {cust != null ? raioTxt(cust) : 'Personalizado'}<Ic n="edit" s={16} />
+          </button>}
     </div>
   );
 }
@@ -200,7 +278,8 @@ const areaTxt = (raio: Raio, a: number) => (raio === 'poly' ? m2(Math.round(a)) 
 const pct = (v: number, d = 0) => num(v, d);
 
 /* ---------- Renda e população do entorno ---------- */
-function SecRenda({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Raio) => void }) {
+function SecRenda({ f, r: rs }: { f: Ficha; r: RaioSalvo }) {
+  const raio = rs.raio;
   const st = useSetores(false);
   const [met, setMet] = useState(false);
   const m = RENDA_MET;
@@ -230,15 +309,16 @@ function SecRenda({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Rai
     </>;
   }
   return (
-    <Quadro aba="entorno" id="rd" titulo="Renda e população do entorno">
-      <Raios f={f} raio={raio} setRaio={setRaio} />
+    <Quadro aba="mercado" id="rd" chip="Renda e população" titulo="Renda e população do entorno">
+      <Raios r={rs} />
       <div className="sec-b">{corpo}</div>
       {met && <Metodologia camada="renda" fechar={() => setMet(false)} />}
     </Quadro>
   );
 }
 /* ---------- Perfil da população do entorno ---------- */
-function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Raio) => void }) {
+function SecPerfil({ f, r: rs }: { f: Ficha; r: RaioSalvo }) {
+  const raio = rs.raio;
   const st = useSetores(true);
   const [met, setMet] = useState(false);
   const c: any = DEMO_CFG;
@@ -290,17 +370,17 @@ function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Ra
     }
   }
   return (
-    <Quadro aba="entorno" id="pf" titulo="Perfil da população do entorno">
-      <Raios f={f} raio={raio} setRaio={setRaio} />
+    <Quadro aba="mercado" id="pf" chip="Perfil da população" titulo="Perfil da população do entorno">
+      <Raios r={rs} />
       <div className="sec-b">{corpo}</div>
       {met && <Dialogo titulo="Perfil da população: os dados" onFechar={() => setMet(false)} rodape={<button type="button" className="btn primary" onClick={() => setMet(false)}>Fechar</button>}>
         <div className="rd-mt">
           <p>Tudo vem do Censo Demográfico {c.censoAno} do IBGE, agregados por setor censitário: somas das variáveis publicadas, menos a idade média, que é estimada (ver abaixo).</p>
           <h3>Idade e sexo</h3><p>{c.idadeOrigem} Grupos usados: {c.idade.map((g: any) => g.rotulo).join(', ')}.</p>
-          <h3>Densidade demográfica</h3><p>População residente ÷ área do raio ou da poligonal, em habitantes por km². É bruta: a área inclui ruas, praças, parques e terrenos vazios.</p>
+          <h3>Densidade demográfica</h3><p>População residente ÷ área do círculo do raio, em habitantes por km². É bruta: a área inclui ruas, praças, parques e terrenos vazios.</p>
           <h3>Idade média</h3><p>É a única estimativa do quadro. O IBGE não publica a idade ano a ano por setor, só os cortes 0–4, 5–9, 10–14, 15–19, 20–24, 25–29, 30–39, 40–49, 50–59, 60–69 e 70+. Cada pessoa entra pela idade do meio do seu corte (2,5; 7,5; 12,5 ... 65) e quem tem 70 ou mais conta como 78 anos, a média real dessa faixa em São Paulo no Censo 2022. Conferido com a idade ano a ano da cidade inteira: dá 38,1 anos contra 38,1 de verdade em São Paulo e 37,4 contra 37,3 em São José dos Campos. Setor com algum corte em sigilo fica fora da média; se eles somam mais de 5% das pessoas, o quadro diz quanto entrou.</p>
           <h3>Moradores por domicílio</h3><p>Moradores dos domicílios particulares ocupados (permanentes e improvisados) ÷ esses domicílios; asilos, alojamentos e outros coletivos ficam fora.</p>
-          <h3>Raio e poligonal</h3><p>Cada setor entra pela fração da área dele que cai dentro, supondo os moradores espalhados por igual no setor.</p>
+          <h3>Raio</h3><p>Cada setor entra pela fração da área dele que cai dentro do círculo, supondo os moradores espalhados por igual no setor.</p>
           <h3>Sigilo</h3><p>Quando um setor tem poucas pessoas num grupo, o IBGE não divulga o número (X). Ele nunca vira zero: a diferença para o total aparece como "não divulgado". "5 ou mais moradores" é o total de domicílios menos os de 1 a 4, só nos setores com os quatro divulgados.</p>
           <p className="faint">Versão {c.versao}.</p>
         </div>
@@ -375,7 +455,7 @@ function SecConcorrencia({ f }: { f: Ficha }) {
     </>;
   }
   return (
-    <Quadro aba="entorno" id="mk" titulo="Concorrência no entorno">
+    <Quadro aba="mercado" id="mk" primeiro chip="Concorrência" titulo="Concorrência no entorno">
       <div className="sec-b mk-sec">{corpo}</div>
     </Quadro>
   );

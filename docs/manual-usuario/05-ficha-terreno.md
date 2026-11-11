@@ -6,7 +6,7 @@
 
 Guardar o que o terreno **é**: nome, endereço, quem são os donos (partes), as matrículas e os SQLs de cada um e as áreas. Os dados comerciais (valor, oferta, proposta) ficam na aba Comercial.
 
-A aba tem, nesta ordem, os quadros: **Identificação**, **Endereço e localização**, **Parâmetros urbanísticos** (com os quadros Índices urbanísticos, Restrições e entorno e Histórico de uso; ver [07](07-ficha-parametros.md)), **Partes**, **Matrículas e SQLs** (com o quadro de cada parte), **Áreas e dimensões** e **IPTU**. Cada quadro abre e fecha pela seta do título. Todos os campos se editam no lugar (ver [04](04-ficha-visao-geral.md#editar-no-lugar)).
+A aba tem, nesta ordem, as seções: **Identificação**, **Localização**, **Índices** (ver [07](07-ficha-parametros.md)), **Partes**, **Matrículas e Lotes** (as matrículas e os SQLs ou inscrições, com o quadro de cada parte; até 10/nov/2026, Matrículas e SQLs), **Dimensões** e **IPTU**. Cada seção é um botão na barra logo abaixo das abas, e aparece uma de cada vez (ver [04](04-ficha-visao-geral.md#quadros-que-abrem-e-fecham)). Todos os campos se editam no lugar (ver [04](04-ficha-visao-geral.md#editar-no-lugar)).
 
 ## Identificação
 
@@ -20,7 +20,7 @@ A aba tem, nesta ordem, os quadros: **Identificação**, **Endereço e localiza�
 | **Identificado em** | Data em que o terreno chegou. |
 | **Observações gerais** | Texto livre. |
 
-## Endereço e localização
+## Localização
 
 **Regra:** **CEP, logradouro, bairro e município não se digitam na ficha.** Eles vêm da posição da poligonal no mapa. O CEP aparece no formato 00.000-000. Para mudar, use o lápis **"Editar no mapa"** (no título deste quadro ou ao lado do endereço no Resumo). Ele abre a página Mapa com a poligonal em edição.
 
@@ -75,7 +75,7 @@ Do proprietário, só o **nome** e a **participação** são obrigatórios; o re
 
 A lixeira exclui a parte. As matrículas e SQLs dela voltam a ficar soltos.
 
-## Matrículas e SQLs
+## Matrículas e Lotes
 
 **Para que serve:** ligar o terreno aos documentos (matrícula no cartório) e aos lotes da prefeitura (SQL ou inscrição), e dizer de qual parte é cada um.
 
@@ -84,7 +84,7 @@ O quadro tem duas metades:
 - **Matrículas**: digite o **Nº da matrícula**, confira o **Cartório** (já vem preenchido) e a **Área registrada**, e clique em **Incluir**. Vira uma etiqueta **amarela**.
 - **SQLs** (ou o nome da inscrição na sua cidade): digite e clique em **Incluir**, ou use **"Escolher no mapa"**. Vira uma etiqueta **roxa**.
 
-**Em São José dos Campos**, a inscrição imobiliária é consultada sozinha no **GeoSanja** assim que é incluída: vêm a poligonal do lote, a zona com a área no lote, a macrozona e as restrições (centralidade, setor, riscos, parques, linha de transmissão...), e a poligonal do terreno é refeita pela soma dos lotes, como em São Paulo. A janela da etiqueta tem **"Buscar no GeoSanja"** (ou **"Buscar de novo"**). O GeoSanja **não traz** área cadastral, endereço e número, testada, valor venal nem IPTU: esses você digita (na janela da etiqueta e na aba Terreno). O **cartório** (1º ou 2º Registro de Imóveis) e a **Zona** (região da cidade pela LC 612: Centro, Norte, Sul, Leste, Oeste ou Sudeste) vêm sozinhos do GeoSanja pelo ponto do terreno, ao abrir a ficha, e o que você digitar não é trocado. Nos Índices urbanísticos, fora de São Paulo, aparecem um **Potencial** e um **CA máximo** só (a lei da cidade não separa HIS e HMP). **"Escolher no mapa"** também existe em São José: abre o mapa de lotes do GeoSanja das quadras da poligonal (ver [03](03-novo-terreno.md#lotes-da-prefeitura-são-paulo-e-são-josé-dos-campos)); as marcadas entram sem parte e as desmarcadas das quadras abertas saem.
+**Em São José dos Campos**, a inscrição imobiliária é consultada sozinha no **GeoSanja** assim que é incluída: vêm a poligonal do lote, a zona com a área no lote, a macrozona e as restrições (centralidade, setor, riscos, parques, linha de transmissão...), e a poligonal do terreno é refeita pela soma dos lotes, como em São Paulo. A janela da etiqueta tem **"Buscar no GeoSanja"** (ou **"Buscar de novo"**). O GeoSanja **não traz** área cadastral, endereço e número, testada, valor venal nem IPTU: esses você digita (na janela da etiqueta e na aba Terreno). O **cartório** (1º ou 2º Registro de Imóveis) e a **Zona** (região da cidade pela LC 612: Centro, Norte, Sul, Leste, Oeste ou Sudeste) vêm sozinhos do GeoSanja pelo ponto do terreno, ao abrir a ficha, e o que você digitar não é trocado. Nos Índices, fora de São Paulo, aparecem um **Potencial** e um **CA máximo** só (a lei da cidade não separa HIS e HMP). **"Escolher no mapa"** também existe em São José: abre o mapa de lotes do GeoSanja das quadras da poligonal (ver [03](03-novo-terreno.md#lotes-da-prefeitura-são-paulo-e-são-josé-dos-campos)); as marcadas entram sem parte e as desmarcadas das quadras abertas saem.
 
 Cada etiqueta mostra o número e um **x**. Em tela estreita, as duas metades ficam uma sobre a outra e cada uma recolhe pela seta.
 
@@ -94,18 +94,19 @@ Embaixo vem **um quadro por parte**, numa grade, com a seta que abre e fecha a l
 
 **Arraste** a etiqueta da área de cima para o quadro da parte, ou de uma parte para outra.
 
-**Várias de uma vez** (no computador): clique num espaço vazio da seção e arraste o mouse; um retângulo azul aparece e as etiquetas que ele toca ficam **selecionadas** (contorno azul). Para somar etiquetas à seleção, segure **Ctrl** (⌘ no Mac) ou **Shift** e clique nelas, ou desenhe outro retângulo com a tecla apertada. Durante o retângulo, a roda do mouse rola a tela normalmente: o retângulo continua preso ao ponto onde você clicou e vai até onde o ponteiro está, sem perder o que já pegou (perto da borda de cima ou de baixo, a tela também rola sozinha). Depois arraste **qualquer uma das selecionadas**: vão todas juntas, com o número delas no canto da etiqueta que você leva. As regras abaixo valem para cada uma; as que não puderem entrar ficam onde estavam, e o aviso diz quantas foram e por quê. Matrículas e SQLs podem ir no mesmo grupo: as matrículas entram primeiro, e os SQLs vão para dentro delas quando a parte fica com uma matrícula só. **Ctrl+Z** desfaz o grupo inteiro de uma vez. Clique no vazio ou **Esc** limpa a seleção.
+**Várias de uma vez** (no computador): clique num espaço vazio da seção e arraste o mouse; um retângulo azul aparece e as etiquetas que ele toca ficam **selecionadas** (contorno azul). Para somar etiquetas à seleção, segure **Ctrl** (⌘ no Mac) ou **Shift** e clique nelas, ou desenhe outro retângulo com a tecla apertada. Durante o retângulo, a roda do mouse rola a tela normalmente: o retângulo continua preso ao ponto onde você clicou e vai até onde o ponteiro está, sem perder o que já pegou (perto da borda de cima ou de baixo, a tela também rola sozinha). Depois arraste **qualquer uma das selecionadas**: vão todas juntas, com o número delas no canto da etiqueta que você leva. As regras abaixo valem para cada uma; as que não puderem entrar ficam onde estavam, e o aviso diz quantas foram e por quê. Matrículas e Lotes podem ir no mesmo grupo: as matrículas entram primeiro, e os SQLs vão para dentro delas quando a parte fica com uma matrícula só. **Ctrl+Z** desfaz o grupo inteiro de uma vez. Clique no vazio ou **Esc** limpa a seleção.
 
 **Regras:**
 
 - Cada **matrícula** levada a uma parte vira um **subquadro amarelo** dela.
 - O **SQL entra sempre dentro de uma matrícula.** Solto sobre uma parte com uma matrícula só, vai para ela; com mais de uma matrícula, solte sobre a matrícula certa. Parte sem matrícula recusa o SQL com o aviso **"É necessário atribuir uma matrícula à parte antes de lançar lotes nela"**.
 - Mover ou tirar a matrícula leva ou solta os SQLs dela junto.
+- **Matrícula repetida** (a mesma matrícula em mais de uma parte): as cópias são a mesma matrícula e têm sempre os **mesmos SQLs**. A cópia nova já nasce com os SQLs da original, e pôr ou tirar um SQL em qualquer uma das cópias põe ou tira em todas. Tirar a matrícula de uma parte só não mexe nos SQLs das outras.
 - Com uma parte só, o botão **"Enviar tudo para Vendedor 1"** faz tudo de uma vez.
 
 ### Menu da etiqueta (clique direito)
 
-- **Duplicar**: cria uma cópia no mesmo lugar da original. Serve quando o mesmo lote é de mais de uma parte. A cópia nasce com o que falta para 100% (ou com 0% e um alerta, se o lote já está todo nas outras partes).
+- **Duplicar**: cria uma cópia no mesmo lugar da original. Serve quando o mesmo lote é de mais de uma parte. A cópia nasce com o que falta para 100% (ou com 0% e um alerta, se o lote já está todo nas outras partes). A matrícula duplicada já vem com os SQLs dela. O SQL que está dentro de uma matrícula, duplicado, nasce solto na área de cima, para você pôr numa outra matrícula (na mesma ele já está em todas as cópias).
 - **Mover para** (ou **Pôr em**, se está sem parte): leva a etiqueta para outra parte.
 - **Editar**: abre a janela da etiqueta.
 - **Tirar da parte**: devolve para a área de cima. Se o lote está em outras partes, a etiqueta fica solta com o percentual dela; o **x** de uma cópia solta a apaga.
@@ -118,6 +119,9 @@ Toda etiqueta mostra uma **mini pizza** com a fração dela: cheia em 100%, trac
 - O percentual é **opcional**. Sem ele, o que falta para 100% se divide igual entre as partes sem percentual.
 
 **Para que serve:** a **área da parte** = soma de (área do SQL × % do SQL × % da matrícula). Sem SQL, usa a área das matrículas.
+
+- O **% da matrícula** é quanto da matrícula é daquela parte. Com a mesma matrícula nos Vendedores 1, 2 e 3 com 50%, 30% e 20%, e SQLs somando 1.000 m², as partes ficam com 500, 300 e 200 m²: a área não conta duas vezes.
+- O **% do SQL** é quanto do SQL está dentro daquela matrícula, o mesmo em todas as cópias dela. Só muda alguma coisa quando um SQL é dividido entre duas matrículas diferentes; no normal, fica 100%.
 
 ### Janela da etiqueta (lápis ou clique)
 
@@ -150,7 +154,7 @@ Se a matrícula ou o SQL já está em outro terreno, o sistema não deixa inclui
 
 Mostra a **área da parte** e a **divergência Matrícula × Prefeitura** (a área cadastral dos SQLs comparada com a das matrículas).
 
-## Áreas e dimensões
+## Dimensões
 
 Quatro cartões de área, nesta ordem: lado a lado quando cabem, senão em dois pares (Documental e Cadastral em cima, Topográfica e Poligonal embaixo).
 
@@ -183,20 +187,22 @@ Em São Paulo, o sistema mede sozinho, pela poligonal, **para quais ruas o terre
 
 ## IPTU
 
-Logo abaixo de Áreas e dimensões. Nasce fechado, como os outros quadros da aba (abre pela seta do título). Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
+Logo abaixo de Dimensões. Nasce fechado, como os outros quadros da aba (abre pela seta do título). Em cima, o **Panorama do terreno**, a soma de todos os SQLs:
 
-- três caixas, como as de Áreas e dimensões: **valor venal do terreno**, **da construção** e **total**, este em destaque (três por linha, também na gaveta da ficha);
+- três caixas, como as de Dimensões: **valor venal do terreno**, **da construção** e **total**, este em destaque (três por linha, também na gaveta da ficha);
 - embaixo, em dupla: **área total do terreno** e **área construída** (da Prefeitura);
-- por último, em destaque: **IPTU anual** e **IPTU mensal** (anual ÷ 10, as 10 prestações da Prefeitura).
+- por último, em destaque: **IPTU anual** e **IPTU Mensal** (o anual ÷ 10, as 10 prestações da Prefeitura).
+
+Os nomes das caixas nunca quebram linha: sem espaço (no celular), aparecem abreviados, como "Valor venal const.", e o nome inteiro aparece com o mouse parado em cima.
 
 O título do panorama diz o exercício e quantos SQLs ainda não têm IPTU. Em **Ver SQL por SQL**, uma linha por SQL: exercício, venal do terreno, venal da construção, venal total, IPTU anual, mensal e a fonte com a data.
 
 - **Em São Paulo o IPTU vem sozinho**: ao cadastrar o terreno, ao incluir um SQL (digitado, pelo mapa de lotes ou em Selecionar lotes) e ao abrir a ficha de um SQL que ainda não tem o IPTU da Prefeitura, o sistema emite a notificação de lançamento (a "2ª via") no site da Prefeitura e grava o venal e o IPTU do exercício. Isso corre por trás: dá para continuar cadastrando. Enquanto não chega, a seção IPTU fica apagada, com um brilho passando e "Buscando o IPTU na Prefeitura: N de M SQLs". Cada SQL leva até um minuto, um de cada vez. Se a Prefeitura não tiver a notificação do ano ainda, vem a do ano anterior. Em São Paulo o valor venal e o IPTU **não se digitam**.
-- Se a busca de um SQL falha, o motivo aparece na coluna Fonte do SQL por SQL. **Buscar de novo** (no título do quadro, ou "Buscar" em cada linha; só quem edita) tenta outra vez.
+- Se a busca de um SQL falha, o motivo aparece na coluna Fonte do SQL por SQL. **Atualizar dados** (no título do quadro, ou "Buscar" em cada linha; só quem edita) tenta outra vez.
 - **Detalhe** (na linha trazida da Prefeitura): número da notificação, área do terreno, testada, área construída, uso, padrão, ano da construção, valor do m² do terreno e da construção, fatores, alíquota, descontos, impostos predial e territorial, total do ano e vencimento da 1ª prestação.
 - **PDF** (na mesma linha): emite a notificação e baixa o PDF, mesmo antes de o valor ter sido trazido (aí vale o exercício do ano corrente).
-- Buscar de novo no mesmo ano com os mesmos valores não muda nada; com valores diferentes, vira uma correção (a anterior fica no histórico).
-- **Fora de São Paulo** não há busca: o valor venal e o IPTU se digitam em **Lançar** (ou **Atualizar**) na linha de cada inscrição, na lista "Ver inscrição por inscrição", que já vem aberta, ou na janela da inscrição (Matrículas e SQLs), onde o formulário já vem aberto enquanto não há IPTU lançado.
+- Atualizar dados no mesmo ano com os mesmos valores não muda nada; com valores diferentes, vira uma correção (a anterior fica no histórico).
+- **Fora de São Paulo** não há busca: o valor venal e o IPTU se digitam em **Lançar** (ou **Atualizar**) na linha de cada inscrição, na lista "Ver inscrição por inscrição", que já vem aberta, ou na janela da inscrição (Matrículas e Lotes), onde o formulário já vem aberto enquanto não há IPTU lançado.
 - O que pode dar errado: a Prefeitura pedir captcha ("Tente mais tarde"), recusar a senha do sistema, não ter notificação para o SQL, ou o site estar fora. A mensagem aparece embaixo da tela.
 
 ## O que não é possível na aba Terreno

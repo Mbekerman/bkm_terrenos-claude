@@ -84,22 +84,29 @@ function useParam(f: Ficha) {
 }
 type D = NonNullable<ReturnType<typeof useParam>['data']>;
 
-/** a seção da aba Terreno: um quadro que abre e fecha, com os três quadros dentro */
+/** a seção da aba Terreno: Índices urbanísticos (o quadro Parâmetros urbanísticos, que juntava os três, saiu com as seções em
+    chips; Restrições e entorno e Histórico de uso foram para Estudos Técnicos; pedidos do Moises, 10/nov/2026) */
 export default function SecParametros({ f }: { f: Ficha }) {
   const q = useParam(f);
-  return (
-    <Quadro aba="terreno" id="param" titulo="Parâmetros urbanísticos">
-      <div className="qd-filhos">
-        {q.isLoading ? <div className="muted">Carregando…</div>
-          : q.error || !q.data ? <div className="muted">Não foi possível carregar os parâmetros: {String((q.error as any)?.message ?? q.error)}</div>
-          : <>
-            <SecAnalise f={f} d={q.data} />
-            <SecRestricoes f={f} d={q.data} />
-            <SecHistUso f={f} d={q.data} />
-          </>}
-      </div>
+  if (q.isLoading || q.error || !q.data) return (
+    <Quadro aba="terreno" id="indices" primeiro chip="Índices" titulo="Índices Urbanísticos">
+      <div className="sec-b"><div className="muted">{q.isLoading ? 'Carregando…' : `Não foi possível carregar os parâmetros: ${String((q.error as any)?.message ?? q.error)}`}</div></div>
     </Quadro>
   );
+  return <SecAnalise f={f} d={q.data} />;
+}
+
+/** Estudos Técnicos › Restrições e entorno e › Histórico de uso (saíram da aba Terreno; pedido do Moises, 10/nov/2026) */
+export function AbaRestricoes({ f }: { f: Ficha }) {
+  const q = useParam(f);
+  return q.data ? <SecRestricoes f={f} d={q.data} /> : <Carregando q={q} aba="restricoes" id="rest" titulo="Restrições e entorno" />;
+}
+export function AbaHistUso({ f }: { f: Ficha }) {
+  const q = useParam(f);
+  return q.data ? <SecHistUso f={f} d={q.data} /> : <Carregando q={q} aba="historico-uso" id="histuso" titulo="Histórico de uso" />;
+}
+function Carregando({ q, aba, id, titulo }: { q: { isLoading: boolean; error: unknown }; aba: string; id: string; titulo: string }) {
+  return <Quadro aba={aba} id={id} primeiro titulo={titulo}><div className="sec-b"><div className="muted">{q.isLoading ? 'Carregando…' : `Não foi possível carregar: ${String((q.error as any)?.message ?? q.error)}`}</div></div></Quadro>;
 }
 
 /* ---------- Índices urbanísticos ---------- */
@@ -124,7 +131,7 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
   const fontes = [...new Map(d.lz.filter((r) => r.parametro_id && (!um || r.tipo === 'mercado')).map((r) => [r.parametro_id, d.cat.get(r.parametro_id)] as [unknown, R | undefined]).filter((x) => x[1])).values()] as R[];
   const sig = new Map(d.lz.map((r) => [r.zoneamento_id, r.sigla]));
   return (
-    <Quadro aba="terreno" id="indices" primeiro titulo={<>Índices urbanísticos<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} aberto={reg || undefined}
+    <Quadro aba="terreno" id="indices" primeiro chip="Índices" titulo={<>Índices Urbanísticos<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} aberto={reg || undefined}
       acoes={edita && !reg ? <button className="btn sm zn-reg" aria-label="Registrar zonas" title="Registrar zonas" onClick={() => setReg(true)}><Ic n="add" s={16} /><span className="oc-m">Registrar zonas</span></button> : null}>
       <div className="sec-b">
         {reg ? <FormZonas f={f} d={d} sjc={sjc} fechar={() => setReg(false)} /> : null}
@@ -153,7 +160,7 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
               {p.regras ? <div className="muted">{p.regras}</div> : null}
               <div className="faint">{p.fonte_norma}{p.fonte_dispositivo ? ', ' + p.fonte_dispositivo : ''}{p.fonte_url ? <> · <a href={p.fonte_url} target="_blank" rel="noopener">texto da lei</a></> : null}</div></div>)}
           </details>
-        </> : <div className="muted">Nenhuma zona registrada. Incluir o SQL em Terreno › Matrículas e SQLs (consulta do GeoSampa ou GeoSanja) registra as zonas de cada lote; ou registre à mão.</div>}
+        </> : <div className="muted">Nenhuma zona registrada. Incluir o SQL em Terreno › Matrículas e Lotes (consulta do GeoSampa ou GeoSanja) registra as zonas de cada lote; ou registre à mão.</div>}
         {d.hist.length ? <details className="details" style={{ marginTop: 12 }}><summary>{d.hist.length} análise{d.hist.length > 1 ? 's' : ''} anterior{d.hist.length > 1 ? 'es' : ''}</summary>
           {d.hist.map((h) => <div key={h.id} className="muted" style={{ fontSize: 13, padding: '4px 0' }}>{fd(h.data_verificacao)} · {h.fonte} · {(h.analise_zoneamentos as R[]).map((z) => `${z.zoneamentos?.sigla} ${m2(z.area_abrangida_m2)}`).join(', ')}</div>)}
         </details> : null}
@@ -487,7 +494,7 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
     } catch (e) { console.error(e); toast('Não foi possível consultar o GeoSampa agora. Tente de novo em instantes.'); } finally { setBusc(false); }
   };
   const acoes = sp && edita && f.poly ? <button className="btn sm text" disabled={busc} onClick={consultar}><Ic n="search" s={16} />{busc ? 'Consultando...' : d.area ? 'Consultar de novo' : 'Consultar pela poligonal'}</button> : null;
-  if (!sp) return <Quadro aba="terreno" id="rest" titulo="Restrições e entorno"><div className="sec-b"><div className="muted">Não disponível nesta cidade. O que a prefeitura traz está em cada lote, acima.</div></div></Quadro>;
+  if (!sp) return <Quadro aba="restricoes" id="rest" primeiro titulo="Restrições e entorno"><div className="sec-b"><div className="muted">Não disponível nesta cidade. O que a prefeitura traz está em cada lote, em Terreno › Índices.</div></div></Quadro>;
   const orig = r ? (r.fonte === 'poligonal' ? `GeoSampa pela poligonal do terreno, ${fdh(r.em)}${r.user ? ' por ' + r.user : ''}` : `GeoSampa por ${r.n} lote${r.n! > 1 ? 's' : ''} (inscrições), último em ${fdh(r.em)}`) : '';
   const linha = ([tema, o]: Item) => {
     const cel = (v: ReactNode) => <div className="rs-l" key={tema}><span className="k">{tema}</span><span className="v">{v}</span></div>;
@@ -501,9 +508,9 @@ function SecRestricoes({ f, d }: { f: Ficha; d: D }) {
     return cel(<>{vals.map((v, i) => <span key={v}>{i ? ' ' : ''}<span className={`chip ${o.info ? '' : grav}`}>{v}</span></span>)}{ct ? <> {verCt}</> : null}</>);
   };
   return (
-    <Quadro aba="terreno" id="rest" titulo={<>Restrições e entorno<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} acoes={acoes}>
+    <Quadro aba="restricoes" id="rest" primeiro titulo={<>Restrições e entorno<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} acoes={acoes}>
       <div className="sec-b">
-        <div className="hint rs-fonte">{r ? orig : f.poly ? 'Sem consulta ao GeoSampa: consulte pela poligonal ou inclua os SQLs em Terreno › Matrículas e SQLs.' : 'Desenhe a poligonal do terreno para consultar.'}</div>
+        <div className="hint rs-fonte">{r ? orig : f.poly ? 'Sem consulta ao GeoSampa: consulte pela poligonal ou inclua os SQLs em Terreno › Matrículas e Lotes.' : 'Desenhe a poligonal do terreno para consultar.'}</div>
         {REST_GRUPOS.map(([g, itens]) => <div className="rs-g" key={g}><div className="rs-gt">{g}</div>{itens.map(linha)}</div>)}
       </div>
       {ctAb ? <DetalhesContaminacao regs={regs} poly={f.poly} fechar={() => setCtAb(false)} /> : null}
@@ -525,7 +532,7 @@ function SecHistUso({ f, d }: { f: Ficha; d: D }) {
     await salvarT({ historico_uso: v || null });
   };
   return (
-    <Quadro aba="terreno" id="histuso" titulo="Histórico de uso">
+    <Quadro aba="historico-uso" id="histuso" primeiro titulo="Histórico de uso">
       <div className="sec-b">
         <div className="rs-l"><span className="k">Cadastro de áreas contaminadas (prefeitura e Cetesb)</span><span className="v">
           {!sp ? <span className="faint">Não disponível nesta cidade</span> : !r ? <span className="faint">Sem consulta ao GeoSampa</span>

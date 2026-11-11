@@ -88,7 +88,7 @@ function aoDigitarSombra(e: Event) { const el = e.target as HTMLInputElement; if
 /* percentual e metros: ao sair do campo, completa as duas casas ("66" → "66,00"; pedidos do Moisés, 5 e 6/nov/2026) */
 function aoSair(e: Event) {
   const el = e.target as HTMLInputElement;
-  if (el?.tagName !== 'INPUT' || !DUAS.has(tipoFmt(el) ?? '') || !/\d/.test(el.value) || /[a-z]/i.test(el.value)) return;
+  if (el?.tagName !== 'INPUT' || el.dataset.suf || !DUAS.has(tipoFmt(el) ?? '') || !/\d/.test(el.value) || /[a-z]/i.test(el.value)) return;
   const [i, f = ''] = el.value.split(',');
   const novo = `${i || '0'},${(f + '00').slice(0, 2)}`;
   if (novo === el.value) return;
@@ -100,11 +100,14 @@ function aoSair(e: Event) {
    do texto, sem entrar no valor: ",00" no percentual e em metros (que se completam ao sair) e o resto do desenho em
    telefone, CPF ou CNPJ e CEP ("(11) 9876_-____"). Campo alinhado à direita fica sem a sombra. */
 let sombra: HTMLSpanElement | null = null;
-let regua: CanvasRenderingContext2D | null = null;
+let regua: HTMLSpanElement | null = null;
 function falta(el: HTMLInputElement, t: string): string {
   const v = el.value;
   if (!/\d/.test(v) || /[a-z]/i.test(v)) return '';
-  if (DUAS.has(t)) { const i = v.indexOf(','); return i < 0 ? ',00' : '0'.repeat(Math.max(0, 2 - (v.length - i - 1))); }
+  // data-suf: a unidade faz parte do texto (o % da viabilidade, pedido do Moises de 11/nov/2026) e entra na sombra
+  const suf = el.dataset.suf ?? '';
+  if (suf && v.endsWith(suf)) return '';
+  if (DUAS.has(t)) { const i = v.indexOf(','); return (i < 0 ? ',00' : '0'.repeat(Math.max(0, 2 - (v.length - i - 1)))) + suf; }
   if (t in MASC) {
     const d = v.replace(/\D/g, '').length, m = MASC[t as keyof typeof MASC](t === 'doc' ? Math.min(d, 11) : d);
     let n = 0, i = 0;
@@ -119,13 +122,16 @@ function mostrarSombra(el: HTMLInputElement) {
   const cs = r ? getComputedStyle(el) : null;
   if (!r || !cs || /right|end|center/.test(cs.textAlign) || el.scrollWidth > el.clientWidth + 1) { if (sombra) sombra.hidden = true; return; }
   if (!sombra) { sombra = document.createElement('span'); sombra.className = 'masc-sombra'; sombra.setAttribute('aria-hidden', 'true'); document.body.appendChild(sombra); }
-  regua ??= document.createElement('canvas').getContext('2d');
-  if (!regua) return;
-  regua.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-  const b = el.getBoundingClientRect(), x = b.left + el.clientLeft + parseFloat(cs.paddingLeft) + regua.measureText(el.value).width - el.scrollLeft;
+  // a medida do texto vem de um span com a mesma fonte do campo (o canvas ignora os algarismos
+  // tabulares do campo, e a sombra encavalava no último dígito)
+  regua ??= Object.assign(document.createElement('span'), { ariaHidden: 'true' });
+  if (!regua.isConnected) { Object.assign(regua.style, { position: 'fixed', left: '-9999px', top: '0', whiteSpace: 'pre', visibility: 'hidden' }); document.body.appendChild(regua); }
+  const FONTE = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontStretch', 'fontOpticalSizing', 'fontVariationSettings', 'fontFeatureSettings', 'fontKerning', 'fontVariantNumeric', 'letterSpacing', 'wordSpacing'] as const;
+  for (const k of FONTE) { regua.style[k] = cs[k]; sombra.style[k] = cs[k]; }
+  regua.textContent = el.value;
+  const b = el.getBoundingClientRect(), x = b.left + el.clientLeft + parseFloat(cs.paddingLeft) + regua.getBoundingClientRect().width - el.scrollLeft;
   const sobra = b.right - el.clientLeft - parseFloat(cs.paddingRight) - x;
   if (sobra < 8) { sombra.hidden = true; return; }
-  sombra.style.font = regua.font;
   Object.assign(sombra.style, { left: x + 'px', top: b.top + 'px', height: b.height + 'px', lineHeight: b.height + 'px', maxWidth: sobra + 'px' });
   sombra.textContent = r;
   sombra.hidden = false;
@@ -207,8 +213,8 @@ export function instalarMascaras() {
 }
 
 /** a unidade dentro do campo, como o .adorno do protótipo: R$ antes do número; %, m e m² depois (pedido do Moisés, 6/nov/2026) */
-export type Unidade = 'moeda' | 'pct' | 'm' | 'm2';
-const UN: Record<Unidade, string> = { moeda: 'R$', pct: '%', m: 'm', m2: 'm²' };
+export type Unidade = 'moeda' | 'pct' | 'm' | 'm2' | 'un' | 'dias';
+const UN: Record<Unidade, string> = { moeda: 'R$', pct: '%', m: 'm', m2: 'm²', un: 'unid.', dias: 'dias' };
 export function Adorno({ t, children }: { t: Unidade; children: ReactNode }) {
   return createElement('span', { className: `adorno ${t}` }, children, createElement('span', { className: 'adorno-t', 'aria-hidden': true }, UN[t]));
 }

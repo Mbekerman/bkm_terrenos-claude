@@ -15,10 +15,22 @@ import { abrirNovo } from '../novo/estado';
 // são os do protótipo, em styles.css. Primeira versão: Mapa e Funil no menu, sem tema escuro.
 
 /** Itens do menu na primeira versão: [rota, rótulo, ícone]. */
-const NAV: [string, string, keyof typeof BI][] = [
+const NAV: [string, string, keyof typeof BI | keyof typeof BI_EXTRA][] = [
+  ['terrenos', 'Pipeline', 'terrenos'],
   ['mapa', 'Mapa', 'mapa'],
   ['funil', 'Funil', 'funil'],
+  ['corretores', 'Corretores', 'corretores'],
 ];
+/* ícones de linha no traço dos ícones BKM que o protótipo não tem (o protótipo não tinha a página Corretores) */
+const TRACO = 'fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"';
+const BI_EXTRA = {
+  /* o ícone de Terrenos do protótipo (proto.js › BI.terrenos) */
+  terrenos: '<path d="M20 14 L76 14 Q82 14 82 20 L82 76 Q82 82 76 82 L20 82 Q14 82 14 76 L14 20 Q14 14 20 14 Z" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/><path d="M48 14 L48 82" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 48 L82 48" fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/><path d="M58 55 L72 55 Q75 55 75 58 L75 72 Q75 75 72 75 L58 75 Q55 75 55 72 L55 58 Q55 55 58 55 Z" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>',
+  corretores: `<path d="M38 46 C46.3 46 53 39.3 53 31 C53 22.7 46.3 16 38 16 C29.7 16 23 22.7 23 31 C23 39.3 29.7 46 38 46 Z" ${TRACO}/>`
+    + `<path d="M12 80 C12 64 23.6 54 38 54 C52.4 54 64 64 64 80" ${TRACO}/>`
+    + `<path d="M62 46 C68.6 46 74 40.6 74 34 C74 27.4 68.6 22 62 22" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>`
+    + `<path d="M70 56 C79 59 84 67 84 78" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>`,
+} as const;
 const CHAVE_MENU = 'bkm-terrenos-menu';
 /** O que a moldura passa às telas: o texto da busca da barra superior. */
 export interface ContextoMoldura { busca: string }
@@ -33,8 +45,9 @@ export function Ic({ n, s = 20 }: { n: keyof typeof P; s?: number }) {
 }
 
 /** Ícone BKM do protótipo (bi). */
-export function Bi({ n, s = 32 }: { n: keyof typeof BI; s?: number }) {
-  return <svg className="bkm-ico" viewBox="0 0 96 96" width={s} height={s} style={{ width: s, height: s }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: BI[n] }} />;
+export function Bi({ n, s = 32 }: { n: keyof typeof BI | keyof typeof BI_EXTRA; s?: number }) {
+  const html = n in BI_EXTRA ? BI_EXTRA[n as keyof typeof BI_EXTRA] : BI[n as keyof typeof BI];
+  return <svg className="bkm-ico" viewBox="0 0 96 96" width={s} height={s} style={{ width: s, height: s }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 /** Selo do ambiente ao lado do logo (fora da produção). */
@@ -107,7 +120,7 @@ function Perfil() {
    depois; "Configurar notificações" entra com Configurações. */
 interface Aviso { id: string; texto: string; criada_em: string; lida_em: string | null; autor_id: string | null; origem_tabela: string;
   email_status: string | null; terrenos: { codigo: string; nome: string | null } | null }
-const ABA_ORIGEM: Record<string, string> = { reunioes: 'comercial', propostas: 'comercial', ofertas: 'comercial', reuniao_agenda: 'comercial' };
+const ABA_ORIGEM: Record<string, string> = { reunioes: 'comercial', propostas: 'comercial', ofertas: 'comercial', reuniao_agenda: 'comercial', estudos_massa: 'massa' };
 
 function Sino() {
   const { session, empresa } = useSessao();
@@ -175,9 +188,13 @@ function Sino() {
 }
 
 export default function Moldura() {
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
   const navegar = useNavigate();
   const rota = pathname.split('/')[1] || 'mapa';
+  /* /terrenos e /terrenos/A123/gaveta são o Pipeline; a ficha (/terrenos/A123) acende o item de onde a pessoa veio (proto.js › render) */
+  const pipeline = pathname === '/terrenos' || /^\/terrenos\/[^/]+\/gaveta$/.test(pathname);
+  const deOnde = (state as { de?: string } | null)?.de;
+  const ativo = rota === 'terrenos' && !pipeline && pathname !== '/terrenos/novo' ? deOnde ?? null : rota;
   const [menuMin, setMenuMin] = useState(() => { try { return localStorage.getItem(CHAVE_MENU) !== 'aberto'; } catch { return true; } });
   function alternar() {
     const novo = !menuMin;
@@ -188,7 +205,7 @@ export default function Moldura() {
   useEffect(() => { document.body.classList.toggle('menu-min', menuMin); }, [menuMin]);
   useEffect(() => { document.body.dataset.rota = rota; }, [rota]);
   const novo = () => abrirNovo();
-  /* busca da barra superior: filtra a lista de terrenos da página Mapa; digitada em outra página, leva ao Mapa com o texto */
+  /* busca da barra superior: filtra a lista de terrenos da página Mapa e a tabela do Pipeline; digitada em outra página, leva ao Mapa com o texto */
   const [busca, setBusca] = useState('');
   return (
     <>
@@ -202,7 +219,7 @@ export default function Moldura() {
           <label className="search" htmlFor="q-top">
             <Bi n="busca" s={20} />
             <input id="q-top" type="search" placeholder="Buscar por nome, endereço, matrícula, SQL ou corretor" autoComplete="off" value={busca}
-              onChange={(e) => { setBusca(e.target.value); if (rota !== 'mapa' && e.target.value.trim()) navegar('/mapa'); }} />
+              onChange={(e) => { setBusca(e.target.value); if (rota !== 'mapa' && !pipeline && e.target.value.trim()) navegar('/mapa'); }} />
           </label>
           <div className="top-right">
             <Sino />
@@ -219,7 +236,7 @@ export default function Moldura() {
             <Ic n="add" s={24} /><span className="rot">Novo terreno</span>
           </button>
           {NAV.map(([r, l, i]) => (
-            <button key={r} className="nav-item" onClick={() => navegar(`/${r}`)} aria-current={rota === r ? 'page' : undefined} {...(menuMin ? { title: l, 'aria-label': l } : {})}>
+            <button key={r} className="nav-item" onClick={() => navegar(`/${r}`)} aria-current={ativo === r ? 'page' : undefined} {...(menuMin ? { title: l, 'aria-label': l } : {})}>
               <span className="ri"><Bi n={i} /></span><span className="rot">{l}</span>
             </button>
           ))}
@@ -228,7 +245,7 @@ export default function Moldura() {
       </div>
       <nav className="bnav" id="bnav" aria-label="Navegação">
         {NAV.map(([r, l, i]) => (
-          <button key={r} onClick={() => navegar(`/${r}`)} aria-current={rota === r ? 'page' : undefined}><span className="pill"><Bi n={i} s={32} /></span>{l}</button>
+          <button key={r} onClick={() => navegar(`/${r}`)} aria-current={ativo === r ? 'page' : undefined}><span className="pill"><Bi n={i} s={32} /></span>{l}</button>
         ))}
       </nav>
       <button className="fab" onClick={novo}><Ic n="add" s={22} /><span className="fab-t">Novo terreno</span></button>

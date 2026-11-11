@@ -667,6 +667,20 @@ body.dash-fixo .dash { position: fixed; inset: 0; z-index: 30; overflow: auto; p
 .pin.et .et-c { width: .84em; height: .84em; margin-top: .55em; border-radius: 50%; background: #1f1f1f; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,.5) }
 .pin.et.sel .et-b { box-shadow: 0 0 0 1.5px #1f1f1f, 0 0 0 4.5px #0094fe, 0 4px 10px rgba(0,0,0,.55) }
 .pin.et.sel .et-c { background: #0094fe }
+/* etiquetas que se cobrem viram uma bolha com o número e o anel das cores; mouse parado abre a lista (mapa/motor.ts › agrupar,
+   bolha; opção A escolhida pelo Moises em 10/nov/2026) */
+.gr { position: relative; width: 0; height: 0; font-family: inherit }
+.gr-b { position: absolute; left: 0; top: 0; width: var(--gr-d); height: var(--gr-d); transform: translate(-50%, -50%); box-sizing: border-box; padding: 4px; border-radius: 50%; cursor: pointer; box-shadow: 0 0 0 1.5px #1f1f1f, 0 4px 10px rgba(0,0,0,.5) }
+.gr-b span { display: grid; place-items: center; width: 100%; height: 100%; box-sizing: border-box; border-radius: 50%; background: #1f1f1f; color: #fff; border: 2px solid #fff; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums }
+.gr.ab .gr-b, .gr-b:hover { box-shadow: 0 0 0 1.5px #1f1f1f, 0 0 0 4.5px #0094fe, 0 4px 10px rgba(0,0,0,.5) }
+.gr-l { display: none; position: absolute; left: 18px; top: -24px; width: 280px; max-height: 320px; overflow-y: auto; padding: 8px 0; background: #fff; color: #1f1f1f; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.18), 0 8px 24px rgba(0,0,0,.18); cursor: default; text-align: left }
+.gr.ab .gr-l { display: block }
+.gr-t { padding: 4px 16px 6px; font-size: 13px; font-weight: 500; color: #444746 }
+.gr-i { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 16px; border: 0; background: none; font: inherit; font-size: 14px; color: inherit; text-align: left; cursor: pointer }
+.gr-i .pin-mini { width: auto; min-width: 44px; height: 24px; padding: 0 8px; box-sizing: border-box; border-radius: 12px; font-size: 12px; font-weight: 600; letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap }
+.gr-i:hover, .gr-i:focus-visible { background: #f0f4f9; outline: none }
+.gr-n { flex: 1; min-width: 0; line-height: 1.25 } .gr-n small { display: block; font-size: 12px; color: #444746 }
+.gr-p { border-top: 1px solid #e3e3e3; margin-top: 6px; padding: 8px 16px 2px; font-size: 13px; color: #444746 }
 .poi.g { position: relative; width: 14px; height: 14px; transform: translateY(50%) }
 .poi.g .poi-b { position: absolute; inset: 0 }
 .ent.g { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid #863d8f; color: #863d8f; font-size: 11px; font-weight: 700; display: grid; place-items: center; transform: translateY(50%); box-shadow: 0 1px 3px rgba(0,0,0,.3) }
@@ -865,11 +879,12 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 .pn-badge { position: absolute; top: 2px; right: 0; min-width: 18px; height: 16px; padding: 0 4px; border-radius: 8px; font-size: 10px; line-height: 16px; font-weight: 600; background: var(--m-sc, var(--superficie-elevada)); color: var(--m-on-sc, var(--texto)) }
 
 /* O painel ocupa uma coluna própria e nunca cobre a página: encolhe com a largura disponível
-   (280 a 360 px) e some quando não sobra espaço para ele com largura mínima e a página com ao menos 520 px.
+   (280 a 360 px) e some quando não sobra espaço para ele com largura mínima e a página com ao menos 656 px, a largura em
+   que a barra das abas da ficha cabe inteira, com o alerta, a pastinha e o ⋮ (pedido do Moises, 11/nov/2026; antes 520).
    A conta é feita sobre a largura real da área de conteúdo (container query), não da janela,
    porque o menu lateral aberto ou recolhido muda o espaço disponível. */
 body[data-rota="terreno"] .main { container: pagina / inline-size }
-@container pagina (min-width: 824px) {
+@container pagina (min-width: 960px) {
   .pn { --pn-bg: var(--m-card, #fff); display: flex; flex-direction: column; background: var(--pn-bg); border: 1px solid var(--m-outline-var, var(--linha)); border-radius: 12px; overflow: hidden; position: sticky; top: 96px; height: calc(100vh - 120px) }
   .pn-min { height: auto }
   .ficha-wrap.pn-on { grid-template-columns: minmax(0, 1fr) clamp(280px, 30cqi, 360px) }
@@ -973,11 +988,19 @@ body.menu-min .side > .menu-tg { align-self: center; margin-left: 0 }
 .tl-topo { display: none }
 @media (min-width: 768px) {
   .tl-topo { display: block; margin: 0 0 20px }
-  .tl-topo .stepper { padding: 0; overflow: visible; display: flex; align-items: center; min-width: 0 }
-  .tl-topo .step { flex: 1 1 0; min-width: 0 }
-  .tl-topo .step:last-child { flex: 0 1 auto }
-  .tl-topo .step:not(:last-child)::after { min-width: 12px }
-  .tl-topo .sl { white-space: normal; min-width: 0; font-size: 13px; line-height: 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+  /* os nomes não quebram nem encolhem: quando não cabem, useEncolher (ficha/Ficha.tsx) sobe o data-nivel e tira nomes,
+     das concluídas, depois das futuras menos a próxima, e por fim de todas menos a atual (opção A, 10/nov/2026) */
+  .tl-topo .stepper { padding: 0; overflow: hidden; display: flex; align-items: center; min-width: 0 }
+  .tl-topo .step { flex: 1 0 auto; min-width: auto }
+  .tl-topo .step:last-child { flex: 0 0 auto }
+  .tl-topo .step { gap: 6px }
+  .tl-topo .step:not(:last-child)::after { min-width: 8px; margin-left: 6px; margin-right: 6px }
+  .tl-topo .sl, .tl-topo .sd { white-space: nowrap; font-size: 13px; line-height: 16px }
+  .tl-topo[data-nivel="1"] .step.done .sl-w,
+  .tl-topo[data-nivel="2"] .step.done .sl-w, .tl-topo[data-nivel="2"] .step.fut:not(.prox) .sl-w,
+  .tl-topo[data-nivel="3"] .step:not(.cur) .sl-w { display: none }
+  .tl-topo[data-nivel="3"] .step.cur { flex: 0 1 auto; min-width: 96px }
+  .tl-topo[data-nivel="3"] .step.cur .sl { overflow: hidden; text-overflow: ellipsis }
   .tl-topo .dot { width: 24px; height: 24px; font-size: 11px }
 }
 /* quadro de avanço: no painel lateral (desktop e tablet); volta para a página quando o painel está recolhido e no celular */
@@ -2072,7 +2095,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .vb-met { margin-bottom: 4px }
 .vb-lista td .linkbtn { text-align: left }
 .vb-cfg-r { grid-template-columns: 64px minmax(180px, 2fr) minmax(170px, 1.2fr) minmax(190px, 1.3fr) 100px 84px 52px 64px }
-.vb-pop { position: fixed; inset: 0; z-index: 35; display: flex; align-items: center; justify-content: center; padding: 24px }
+.vb-pop { position: fixed; inset: 0; z-index: 38; display: flex; align-items: center; justify-content: center; padding: 24px }
 .vb-pop-fundo { position: absolute; inset: 0; background: rgba(29, 46, 92, .45) }
 .vb-pop-d { position: relative; display: flex; flex-direction: column; width: min(1320px, 100%); height: 100%; background: var(--m-surface, #f8fafd); border-radius: 28px; box-shadow: 0 8px 32px rgba(0,0,0,.25); overflow: hidden }
 .vb-pop-h { display: flex; align-items: flex-start; gap: 16px; padding: 20px 20px 12px 24px; border-bottom: 1px solid var(--linha) }
@@ -2083,6 +2106,10 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .vb-pop-nome:focus { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: -1px }
 .vb-pop-h .vb-acoes { align-self: center }
 .vb-pop-sc { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 0 24px 24px }
+/* a barra de rolagem para antes do canto arredondado de baixo (pedido do Moises, 11/nov/2026) */
+.vb-pop-sc::-webkit-scrollbar-track { margin-bottom: 20px }
+/* nas demais janelas, que rolam inteiras, a barra fica entre os cantos arredondados */
+.dialog::-webkit-scrollbar-track { margin: 20px 0 }
 .vb-pop-meta { display: none }
 /* indicadores e botões das seções fixos no topo ao rolar (decisão do Moisés, 26/out/2026) */
 .vb-fixo { position: sticky; top: 0; z-index: 5; margin: 0 -24px 16px; padding: 12px 24px 0; background: var(--m-surface, #f8fafd); border-bottom: 1px solid var(--linha) }
@@ -2244,6 +2271,8 @@ body.vb-aberto { overflow: hidden }
 .adorno-t { position: absolute; top: 50%; transform: translateY(-50%); color: var(--m-on-var, #444746); font-size: 14px; line-height: 1; pointer-events: none }
 .adorno.moeda > .adorno-t { left: 12px }
 .adorno.pct > .adorno-t { right: 12px }
+.adorno.un > input { padding-right: 52px !important } .adorno.un > .adorno-t { right: 12px }
+.adorno.dias > input { padding-right: 50px !important } .adorno.dias > .adorno-t { right: 12px }
 input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
 :root[data-tema="escuro"] .adorno-t { color: #c4c7c5 }
 
@@ -4489,7 +4518,8 @@ body.fab-min .fab .fab-t { max-width: 0; opacity: 0 }
 .fi-abas { flex: 1 1 auto; min-width: 0; display: flex; gap: 2px; padding: 0; overflow: hidden }
 .fi-abas button[hidden] { display: none }
 /* Histórico só sem o painel (a regra .tab-hist do topo perdia para .fi-abas button) */
-@container pagina (min-width: 824px) { .fi-abas button.tab-hist { display: none } }
+@container pagina (min-width: 960px) { .fi-abas button.tab-hist, .fi-mais .adv-menu button.tab-hist, .mt-mais .adv-menu button.tab-hist { display: none } }
+.fi-hist { padding: 0 var(--q-px) 16px }
 .fi-fim { flex: none; display: flex; align-items: center; gap: 0; padding-left: 4px }
 .fi-fim .adv-mais[hidden] { display: none }
 .fi-fim .iconbtn { color: var(--m-on-surface-var, #444746) }
@@ -4513,6 +4543,44 @@ html[data-tema="escuro"] .fi-fim .iconbtn { color: #c4c7c5 } html[data-tema="esc
 html[data-tema="escuro"] .fi-abas button { color: #c4c7c5 } html[data-tema="escuro"] .fi-abas button:hover { background: rgba(227,227,227,.08) }
 html[data-tema="escuro"] .fi-abas button[aria-selected="true"] { color: #a8c7fa; border-bottom-color: #a8c7fa }
 html[data-tema="escuro"] .fi-abas .tkm-n { background: rgba(149,153,160,0.14); color: #c1d9ff }
+/* subabas de Estudos Técnicos (pedido do Moises, 10/nov/2026): chips de filtro abaixo da barra, o ativo no contêiner
+   secundário; sem caber, a linha rola de lado */
+.fi-chips-w { display: flex; align-items: center; gap: 4px; padding: 12px 0 0; min-width: 0 }
+.fi-chips-w .adv-mais { flex: none }
+.fi-chips-w .iconbtn { color: var(--m-on-surface-var, #444746) }
+.fi-chips-w .iconbtn:hover { background: rgba(68,71,70,.08) }
+html[data-tema="escuro"] .fi-chips-w .iconbtn { color: #c4c7c5 }
+.fi-subabas { flex: 1 1 auto; min-width: 0; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none }
+.fi-subabas::-webkit-scrollbar { display: none }
+.fi-subabas button { flex: none; display: inline-flex; align-items: center; height: 32px; padding: 0 16px; border: 1px solid var(--m-outline, #c4c7c5); border-radius: 8px; background: transparent; font: inherit; font-size: 14px; font-weight: 500; color: var(--m-on-surface-var, #444746); white-space: nowrap; cursor: pointer }
+.fi-subabas button:hover { background: rgba(68,71,70,.08) }
+.fi-subabas button[aria-selected="true"] { background: #c2e7ff; border-color: transparent; color: #001d35 }
+.fi-subabas button:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
+.fi-chips-w + .fi-aba > .bl-c, .fi-chips-w + .fi-chips-w + .fi-aba > .bl-c { padding-top: 4px }
+/* a seção aberta ocupa ao menos a vista abaixo das barras presas: dá para rolar até elas travarem, mesmo vazia (pedido do
+   Moises, 11/nov/2026; --fi-sobra medido em useSobraSecao) */
+.ficha-main > .fi-aba { min-height: var(--fi-sobra, 0px) }
+/* o respiro entre a última barra e o começo da seção fica sempre à vista: o que rola some abaixo dele, nunca encostado na
+   barra (pedido do Moises, 11/nov/2026); a faixa tem a altura do recuo de cima da seção */
+.ficha-main > .fi-abas-w:not(:has(~ .fi-chips-w)) { box-shadow: 0 20px 0 var(--m-surface, #f8fafd) }
+.ficha-main > .fi-chips-w:not(:has(~ .fi-chips-w)) { box-shadow: 0 4px 0 var(--m-surface, #f8fafd) }
+html[data-tema="escuro"] .ficha-main > .fi-abas-w:not(:has(~ .fi-chips-w)) { box-shadow: 0 20px 0 #131314 }
+html[data-tema="escuro"] .ficha-main > .fi-chips-w:not(:has(~ .fi-chips-w)) { box-shadow: 0 4px 0 #131314 }
+/* a barra de chips fica presa logo abaixo das abas (pedido do Moises, 11/nov/2026; --chips-top medido em BarraChips) */
+.fi-chips-w { position: sticky; top: var(--chips-top, calc(121px + env(safe-area-inset-top, 0px))); z-index: 14; padding-bottom: 12px; background: var(--m-surface, #f8fafd) }
+@media (max-width: 599px) { .fi-chips-w { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 4px } }
+html[data-tema="escuro"] .fi-chips-w { background: #131314 }
+/* subabas de Estudos Técnicos com as seções da subaba embaixo: a segunda fileira um pouco menor */
+.fi-chips-w.sub { padding-top: 8px }
+.fi-chips-w.sub .fi-subabas button { height: 28px; padding: 0 12px; font-size: 13px }
+/* seções em chips (pedido do Moises, 10/nov/2026): só o quadro do chip escolhido aparece, aberto e sem a seta */
+:root:not(#_) section.sec.qd-chip[hidden] { display: none !important }
+.qd-tit { display: block; min-width: 0; overflow-wrap: anywhere }
+.qd-tit .h-n { margin-left: 6px }
+html[data-tema="escuro"] .fi-subabas button { border-color: #8e918f; color: #c4c7c5 }
+html[data-tema="escuro"] .fi-subabas button[aria-selected="true"] { background: #004a77; border-color: transparent; color: #c2e7ff }
+.adv-menu .fi-mais-g { padding: 10px 16px 4px; font-size: 12px; font-weight: 500; color: var(--m-on-surface-var, #444746) }
+.adv-menu button.fi-mais-sub { padding-left: 32px }
 
 /* Quadros das abas da ficha abrem e fecham pela seta do título (3/nov/2026); nascem fechados, menos o primeiro da aba */
 .qd-tg { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 0; margin: -8px 0; font: inherit; color: inherit; cursor: pointer; text-align: left }
@@ -4563,6 +4631,12 @@ html[data-tema="escuro"] .tp-acidentado_intenso { --tp-f: #ffdcc4; --tp-b: #7a3a
 .vtec-h .vt-n { min-width: 120px }
 .vtec-c { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 12px; margin-top: 10px }
 .vtec-c .field.full { grid-column: 1 / -1 }
+.vtec-h .vt-nome { font: inherit; font-weight: 500; color: inherit; border: 0; border-bottom: 1px solid transparent; background: transparent; padding: 0; height: 28px; min-width: 120px; width: 200px; max-width: 100% }
+.vtec-h .vt-nome:hover { border-bottom-color: var(--m-outline, #747775) }
+.vtec-h .vt-nome:focus { outline: 0; border-bottom: 2px solid var(--m-primary, #0b57d0) }
+.vtec-h .vt-x { margin-left: auto }
+.vtec-add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; padding: 12px 0 4px; border-top: 1px solid var(--m-outline-v, #e3e3e3) }
+.vtec-add .field { flex: 1 1 220px; max-width: 360px }
 @media (max-width: 599px) {
   .vt-r { grid-template-columns: minmax(0, 1fr) auto } .vt-obs { grid-column: 1 / -1 }
   .vtec-c { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
@@ -4601,14 +4675,46 @@ html[data-tema="escuro"] .vt-obs { color: #c4c7c5; background: transparent !impo
 .qd-add { align-self: flex-start; margin-top: 10px }
 .nv-pl-h { font-size: 15px; font-weight: 500; margin: 20px 0 8px }
 .nv-lt .nv-sqls { display: flex; flex-direction: column; gap: 8px }
-.ptcom-r { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, .8fr) minmax(0, .8fr) 160px 140px 190px; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px solid #e3e3e3 }
+.ptcom-r { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, .8fr) 150px 120px 110px 170px; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px solid #e3e3e3 }
 .ptcom-th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 500; color: #444746 }
-.ptcom-th > span:nth-child(n+4) { padding-left: 2px }
+.ptcom-th > span:nth-child(n+3) { padding-left: 2px }
+/* Condições pedidas com as partes (10/nov/2026): blocos de resumo em cima, a soma das partes */
+.cond-resw { container-type: inline-size }
+.cond-res { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px }
+.cond-b { background: #f0f4f9; border-radius: 16px; padding: 12px 16px; min-width: 0 }
+.cond-b .lbl { font-size: 12px; font-weight: 500; color: #444746 }
+.cond-b .big { font-size: 24px; line-height: 32px; font-weight: 300; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.cond-b .big .ni { font-size: 14px }
+.cond-aviso { background: #ffdf99; color: #3d2c00; border-radius: 8px; padding: 8px 12px; font-size: 13px; margin-bottom: 12px; display: flex; gap: 8px; align-items: flex-start }
+.cond-aviso .ic { flex: none; margin-top: 1px }
+.cond-sub { font-size: 12px; color: #444746; margin-top: 2px }
+.cond-pt { margin-top: 16px }
+.ptcom-obs { grid-column: 1 / -1 }
+.ptcom-obs textarea { width: 100%; min-height: 56px; resize: vertical; font: inherit; box-sizing: border-box }
+.ptcom-obs > span:not(.lbl-f) { white-space: pre-wrap }
+@container (max-width: 560px) { .cond-res { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) } .cond-res > .cond-b:last-child { grid-column: 1 / -1 } }
+@container (max-width: 400px) { .cond-res { grid-template-columns: minmax(0, 1fr) } }
+html[data-tema="escuro"] .cond-b { background: #1e1f20 } html[data-tema="escuro"] .cond-b .lbl, html[data-tema="escuro"] .cond-sub { color: #c4c7c5 }
 .ptcom-p { min-width: 0 } .ptcom-p b { font-weight: 500 } .ptcom-p .faint { font-size: 13px }
 .ptcom-c { min-width: 0; margin: 0 } .ptcom-c.field { display: block }
 .ptcom-ml { display: none }
 .ptcom input.ptc-n { width: 100%; text-align: right } .ptcom select { width: 100% }
 .ptcom-tot { font-weight: 500 }
+/* permuta física: o número e o seletor % | Unid. lado a lado (pedido do Moises, 11/nov/2026) */
+.pfis { display: flex; gap: 6px; align-items: center; min-width: 0 }
+.pfis > .adorno { flex: 1 1 auto; min-width: 0 }
+.pfis-seg { display: inline-flex; flex: none; border: 1px solid #747775; border-radius: 16px; overflow: hidden; height: 28px }
+.pfis-seg button { border: 0; background: transparent; padding: 0 8px; margin: 0; height: 100%; min-height: 0; min-width: 0; display: inline-flex; align-items: center; line-height: 1; font: inherit; font-size: 12px; color: #444746; cursor: pointer; box-shadow: none; border-radius: 0 }
+.pfis-seg button + button { border-left: 1px solid #747775 }
+/* Nova proposta: 4 colunas fixas, na ordem pedida pelo Moises (11/nov/2026); 2 no estreito */
+.pp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--e4) }
+@media (max-width: 900px) { .pp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } .pp-grid > .pp-vazio { display: none } }
+.seg.pfis-seg button { min-height: 0 !important; height: 100%; padding: 0 8px !important; font-size: 12px }
+.pfis-seg button[aria-pressed="true"] { background: #c2e7ff; color: #001d35; font-weight: 500 }
+html[data-tema="escuro"] .pfis-seg, html[data-tema="escuro"] .pfis-seg button + button { border-color: #8e918f }
+html[data-tema="escuro"] .pfis-seg button { color: #c4c7c5 } html[data-tema="escuro"] .pfis-seg button[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
+.ptcom-zona { display: block; font-size: 12px; color: #747775; margin-top: 2px }
+html[data-tema="escuro"] .ptcom-zona { color: #8e918f }
 .ptcom { container-type: inline-size }
 @container (max-width: 760px) {
   .ptcom-th { display: none }
@@ -4616,6 +4722,14 @@ html[data-tema="escuro"] .vt-obs { color: #c4c7c5; background: transparent !impo
   .ptcom-p { grid-column: 1 / -1 }
   .ptcom-c:empty { display: none }
   .ptcom-ml { display: block; margin-bottom: 2px }
+  .ptcom-c.field { align-self: end }
+}
+/* no celular: área e valor por m² lado a lado; valor pedido e condição na linha inteira, para caber 999 milhões e
+   "Permuta financeira" sem os rótulos desencontrarem (pedido do Moises, 10/nov/2026) */
+@container (max-width: 480px) {
+  .ptcom-r { grid-template-areas: "p p" "ar m" "v v" "fin fis" "o o" }
+  .ptcom-p { grid-area: p } .ptcom-ar { grid-area: ar } .ptcom-m { grid-area: m } .ptcom-v { grid-area: v } .ptcom-fin { grid-area: fin } .ptcom-fis { grid-area: fis } .ptcom-obs { grid-area: o }
+  .ptcom-ar { align-self: end }
 }
 @media (max-width: 720px) {
   .pt2-g { grid-template-columns: minmax(0, 1fr) }
@@ -4665,6 +4779,7 @@ html[data-tema="escuro"] .ptcom-r { border-top-color: #2d2f31 } html[data-tema="
 .ems-arq { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 0; border-top: 1px solid #e3e3e3 }
 .ems-arq:first-child { border-top: 0 }
 .ems-arq-t { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; min-width: 0 } .ems-arq-t b { font-weight: 500 }
+.ems-salvar { display: flex; justify-content: flex-end; margin-top: 16px }
 .ems-vbs { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: baseline }
 .ems-vbs .lbl-f { flex-basis: 100% }
 .ems-lista tr.ems-sel td { background: rgba(11, 87, 208, .06) }
@@ -4866,21 +4981,127 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 
 /* ===================== tabela de terrenos (4/nov/2026; proto_tabela.js) ===================== */
 .ter-ac { display: flex; align-items: center; gap: 4px; flex-wrap: wrap }
-.lista-ter td { vertical-align: top }
-.lista-ter td .t2 { font-size: 12px; line-height: 16px; color: var(--m-on-var, #444746) }
+.tb-wrap { container: tertab / inline-size; overflow: visible }
+.dt.lista-ter { table-layout: fixed; width: 100%; overflow: visible !important }
+.lista-ter th, .lista-ter td { padding-left: 12px !important; padding-right: 12px !important }
+.lista-ter th:first-child, .lista-ter td:first-child { padding-left: 24px !important }
+.lista-ter th:last-child, .lista-ter td:last-child { padding-right: 24px !important }
+.lista-ter td { vertical-align: top; padding-top: 14px !important; padding-bottom: 14px !important; line-height: 20px; overflow-wrap: anywhere }
+.lista-ter th { vertical-align: bottom; height: 48px; padding-top: 0 !important; padding-bottom: 10px !important }
+.lista-ter td .t2 { font-size: 12px; line-height: 18px; color: var(--m-on-var, #444746) }
 .lista-ter td > div + div { margin-top: 2px }
-.lista-ter th .dt-sort { white-space: normal; text-align: left; line-height: 16px }
-.lista-ter th.num .dt-sort { text-align: right }
-.lista-ter th.col-ter { min-width: 240px }
-.lista-ter td.col-ter { min-width: 240px; max-width: 340px }
-.lista-ter td.col-cid, .lista-ter td.col-zona { white-space: nowrap }
-.tb-c1 { display: flex; gap: 8px; align-items: flex-start }
+.lista-ter th .dt-sort { white-space: nowrap; text-align: left; line-height: 16px }
+.lista-ter th.num .dt-sort { margin-left: auto }
+.lista-ter th.meio, .lista-ter td.meio { text-align: center !important }
+.lista-ter th.meio .dt-sort { margin: 0 auto }
 .tb-c1t { min-width: 0 }
 .tb-c1t .t1 { font-weight: 500; overflow-wrap: anywhere }
-.tb-olho { flex: none; width: 36px; height: 36px; margin: -4px 0 0 -8px; color: var(--m-on-var, #444746) }
+.tb-end { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+.tb-cod { font-weight: 500; color: var(--m-on-surface, #1f1f1f) }
+.tb-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; white-space: nowrap }
+.tb-kv .tb-kl { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--m-on-var, #444746) }
+.tb-kv .tb-kvv { font-variant-numeric: tabular-nums; text-align: left; overflow: hidden; text-overflow: ellipsis; min-width: 0 }
+.tb-kv.fraco { font-size: 12px; line-height: 18px } .tb-kv.fraco .tb-kvv { color: var(--m-on-var, #444746) }
+.lista-ter td > .tb-kv + .tb-kv { margin-top: 0 }
+.tb-viab { flex: none; width: 24px; height: 24px; margin: -4px 0 -4px 0; color: var(--m-on-var, #444746) }
+.tb-viab:hover { color: #0b57d0 }
+/* ⓘ dos títulos (pedido do Moises, 11/nov/2026): as células só mostram os valores; o balão diz o que é cada linha */
+.tb-info { position: relative; display: inline-flex; vertical-align: middle; margin-left: 6px }
+.tb-info-b { display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -4px 0; padding: 0; border: 0; border-radius: 12px; background: none; color: var(--m-on-var, #444746); cursor: pointer }
+.tb-info-b:hover, .tb-info-b[aria-expanded="true"] { background: rgba(11, 87, 208, .08); color: #0b57d0 }
+.tb-info-b:focus-visible { outline: 2px solid #0b57d0; outline-offset: 1px }
+.tb-info-pop { position: absolute; top: calc(100% + 10px); right: -8px; z-index: 30; width: 260px; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 12px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.12); text-align: left; white-space: normal; font-size: 13px; line-height: 18px; font-weight: 400; color: #1f1f1f; text-transform: none; letter-spacing: 0; cursor: default }
+.tb-info-pop::before { content: ""; position: absolute; top: -6px; right: 14px; width: 12px; height: 12px; background: #fff; transform: rotate(45deg); box-shadow: -2px -2px 3px rgba(0,0,0,.05) }
+.lista-ter th:not(.num) .tb-info-pop { right: auto; left: -8px } .lista-ter th:not(.num) .tb-info-pop::before { right: auto; left: 14px }
+.lista-ter th:not(.num):last-child .tb-info-pop { left: auto; right: -8px } .lista-ter th:not(.num):last-child .tb-info-pop::before { left: auto; right: 14px }
+.tb-info-t { font-size: 14px; font-weight: 500 }
+.tb-info-s { font-size: 12px; color: #444746 }
+.tb-info-l { display: flex; gap: 10px; align-items: flex-start }
+.tb-info-n { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 10px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500 }
+.tb-info-l b { display: block; font-weight: 400 } .tb-info-l b.forte { font-weight: 500 }
+.tb-info-d { display: block; font-size: 12px; color: #444746 }
+.lista-ter th.num .dt-sort + .tb-info, .lista-ter th.num .tb-info { order: 0 }
+.lista-ter th:has(.tb-info) { white-space: nowrap }
+html[data-tema="escuro"] .tb-info-pop, html[data-tema="escuro"] .tb-info-pop::before { background: #2d2f31; color: #e3e3e3 }
+html[data-tema="escuro"] :is(.tb-info-s, .tb-info-d) { color: #c4c7c5 }
+html[data-tema="escuro"] .tb-info-n { background: #004a77; color: #c2e7ff }
+.tb-olhos { display: flex; align-items: flex-start; gap: 12px }
+.tb-olhos-c { flex: 1 1 auto; min-width: 0 }
+.tb-olhos-b { flex: none; display: flex; flex-direction: column; gap: 4px; margin: -6px 2px -6px 0 }
+.lista-ter .tb-olhos-b .tb-viab { width: 32px; height: 32px; margin: 0 }
+.tb-emp { display: grid; grid-template-columns: minmax(0, 1fr) 32px; column-gap: 12px; row-gap: 0; align-items: center; margin-right: 2px }
+.tb-emp > .tb-kv { line-height: 20px; font-size: inherit } .tb-emp > .tb-kv.fraco { font-size: 12px }
+.lista-ter .tb-emp .tb-viab { width: 32px; height: 32px; margin: -6px 0 }
+.dialog.ems-pop { width: min(1100px, 100%); padding: 24px 0 }
+.dialog.ems-pop > .dh { padding: 0 24px }
+.ems-pop-b .sec { border: 0 !important; box-shadow: none !important; margin: 0 !important }
+.tb-resp { display: inline-flex; vertical-align: top }
+.lista-ter td.col-temp .temp-mini { height: 20px; align-items: center }
 .tb-ord { display: inline-grid; place-items: center; min-width: 16px; height: 16px; margin-left: 2px; padding: 0 4px; border-radius: 8px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500; line-height: 16px }
+.lista-ter tbody tr { cursor: pointer }
+/* revisão de design de 11/nov/2026: o quadro vai de borda a borda (texto a 24 px, 16 no celular), cidade e região numa linha,
+   tudo alinhado à esquerda, só o Responsável no centro (pedido do Moises, 11/nov/2026), vazios como traço */
+.sec.lista:has(> #rows > .tb-wrap) { padding-left: 0 !important; padding-right: 0 !important; overflow: clip !important }
+.lista-ter td.col-cid, .lista-ter td.col-zona { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.lista-ter .tb-kv { justify-content: flex-start }
+.lista-ter .tb-kv .tb-kl { margin-right: auto; min-width: 0 }
+.lista-ter .tb-kv:not(.fraco) .tb-kvv { font-weight: 500 }
+.lista-ter .tb-vazio { color: #747775 }
+.lista-ter td.col-resp .avatar.sm { width: 28px; height: 28px; font-size: 12px; margin-top: -4px }
+.lista-ter .tb-end { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.tb-wrap.estreito .lista-ter .tb-zt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+/* celular: o Imóvel fica com 42% em toda linha, para os valores começarem na mesma reta (tudo à esquerda), e o Terreno com o resto */
+.tb-wrap.estreito .dt.lista-ter, .tb-wrap.estreito .lista-ter :is(thead, tbody) { display: block }
+.tb-wrap.estreito .lista-ter colgroup { display: none }
+.tb-wrap.estreito .lista-ter tr { display: flex }
+.tb-wrap.estreito .lista-ter :is(td, th).col-ter { flex: 1 1 auto; min-width: 0 }
+.tb-wrap.estreito .lista-ter :is(td, th).col-area { flex: 0 0 42%; min-width: 0 }
+.tb-wrap.estreito .lista-ter tr.tb-grp > th { flex: 1 1 auto; display: flex; align-items: center }
+.tb-wrap.estreito .lista-ter tbody tr:not(.tb-grp) { border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+.tb-wrap.estreito .lista-ter tbody tr:not(.tb-grp) > td { border-bottom: 0 !important }
+.tb-wrap.estreito .lista-ter thead th { height: 40px; padding-bottom: 8px !important; font-weight: 500 }
+/* colunas de números: a seta da ordem fica no recuo, à direita, para o ⓘ encostar no título e o título terminar com os valores */
+.lista-ter th.num .dt-sort { position: relative }
+.lista-ter th.num .dt-ar { position: absolute; left: 100%; margin-left: 1px }
+.lista-ter th.meio .dt-sort { display: flex; justify-content: center; margin: 0 auto }
+@media (max-width: 599px) {
+  .ter-pg .ter-ac .tb-tela { display: none }
+  .ter-pg { padding-bottom: 96px }
+}
 .lista-ter tr.tb-sel > td { background: #d3e3fd !important }
-.lista-ter tr.tb-sel .tb-olho { color: #0b57d0; background: rgba(11,87,208,.12) }
+/* título de cada cidade, quando a coluna Cidade sai (tela estreita; pedido do Moises, 11/nov/2026) */
+.lista-ter tr.tb-grp { cursor: default }
+.lista-ter tr.tb-grp > th { position: static; text-align: left; vertical-align: middle; height: 40px; padding-top: 0 !important; padding-bottom: 0 !important; background: #f0f4f9 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5); font-size: 14px !important; font-weight: 500; color: var(--m-on-surface, #1f1f1f) !important }
+.lista-ter tr.tb-grp > th .tb-grpn { margin-left: 8px; font-weight: 400; color: var(--m-on-var, #444746) }
+/* sempre agrupada por cidade (pedido do Moises, 11/nov/2026): o cabeçalho fica preso abaixo da barra do topo e o título da
+   cidade logo abaixo dele, até acabarem os terrenos daquela cidade; o título recolhe e se arrasta para mudar a ordem */
+.lista-ter thead th { top: var(--tb-top, 0px) !important; z-index: 3 !important }
+.tb-wrap.estreito .lista-ter thead { position: sticky; top: var(--tb-top, 0px); z-index: 3 }
+.tb-wrap.estreito .lista-ter thead th { position: static !important; display: flex; align-items: center; height: 40px; padding-top: 0 !important; padding-bottom: 0 !important }
+/* no celular o arraste não serve ao toque: as setas de subir e descer a cidade, com alvo de 40 px */
+.tb-mov { display: none }
+.tb-wrap.estreito .tb-alca { display: none }
+.tb-wrap.estreito .tb-mov { display: inline-flex; margin-left: auto }
+.tb-mov button { width: 40px; height: 40px; display: inline-grid; place-items: center; border: 0; background: none; border-radius: 20px; color: var(--m-on-var, #444746); cursor: pointer }
+.tb-mov button:disabled { opacity: .3; cursor: default }
+.tb-mov { gap: 4px }
+.lista-ter tr.tb-grp { position: sticky; top: calc(var(--tb-top, 0px) + var(--tb-th, 48px)); z-index: 2; cursor: pointer }
+.lista-ter tr.tb-grp > th { padding-left: 12px !important; user-select: none }
+.tb-wrap.estreito .lista-ter tr.tb-grp > th { padding-left: 4px !important }
+.tb-alca { display: inline-flex; vertical-align: middle; width: 24px; justify-content: center; margin-right: 0; color: var(--m-on-var, #444746); opacity: .55; cursor: grab }
+.lista-ter tr.tb-grp:hover .tb-alca { opacity: 1 }
+.tb-grpb { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; border: 0; background: none; padding: 4px 6px; margin: 0; border-radius: 8px; font: inherit; color: inherit; cursor: pointer }
+.tb-grpb:focus-visible { outline: 2px solid #0b57d0; outline-offset: 1px }
+.tb-chev { display: inline-flex; transition: transform .15s }
+.tb-cid:not(.fechada) .tb-chev { transform: rotate(90deg) }
+.tb-cid.arrastada { opacity: .45 }
+.tb-wrap.arrastando .lista-ter tbody tr:not(.tb-grp) { cursor: grabbing }
+.tb-cid.alvo-ant > tr:first-child > * { box-shadow: inset 0 3px 0 #0b57d0 }
+.tb-cid.alvo-dep > tr:last-child > * { box-shadow: inset 0 -3px 0 #0b57d0 }
+/* quadro estreito (celular): recuos menores */
+.tb-wrap.estreito .lista-ter th, .tb-wrap.estreito .lista-ter td { padding-left: 8px !important; padding-right: 8px !important }
+.tb-wrap.estreito .lista-ter th:first-child, .tb-wrap.estreito .lista-ter td:first-child { padding-left: 16px !important }
+.tb-wrap.estreito .lista-ter th:last-child, .tb-wrap.estreito .lista-ter td:last-child { padding-right: 16px !important }
 /* tela cheia: a tabela cobre a página, acima do menu e abaixo das janelas */
 .ter-pg.on { position: fixed; inset: 0; z-index: 31; overflow: auto; background: var(--m-surface, #f8fafd); padding: 16px 24px 24px }
 .ter-pg.on .page-h { margin-bottom: 16px }
@@ -4899,24 +5120,16 @@ body.tb-cheia .fab { display: none !important }
 body.tgav-on { overflow: hidden }
 body.tgav-on .fab { display: none !important }
 @media (max-width: 899px) {
-  .lista-ter td.col-cid, .lista-ter td.col-zona { white-space: normal }
   .tgav { left: 0 !important; top: 0 !important; z-index: 36; border-left: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px) }
   .tgav-h { padding-left: 16px } .tgav-b { padding: 8px 16px 24px }
   .ter-pg.on { padding: 12px 16px }
 }
-/* tabela empilhada (não cabe): a coluna 1 em cima, o resto em linhas curtas */
-.empilha .dt.lista-ter td.col-ter { max-width: none }
-.empilha .dt.lista-ter td:not(.col-ter) > div + div { margin-top: 0 }
-.empilha .dt.lista-ter td::before { content: none !important }
-.empilha .dt.lista-ter td:not(.col-ter) { flex-wrap: wrap; column-gap: 6px }
-.empilha .dt.lista-ter td:not(.col-ter) > div + div::before { content: "· "; color: var(--m-on-var, #444746) }
-.empilha .dt.lista-ter td.col-ter { padding-right: 0 !important }
 html[data-tema="escuro"] .tgav { background: #131314; border-color: #2d2f31; box-shadow: -8px 0 28px rgba(0,0,0,.5) }
 html[data-tema="escuro"] .tgav-h { border-color: #2d2f31 }
 html[data-tema="escuro"] .ter-pg.on { background: #131314 }
 html[data-tema="escuro"] .lista-ter tr.tb-sel > td { background: #004a77 !important; color: #c2e7ff }
 html[data-tema="escuro"] .lista-ter tr.tb-sel .t2 { color: #c2e7ff }
-html[data-tema="escuro"] .lista-ter tr.tb-sel .tb-olho { color: #c2e7ff; background: rgba(194,231,255,.12) }
+html[data-tema="escuro"] .lista-ter tr.tb-grp > th { background: #1e1f20 !important; color: #e3e3e3 !important; border-color: #444746 }
 html[data-tema="escuro"] .tb-ord { background: #004a77; color: #c2e7ff }
 /* filtros: uma seção por vez, com os botões das seções no cabeçalho (4/nov/2026) */
 .fx-abas { flex: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 12px 24px; border-bottom: 1px solid #e3e3e3 }
@@ -5171,3 +5384,97 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 .tx-t .muted { font-size: 13px }
 .tx-b { flex: none; display: flex; gap: 8px }
 @media (max-width: 640px) { .tx-l { flex-direction: column; align-items: stretch; padding: 12px 16px } .tx-b { justify-content: flex-end } }
+
+/* Comparar os lotes de dois cadastros sobrepostos (pedido do Moises, 10/nov/2026; novo/CompararLotes.tsx) */
+.dialog:has(.cmp-grade) { width: min(1180px, 100%) }
+.cmp-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px }
+.cmp-lado { display: flex; flex-direction: column; gap: 8px; min-width: 0 }
+.cmp-mapa { position: relative; height: min(440px, calc(100dvh - 330px)); min-height: 260px; border: 1px solid #c4c7c5; border-radius: 12px; overflow: hidden; background: #fbf6d5 }
+.cmp-svg { cursor: default; --lg-w: .35 }
+.cmp-svg .lg-l { cursor: default }
+.lg-l.cmp-c, .lg-sw.cmp-c { fill: #8ab4f8; background: #8ab4f8; stroke: #0b57d0; border-color: #0b57d0 }
+.lg-l.cmp-s, .lg-sw.cmp-s { fill: #d7aefb; background: #d7aefb; stroke: #863d8f; border-color: #863d8f }
+.cmp-svg .lg-l.cmp-c, .cmp-svg .lg-l.cmp-s { stroke-width: .7px }
+.cmp-lista { display: flex; flex-wrap: wrap; gap: 6px }
+.cmp-lista .etq.cmp-ec { box-shadow: inset 0 0 0 2px #0b57d0 }
+.cmp-leg { position: static; background: none; padding: 0 }
+/* janela da sobreposição no cadastro */
+.nv-cf { display: flex; flex-direction: column; gap: 12px }
+.nv-cf-t { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #c4c7c5; border-radius: 12px }
+.nv-cf-t > div { flex: 1; min-width: 0 }
+.nv-cf .df { flex-wrap: wrap }
+/* faixa do encerramento: lápis para completar depois o que ficou em branco (pedido do Moises, 10/nov/2026) */
+.sec-adv .banner .adv-enc-ed { flex: none; align-self: flex-start; margin: -6px -6px 0 auto; }
+.sec-adv .adv-enc-falta { font-size: 12px; margin-top: 4px; }
+.sec-adv .adv-enc-lk { background: none; border: 0; padding: 0; font: inherit; color: var(--m-primary, #0b57d0); cursor: pointer; }
+.sec-adv .adv-enc-lk:hover { text-decoration: underline; }
+
+/* Modelos de estudo de viabilidade (Novo estudo e Salvar como modelo; proto_viab.js › vbNovoHtml, vbModeloHtml) */
+.vb-mods { display: flex; flex-direction: column; gap: 6px; margin-top: 6px }
+.vb-mod-r { display: flex; align-items: center; gap: 8px }
+.vb-mod-r .opt-radio { flex: 1; min-width: 0; justify-content: flex-start; position: relative; padding: 8px 14px; white-space: normal; border: 1px solid #c4c7c5; border-radius: 8px }
+.vb-mod-r .opt-radio span { display: flex; flex-direction: column; gap: 2px }
+.vb-mod-r .opt-radio b { font-weight: 500 }
+.vb-mod-r .opt-radio small { font-size: 12px; line-height: 16px; opacity: .8 }
+.vb-escopo { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px }
+.vb-escopo .opt-radio { border: 1px solid #c4c7c5 }
+/* vínculo do estudo de viabilidade com o estudo de massa (proto_viab.js › vbMassaSel) */
+.vb-ms { margin: 0 0 16px; max-width: 560px }
+.vb-ms .field { margin: 0; display: flex; flex-direction: column; gap: 4px }
+.vb-ms select { width: 100% }
+.vb-ms-l { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap }
+.vb-ms-l .field { flex: 1; min-width: 220px }
+/* card da oferta (o "i" na lista de ofertas; pedido do Moises, 10/nov/2026) */
+.dialog:has(.of-card) { width: min(560px, 100%) }
+.of-card { display: flex; flex-direction: column; gap: 20px }
+.of-card .field > span { display: block; padding: 4px 0 }
+.of-card .of-t { font-size: 14px; font-weight: 500; margin-bottom: 8px }
+.of-card .of-cor { list-style: none; margin: 0; padding: 0 }
+.of-card .of-cor li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--contorno-suave, #e3e3e3) }
+.of-card .of-cor li .chip { margin-left: 8px }
+.of-card .of-add { margin-top: 12px }
+.of-card .mini-tbl { width: 100% }
+.of-card .of-tot td { border-top: 1px solid var(--contorno, #c4c7c5) }
+.mini-tbl .iconbtn.sm, .of-card .iconbtn.sm { width: 32px; height: 32px; margin: -4px 0 }
+#sec-ofertas .mini-tbl .chip { white-space: nowrap }
+/* observações de todas as ofertas, para o diretor (pedido do Moises, 10/nov/2026) */
+#sec-ofertas .of-obs-todas { margin-top: 20px }
+#sec-ofertas .of-obs-todas .of-t { font-size: 14px; font-weight: 500; margin-bottom: 4px }
+#sec-ofertas .of-obs { padding: 10px 0; border-bottom: 1px solid var(--contorno-suave, #e3e3e3) }
+#sec-ofertas .of-obs:last-child { border-bottom: 0 }
+#sec-ofertas .of-obs-h { font-size: 13px; color: var(--texto-suave, #444746); display: flex; align-items: center; gap: 8px }
+#sec-ofertas .of-obs-t { white-space: pre-wrap; margin-top: 4px }
+
+/* Corretor por busca (pedido do Moises, 10/nov/2026): campo com busca aproximada e a seta que abre todos */
+.cor-cb { position: relative; display: flex; align-items: center }
+.cor-cb input { flex: 1 1 auto; min-width: 0; padding-right: 40px !important; text-overflow: ellipsis }
+.cor-seta { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--m-on-surface-var, #444746); display: inline-flex; align-items: center; justify-content: center; cursor: pointer }
+.cor-seta:hover { background: rgba(31,31,31,.08) }
+.cor-seta svg { transform: rotate(90deg); transition: transform .15s }
+.cor-cb.ab .cor-seta svg { transform: rotate(-90deg) }
+.cor-pop { min-width: 240px }
+.cor-pop .mn-i.atual .mn-n { font-weight: 500 }
+.cor-pop .mn-i.cor-novo { color: var(--m-primary, #0b57d0); border-top: 1px solid var(--m-outline-var, #e3e3e3) }
+.cor-pop .mn-a { margin-left: auto; color: var(--m-on-surface-var, #444746); font-size: 13px }
+.nv-rasc { margin: 0 0 16px; align-items: center; gap: 12px }
+.of-obs-p { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--m-outline-var, #c4c7c5) }
+#sec-ofertas .of-obs-p .of-obs-t { margin-top: 0 }
+.of-obs-pn { font-size: 13px; font-weight: 500; color: var(--m-on-surface-var, #444746) }
+/* colunas com olho: o ⓘ fica na borda direita, na mesma reta do olho (pedido do Moises, 11/nov/2026) */
+.lista-ter th.col-estudo .tb-info { position: absolute; right: 18px; bottom: 6px; margin: 0 }
+.lista-ter th.col-estudo .tb-info-b { margin: 0 }
+.lista-ter th.col-estudo .tb-info-pop { left: auto; right: -8px }
+.lista-ter th.col-estudo .tb-info-pop::before { left: auto; right: 14px }
+.lista-ter th.col-estudo:last-child .tb-info { right: 30px }
+/* Estudo de massa e Viabilidade: a coluna na medida, com o ⓘ logo depois do título (6 px, como em Negociação) e o olho no
+   eixo dele; --ox-<coluna> é o eixo medido em `useOlhoX` (pedido do Moises, 11/nov/2026) */
+.tb-wrap:not(.estreito) .lista-ter th.col-massa .tb-info { position: absolute; left: calc(var(--ox-massa, 0px) - 12px); bottom: 6px; margin: 0 }
+.tb-wrap:not(.estreito) .lista-ter th.col-viab .tb-info { position: absolute; left: calc(var(--ox-viab, 0px) - 12px); bottom: 6px; margin: 0 }
+.tb-wrap:not(.estreito) .lista-ter :is(th.col-massa, th.col-viab) .tb-info-b { margin: 0 }
+.tb-wrap:not(.estreito) .lista-ter :is(td.col-massa, td.col-viab) .tb-olhos { position: relative; display: block }
+.tb-wrap:not(.estreito) .lista-ter :is(td.col-massa, td.col-viab) .tb-olhos-b { position: absolute; top: -6px; margin: 0 }
+.tb-wrap:not(.estreito) .lista-ter td.col-massa .tb-olhos-b { left: calc(var(--ox-massa, 0px) - 28px) }
+.tb-wrap:not(.estreito) .lista-ter td.col-viab .tb-olhos-b { left: calc(var(--ox-viab, 0px) - 28px) }
+/* a faixa de cada cidade com a linha cinza também em cima (a da primeira é o fio do cabeçalho; pedido do Moises, 11/nov/2026) */
+.lista-ter tbody.tb-cid ~ tbody.tb-cid > tr.tb-grp > th { box-shadow: inset 0 1px 0 var(--m-outline-var, #c4c7c5) }
+html[data-tema="escuro"] .lista-ter tbody.tb-cid ~ tbody.tb-cid > tr.tb-grp > th { box-shadow: inset 0 1px 0 #444746 }

@@ -10,6 +10,8 @@
 
 Na primeira vez, a pessoa entra com o papel **Básico** (só consulta) até um administrador promovê-la. Se o cadastro dela ainda não foi feito, aparece a tela **"Seu acesso ainda não foi liberado"**, com os botões **"Sair"** e **"Tentar de novo"**. Peça a liberação ao Moises ou ao Rafael e depois clique em "Tentar de novo".
 
+O navegador **guarda o seu login**: ao abrir o sistema de novo no mesmo computador e navegador, você já entra sem passar pelo Google. Só se ficar **mais de 30 dias sem abrir o sistema** naquele navegador é que ele pede o login de novo. Para sair antes, use **"Sair"** no menu da sua foto (num computador emprestado, saia sempre).
+
 **Dica:** se alguém mandou um link (por exemplo, `/terrenos/A123/comercial`) e você ainda não estava logado, o login aparece no próprio link e, ao entrar, a tela pedida abre direto.
 
 ## A moldura: o que fica sempre na tela
@@ -19,12 +21,14 @@ Na primeira vez, a pessoa entra com o papel **Básico** (só consulta) até um a
 Na primeira versão o menu tem:
 
 - **Botão "Novo terreno"** (o botão de criar, no alto do menu): abre o cadastro de terreno. Ver [03. Novo terreno](03-novo-terreno.md).
+- **Pipeline**: a tabela de terrenos (a página se chama **Terrenos**), com todos os terrenos lado a lado. Ver [18. Pipeline](18-pipeline.md).
 - **Mapa**: a página com o mapa e a lista de terrenos. Ver [02. Mapa](02-mapa.md).
 - **Funil**: o quadro das fases, etapas e subetapas. Ver [10. Funil](10-funil.md).
+- **Corretores**: a lista dos corretores, com a ficha de cada um. Ver [17. Corretores](17-corretores.md).
 
 O menu começa recolhido, só com os ícones e um rótulo pequeno embaixo. O botão no topo do menu abre e fecha; o sistema lembra a escolha no seu navegador.
 
-**Ainda não disponível:** Início, Tarefas, Terrenos (tabela Pipeline), Dashboard e Configurações existem só no protótipo. Ver [12](12-ainda-nao-disponivel.md).
+**Ainda não disponível:** Início, Tarefas, Dashboard e Configurações existem só no protótipo. Ver [12](12-ainda-nao-disponivel.md).
 
 ### Barra de cima
 

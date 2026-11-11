@@ -36,6 +36,10 @@ create table app.campos_catalogo (
 );
 create unique index campos_catalogo_titulo on app.campos_catalogo (lower(titulo));
 grant select on app.campos_catalogo to authenticated;
+-- Catálogo único, sem empresa: todo usuário logado lê, ninguém escreve pela API.
+-- RLS ligada para o Security Advisor do Supabase (rls_disabled_in_public, 10/nov/2026).
+alter table app.campos_catalogo enable row level security;
+create policy campos_catalogo_ler on app.campos_catalogo for select to authenticated using (true);
 
 insert into app.campos_catalogo (chave, origem, coluna, titulo, tipo, unidade, opcoes, vazio, editavel, condicao, cartao, ordem) values
   ('terreno.nome','terreno','nome','Nome do terreno','texto',null,null,null,true,false,true,1),

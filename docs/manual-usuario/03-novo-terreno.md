@@ -55,22 +55,26 @@ O mesmo caminho do SQL, com a **inscrição imobiliária** (14 dígitos, 00.0000
 
 ## Se outro terreno já ocupa a área
 
-Com a poligonal pronta, o sistema procura terrenos já cadastrados que ocupam parte dela. Uma faixa de até 5 m na divisa não conta (salvo se cobrir metade de um dos dois), para não acusar vizinhos.
+Cadastrar um terreno é registrar a **primeira oferta** dele. Por isso o sistema confere, ao clicar em **"Cadastrar terreno"** (depois de escolher os lotes), se o imóvel já existe na base. Conta como o mesmo imóvel **um lote (SQL ou inscrição) em comum** com outro terreno; sem lotes, conta a sobreposição da poligonal. Terreno escondido (ver abaixo) não entra na conta.
 
-Se houver sobreposição, aparece o terreno existente e as opções, conforme o caso:
+Se achar, abre a janela **"Este imóvel já está na base"** com só dois caminhos: **"Não cadastrar"** ou cadastrar. O que aparece depende do caso:
 
-| Caso | Opção principal |
+| Caso | O que acontece ao cadastrar |
 |---|---|
-| É a mesma área | **"Nova oferta neste terreno"**: registra a oferta no terreno existente, sem mudar o cadastro. |
-| A área nova está dentro da existente | **"Nova oferta de parte do terreno"**: a oferta guarda o pedaço oferecido. |
-| A área nova contém a existente | **"Recadastrar com a área nova"**: troca a poligonal do terreno pela nova. |
-| As áreas se cruzam | **"Recadastrar juntando as áreas"** ou **"Recadastrar só com a área nova"**. |
+| **Mesmos lotes** | Não nasce terreno novo: a oferta entra como **nova oferta do terreno existente**, em Ofertas recebidas. O terreno continua com uma só oferta ativa. |
+| **Lotes diferentes, com algum em comum** (sobreposição parcial) | Nasce um terreno novo, ligado ao existente. Os dois ganham a marca **"Sobreposição parcial"** na ficha. |
 
-Sempre há também **"Abrir ficha"** (do terreno existente) e **"É outro terreno, cadastrar mesmo assim"**.
+A **lupa** abre **"Comparar os lotes"**: o mapa real das quadras da prefeitura duas vezes, lado a lado, um para cada cadastro, com os lotes em comum numa cor e os só daquele cadastro noutra, e a lista dos SQLs de cada um embaixo.
 
-**Regra:** recadastrar guarda a poligonal anterior no histórico.
+**Quem decide qual tratativa vale:** só uma tratativa do mesmo imóvel fica ativa de cada vez, e só o terreno dela aparece no mapa, no funil e nas listas.
 
-**Por que existe:** para o mesmo terreno não entrar duas vezes quando chega por corretores diferentes. Duas ofertas do mesmo terreno devem ficar no mesmo cadastro.
+- **Você é o responsável pelo terreno existente:** vê o código dele e o botão **"Abrir ficha"**. Com a tratativa vencida, escolhe se mantém a outra ou se a nova passa a ser a ativa. Sem vencer, a nova só pode seguir a outra.
+- **O terreno é de outra pessoa:** o código não aparece, só "imóvel já existe na base". Com a tratativa vencida, a janela pergunta se você quer assumir; assumindo, você vira o responsável. Sem vencer, o cadastro fica **salvo e escondido** e você recebe um aviso no sino quando a outra vencer.
+- **Diretor:** pode trocar a tratativa ativa à mão a qualquer momento.
+
+**Vencida** = 90 dias sem nenhuma ação de uma pessoa no terreno (o que aparece nos Logs; o que o sistema grava sozinho não conta). Terreno perdido, descartado ou arquivado conta como vencido; comprado nunca vence.
+
+**Por que existe:** para o mesmo imóvel não ser negociado ao mesmo tempo por duas pessoas da BKM, cada uma com um corretor.
 
 ## Lotes da prefeitura (São Paulo e São José dos Campos)
 
@@ -100,6 +104,9 @@ Se o GeoSampa não responder, aparece o erro com **"Tentar de novo"** e **"Segui
 - **Acesso principal**: aparece quando há duas ou mais ruas em volta da poligonal. Uma opção por rua, com os metros de frente; a mais longa vem marcada. O nome sugerido acompanha a escolha enquanto você não escreveu outro. As outras ruas entram como frentes do terreno.
 - **SQLs** (ou **inscrições**, em São José dos Campos): mostra os lotes escolhidos, com **"Trocar SQLs"** (ou **"Escolher SQLs"**; em São José, **"Trocar inscrições"** ou **"Escolher inscrições"**).
 - **Município \***: só aparece quando a localização falhou ("Não deu para saber pela localização").
+- **Origem da oferta** (obrigatória): de onde veio a oferta. Com a origem **Corretor**, aparece o campo **Corretor** (também obrigatório): digite parte do nome, do apelido ou da imobiliária e a lista mostra os que combinam (sem precisar de acento nem do nome inteiro), ou clique na seta para ver todos em ordem alfabética; **"+ Novo corretor..."** fica no fim da lista (ver [06](06-ficha-comercial.md#novo-corretor)). Trocar a origem para outra tira o corretor.
+- **Informações gerais**: texto livre, opcional, com as impressões sobre o corretor, a firmeza da proposta etc. Vai para a primeira oferta do terreno (a que aparece no card da oferta, na aba Comercial). É diferente das informações gerais da pedida de cada parte, que ficam em Condições pedidas.
+- **Rascunho:** sem a origem (ou sem o corretor, quando a origem é Corretor) o cadastro não se conclui. Se você fechar a janela antes de cadastrar, a poligonal, os lotes e o que já preencheu ficam guardados neste navegador, e a próxima vez que abrir **Novo terreno** aparece **Cadastro em rascunho** com **Continuar** e **Descartar**.
 
 Clique em **"Cadastrar terreno"**.
 
@@ -108,7 +115,7 @@ O município, o logradouro, o número e o bairro achados pela localização entr
 ## Depois de cadastrar
 
 - O terreno recebe o **código** (A001, A002...).
-- Nasce com a parte **"Vendedor 1"**, sem oferta (fica em **Backlog** até a primeira oferta).
+- Nasce com a parte **"Vendedor 1"** e com a **primeira oferta**, que aparece em Ofertas recebidas com a data e o número (A112-1). A negociação ainda não abre: o terreno fica em **Backlog** até alguém abrir a negociação (Registrar oferta na aba Comercial).
 - A página vai para o **Mapa** com o terreno em foco.
 - Em São Paulo, com SQLs, a **consulta completa do GeoSampa** roda em segundo plano para cada SQL (zonas, parâmetros, restrições, cartório) e depois a consulta pela poligonal. O andamento aparece na linha do terreno na lista do mapa: **"Consultando o GeoSampa: N de M"**. Pode continuar trabalhando enquanto isso.
 - Em São José dos Campos, com inscrições, a **consulta do GeoSanja** roda do mesmo jeito em cada inscrição (zona, macrozona e restrições).

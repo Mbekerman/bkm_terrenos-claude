@@ -217,8 +217,11 @@ abas.
 ### Gaveta
 
 - Painel que entra pela **direita** (ficha sobre o mapa ou sobre a tabela, filtros) por cima do conteúdo, encostado na barra de
-  cima com um fio separando.
-- **Largura arrastável** pela borda (pega de 4×48 px que fica azul e cresce no hover; cursor `col-resize`; setas do teclado
+  cima. A gaveta da ficha segue o side sheet do Material 3 à risca (decisão do Moises, 11/nov/2026): sem fio na lateral nem no
+  alto, sombra de elevação nível 3 (`0 1px 3px rgba(0,0,0,.3), 0 4px 8px 3px rgba(0,0,0,.15)`) e canto de 16 px no alto à
+  esquerda; no escuro, fundo `#1e1f20`. É a exceção à regra "fio e espaço, não sombra" da seção 4: a gaveta flutua sobre a
+  página, não é um quadro dentro dela.
+- **Largura arrastável** pela borda (pega de 4×48 px que só aparece com o mouse em cima, no foco ou arrastando, e fica azul; cursor `col-resize`; setas do teclado
   também mudam, Shift dá passos maiores); mínimo 480 px; nunca cobre a lista do lado; **dois cliques voltam ao padrão**;
   guardada no navegador.
 - Cabeçalho: código, nome, "Abrir página" e X. Fecha no X ou Esc (Esc não fecha se houver menu ou janela aberta por cima, nem
@@ -250,8 +253,12 @@ abas.
 
 - **Ficha em abas**: topo com código, nome, situação e data; abaixo, a barra das abas **presa no alto ao rolar**. A barra rola de
   lado como roleta (dedo, mouse arrastado com a mãozinha, Shift + roda, deslize do trackpad, com inércia); arrastar não troca
-  de aba; trocar traz a aba ativa para a vista com as vizinhas. No fim, setas de aba anterior/próxima e o **⋮ com o índice de
-  todas as abas**, a atual marcada.
+  de aba; trocar traz a aba ativa para a vista com as vizinhas. No fim, o **⋮ com o índice de
+  todas as abas**, a atual marcada (sem setas de aba anterior/próxima: a roleta já resolve, pedido do Moises de 10/nov/2026).
+- **Subabas**: um item da barra pode juntar várias abas (Estudos Técnicos = Estudos de massa, Estudos de viabilidade, Entorno e
+  Avaliação de infraestrutura). Aberto, mostra logo abaixo da barra uma linha de chips de filtro (raio 8, altura 32, contorno;
+  o ativo no contêiner secundário `#c2e7ff`, no escuro `#004a77`), que rola de lado se não couber; no ⋮, as subabas recuadas
+  sob o nome do grupo. Cada subaba tem o próprio endereço.
 - Uma aba de cada vez, e ela está no endereço (`/terrenos/A123/comercial`).
 - Dentro da aba, **cada quadro abre e fecha pela seta do título** e nasce fechado, menos o primeiro. A escolha vale na sessão.
   Editar, abrir formulário ou chegar a um item por link abre o quadro dele.
@@ -301,6 +308,10 @@ Referência: o Google Maps atual. Código: `apps/web/src/pages/Mapa.tsx` e `apps
 - **Camadas coloridas** (renda, densidade): faixas fixas (nunca quantis), legenda das cores no canto de cima, fechada como uma
   escala numa linha e aberta como lista; setor sem dado fica sem cor, nunca zero. Ao ligar uma camada, o mapa passa para a
   visão Mapa.
+- **Camadas de pontos de terceiros** (concorrência): cores pastel, mais claras e menos saturadas que as dos nossos itens, para
+  os terrenos da BKM continuarem sendo o que mais se destaca sobre o satélite; o desenho dentro do quadrado diz a situação.
+  De longe (até o zoom 13), só se juntam pontos com a mesma categoria (situação e faixa), numa bolha redonda do tamanho do
+  volume (unidades), sem número escrito: o número fica na dica; o clique aproxima até separar.
 - Quadro de um lugar do Google: nome, nota e até 3 avaliações, com "Ver todas no Google Maps"; fecha no X, no clique no mapa ou
   no Esc; com o mouse, fecha 1 s depois que o mouse sai.
 - **Tela cheia** do mapa cobre a página e, onde o navegador deixa, esconde as barras dele; Esc sai.

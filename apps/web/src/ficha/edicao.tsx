@@ -36,7 +36,7 @@ export const SECOES: Record<string, { titulo: string; campos: Campo[] }> = {
   ident: { titulo: 'Identificação', campos: [['nome', 'Nome de referência', 'txt', null, 'full'], ['descricao', 'Descrição', 'area', null, 'full'], ['prioridade', 'Prioridade', 'sel', 'prioridade'],
     ['responsavel_id', 'Responsável', 'user', null], ['origem_cadastro', 'Origem do cadastro', 'sel', 'origem'], ['data_identificacao', 'Identificado em', 'date', null],
     ['observacoes', 'Observações gerais', 'area', null, 'full']] },
-  loc: { titulo: 'Endereço e localização', campos: [['cep', 'CEP', 'cep', null], ['logradouro', 'Logradouro', 'txt', null], ['numero', 'Número', 'txt', null], ['complemento', 'Complemento', 'txt', null],
+  loc: { titulo: 'Localização', campos: [['cep', 'CEP', 'cep', null], ['logradouro', 'Logradouro', 'txt', null], ['numero', 'Número', 'txt', null], ['complemento', 'Complemento', 'txt', null],
     ['bairro', 'Bairro', 'txt', null], ['municipio_id', 'Município', 'mun', null], ['zona', 'Zona', 'sel', 'zona'],
     ['cartorio', 'Cartório de registro de imóveis', 'cri', null], ['referencia_localizacao', 'Referência', 'txt', null, 'full'], ['latitude', 'Latitude', 'dec', null],
     ['longitude', 'Longitude', 'dec', null]] },
@@ -292,17 +292,154 @@ export function usePedido(secs: string[], fn: (p: PedidoCampo) => void) {
     return () => window.removeEventListener('ficha-campo', at);
   }, [chave]);
 }
-/** quadros que moram dentro de outro quadro */
-const QD_PAI: Record<string, string> = { indices: 'param', rest: 'param', histuso: 'param' };
 /** abre o quadro da aba e avisa os quadros na tela */
-export function abrirQuadroJa(aba: string, id: string) { abrirQuadro(aba, id); window.dispatchEvent(new Event('ficha-quadro')); }
-/** abre o quadro da seção (sem mexer na escolha das outras) */
+/** trocar de aba ou de chip (pedido do Moises, 11/nov/2026, refeito no mesmo dia): a rolagem tem duas partes. A de cima,
+ *  que esconde o cabeçalho até as barras das abas e dos chips ficarem presas, fica onde está. A de baixo, a dos dados, volta
+ *  à última posição em que a seção nova estava (guardada por terreno, aba e chip enquanto a página está aberta) e, sem
+ *  posição guardada, mostra o começo da seção logo abaixo das barras. Com as barras ainda soltas, nada rola. A .ficha-main
+ *  guarda a altura que tinha (min-height), para a seção nova mais curta não puxar a página para cima, e o que sobra fica
+ *  vazio embaixo; o espaço encolhe só quando a pessoa rola para cima e sai quando o conteúdo volta a ocupar a altura */
+type MainF = HTMLElement & { _folga?: (troca?: boolean) => void };
+const POS_SECAO = new Map<string, number>();
+/** a seção na tela: terreno, aba e o chip escolhido de cada barra */
+function chaveSecao(main: HTMLElement) {
+  const aba = main.querySelector(':scope > .fi-aba')?.id ?? '';
+  const chips = [...main.querySelectorAll<HTMLElement>(':scope > .fi-chips-w')].map((x) => x.dataset.ativo ?? '').join('/');
+  return `${main.dataset.terreno ?? ''}:${aba}:${chips}`;
+}
+/** quanto dos dados está escondido sob as barras (0 ou menos com os dados logo abaixo delas) e o fundo das barras na tela */
+function sobBarras(main: HTMLElement) {
+  const sec = main.querySelector<HTMLElement>('.fi-aba');
+  const barras = [...main.querySelectorAll<HTMLElement>(':scope > .fi-abas-w, :scope > .fi-chips-w')];
+  if (!sec || !barras.length) return null;
+  const fundo = Math.max(...barras.map((x) => x.getBoundingClientRect().bottom));
+  return { fundo, d: fundo - sec.getBoundingClientRect().top };
+}
+export function segurarRolagem(de?: Element | null) {
+  const main = ((de?.closest('.ficha-main') ?? document.querySelector('.ficha-main')) as MainF | null);
+  if (!main) return;
+  let sc: HTMLElement | null = main.parentElement;
+  while (sc && sc !== document.body && !/auto|scroll/.test(getComputedStyle(sc).overflowY)) sc = sc.parentElement;
+  const pag = !sc || sc === document.body;
+  const rol = pag ? (document.scrollingElement as HTMLElement) : sc!;
+  const ouve: HTMLElement | Window = pag ? window : rol;
+  const s = rol.scrollTop;
+  /* a posição dos dados da seção que sai */
+  const chDe = chaveSecao(main), m0 = sobBarras(main);
+  /* as barras das abas estão presas quando a de cima está no próprio "top" do sticky (contado de dentro do padding de
+     quem rola, como o navegador conta) */
+  const abas = main.querySelector<HTMLElement>(':scope > .fi-abas-w');
+  const presas = !!m0 && !!abas && abas.getBoundingClientRect().top
+    <= (parseFloat(getComputedStyle(abas).top) || 0) + (pag ? 0 : rol.getBoundingClientRect().top + rol.clientTop
+      + (parseFloat(getComputedStyle(rol).paddingTop) || 0)) + 1;
+  POS_SECAO.set(chDe, presas ? Math.max(0, m0!.d) : 0);
+  /* a altura de agora antes de soltar o min-height anterior: soltar e medir faria o navegador cortar a rolagem */
+  let alvo = main.offsetHeight, t = 0;
+  const ant = main._folga;
+  if (ant) { main._folga = undefined; ant(true); }
+  /* min-height vale na caixa do conteúdo ou na borda, conforme o box-sizing */
+  const cs = getComputedStyle(main);
+  const caixa = cs.boxSizing === 'border-box' ? 0
+    : (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+  const por = (h: number) => { main.style.minHeight = `${Math.max(0, Math.ceil(h - caixa))}px`; };
+  por(alvo);
+  /* altura do conteúdo sem o min-height, sem soltá-lo (o fundo do último filho) */
+  const natural = () => {
+    const r = main.getBoundingClientRect(), u = main.lastElementChild;
+    const fim = u ? u.getBoundingClientRect().bottom - r.top : 0;
+    return fim + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+  };
+  const topoMain = () => main.getBoundingClientRect().top - (pag ? 0 : rol.getBoundingClientRect().top) + rol.scrollTop;
+  /* altura da .ficha-main para a vista em y caber */
+  const precisaEm = (y: number) => { const topo = topoMain(); return y + rol.clientHeight - topo - (rol.scrollHeight - (topo + main.offsetHeight)); };
+  /* ao rolar para cima, a altura guardada encolhe até o necessário para a vista atual; sem folga, solta */
+  const encolher = () => {
+    const precisa = precisaEm(rol.scrollTop);
+    if (precisa >= alvo) return;
+    alvo = precisa;
+    if (natural() >= alvo) solta(); else por(alvo);
+  };
+  const solta = (troca?: boolean) => {
+    clearTimeout(t); ouve.removeEventListener('scroll', encolher);
+    if (main._folga === solta) main._folga = undefined;
+    if (!troca) main.style.minHeight = '';
+  };
+  main._folga = solta;
+  /* com as barras presas, a seção nova abre na posição guardada dela (ou no começo, logo abaixo das barras) */
+  let y = s;
+  const decide = () => {
+    if (!presas) return;
+    if (Math.abs(rol.scrollTop - s) > 1) rol.scrollTop = s;
+    const m = sobBarras(main);
+    if (!m) return;
+    y = Math.max(0, s - m.d + (POS_SECAO.get(chaveSecao(main)) ?? 0));
+    const p = precisaEm(y);
+    if (p > alvo) { alvo = p; por(alvo); }
+  };
+  const fixa = () => { if (Math.abs(rol.scrollTop - y) > 1) rol.scrollTop = y; };
+  /* posta a vista, a altura guardada cai para o que ela pede: sem espaço vazio embaixo, a seção nova nunca rola para
+     baixo das barras (pedido do Moises, 11/nov/2026); a seção já ocupa a vista abaixo das barras (--fi-sobra) */
+  const assenta = () => { fixa(); if (main._folga !== solta) return; alvo = Math.min(alvo, precisaEm(rol.scrollTop)); if (natural() >= alvo) solta(); else por(alvo); };
+  requestAnimationFrame(() => { decide(); fixa(); requestAnimationFrame(assenta); });
+  /* o primeiro scroll vem do próprio ajuste: espera a troca assentar */
+  t = window.setTimeout(() => { if (main._folga === solta) ouve.addEventListener('scroll', encolher, { passive: true }); }, 400);
+}
+/** a seção aberta ocupa pelo menos a altura da vista abaixo das barras presas, para sempre dar para rolar até as barras
+ *  travarem lá em cima, mesmo com a seção vazia (pedido do Moises, 11/nov/2026): mede e põe `--fi-sobra` na .ficha-main */
+export function useSobraSecao(ref: { current: HTMLElement | null }, dep: unknown) {
+  useEffect(() => {
+    const main = ref.current;
+    if (!main) return;
+    let sc: HTMLElement | null = main.parentElement;
+    while (sc && sc !== document.body && !/auto|scroll/.test(getComputedStyle(sc).overflowY)) sc = sc.parentElement;
+    const pag = !sc || sc === document.body;
+    const rol = pag ? (document.scrollingElement as HTMLElement) : sc!;
+    let quadro = 0;
+    const medir = () => {
+      cancelAnimationFrame(quadro);
+      quadro = requestAnimationFrame(() => {
+        const abas = main.querySelector<HTMLElement>(':scope > .fi-abas-w');
+        if (!abas) return;
+        const r = pag ? null : rol.getBoundingClientRect(), cr = pag ? null : getComputedStyle(rol);
+        const topo = pag ? 0 : r!.top + rol.clientTop + (parseFloat(cr!.paddingTop) || 0);
+        const fundoVista = pag ? document.documentElement.clientHeight : r!.top + rol.clientTop + rol.clientHeight;
+        let barras = parseFloat(getComputedStyle(abas).top) || 0;
+        for (const b of main.querySelectorAll<HTMLElement>(':scope > .fi-abas-w, :scope > .fi-chips-w')) barras += b.offsetHeight;
+        /* o que fica entre o fim da seção e o fim da rolagem (recuos e margens de baixo de quem a contém): sem descontar,
+           a seção rolaria além das barras e passaria por baixo delas */
+        let depois = parseFloat(getComputedStyle(main).marginBottom) || 0;
+        for (let n = main.parentElement; n; n = n.parentElement) {
+          const c = getComputedStyle(n);
+          depois += (parseFloat(c.paddingBottom) || 0) + (parseFloat(c.borderBottomWidth) || 0);
+          if (n === rol || n === document.body) break;
+          depois += parseFloat(c.marginBottom) || 0;
+        }
+        const v = `${Math.max(0, Math.floor(fundoVista - topo - barras - depois))}px`;
+        if (main.style.getPropertyValue('--fi-sobra') !== v) main.style.setProperty('--fi-sobra', v);
+      });
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(main); if (!pag) ro.observe(rol);
+    addEventListener('resize', medir);
+    return () => { cancelAnimationFrame(quadro); ro.disconnect(); removeEventListener('resize', medir); };
+  }, [ref, dep]);
+}
+export function abrirQuadroJa(aba: string, id: string) { abrirQuadro(aba, id); }
+/** abre o quadro da seção: com as seções em chips (pedido do Moises, 10/nov/2026) é o chip escolhido da aba, guardado
+    como "@id" no mesmo conjunto da aba; avisa a barra e os quadros na tela */
 export function abrirQuadro(aba: string, id: string) {
   const L = lojaAtiva?.mapa ?? QD, st = L[aba] || (L[aba] = new Set());
   st.add(id);
-  /* quadro dentro de outro (Parâmetros urbanísticos da aba Terreno): abre também o de fora */
-  if (QD_PAI[id]) st.add(QD_PAI[id]);
+  for (const x of [...st]) if (x[0] === '@') st.delete(x);
+  st.add('@' + id);
   lojaAtiva?.mudou();
+  window.dispatchEvent(new Event('ficha-quadro'));
+}
+/** o chip escolhido da aba (o primeiro na tela quando não há escolha) */
+export function chipEscolhido(L: Record<string, Set<string>>, aba: string) {
+  for (const x of L[aba] ?? []) if (x[0] === '@') return x.slice(1);
+  return null;
 }
 /** rola até o campo ficar na "altura dos olhos": o primeiro item visível logo abaixo do que fica preso no alto
     (barra das abas e título do quadro); no fim da aba, sem folga para rolar, a aba ganha um respiro embaixo, que sai
@@ -319,6 +456,9 @@ function rolarAteOlhos(el: HTMLElement) {
   let linha = pag ? 0 : rol.getBoundingClientRect().top;
   const w = el.closest('.ficha-main')?.querySelector('.fi-abas-w') as HTMLElement | null;
   if (w) linha += (parseFloat(getComputedStyle(w).top) || 0) + w.offsetHeight;
+  /* e a barra de chips, presa logo abaixo das abas */
+  const cw = el.closest('.ficha-main')?.querySelector('.fi-chips-w') as HTMLElement | null;
+  if (cw && getComputedStyle(cw).position === 'sticky') linha += cw.offsetHeight;
   const sec = el.closest('.sec');
   const h = sec?.querySelector(':scope > .sec-h, :scope > form > .sec-h') as HTMLElement | null;
   if (h && getComputedStyle(h).position === 'sticky') linha += h.offsetHeight;
@@ -451,7 +591,7 @@ export async function municipioId(m: EndGoogle | null, f: Ficha): Promise<number
 
 /** quadro das abas da ficha que abre e fecha pela seta do título; nasce fechado, menos o primeiro da aba; a escolha
     vale na sessão, por aba (proto_ui.js › uiQuadros) */
-const QD: Record<string, Set<string>> = {};
+export const QD: Record<string, Set<string>> = {};
 /** quadros guardados à parte, por terreno: a gaveta do Mapa dá a sua (lembrar.ts), que grava a cada mudança; sem ela,
     vale o QD da sessão. abrirQuadro (Logs, ações, "ir ao campo") mexe na loja da gaveta aberta. */
 export interface LojaQd { mapa: Record<string, Set<string>>; mudou: () => void }
@@ -459,11 +599,20 @@ export const LojaQdCtx = createContext<LojaQd | null>(null);
 let lojaAtiva: LojaQd | null = null;
 /** a gaveta marca a loja dela como a ativa enquanto está aberta */
 export function ativarLojaQd(l: LojaQd | null) { lojaAtiva = l; }
-export function Quadro({ aba, id, primeiro, titulo, acoes, aberto: forca, children, form }: {
+/** seções da aba em chips (pedido do Moises, 10/nov/2026): cada quadro se registra na barra de chips da aba (SecoesChips em
+    Chips.tsx) e só o do chip escolhido aparece, sempre aberto, sem a seta */
+export interface ChipsCtxV { reg: (id: string, rot: string, el: HTMLElement) => () => void; ativo: string | null }
+export const ChipsCtx = createContext<ChipsCtxV | null>(null);
+export function Quadro({ aba, id, primeiro, titulo, chip, acoes, aberto: forca, children, form }: {
   aba: string; id: string; primeiro?: boolean; titulo: ReactNode; acoes?: ReactNode; aberto?: boolean; children: ReactNode;
+  /** o nome no chip (sem ele, o título quando é texto); false = fica fora dos chips, como quadro que abre e fecha */
+  chip?: string | false;
   form?: (corpo: ReactNode) => ReactNode;
 }) {
   const loja = useContext(LojaQdCtx), L = loja?.mapa ?? QD;
+  const chips = useContext(ChipsCtx);
+  const rot = chip === false ? null : chip ?? (typeof titulo === 'string' ? titulo : id);
+  const emChip = !!chips && rot != null;
   const st = L[aba] || (L[aba] = new Set());
   const [, re] = useState(0);
   /* o painel de Logs abre o quadro de fora (abrirQuadro + evento 'ficha-quadro') */
@@ -481,16 +630,20 @@ export function Quadro({ aba, id, primeiro, titulo, acoes, aberto: forca, childr
     while (p && !(p.scrollHeight > p.clientHeight && /auto|scroll/.test(getComputedStyle(p).overflowY))) p = p.parentElement;
     if (p) p.scrollTop += d; else window.scrollBy(0, d);
   });
+  useLayoutEffect(() => (emChip && sec.current ? chips!.reg(id, rot!, sec.current) : undefined), [emChip, id, rot]);
   if (primeiro && !st.has('§' + id)) { st.add('§' + id); st.add(id); }
-  const ab = !!forca || st.has(id);
+  const ab = emChip || !!forca || st.has(id);
   const alternar = () => { if (ab) st.delete(id); else st.add(id); loja?.mudou(); re((x) => x + 1); };
-  const cab = (
-    <div className="sec-h"><h2><button type="button" className="qd-tg" aria-expanded={ab} onClick={alternar}>
-      <svg className="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-      <span>{titulo}</span></button></h2>{acoes}</div>
-  );
+  const cab = emChip
+    ? <div className="sec-h"><h2><span className="qd-tit">{titulo}</span></h2>{acoes}</div>
+    : (
+      <div className="sec-h"><h2><button type="button" className="qd-tg" aria-expanded={ab} onClick={alternar}>
+        <svg className="bl-seta" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+        <span>{titulo}</span></button></h2>{acoes}</div>
+    );
   return (
-    <section ref={sec} className={`sec${ab ? '' : ' qd-fechado'}${forca ? ' qd-ed' : ''}`} id={`sec-${id}`}>
+    <section ref={sec} className={`sec${ab ? '' : ' qd-fechado'}${forca ? ' qd-ed' : ''}${emChip ? ' qd-chip' : ''}`} id={`sec-${id}`}
+      hidden={emChip && chips!.ativo !== id ? true : undefined} role={emChip ? 'tabpanel' : undefined}>
       {form ? form(<>{cab}{children}</>) : <>{cab}{children}</>}
     </section>
   );

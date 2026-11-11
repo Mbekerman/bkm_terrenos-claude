@@ -40,9 +40,9 @@ Nos níveis de etapas e de subetapas, arraste o card para outra coluna. Enquanto
 
 | Movimento | O que acontece |
 |---|---|
-| **Para a frente** | Avança **etapa por etapa** até a coluna escolhida. Se uma passagem tem pendência, o analista vê o que falta (**"Entendi"**) e gestor ou diretor podem passar com **Justificativa**. Se uma passagem pede aprovação, o movimento **para no pedido de aprovação**. |
-| **Para trás** | Pergunta **"Voltar para X?"** e pede o **Motivo (vai para o histórico)**. |
-| **Para Stand By** | Abre o formulário do Stand By (**Retomar em** e justificativa). |
+| **Para a frente** | Avança **etapa por etapa** até a coluna escolhida. Se uma passagem tem pendência, o analista vê o que falta (**"Entendi"**) e gestor ou diretor podem passar, com a **Justificativa** opcional. Se uma passagem pede aprovação, o movimento **para no pedido de aprovação**. |
+| **Para trás** | Pergunta **"Voltar para X?"** com o **Motivo (opcional)**, que vai para o histórico. |
+| **Para Stand By** | Abre o formulário do Stand By (**Retomar em** e justificativa, os dois opcionais). |
 | **De Stand By para uma etapa** | Retoma a negociação ("Retomada."). |
 | **Para outra subetapa** (no nível das subetapas) | Muda a subetapa. |
 
@@ -50,7 +50,7 @@ Nos níveis de etapas e de subetapas, arraste o card para outra coluna. Enquanto
 
 - Card com pedido de aprovação aberto não se move: "Há um pedido de aprovação em aberto: aguarde a decisão ou cancele o pedido."
 - Terreno com partes anda pelas partes e não se move à mão.
-- Mover no funil **não entra no Ctrl+Z**. Para desfazer, arraste de volta (com motivo).
+- Mover no funil **não entra no Ctrl+Z**. Para desfazer, arraste de volta.
 
 ## Filtros e visões
 
@@ -60,4 +60,4 @@ A linha do título do Funil tem **Filtros** e **Visões**, iguais aos do Mapa, m
 
 - Arrastar no nível das fases (cada fase só abre quando as dependências se cumprem).
 - Concluir como Comprado, Perdido ou Descartado arrastando: use o quadro de avanço da ficha ([09](09-avanco-e-logs.md)).
-- **Ainda não disponível:** a vista Funil da página Tarefas e a tabela Pipeline de terrenos.
+- **Ainda não disponível:** a vista Funil da página Tarefas.

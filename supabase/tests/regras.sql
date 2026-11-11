@@ -190,6 +190,8 @@ select pg_temp.ok((select disponibilidade from app.v_terreno_infraestrutura wher
 insert into app.terreno_infraestrutura (terreno_id, item, empresa_id, disponibilidade, data_verificacao, observacoes) values (:'t1', 'calcada', :'emp', 'parcial', current_date, 'Só na frente da Cupecê');
 select pg_temp.ok((select disponibilidade from app.v_terreno_infraestrutura where terreno_id = :'t1' and item = 'calcada') = 'parcial', 'visita técnica aceita Parcial (e Não se aplica)');
 select pg_temp.ok(not exists (select 1 from app.v_terreno_infraestrutura where item = 'fibra'), 'telefonia saiu da visita técnica');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'terreno_infraestrutura' and depois->>'terreno_id' = :'t1') = 2, 'cada item da visita técnica vai para os logs');
+select pg_temp.ok((app.ficha_dados(:'emp', (select codigo from app.terrenos where id = :'t1')) ->> 'infra_nv')::int = 6, 'a ficha conta os 8 itens da visita (água verificada conta)');
 \echo '# viabilidades técnicas'
 select pg_temp.ok((select string_agg(servico, ',' order by ordem) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1') = 'energia,agua,esgoto,gas'
   and not exists (select 1 from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and situacao <> 'nao_solicitada'), 'energia, água, esgoto e gás, todas não solicitadas');
@@ -203,6 +205,22 @@ insert into app.terreno_viabilidades_tecnicas (terreno_id, servico, empresa_id, 
 insert into app.terreno_viabilidades_tecnicas (terreno_id, servico, empresa_id, situacao, emitida_em, validade, condicoes) values (:'t1', 'energia', :'emp', 'condicionada', current_date - 10, current_date + 170, 'Reforço da rede pela incorporadora');
 select pg_temp.ok((select vencida and concessionaria = 'Sabesp' from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and servico = 'agua')
   and not (select vencida from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and servico = 'energia'), 'viabilidade com a validade passada sai como vencida');
+\echo '# viabilidades técnicas incluídas pelo usuário'
+insert into app.terreno_viabilidades_outras (terreno_id, empresa_id, nome, situacao) values (:'t1', :'emp', '  Drenagem   pluvial ', 'solicitada');
+insert into app.terreno_viabilidades_outras (terreno_id, empresa_id, nome) values (:'t1', :'emp', 'Telefonia');
+select pg_temp.ok((select string_agg(nome, ',' order by ordem) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and outra) = 'Drenagem pluvial,Telefonia'
+  and (select count(*) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1') = 6
+  and (select min(ordem) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and outra) > (select max(ordem) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and not outra),
+  'viabilidade digitada entra depois das quatro fixas, com o nome limpo');
+select pg_temp.falha(format($$insert into app.terreno_viabilidades_outras (terreno_id, empresa_id, nome) values (%L, %L, 'telefonia')$$, :'t1', :'emp'), 'nome repetido no terreno é recusado');
+select pg_temp.falha(format($$insert into app.terreno_viabilidades_outras (terreno_id, empresa_id, nome) values (%L, %L, 'Água')$$, :'t1', :'emp'), 'nome de viabilidade fixa é recusado');
+select pg_temp.falha(format($$insert into app.terreno_viabilidades_outras (terreno_id, empresa_id, nome) values (%L, %L, '   ')$$, :'t1', :'emp'), 'nome em branco é recusado');
+select pg_temp.falha(format($$update app.terreno_viabilidades_outras set situacao = 'viavel' where terreno_id = %L and nome = 'Telefonia'$$, :'t1'), 'retorno da digitada também exige a data de emissão');
+update app.terreno_viabilidades_outras set situacao = 'viavel', emitida_em = current_date - 400, validade = current_date - 1 where terreno_id = :'t1' and nome = 'Telefonia';
+select pg_temp.ok((select vencida from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and nome = 'Telefonia'), 'digitada vencida aparece como vencida');
+delete from app.terreno_viabilidades_outras where terreno_id = :'t1' and nome = 'Telefonia';
+select pg_temp.ok((select count(*) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1') = 5
+  and exists (select 1 from app.auditoria where tabela = 'terreno_viabilidades_outras' and acao = 'delete'), 'digitada se apaga, com log');
 \echo '# classificação topográfica'
 select pg_temp.ok(app.classificar_topografia(:'emp', 3.9, 0.1) = 'plano' and app.classificar_topografia(:'emp', 5, 0.1) = 'plano'
   and app.classificar_topografia(:'emp', 9.5, 0.4) = 'inclinado' and app.classificar_topografia(:'emp', 12, 0.3) = 'acidentado_leve'
@@ -450,8 +468,7 @@ select pg_temp.como(:'analista');
 select app.registrar_proposta(:'neg', 'vendedor', 8900000, 'permuta_com_torna', 'Pede 9% em permuta') as p5 \gset
 select pg_temp.falha(format('select app.mover_subetapa(%L, %L)', :'neg', 'proposta_enviada'), 'Proposta Enviada exige ter passado por Preparando Proposta');
 select pg_temp.como(:'gestor');
-select pg_temp.falha(format('select app.mover_subetapa(%L, %L, true)', :'neg', 'proposta_enviada'), 'avanço forçado exige justificativa');
-select app.mover_subetapa(:'neg', 'proposta_enviada', true, 'Proposta foi direto por e-mail') \gset
+select app.mover_subetapa(:'neg', 'proposta_enviada', true) \gset
 select pg_temp.ok((select forcado from app.processo_transicoes where processo_id = :'neg' and para_subetapa = 'proposta_enviada'), 'gestor força o pré-requisito e fica registrado');
 
 \echo '# aprovações'
@@ -483,6 +500,10 @@ select pg_temp.ok((select user_id = :'analista' and aprovacao_id is not null fro
   'a passagem fica no nome de quem pediu, ligada ao pedido aprovado');
 select pg_temp.ok((select decidido_por from app.aprovacoes where pedido_id = :'ped2') = :'diretor', 'quem aprovou de fato fica registrado');
 select pg_temp.como(:'gestor');
+select app.mover_para_etapa(:'neg', 'negociacao') \gset
+select pg_temp.ok((select evento = 'retorno' and comentario is null from app.processo_transicoes where processo_id = :'neg' order by em desc limit 1),
+  'voltar de etapa sem motivo: o motivo é opcional (10/nov/2026)');
+select app.mover_etapa(:'neg') \gset
 select app.mover_para_etapa(:'neg', 'negociacao', false, 'Vendedor reabriu o preço') \gset
 select pg_temp.ok((select evento = 'retorno' and para_subetapa = 'aguardando_reuniao' from app.processo_transicoes where processo_id = :'neg' order by em desc limit 1),
   'voltar de etapa é "retorno" e entra na subetapa inicial');
@@ -565,13 +586,9 @@ select pg_temp.falha(format('select app.registrar_documento(%L, %L, %L, %L)', :'
 \echo '# status: stand by, perdido, descartado'
 select pg_temp.falha(format('select app.arquivar_terreno(%L, %L)', :'t1', 'teste'), 'não arquiva com negociação aberta');
 select pg_temp.como(:'analista');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L)', :'neg', 'descartado'), 'descartar exige motivo da lista');
 select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L)', :'neg', 'descartado', 'preco_alto'), 'motivo fora da lista é recusado');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L)', :'neg', 'descartado', 'outros'), 'Descartado por Outros exige texto');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L)', :'neg', 'perdido', 'vendido_terceiro'), 'Perdido exige relato');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L)', :'neg', 'concluido', '<p>Fechado</p>'), 'Comprado exige relato e pontos de sucesso');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L)', :'neg', 'stand_by', 'Inventário'), 'Stand By exige data futura');
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_retomar_em => current_date + 30)', :'neg', 'stand_by'), 'Stand By exige justificativa');
+select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_retomar_em => current_date)', :'neg', 'stand_by'), 'Stand By com data de hoje ou passada é recusado');
+select pg_temp.falha(format('select app.editar_encerramento(%L, %L)', :'neg', '{"detalhe":"x"}'), 'fase ativa não tem encerramento para editar');
 select app.encerrar_processo(:'neg', 'stand_by', p_detalhe => 'Inventário em andamento', p_retomar_em => current_date + 30) \gset
 select pg_temp.ok((select status = 'stand_by' and etapa_atual = 'contrato' and subetapa_atual = 'em_ajuste' from app.processos where id = :'neg'), 'stand by guarda etapa e subetapa');
 select pg_temp.ok((select array_agg(dias_antes order by dias_antes) from app.lembretes where origem_tabela = 'processos' and origem_id = :'neg') = '{0,7}', 'stand by cria os lembretes padrão (7 dias antes e no dia)');
@@ -581,13 +598,24 @@ select app.rotina_diaria(current_date + 23) \gset
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'stand_by_retomar') = 1, 'responsável é lembrado 7 dias antes de retomar, sem repetir');
 select pg_temp.como(:'analista');
+select app.editar_encerramento(:'neg', '{"retomar_em":null,"detalhe":""}');
+select pg_temp.ok((select retomar_em is null and detalhe_encerramento is null and status = 'stand_by' from app.processos where id = :'neg'), 'Stand By fica sem data e sem justificativa, completados depois');
+select pg_temp.falha(format('select app.editar_encerramento(%L, %L)', :'neg', '{"motivo":"vendido_terceiro"}'), 'motivo só para Perdido e Descartado, também ao editar');
+select pg_temp.falha(format('select app.editar_encerramento(%L, %L)', :'neg', '{"retomar_em":"2000-01-01"}'), 'data de retomar editada precisa ser futura');
+select app.editar_encerramento(:'neg', format('{"retomar_em":"%s","detalhe":"Inventário"}', current_date + 40)::jsonb);
+select pg_temp.ok((select retomar_em = current_date + 40 and detalhe_encerramento = 'Inventário' from app.processos where id = :'neg'), 'a faixa do Stand By completa a data e a justificativa depois');
+select pg_temp.ok((select count(*) from app.auditoria where tabela = 'processos' and registro_id = :'neg'::uuid and lower(acao) = 'update') > 0, 'editar o encerramento fica nos logs');
 select app.retomar_processo(:'neg');
 select pg_temp.ok((select status = 'ativo' and subetapa_atual = 'em_ajuste' from app.processos where id = :'neg'), 'retomar volta para Ativo na mesma etapa e subetapa');
 select pg_temp.ok((select tempo_stand_by > interval '0' from app.v_tempo_subetapas where processo_id = :'neg' and subetapa = 'em_ajuste'), 'tempo em stand by fica separado do tempo ativo');
 select pg_temp.ok((select ultima_saida is not null and passagens = 1 from app.v_tempo_subetapas where processo_id = :'neg' and subetapa = 'estudo_viabilidade'),
   'tempo por subetapa: entrada e saída de Estudo de Viabilidade lidas do histórico');
 select pg_temp.ok((select count(*) from app.v_tempo_subetapas where processo_id = :'neg' and atual) = 1, 'só a subetapa atual está em aberto');
-select app.encerrar_processo(:'neg', 'perdido', 'vendido_terceiro', 'Fechou com a construtora vizinha por valor maior') \gset
+select app.encerrar_processo(:'neg', 'perdido') \gset
+select pg_temp.ok((select status = 'perdido' and motivo_encerramento is null and detalhe_encerramento is null from app.processos where id = :'neg'), 'Perdido sem motivo nem relato: preenche depois');
+select pg_temp.falha(format('select app.editar_encerramento(%L, %L)', :'neg', '{"motivo":"preco_alto"}'), 'motivo editado fora da lista é recusado');
+select pg_temp.falha(format('select app.editar_encerramento(%L, %L)', :'neg', '{"pontos_sucesso":"x"}'), 'pontos de sucesso só na conclusão, também ao editar');
+select app.editar_encerramento(:'neg', '{"motivo":"vendido_terceiro","detalhe":"Fechou com a construtora vizinha por valor maior"}');
 select pg_temp.ok((select status = 'perdido' and etapa_atual = 'contrato' and motivo_encerramento = 'vendido_terceiro' from app.processos where id = :'neg'), 'perdido guarda motivo, relato e a etapa onde parou');
 select pg_temp.ok((select motivo_encerramento_nome from app.v_terrenos where id = :'t1') = 'Vendido para terceiro', 'listagem mostra o nome do motivo');
 select pg_temp.falha(format('select app.retomar_processo(%L)', :'neg'), 'perdido não volta para Ativo');
@@ -1025,8 +1053,9 @@ select pg_temp.falha(format('select app.encerrar_processo(%L, %L, %L, %L)', :'ap
 select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L)', :'ap', 'bkm', 'a_vista'), 'proposta só na negociação');
 select pg_temp.falha(format('select app.encerrar_processo(%L, %L, p_detalhe => %L)', :'ap', 'concluido', 'Aprovado'), 'fase se conclui só na última etapa');
 select app.mover_para_etapa(:'ap', 'alvaras') \gset
-select pg_temp.falha(format('select app.encerrar_processo(%L, %L)', :'ap', 'concluido'), 'concluir a fase exige relato');
-select app.encerrar_processo(:'ap', 'concluido', p_detalhe => '<p>Alvará de execução emitido</p>') \gset
+select app.encerrar_processo(:'ap', 'concluido') \gset
+select app.editar_encerramento(:'ap', '{"detalhe":"<p>Alvará de execução emitido</p>"}');
+select pg_temp.ok((select detalhe_encerramento from app.processos where id = :'ap') = '<p>Alvará de execução emitido</p>', 'concluir sem relato e escrever o relato depois');
 select pg_temp.ok((select status from app.processos where id = :'ap') = 'concluido'
   and exists (select 1 from app.processos where terreno_id = :'t2' and fase = 'incorporacao' and status = 'ativo'),
   'concluir a Aprovação (sem pontos de sucesso) abre o Registro de Incorporação');
@@ -1564,7 +1593,7 @@ select pg_temp.falha(format($$update app.viabilidade_linhas set despesa = 'marke
 select pg_temp.como(:'diretor');
 update app.viabilidade_linhas set valor = 4 where viabilidade_id = :'vb1' and despesa = 'impostos';
 update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra';
-update app.viabilidade_linhas set valor = 10 where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento';
+update app.viabilidade_linhas set tipo = 'pct_lucro', valor = 10 where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento';
 select pg_temp.como(:'analista');
 -- obra em camadas e despesas gerais
 insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, valor) values
@@ -1574,10 +1603,17 @@ insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, 
   (:'emp', :'vb1', 4, 'ligacoes', 'pct_obra_raso', 1),
   (:'emp', :'vb1', 5, 'projetos', 'pct_obra_total', 3),
   (:'emp', :'vb1', 6, 'aprovacoes', 'verba', 200000),
-  (:'emp', :'vb1', 7, 'assistencia_tecnica', 'pct_obra_total', 1),
-  (:'emp', :'vb1', 8, 'itbi_terreno', 'verba', 150000),
-  (:'emp', :'vb1', 9, 'registro_incorporacao', 'verba', 100000),
-  (:'emp', :'vb1', 10, 'adm_central', 'pct_vgv', 1);
+  (:'emp', :'vb1', 7, 'assistencia_tecnica', 'pct_obra_total', 1);
+-- despesas gerais: um item fixo por grupo, que nasce em % do VGV (pedido do Moises, 11/nov/2026)
+select pg_temp.ok((select count(*) = 4 and bool_and(l.tipo = 'pct_vgv') from app.viabilidade_linhas l
+                    join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
+                   where l.viabilidade_id = :'vb1' and app.viab_secao(d.grupo) = 'despesas'),
+  'estudo novo já vem com as quatro despesas gerais, em % do VGV');
+select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, valor) values (%L, %L, 'dg_cef', 'pct_vgv', 1)$$, :'emp', :'vb1'),
+  'despesa geral é item fixo: não entra duas vezes');
+update app.viabilidade_linhas set tipo = 'verba', valor = 150000 where viabilidade_id = :'vb1' and despesa = 'dg_terreno';
+update app.viabilidade_linhas set tipo = 'verba', valor = 100000 where viabilidade_id = :'vb1' and despesa = 'dg_incorporacao';
+update app.viabilidade_linhas set valor = 1 where viabilidade_id = :'vb1' and despesa = 'dg_adm_financeiro';
 select app.salvar_viabilidade(:'vb1', '{"custo_m2":3000,"deducao_vgv_pct":5,"permuta_fin_pct":8,"minimo_garantido":3000000,"pagamento_dinheiro":1000000,"comissao_dinheiro":200000,"deduz_vgv":["itbi_vendas","registro_vendas"]}');
 select pg_temp.ok((select vgv = 46000000 and permuta_valor = 2800000 and comissao_valor = 560000 and vgv_vendido = 42640000 and unidades = 150 and unidades_permuta = 10 and unidades_comissao = 2
   and area_privativa = 6500 and deducoes = 3284800 and vgv_liquido = 39355200 from app.viabilidades where id = :'vb1'),
@@ -1586,38 +1622,38 @@ select pg_temp.ok((select obra_incidente = 19500000 and obra_raso = 20540000 and
   'obra: incidente 3.000/m² × 6.500 m² = 19,5 mi; raso + atípicos (100/m² e 2% do típico) = 20,54 mi; total + não incidente (verba e 1% do raso) = 21,7454 mi; + projetos e pós-obra (% da total) = 22,815216 mi');
 select pg_temp.ok((select permuta_financeira = 3148416 and custo_terreno = 4348416 from app.viabilidades where id = :'vb1'),
   'terreno: permuta financeira 8% do VGV líquido (3,148416 mi, acima do mínimo) + 1 mi em dinheiro + 0,2 mi de comissão');
-select pg_temp.ok((select despesas_gerais = 676400 and taxas = 964858.91 and custos_comerciais = 4698000 and despesas_total = 35208490.91
-  and ebitda = 7969968 and despesas_financeiras = 1705600 and lucro_sem_taxas = 6264368
-  and lucro_liquido = 5299509.09 and margem_pct = 13.47 from app.viabilidades where id = :'vb1'),
-  'gerais 676,4 mil, comerciais 4,698 mi: EBITDA 7,97 mi − financeiras (impostos 4%: 1,7056 mi) = sem taxas 6,264 mi − taxas 964,9 mil (com 10% do lucro) = lucro 5,299 mi, margem 13,47%');
-select pg_temp.ok((app.calcular_viabilidade(:'vb1')->>'lucro_liquido')::numeric = 5299509.09
+select pg_temp.ok((select despesas_gerais = 676400 and taxas = 1231054 and custos_comerciais = 4698000 and despesas_total = 35474686
+  and ebitda = 10101968 and despesas_financeiras = 1705600 and lucro_sem_taxas = 8396368
+  and lucro_liquido = 7165314 and margem_pct = 16.80 from app.viabilidades where id = :'vb1'),
+  'receita = VGV vendido (o VGV líquido é só a base da permuta): 42,64 mi − terreno − obras − comerciais (todas, 4,698 mi) − gerais (676,4 mil) = EBITDA 10,10 mi − financeiras (impostos 4%: 1,7056 mi) = sem taxas 8,396 mi − taxas 1,231 mi (com 10% do lucro antes dela) = lucro 7,165 mi, margem 16,80% do VGV vendido');
+select pg_temp.ok((app.calcular_viabilidade(:'vb1')->>'lucro_liquido')::numeric = 7165314
   and not exists (select 1 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x where app.viab_restrito(x->>'grupo')),
   'fora da diretoria, o cálculo conta Taxas e Financeiras no lucro, mas não devolve o detalhe dessas linhas');
 select pg_temp.como(:'diretor');
-select pg_temp.ok((select (x->>'base')::numeric = 5299509.09 and (x->>'valor')::numeric = 529950.91 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x
+select pg_temp.ok((select (x->>'base')::numeric = 7961460 and (x->>'valor')::numeric = 796146 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x
                     where x->>'id' = (select id::text from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento')),
-  'taxa de desenvolvimento: 10% do lucro líquido, já descontada ela mesma');
+  'taxa de desenvolvimento: 10% do lucro antes dela (7,96146 mi), não do lucro final');
 select pg_temp.como(:'analista');
 update app.viabilidade_linhas set tipo = 'verba_unidade', valor = 500 where viabilidade_id = :'vb1' and despesa = 'contratos_cef';
 select pg_temp.ok((select custos_comerciais from app.viabilidades where id = :'vb1') = 4767000, 'verba por unidade: 500 × 138 unidades líquidas (150 − 10 em permuta − 2 da comissão)');
 update app.viabilidade_linhas set tipo = 'verba', valor = null where viabilidade_id = :'vb1' and despesa = 'contratos_cef';
 select app.salvar_viabilidade(:'vb1', '{"minimo_garantido":3500000}');
-select pg_temp.ok((select permuta_financeira = 3500000 and custo_terreno = 4700000 and lucro_liquido = 4979887.27 from app.viabilidades where id = :'vb1')
+select pg_temp.ok((select permuta_financeira = 3500000 and custo_terreno = 4700000 and lucro_liquido = 6848888.40 from app.viabilidades where id = :'vb1')
   and (app.calcular_viabilidade(:'vb1')->>'minimo_aplicado')::boolean, 'permuta financeira abaixo do mínimo garantido usa o mínimo');
 select app.salvar_viabilidade(:'vb1', '{"minimo_garantido":3000000}');
 select app.salvar_viabilidade(:'vb1', '{"custo_m2":10000}');
-select pg_temp.ok((select lucro_liquido = -43857086 and taxas + despesas_financeiras = 3077990 from app.viabilidades where id = :'vb1'), 'sem lucro, os itens em % do lucro valem zero');
+select pg_temp.ok((select lucro_liquido = -41725086 and taxas + despesas_financeiras = 3077990 from app.viabilidades where id = :'vb1'), 'sem lucro, os itens em % do lucro valem zero');
 select app.salvar_viabilidade(:'vb1', '{"custo_m2":3000}');
 -- juros PJ: item de Despesas financeiras em % da obra total, com o padrão da empresa
 select pg_temp.como(:'diretor');
 update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and despesa = 'juros_pj';
-select pg_temp.ok((select despesas_financeiras = 2140508 and lucro_liquido = 4904138.18 from app.viabilidades where id = :'vb1'),
-  'juros PJ de 2% da obra total (21,7454 mi) = 434.908 nas despesas financeiras; lucro 4,904 mi (a taxa de 10% do lucro cai junto)');
+select pg_temp.ok((select despesas_financeiras = 2140508 and lucro_liquido = 6773896.80 from app.viabilidades where id = :'vb1'),
+  'juros PJ de 2% da obra total (21,7454 mi) = 434.908 nas despesas financeiras; lucro 6,774 mi (a taxa de 10% do lucro cai junto)');
 update app.viabilidade_linhas set valor = null where viabilidade_id = :'vb1' and despesa = 'juros_pj';
 -- custo de capital (28/out/2026): % sobre o Aporte, que é a permuta financeira em dinheiro ou o pagamento em dinheiro do terreno
 update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and despesa = 'capital_permuta';
 update app.viabilidade_linhas set valor = 1 where viabilidade_id = :'vb1' and despesa = 'capital_pagamento';
-select pg_temp.ok((select despesas_financeiras = 1778568.32 and lucro_sem_taxas = 6191399.68 from app.viabilidades where id = :'vb1')
+select pg_temp.ok((select despesas_financeiras = 1778568.32 and lucro_sem_taxas = 8323399.68 from app.viabilidades where id = :'vb1')
   and (select bool_and((x->>'base')::numeric = case l.despesa when 'capital_permuta' then 3148416 else 1000000 end and x->>'secao' = 'financeiro')
          from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x join app.viabilidade_linhas l on l.id::text = x->>'id'
         where l.despesa in ('capital_permuta','capital_pagamento')),
@@ -1649,30 +1685,34 @@ select app.apagar_viabilidade(:'vbc');
 select pg_temp.falha(format($$update app.viabilidade_linhas set tipo = 'pct_lucro' where viabilidade_id = %L and despesa = 'comissao'$$, :'vb1'), 'base que o grupo não aceita é recusada (comercial em % do lucro)');
 select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, valor) values (%L, %L, 'comissao', 'pct_vgv', 1)$$, :'emp', :'vb1'), 'item fixo não entra duas vezes');
 select pg_temp.falha(format($$select app.salvar_viabilidade(%L, '{"deduz_vgv":["comissao"]}')$$, :'vb1'), 'só despesa comercial dedutível sai do VGV líquido');
+select pg_temp.falha(format($$select app.salvar_viabilidade(%L, '{"deduz_vgv":["produto_caixa"]}')$$, :'vb1'), 'Produto Caixa não sai da base da permuta (decisão do Moises, 11/nov/2026)');
 select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, valor) values (%L, %L, 'inexistente', 'verba', 1)$$, :'emp', :'vb1'), 'item fora da lista da empresa é recusado');
 select pg_temp.falha(format($$select app.salvar_despesa_viabilidade(%L, 'outros_comercial', '{"ativo":false}')$$, :'emp'), 'analista não mexe na lista de itens');
 select pg_temp.falha(format('select app.salvar_margem_minima(%L, 10)', :'emp'), 'analista não muda a rentabilidade mínima');
 select app.vincular_viabilidade(:'neg', 'Estudo do BKM', 1, 1) as vbx \gset
 select pg_temp.falha(format($$insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, nome, quantidade) values (%L, %L, 'X', 1)$$, :'emp', :'vbx'), 'estudo externo (BKM) não recebe tipologias');
 select app.vincular_estudo(:'neg', :'vb1');
-select pg_temp.ok((select vgv = 46000000 and margem_pct = 13.47 from app.v_terrenos where id = :'t1'), 'a negociação vincula o estudo: VGV e margem aparecem no terreno');
+select pg_temp.ok((select vgv = 46000000 and margem_pct = 16.80 from app.v_terrenos where id = :'t1'), 'a negociação vincula o estudo: VGV e margem aparecem no terreno');
 select pg_temp.falha(format('select app.apagar_viabilidade(%L)', :'vb1'), 'estudo vinculado à negociação não se apaga');
+select app.vincular_estudo(:'neg', null);
+select pg_temp.ok((select viabilidade_id is null from app.processos where id = :'neg') and (select vgv is null from app.v_terrenos where id = :'t1'), 'clicar no selo do válido tira a marca: a negociação fica sem estudo válido');
+select app.vincular_estudo(:'neg', :'vb1');
 select app.criar_viabilidade(:'t1', 'Cópia', :'vb1') as vb2 \gset
-select pg_temp.ok((select count(*) from app.viabilidade_tipologias where viabilidade_id = :'vb2') = 2 and (select lucro_liquido from app.viabilidades where id = :'vb2') = 5299509.09
+select pg_temp.ok((select count(*) from app.viabilidade_tipologias where viabilidade_id = :'vb2') = 2 and (select lucro_liquido from app.viabilidades where id = :'vb2') = 7165314
   and (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb2') = (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1'),
   'duplicar copia dados, tipologias e linhas, com o mesmo resultado');
 select app.apagar_viabilidade(:'vb2');
 select pg_temp.ok(not exists (select 1 from app.viabilidade_linhas where viabilidade_id = :'vb2'), 'estudo solto se apaga, com as linhas');
 select pg_temp.como(:'leitor');
 update app.viabilidade_linhas set valor = 1 where viabilidade_id = :'vb1';
-select pg_temp.ok((select lucro_liquido from app.viabilidades where id = :'vb1') = 5299509.09, 'leitura vê o estudo mas não altera as linhas');
+select pg_temp.ok((select lucro_liquido from app.viabilidades where id = :'vb1') = 7165314, 'leitura vê o estudo mas não altera as linhas');
 select pg_temp.falha(format($$select app.criar_viabilidade(%L, 'X')$$, :'t1'), 'leitura não cria estudo');
 select pg_temp.falha(format($$select app.salvar_viabilidade(%L, '{"custo_m2":1}')$$, :'vb1'), 'leitura não muda os dados do estudo');
 select pg_temp.como(:'intruso');
 select pg_temp.ok(not exists (select 1 from app.viabilidade_tipologias where viabilidade_id = :'vb1') and not exists (select 1 from app.viabilidade_despesas where empresa_id = :'emp'), 'outra empresa não vê estudo nem lista');
 select pg_temp.como(:'diretor');
 select app.salvar_despesa_viabilidade(:'emp', 'registro_vendas', '{"deduz_vgv":false}');
-select pg_temp.ok((select vgv_liquido = 39655200 and permuta_financeira = 3172416 and lucro_liquido = 5277690.91 and margem_pct = 13.31 from app.viabilidades where id = :'vb1'),
+select pg_temp.ok((select vgv_liquido = 39655200 and permuta_financeira = 3172416 and lucro_liquido = 7143714 and margem_pct = 16.75 from app.viabilidades where id = :'vb1'),
   'registro das vendas deixa de ser dedutível: VGV líquido sobe 0,3 mi, a permuta financeira acompanha e o estudo se refaz');
 select pg_temp.falha(format($$select app.salvar_despesa_viabilidade(%L, 'infra_externa', '{"grupo":"projetos"}')$$, :'emp'), 'item usado em estudo não muda de grupo');
 select pg_temp.falha(format($$select app.apagar_despesa_viabilidade(%L, 'comissao')$$, :'emp'), 'item usado não se apaga (desativa)');
@@ -2939,10 +2979,9 @@ select pg_temp.ok((select subetapa_atual = 'estudo_viabilidade' from app.process
 select app.gravar_campo(:'tfn', 'oferta.valor_pedido', '1500000');
 select pg_temp.ok((select situacao = 'nao_se_aplica' and not trava from app.v_tarefas_etapa where tarefa_id = :'kpr'), 'condição que deixou de valer: a tarefa fica, não trava e não se aplica mais');
 select pg_temp.como(:'gestor');
-select pg_temp.falha(format('select app.mover_etapa(%L, true, %L)', :'pfn', ' '), 'o gestor força só com justificativa');
-select app.mover_etapa(:'pfn', true, 'Seguimos com o estudo em paralelo') \gset
+select app.mover_etapa(:'pfn', true, null) \gset
 select pg_temp.ok((select etapa_atual = 'negociacao' from app.processos where id = :'pfn')
-  and (select forcado from app.processo_transicoes where processo_id = :'pfn' order by em desc limit 1), 'o gestor avança com justificativa, que fica no histórico');
+  and (select forcado from app.processo_transicoes where processo_id = :'pfn' order by em desc limit 1), 'o gestor avança sem os requisitos, com a justificativa opcional, e o histórico marca forçado');
 select id as kcr from fluxo.tarefas where processo_id = :'pfn' and titulo = 'Cobrar retorno da proposta' \gset
 select pg_temp.ok((select prioridade = 'alta' and etapa = 'negociacao' from fluxo.tarefas where id = :'kcr'), 'gatilho "Terreno entrou na etapa" roda nos cartões da etapa');
 select pg_temp.ok((select prioridade = 'media' from fluxo.tarefas where id = :'kvb'), 'o gatilho não toca cartão de outra etapa');
@@ -3552,6 +3591,60 @@ delete from app.matricula_partes where id = :'lc4';
 select pg_temp.ok((select parte_id is null and matricula_parte_id is null from app.inscricao_partes where inscricao_id = :'lim'), 'a matrícula sai da parte: o SQL dela fica solto');
 insert into app.matricula_partes (id, empresa_id, terreno_id, matricula_id, parte_id) values (:'lc4', :'emp', :'tl', :'lm4', :'lp3');
 update app.inscricao_partes set matricula_parte_id = :'lc4' where inscricao_id = :'lim';
+-- matrícula repetida em várias partes: os SQLs dela são os mesmos em todas as cópias (pedido do Moises, 10/nov/2026)
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, bairro, poligono_geojson)
+values (:'emp', 'Matrícula de três vendedores', :'analista', 'corretor', :'sp', 'Brás', pg_temp.quadra(-46.8400, -23.7000, 40)) returning id as tmr \gset
+select id as mp1 from app.terreno_partes where terreno_id = :'tmr' \gset
+select app.salvar_parte(:'tmr', null, '{"nome":"Vendedor 2"}') as mp2 \gset
+select app.salvar_parte(:'tmr', null, '{"nome":"Vendedor 3"}') as mp3 \gset
+insert into app.matriculas (empresa_id, terreno_id, numero, area_registrada_m2) values (:'emp', :'tmr', '757.575', 1000) returning id as mmr \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tmr', '115.142.0025-1', 600) returning id as ms1 \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tmr', '115.142.0045-6', 400) returning id as ms2 \gset
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao, area_cadastral_m2) values (:'emp', :'tmr', '115.142.0046-4', 100) returning id as ms3 \gset
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tmr', :'mmr', :'mp1') returning id as mc1 \gset
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id) values (:'emp', :'tmr', :'ms1', :'mc1'), (:'emp', :'tmr', :'ms2', :'mc1');
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tmr', :'mmr', :'mp2') returning id as mc2 \gset
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tmr', :'mmr', :'mp3') returning id as mc3 \gset
+select pg_temp.ok((select count(*) = 2 from app.inscricao_partes where matricula_parte_id = :'mc2' and parte_id = :'mp2')
+                  and (select count(*) = 2 from app.inscricao_partes where matricula_parte_id = :'mc3' and parte_id = :'mp3'),
+  'a cópia da matrícula nasce com os SQLs da original, na parte da cópia');
+select pg_temp.ok((select sum(area_partes_m2) between 999.9 and 1000.1 from app.v_partes where terreno_id = :'tmr'),
+  'sem percentual, a matrícula se divide igual e a soma das partes é a área dos SQLs (não conta três vezes)');
+update app.matricula_partes set percentual = 50 where id = :'mc1';
+update app.matricula_partes set percentual = 30 where id = :'mc2';
+update app.matricula_partes set percentual = 20 where id = :'mc3';
+select pg_temp.ok((select area_partes_m2 = 500 from app.v_partes where id = :'mp1') and (select area_partes_m2 = 300 from app.v_partes where id = :'mp2')
+                  and (select area_partes_m2 = 200 from app.v_partes where id = :'mp3'), 'cada parte fica com o % dela na matrícula (50, 30 e 20% de 1.000 m²)');
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id) values (:'emp', :'tmr', :'ms3', :'mc2');
+select pg_temp.ok((select count(*) = 3 from app.inscricao_partes where inscricao_id = :'ms3'), 'SQL posto numa cópia entra nas três');
+select pg_temp.ok(exists (select 1 from app.auditoria where tabela = 'inscricao_partes' and depois->>'inscricao_id' = :'ms3' and automatico)
+                  and exists (select 1 from app.auditoria where tabela = 'inscricao_partes' and depois->>'inscricao_id' = :'ms3' and not automatico),
+  'nos Logs, a cópia nas outras matrículas fica como consequência da ação');
+delete from app.inscricao_partes where inscricao_id = :'ms3' and matricula_parte_id = :'mc3';
+select pg_temp.ok((select count(*) = 0 from app.inscricao_partes where inscricao_id = :'ms3'), 'SQL tirado de uma cópia sai das três');
+update app.inscricao_partes set matricula_parte_id = null, parte_id = null where inscricao_id = :'ms1' and matricula_parte_id = :'mc1';
+select pg_temp.ok((select count(*) = 1 from app.inscricao_partes where inscricao_id = :'ms1' and matricula_parte_id is null and parte_id is null)
+                  and (select count(*) = 1 from app.inscricao_partes where inscricao_id = :'ms1'), 'SQL levado para fora da matrícula sai das três e fica solto');
+update app.inscricao_partes set matricula_parte_id = :'mc3' where inscricao_id = :'ms1';
+select pg_temp.ok((select count(*) = 3 from app.inscricao_partes where inscricao_id = :'ms1'), 'o SQL solto posto de volta numa cópia volta às três');
+update app.inscricao_partes set percentual = 80 where inscricao_id = :'ms1' and matricula_parte_id = :'mc2';
+select pg_temp.ok((select bool_and(percentual = 80) from app.inscricao_partes where inscricao_id = :'ms1'), 'o % do SQL na matrícula é o mesmo nas três cópias');
+select pg_temp.ok((select area_partes_m2 = 440 from app.v_partes where id = :'mp1'), 'área da parte = (600 × 80% + 400) × 50%');
+insert into app.matriculas (empresa_id, terreno_id, numero, area_registrada_m2) values (:'emp', :'tmr', '757.576', 200) returning id as mmr2 \gset
+insert into app.matricula_partes (empresa_id, terreno_id, matricula_id, parte_id) values (:'emp', :'tmr', :'mmr2', :'mp1') returning id as mc4 \gset
+select pg_temp.falha(format($$insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id, percentual) values (%L, %L, %L, %L, 30)$$, :'emp', :'tmr', :'ms1', :'mc4'),
+  'o SQL dividido entre duas matrículas não passa de 100% (as cópias da mesma matrícula contam uma vez)');
+insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id, percentual) values (:'emp', :'tmr', :'ms1', :'mc4', 20);
+select pg_temp.ok((select area_partes_m2 = 560 from app.v_partes where id = :'mp1'), 'o resto do SQL na outra matrícula entra inteiro na parte dela (440 + 600 × 20%)');
+select pg_temp.falha(format($$insert into app.inscricao_partes (empresa_id, terreno_id, inscricao_id, matricula_parte_id) values (%L, %L, %L, %L)$$, :'emp', :'tmr', :'ms2', :'mc1'),
+  'o mesmo SQL não entra duas vezes na mesma matrícula');
+delete from app.matricula_partes where id = :'mc3';
+select pg_temp.ok((select count(*) = 2 from app.inscricao_partes where inscricao_id = :'ms2') and not exists (select 1 from app.inscricao_partes where parte_id = :'mp3'),
+  'tirar a matrícula de uma parte não mexe nos SQLs das outras cópias');
+insert into app.matricula_partes (id, empresa_id, terreno_id, matricula_id, parte_id, percentual) values (:'mc3', :'emp', :'tmr', :'mmr', :'mp3', 20);
+select pg_temp.ok((select count(*) = 2 from app.inscricao_partes where matricula_parte_id = :'mc3'), 'a matrícula que volta à parte (Ctrl+Z) volta com os SQLs');
+select app.excluir_parte(:'mp2');
+select pg_temp.ok((select count(*) = 2 from app.inscricao_partes where matricula_parte_id = :'mc1'), 'excluir uma parte não tira os SQLs das cópias das outras');
 -- pessoas da parte: relação e participação (pedido do Moises, 6/nov/2026)
 insert into app.pessoas (empresa_id, nome_razao_social) values (:'emp', 'Ana Bresser') returning id as pana \gset
 insert into app.pessoas (empresa_id, nome_razao_social) values (:'emp', 'João Bresser') returning id as pjoao \gset
@@ -3597,11 +3690,14 @@ select pg_temp.ok((select nome = 'Estudo de massa 1' and situacao = 'solicitado'
   'pedido ao arquiteto com briefing e prazo nasce Solicitado, numerado no terreno');
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.notificacoes where tipo = 'massa_solicitado' and origem_id = :'em1') = 1, 'o arquiteto é avisado do pedido');
+select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"situacao":"entregue"}')$$, :'em1'), 'sem nenhuma unidade lançada não se salva');
 select app.salvar_estudo_massa(:'em1', '{"tipologias":[{"nome":"2 dormitórios","area_privativa":40,"quantidade":100},{"nome":"2 dormitórios com suíte","area_privativa":50,"quantidade":50}],
   "lazer_coberto_torre_m2":300,"vagas_cobertas":0,"vagas_descobertas":30,"ca_legal":4,"ca_venal":3.2}');
 select pg_temp.ok((select situacao = 'em_elaboracao' and area_privativa_m2 = 6500 and unidades = 150 and eficiencia_pct is null from app.estudos_massa where id = :'em1'),
   'o primeiro dado põe em elaboração; área privativa total = Σ área × quantidade (6.500 m², 150 unidades)');
-select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"situacao":"entregue"}')$$, :'em1'), 'sem a área construída total não se entrega');
+select app.salvar_estudo_massa(:'em1', '{"situacao":"entregue"}');
+select pg_temp.ok((select situacao = 'entregue' and area_construida_m2 is null from app.estudos_massa where id = :'em1'),
+  'com uma unidade lançada já se salva (entregue), mesmo sem a área construída');
 select pg_temp.falha(format($$select app.salvar_estudo_massa(%L, '{"tipologias":[{"nome":" "}]}')$$, :'em1'), 'tipologia sem título é recusada');
 select app.salvar_estudo_massa(:'em1', '{"area_construida_m2":10000,"situacao":"entregue"}');
 select pg_temp.ok((select situacao = 'entregue' and eficiencia_pct = 65 and entregue_em is not null from app.estudos_massa where id = :'em1'),
@@ -3881,6 +3977,47 @@ select pg_temp.como(:'analista');
 select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, %L, p_partes => array[%L]::uuid[])', :'npp', 'bkm', 'dinheiro', :'ppb'),
   'parte tirada do terreno não recebe proposta');
 
+-- modalidades combinadas na pedida e na proposta (pedido do Moises, 11/nov/2026): dinheiro, permuta financeira
+-- em % do VGV líquido e permuta física em % ou em unidades; a forma de pagamento sai delas
+select (app.registrar_oferta(:'tpp', null)->>'oferta_id') as ofm \gset
+update app.ofertas set valor_pedido = 1200000, permuta_fis_unidades = 8 where id = :'ofm';
+select pg_temp.ok((select forma_pagamento_pedida from app.ofertas where id = :'ofm') = 'permuta_com_torna', 'dinheiro + permuta física = permuta com torna');
+update app.ofertas set valor_pedido = null, permuta_fin_pct = 6 where id = :'ofm';
+select pg_temp.ok((select forma_pagamento_pedida from app.ofertas where id = :'ofm') = 'permuta_geral', 'financeira + física = permuta geral');
+update app.ofertas set permuta_fis_unidades = null where id = :'ofm';
+select pg_temp.ok((select forma_pagamento_pedida from app.ofertas where id = :'ofm') = 'permuta_financeira', 'só a financeira = permuta financeira');
+update app.ofertas set permuta_fin_pct = null, valor_pedido = 900000 where id = :'ofm';
+select pg_temp.ok((select forma_pagamento_pedida from app.ofertas where id = :'ofm') = 'dinheiro', 'tiradas as permutas, só dinheiro');
+select pg_temp.falha(format($$insert into app.oferta_partes (oferta_id, parte_id, empresa_id, permuta_fis_pct, permuta_fis_unidades) values (%L, %L, %L, 10, 5)$$, :'ofm', :'ppa', :'emp'),
+  'a permuta física da parte vai em percentual ou em unidades, não nos dois');
+insert into app.oferta_partes (oferta_id, parte_id, empresa_id, permuta_fis_pct) values (:'ofm', :'ppa', :'emp', 12.5);
+select pg_temp.ok((select forma_pagamento from app.oferta_partes where oferta_id = :'ofm' and parte_id = :'ppa') = 'permuta_fisica', 'na parte, a forma também sai das modalidades');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, null, null, p_partes => array[%L]::uuid[])', :'npp', 'bkm', :'ppa'),
+  'proposta sem dinheiro e sem permuta é recusada');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, null, null, p_partes => array[%L]::uuid[], p_permuta_fis_pct => 5, p_permuta_fis_unidades => 3)', :'npp', 'bkm', :'ppa'),
+  'proposta com permuta física em percentual e em unidades é recusada');
+select app.registrar_proposta(:'npp', 'bkm', 800000, null, p_partes => array[:'ppa']::uuid[], p_permuta_fin_pct => 5, p_permuta_fis_unidades => 4) as q5 \gset
+select pg_temp.ok((select forma_pagamento = 'permuta_com_torna' and valor_total = 800000 and permuta_fin_pct = 5 and permuta_fis_unidades = 4 from app.propostas where id = :'q5'),
+  'proposta com dinheiro, financeira e física; a forma sai das modalidades');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, null, p_partes => array[%L]::uuid[], p_permuta_fin_minimo => 500000)', :'npp', 'bkm', :'ppa'),
+  'mínimo garantido sem permuta financeira é recusado');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, null, null, p_partes => array[%L]::uuid[], p_permuta_fis_unidades => 4, p_permuta_fis_min_unidades => 3)', :'npp', 'bkm', :'ppa'),
+  'mínimo de unidades vale só com a permuta física em percentual');
+select app.registrar_proposta(:'npp', 'bkm', null, null, p_partes => array[:'ppa']::uuid[], p_permuta_fis_pct => 15, p_permuta_fis_min_unidades => 6) as q6 \gset
+reset role;
+select pg_temp.ok((select proposta_ativa_valor is null and proposta_ativa_fis_pct = 15 and proposta_ativa_fin_pct is null
+                          and proposta_ativa_fis_min_unidades = 6 and proposta_ativa_fin_minimo is null from app.v_terrenos where id = :'tpp')
+    and (select forma_pagamento from app.propostas where id = :'q6') = 'permuta_fisica',
+  'proposta só com permuta física, sem dinheiro; o resumo do terreno mostra as modalidades da proposta ativa');
+update app.negociacoes set oferta_referencia_id = :'ofm' where processo_id = :'npp';
+update app.ofertas set permuta_fin_pct = 7, permuta_fin_minimo = 2000000 where id = :'ofm';
+select pg_temp.ok((select valor_pedido = 900000 and pedido_fin_pct = 7 and pedido_fis_unidades is null and pedido_fin_minimo = 2000000 from app.v_terrenos where id = :'tpp'),
+  'o resumo do terreno mostra as modalidades da oferta de referência, com o mínimo garantido');
+select pg_temp.falha(format('update app.ofertas set permuta_fin_pct = null where id = %L', :'ofm'),
+  'sem a permuta financeira, o mínimo garantido não fica sozinho');
+select pg_temp.falha(format($$update app.oferta_partes set permuta_fis_min_unidades = 3, permuta_fis_pct = null, permuta_fis_unidades = 4 where oferta_id = %L and parte_id = %L$$, :'ofm', :'ppa'),
+  'o mínimo de unidades da parte vale só com a permuta física em percentual');
+
 -- ---------------------------------------------------------------------
 \echo '# excluir e deletar terreno (9/nov/2026)'
 select pg_temp.como(:'analista');
@@ -4076,5 +4213,157 @@ reset role;
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select lotes_na_base = (select count(*) from app.lotes_prefeitura where empresa_id = :'emp' and base = 'geosanja')
   from app.varredura_sjc_relatorio(:'emp') limit 1), 'o relatório conta os lotes da base');
+
+-- ---------------------------------------------------------------------
+\echo '# cadastro como oferta e tratativa de imóvel sobreposto (10/nov/2026)'
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Tratativa A', :'analista', :'sp', pg_temp.quadra(-44.301, -21.301)) returning id as tta \gset
+insert into app.ofertas (empresa_id, terreno_id) values (:'emp', :'tta') returning id as ofa1 \gset
+insert into app.ofertas (empresa_id, terreno_id) values (:'emp', :'tta') returning id as ofa2 \gset
+select pg_temp.ok((select numero = 1 and vigente from app.ofertas where id = :'ofa1') and (select numero = 2 and not vigente from app.ofertas where id = :'ofa2'),
+  'a primeira oferta do terreno é a ativa, e cada oferta tem o número no terreno');
+select pg_temp.falha(format($$update app.ofertas set vigente = true where id = %L$$, :'ofa2'), 'a oferta ativa não muda por escrita direta');
+select pg_temp.falha(format($$insert into app.ofertas (empresa_id, terreno_id, status) values (%L, %L, 'aguardando')$$, :'emp', :'tta'), 'oferta aguardando não entra por escrita direta');
+select app.definir_oferta_vigente(:'ofa2');
+select pg_temp.ok((select vigente from app.ofertas where id = :'ofa2') and not (select vigente from app.ofertas where id = :'ofa1'), 'o responsável troca a oferta ativa');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'tta', '701.001.0001-1'), (:'emp', :'tta', '701.001.0002-1');
+select pg_temp.falha(format($$update app.terrenos set em_espera_de = %L where id = %L$$, :'tta', :'tta'), 'esconder o terreno só pelas regras da tratativa');
+
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format('select app.definir_oferta_vigente(%L)', :'ofa1'), 'quem não é o responsável nem diretor não troca a oferta ativa');
+select pg_temp.ok((select count(*) = 1 and bool_and(mesmos_lotes and not vencida and not sou_responsavel and por = 'lotes')
+  from app.conflitos_cadastro(:'emp', null, array['70100100011','701.001.0002-1'])), 'mesmos lotes: o imóvel já existe, tratativa em andamento');
+select pg_temp.ok((select not mesmos_lotes and comuns = '{70100100011}' and so_novo = '{70100100031}' and so_existente = '{70100100021}'
+  from app.conflitos_cadastro(:'emp', null, array['70100100011','70100100031'])), 'basta um lote em comum: sobreposição parcial com os lotes de cada lado');
+select pg_temp.falha(format($$select app.registrar_oferta_cadastro(%L, 'vigente')$$, :'tta'), 'outro analista não toma a tratativa em andamento');
+select (app.registrar_oferta_cadastro(:'tta', 'aguardando')->>'oferta_id') as ofa3 \gset
+select pg_temp.ok((select status = 'aguardando' and not vigente and numero = 3 from app.ofertas where id = :'ofa3'), 'a oferta fica aguardando, escondida');
+select pg_temp.falha(format('select app.assumir_oferta(%L)', :'ofa3'), 'não assume antes de a outra tratativa vencer');
+
+-- 100 dias sem ação de ninguém
+reset role;
+set session_replication_role = replica;   -- sem os triggers (criado_em é protegido)
+update app.terrenos set criado_em = criado_em - interval '100 days' where id = :'tta';
+set session_replication_role = origin;
+update app.auditoria set em = em - interval '100 days' where empresa_id = :'emp'
+  and (registro_id = :'tta' or depois->>'terreno_id' = :'tta' or antes->>'terreno_id' = :'tta');
+select pg_temp.ok(app.tratativa_vencida(:'tta'), 'vence com 90 dias sem ação de uma pessoa (o que o sistema grava não conta)');
+select app.avisar_tratativas() as nav \gset
+select pg_temp.ok(:nav >= 1 and exists (select 1 from app.notificacoes where destinatario_id = :'gestor' and tipo = 'tratativa' and origem_id = :'ofa3'),
+  'quem espera é avisado quando a tratativa vence');
+select pg_temp.ok(app.avisar_tratativas() = 0, 'e avisado uma vez só');
+select pg_temp.como(:'gestor');
+select app.assumir_oferta(:'ofa3');
+reset role;
+select pg_temp.ok((select vigente and status = 'ativa' from app.ofertas where id = :'ofa3') and (select responsavel_id = :'gestor' from app.terrenos where id = :'tta')
+  and exists (select 1 from app.notificacoes where destinatario_id = :'analista' and tipo = 'tratativa' and terreno_id = :'tta'),
+  'assumir: a oferta vira a ativa, quem assumiu vira o responsável e o anterior é avisado');
+select pg_temp.como(:'gestor');
+select pg_temp.ok(not app.tratativa_vencida(:'tta'), 'assumir conta como ação: a tratativa volta a correr');
+
+-- lotes diferentes: terreno novo ligado ao existente
+select pg_temp.como(:'analista');
+insert into app.terrenos (empresa_id, nome, responsavel_id, municipio_id, poligono_geojson)
+  values (:'emp', 'Tratativa B', :'analista', :'sp', pg_temp.quadra(-44.401, -21.401)) returning id as ttb \gset
+select pg_temp.falha(format($$insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (%L, %L, '701.001.0001-1')$$, :'emp', :'ttb'),
+  'o lote de outro terreno não entra sem a ligação');
+select pg_temp.falha(format($$select app.vincular_tratativa(%L, array[%L]::uuid[], 'ativa')$$, :'ttb', :'tta'), 'com a outra tratativa ativa, o novo não toma o lugar');
+select app.vincular_tratativa(:'ttb', array[:'tta']::uuid[], 'espera');
+insert into app.inscricoes_municipais (empresa_id, terreno_id, inscricao) values (:'emp', :'ttb', '701.001.0001-1'), (:'emp', :'ttb', '701.001.0003-1');
+select pg_temp.ok((select em_espera_de = :'tta' from app.terrenos where id = :'ttb') and not exists (select 1 from app.v_mapa where id = :'ttb')
+  and exists (select 1 from app.v_mapa where id = :'tta'), 'o novo fica salvo e escondido; o mapa mostra só a tratativa ativa');
+select pg_temp.ok((select (x->>'escondido')::boolean and not (x->>'pode_assumir')::boolean and jsonb_array_length(x->'ligados') = 1 from app.tratativa_terreno(:'ttb') x),
+  'a ficha do escondido sabe por quem espera e que ainda não pode assumir');
+select pg_temp.ok(not exists (select 1 from app.conflitos_cadastro(:'emp', null, array['70100100031'])),
+  'o terreno escondido não bloqueia outro cadastro');
+select pg_temp.como(:'diretor');
+select app.assumir_tratativa(:'ttb');
+reset role;
+select pg_temp.ok((select em_espera_de is null from app.terrenos where id = :'ttb') and (select em_espera_de = :'ttb' from app.terrenos where id = :'tta')
+  and exists (select 1 from app.notificacoes where destinatario_id = :'gestor' and tipo = 'tratativa' and terreno_id = :'tta' and origem_tabela = 'terrenos'),
+  'o diretor troca a tratativa à mão, e o responsável do outro é avisado');
+
+-- novo corretor
+select pg_temp.como(:'analista');
+select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"Zé","celular":"11999990000"}')$$, :'emp'), 'corretor sem e-mail não entra');
+select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"Zé","email":"ze@x.com","celular":"999"}')$$, :'emp'), 'corretor sem celular com DDD não entra');
+select app.criar_corretor(:'emp', '{"nome":"Zé Corretor","email":"ZE@Imob.com","celular":"(11) 99999-0000","creci":"123","cnpj":"11.222.333/0001-81","rg":"12.345.678-9","apelido":"Zezinho"}') as cor1 \gset
+select pg_temp.ok((select p.email = 'ze@imob.com' and p.telefone = '11999990000' and c.cnpj_imobiliaria = '11222333000181' and c.rg = '12.345.678-9' and c.apelido = 'Zezinho'
+  from app.corretores c join app.pessoas p on p.id = c.pessoa_id where c.id = :'cor1'), 'novo corretor com nome, e-mail e celular');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.criar_corretor(%L, '{"nome":"X","email":"x@x.com","celular":"11999990000"}')$$, :'emp'), 'leitura não cria corretor');
+reset role;
+
+-- cadastro de corretores (pedido do Moises, 11/nov/2026): editar no lugar, desativar, auditoria e a lista com as contagens
+select pg_temp.como(:'analista');
+select app.salvar_corretor(:'cor1', '{"imobiliaria":"Zé Imóveis","creci":"999-F","cpf":"529.982.247-25"}');
+select pg_temp.ok((select c.imobiliaria = 'Zé Imóveis' and c.creci = '999-F' and p.cpf_cnpj = '52998224725' and p.email = 'ze@imob.com'
+  from app.corretores c join app.pessoas p on p.id = c.pessoa_id where c.id = :'cor1'), 'salvar_corretor grava só as chaves que vierem');
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"nome":"  "}')$$, :'cor1'), 'o nome do corretor não fica em branco');
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"email":"sem-arroba"}')$$, :'cor1'), 'e-mail inválido é recusado');
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"celular":"1234"}')$$, :'cor1'), 'celular sem DDD é recusado');
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"cnpj":"123"}')$$, :'cor1'), 'CNPJ com menos de 14 dígitos é recusado');
+select app.criar_corretor(:'emp', '{"nome":"Outro","email":"o@x.com","celular":"11977776666"}') as cor9 \gset
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"cpf":"52998224725"}')$$, :'cor9'), 'CPF de outra pessoa do cadastro é recusado');
+select app.salvar_corretor(:'cor9', '{"ativo":false}');
+select pg_temp.ok((select not ativo from app.corretores where id = :'cor9'), 'o corretor se desativa (não se apaga)');
+select pg_temp.ok(exists (select 1 from app.auditoria where tabela = 'corretores' and registro_id = :'cor1' and acao = 'update')
+  and exists (select 1 from app.auditoria where tabela = 'pessoas' and acao = 'update' and depois->>'cpf_cnpj' = '52998224725'),
+  'a edição do corretor e da pessoa dele fica nos logs');
+select pg_temp.ok((select qtd_terrenos = 0 and qtd_ofertas = 0 and nome = 'Outro' from app.v_corretores where id = :'cor9'), 'v_corretores conta zero sem oferta');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.salvar_corretor(%L, '{"creci":"1"}')$$, :'cor1'), 'leitura não edita corretor');
+reset role;
+
+-- vários corretores na oferta (pedido do Moises, 10/nov/2026): Registrar oferta só com corretor e observação
+select pg_temp.como(:'analista');
+select app.criar_corretor(:'emp', '{"nome":"Ana Corretora","email":"ana@imob.com","celular":"11988887777"}') as cor2 \gset
+select (app.registrar_oferta(:'tta', null, p_corretor => :'cor1'))->>'oferta_id' as ofc \gset
+update app.ofertas set observacoes = 'Vendedor quer fechar até março' where id = :'ofc';
+insert into app.oferta_corretores (oferta_id, corretor_id, empresa_id) values (:'ofc', :'cor2', :'emp');
+select pg_temp.ok((select valor_pedido is null and corretor_id = :'cor1' and observacoes is not null from app.ofertas where id = :'ofc')
+  and (select count(*) from app.oferta_corretores where oferta_id = :'ofc') = 2
+  and exists (select 1 from app.terreno_corretores where terreno_id = :'tta' and corretor_id = :'cor2'),
+  'oferta sem valor, com observação e dois corretores; o primeiro é o principal e os dois constam no terreno');
+delete from app.oferta_corretores where oferta_id = :'ofc' and corretor_id = :'cor1';
+select pg_temp.ok((select corretor_id = :'cor2' from app.ofertas where id = :'ofc'), 'tirado o principal, o outro corretor passa a ser o principal');
+delete from app.oferta_corretores where oferta_id = :'ofc';
+select pg_temp.ok((select corretor_id is null from app.ofertas where id = :'ofc'), 'sem corretor na lista, a oferta fica sem corretor');
+update app.ofertas set corretor_id = :'cor1' where id = :'ofc';
+select pg_temp.ok(exists (select 1 from app.oferta_corretores where oferta_id = :'ofc' and corretor_id = :'cor1'), 'o corretor posto na oferta entra na lista');
+select pg_temp.ok((select bool_and(automatico) from app.auditoria where tabela = 'oferta_corretores' and depois->>'oferta_id' = :'ofc' and depois->>'corretor_id' = :'cor1')
+  and not (select automatico from app.auditoria where tabela = 'oferta_corretores' and depois->>'oferta_id' = :'ofc' and depois->>'corretor_id' = :'cor2'),
+  'nos Logs, o corretor que entra junto com a oferta é consequência; o incluído à mão é ação da pessoa');
+select pg_temp.ok((select qtd_ofertas = 1 and qtd_terrenos = 1 from app.v_corretores where id = :'cor1')
+  and (select qtd_ofertas = 0 and qtd_terrenos = 1 from app.v_corretores where id = :'cor2'),
+  'v_corretores conta as ofertas e os terrenos de cada corretor (tirado da oferta, continua no terreno)');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$insert into app.oferta_corretores (oferta_id, corretor_id, empresa_id) values (%L, %L, %L)$$, :'ofc', :'cor2', :'emp'), 'leitura não põe corretor na oferta');
+reset role;
+
+-- Preferências do usuário (11/nov/2026): cada um grava e lê só as suas.
+select pg_temp.como(:'analista');
+insert into app.preferencias_usuario (chave, valor) values ('mercado_raio', '{"rd":{"raio":1500,"cust":1500}}');
+insert into app.preferencias_usuario (chave, valor) values ('mercado_raio', '{"rd":{"raio":2000,"cust":1500}}')
+  on conflict (user_id, chave) do update set valor = excluded.valor, atualizado_em = now();
+select pg_temp.ok((select valor->'rd'->>'raio' = '2000' from app.preferencias_usuario where chave = 'mercado_raio'),
+  'a preferência grava e regrava pela chave, no usuário logado');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(not exists (select 1 from app.preferencias_usuario), 'ninguém vê a preferência de outra pessoa');
+select pg_temp.falha(format($$insert into app.preferencias_usuario (user_id, chave, valor) values (%L, 'x', '1')$$, :'analista'),
+  'ninguém grava preferência em nome de outra pessoa');
+reset role;
+
+-- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
+-- e os catálogos sem empresa continuam legíveis por quem está logado.
+reset role;
+select pg_temp.ok(not exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname in ('app','fluxo') and c.relkind in ('r','p') and not c.relrowsecurity),
+  'nenhuma tabela de app ou fluxo fica sem RLS');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.campos_catalogo) > 0 and (select count(*) from fluxo.objeto_tipos) > 0,
+  'o usuário logado lê o catálogo de campos e os tipos de objeto');
+reset role;
 
 \echo 'TODOS OS TESTES PASSARAM'

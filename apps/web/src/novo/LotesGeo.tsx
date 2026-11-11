@@ -5,7 +5,8 @@
 // "N. 161" em cada lote, o SQL ao parar o mouse); vêm marcados os lotes com 20% ou mais dentro da poligonal e a quadra só
 // entra com 10 m² ou mais de lote dentro dela. Os marcados refazem a poligonal pela soma dos lotes e entram no terreno sem
 // parte. Pela janela Incluir por SQL ("Escolher no mapa"), abre as quadras dos SQLs e os marcados voltam para a lista.
-// Condomínio, via de acesso e SQL que já está em outro terreno aparecem mas não se marcam.
+// Condomínio e via de acesso aparecem mas não se marcam; o SQL de outro terreno só não se marca na ficha (no cadastro, a
+// janela da sobreposição decide; pedido do Moises, 10/nov/2026).
 // Em São José dos Campos (L.sjc; pedido do Moises, 10/nov/2026) os lotes vêm do GeoSanja, quadra por quadra pela varredura de
 // lotesSjc.ts, com o satélite do Google (com os nomes das ruas) por baixo, porque o GeoSanja não dá o nome da rua; o clique fora dos
 // lotes pergunta ao GeoSanja o lote daquele ponto e o acrescenta, marcado. Não vêm área cadastral, endereço nem número de porta.
@@ -23,13 +24,13 @@ import { GMAPS_KEY } from '../lib/config';
 
 const LG_MIN = 0.2; // fração do lote dentro da poligonal para vir marcado
 type An = number[][];
-interface Lote { an: An; sql: string | null; p: any; condo: boolean; via: boolean; trava: string | null; fr: number; rot: { x: number; y: number; r: number }; sel: boolean; area: number | null; end: string; q: string; rf: string; rn: string }
+export interface Lote { an: An; sql: string | null; p: any; condo: boolean; via: boolean; trava: string | null; fr: number; rot: { x: number; y: number; r: number }; sel: boolean; area: number | null; end: string; q: string; rf: string; rn: string }
 interface Via { n: string; x: number; y: number; ang: number; len: number }
 /** fundo: a imagem do Maps Static e a matriz que leva o pixel dela às coordenadas do desenho (x, -y em UTM) */
-interface Dados { ter: An | null; lotes: Lote[]; quadras: string[]; bb: number[]; vias: Via[]; sjc?: boolean; fundo?: { href: string; m: number[] } }
+export interface Dados { ter: An | null; lotes: Lote[]; quadras: string[]; bb: number[]; vias: Via[]; sjc?: boolean; fundo?: { href: string; m: number[] } }
 
 /* ---------- geometria (UTM 23S, metros) ---------- */
-const lgBB = (an: An) => { const xs = an.map((p) => p[0]), ys = an.map((p) => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+export const lgBB = (an: An) => { const xs = an.map((p) => p[0]), ys = an.map((p) => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
 function distBorda(pt: number[], an: An) {
   let m = Infinity;
   for (let i = 0; i < an.length - 1; i++) {
@@ -64,18 +65,20 @@ function vias(fs: any[], bb: number[]): Via[] {
   });
   return Object.values(por);
 }
-const caminho = (an: An) => 'M' + an.slice(0, -1).map((p) => `${p[0].toFixed(2)},${(-p[1]).toFixed(2)}`).join('L') + 'Z';
+export const caminho = (an: An) => 'M' + an.slice(0, -1).map((p) => `${p[0].toFixed(2)},${(-p[1]).toFixed(2)}`).join('L') + 'Z';
 const polyLl = (an: An): P[] => an.slice(0, -1).map((p) => utmLatLng(p[0], p[1]).map((v) => +v.toFixed(7)) as P);
 const endDe = (p: any) => (p.nm_logradouro_completo ? geoTit(p.nm_logradouro_completo) + (p.cd_numero_porta && p.cd_numero_porta !== '0' ? ', ' + p.cd_numero_porta : '') : '');
 
 /** inscrições (só dígitos) que já estão em outro terreno da empresa: código do terreno, ou '' quando ele está excluído */
-async function emOutro(ds: string[], empresa: string, proprio?: string) {
+/* no cadastro (sem ficha), o lote de outro terreno se marca: quem decide é a janela da sobreposição, ao cadastrar (pedido do
+   Moises, 10/nov/2026); só o do terreno excluído continua travado */
+async function emOutro(ds: string[], empresa: string, proprio?: string, cadastro = false) {
   const outro = new Map<string, string>();
   for (let i = 0; i < ds.length; i += 200) {
     const { data, error } = await supabase.from('inscricoes_municipais').select('inscricao_norm,terrenos(codigo)').eq('empresa_id', empresa).in('inscricao_norm', ds.slice(i, i + 200)).abortSignal(AbortSignal.timeout(20_000));
     if (error) throw new Error('BANCO');
     /* sem o terreno na resposta: está num terreno excluído (a leitura esconde), que ainda segura a inscrição */
-    (Array.isArray(data) ? data : []).forEach((r: any) => { if (!r.terrenos) outro.set(r.inscricao_norm, ''); else if (r.terrenos.codigo && r.terrenos.codigo !== proprio) outro.set(r.inscricao_norm, r.terrenos.codigo); });
+    (Array.isArray(data) ? data : []).forEach((r: any) => { if (!r.terrenos) outro.set(r.inscricao_norm, ''); else if (!cadastro && r.terrenos.codigo && r.terrenos.codigo !== proprio) outro.set(r.inscricao_norm, r.terrenos.codigo); });
   }
   return outro;
 }
@@ -100,11 +103,11 @@ function fundoGoogle(bb: number[]): Dados['fundo'] {
   return { href: `https://maps.googleapis.com/maps/api/staticmap?center=${c[0].toFixed(7)},${c[1].toFixed(7)}&zoom=${z}&size=640x640&scale=2&maptype=hybrid&key=${GMAPS_KEY}`,
     m: [(u[0] - o[0]) / 1280, (u[1] - o[1]) / 1280, (v[0] - o[0]) / 1280, (v[1] - o[1]) / 1280, o[0], o[1]] };
 }
-async function carregarSjc(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: string, proprio: string | undefined, andamento: (n: number) => void): Promise<Dados> {
+export async function carregarSjc(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: string, proprio: string | undefined, andamento: (n: number) => void): Promise<Dados> {
   let ter: An | null = null;
   if (L.modo !== 'sql') { ter = ter0!.map(([la, ln]) => latLngUtm(la, ln)); ter.push(ter[0]); }
   const base = baseLotes(empresa), r = await quadrasSjc(ter ? { ter, andamento, base } : { ics: L.ics || [], andamento, base });
-  const outro = await emOutro(r.lotes.map((l) => digitos(l.ic)), empresa, proprio);
+  const outro = await emOutro(r.lotes.map((l) => digitos(l.ic)), empresa, proprio, !L.ficha);
   const lotes = r.lotes.map((l) => loteSjc(l.ic, l.an, ter, outro.get(digitos(l.ic)), ja.has(digitos(l.ic))));
   if (!lotes.length) throw new Error('Nenhum lote do cadastro nessas quadras no GeoSanja.');
   const bb = lgBB(lotes.flatMap((l) => l.an).concat(ter || []));
@@ -112,7 +115,7 @@ async function carregarSjc(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa:
 }
 
 /* ---------- consulta ---------- */
-async function carregar(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: string, proprio?: string): Promise<Dados> {
+export async function carregar(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: string, proprio?: string): Promise<Dados> {
   let ter: An | null = null, qs: string[];
   if (L.modo === 'sql') qs = L.quadras || []; /* pelo SQL: as quadras dos SQLs, sem poligonal ainda */
   else {
@@ -130,9 +133,9 @@ async function carregar(L: Lotes, ter0: P[] | null, ja: Set<string>, empresa: st
   // 2. todos os lotes dessas quadras e os nomes das ruas em volta
   const fs = await geoWfs({ typeNames: 'geoportal:lote_cidadao', count: '3000', CQL_FILTER: qs.map((k) => { const [s, q] = k.split('.'); return `(cd_setor_fiscal='${s}' AND cd_quadra_fiscal='${q}')`; }).join(' OR ') });
   const ativos = fs.filter((f) => f.geometry && f.properties.tx_situ_lote !== 'INATIVO');
-  /* SQL que já está em outro terreno não se marca (o índice único da empresa recusaria) */
+  /* SQL que já está em outro terreno não se marca na ficha (no cadastro, sim: a sobreposição se decide ao cadastrar) */
   const ds = [...new Set(ativos.map((f) => digitos(f.properties.nr_contribuinte || '')).filter((d) => d.length === 11))];
-  const outro = await emOutro(ds, empresa, proprio);
+  const outro = await emOutro(ds, empresa, proprio, !L.ficha);
   const lotes: Lote[] = ativos.map((f) => {
     const p = f.properties, an = geoAneis(f.geometry)[0], sql: string | null = p.nr_contribuinte || null, d = digitos(sql || '');
     const condo = !!(p.cd_condominio && p.cd_condominio !== '00'), via = !!(p.tx_tipo_lote && p.tx_tipo_lote !== 'FISCAL'), ou = sql ? outro.get(d) : undefined, jaNa = ja.has(d);
@@ -246,7 +249,7 @@ export default function LotesGeo({ L, empresa }: { L: Lotes; empresa: string }) 
       if (!g) { toast(`O GeoSanja não trouxe o desenho do lote ${ic}.`, true); return; }
       const an = geoAneis(g)[0].map(([lo, lt]: number[]) => latLngUtm(lt, lo) as number[]);
       if (an[0][0] !== an[an.length - 1][0] || an[0][1] !== an[an.length - 1][1]) an.push(an[0]);
-      const ou = (await emOutro([digitos(ic)], empresa, L.ficha?.codigo)).get(digitos(ic)), l = loteSjc(ic, an, d.ter, ou, false, ou === undefined);
+      const ou = (await emOutro([digitos(ic)], empresa, L.ficha?.codigo, !L.ficha)).get(digitos(ic)), l = loteSjc(ic, an, d.ter, ou, false, ou === undefined);
       d.lotes.push(l); setVer((v) => v + 1);
       void baseLotes(empresa).guardar([{ ic, an }], [], quadraDe, geoAreaAnel);
       if (l.trava) toast(l.trava, true);

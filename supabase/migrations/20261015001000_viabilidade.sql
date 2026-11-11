@@ -9,7 +9,9 @@
 --                     (o "VGV" das bases % do VGV)
 --     VGV líquido   = VGV vendido − % de dedução × VGV vendido − as despesas
 --                     comerciais marcadas para deduzir (ITBI e registro de
---                     unidades vendidas, Produto Caixa)
+--                     unidades vendidas). Só a base da permuta financeira: a
+--                     receita é o VGV vendido, e as despesas marcadas continuam
+--                     nas comerciais (decisão do Moises, 11/nov/2026)
 --   Custo de obras, em camadas:
 --     obra incidente (típico) = valor unitário (R$/m²) × área privativa total,
 --                     ou × área construída total (obra_base 'construida'; decisão
@@ -31,16 +33,16 @@
 --     permuta financeira e do pagamento do terreno (decisão do Moisés,
 --     28/out/2026): um grupo cada, dentro de Despesas financeiras, com uma base
 --     só, o Aporte, em %: a permuta financeira em dinheiro (com o mínimo
---     garantido, quando ele vale) e o pagamento em dinheiro do terreno. O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), onde L0 é o
---     lucro antes desses itens; sem lucro (L0 ≤ 0), eles valem zero.
+--     garantido, quando ele vale) e o pagamento em dinheiro do terreno. O % do lucro é % × L0, onde L0 é o
+--     lucro antes desses itens (decisão do Moises, 11/nov/2026; antes, L0 ÷ (1 + Σ%)); sem lucro (L0 ≤ 0), eles valem zero.
 --   Despesas comerciais: % do VGV, verba total, verba por unidade (× unidades
 --     líquidas: total − permuta − comissão; decisão do Moisés, 26/out/2026)
 --     ou verba mensal (× meses).
---   EBITDA = VGV líquido − terreno − obras − despesas gerais
---            − despesas comerciais não deduzidas
+--   EBITDA = VGV vendido − terreno − obras − despesas gerais
+--            − despesas comerciais (todas)
 --   resultado sem taxas = EBITDA − despesas financeiras
 --   lucro líquido = resultado sem taxas − taxas (as taxas saem por último)
---   margem líquida = lucro ÷ VGV líquido
+--   margem líquida = lucro ÷ VGV vendido
 -- O grupo do item define a seção, as bases aceitas e se é fixo (Taxas,
 -- Despesas financeiras e Despesas comerciais aparecem sempre no estudo). Mesmos grupos e itens de
 -- tools/viabilidade/despesas.json, que o protótipo lê.
@@ -69,7 +71,9 @@ returns text language sql immutable set search_path = '' as $$
               when p_grupo in ('taxas','financeiro','comercial') then p_grupo else 'despesas' end
 $$;
 create or replace function app.viab_fixo(p_grupo text)
-returns boolean language sql immutable set search_path = '' as $$ select p_grupo in ('taxas','financeiro','capital_permuta','capital_pagamento','comercial') $$;
+returns boolean language sql immutable set search_path = '' as $$
+  -- Despesas gerais também: um item fixo por grupo (pedido do Moises, 11/nov/2026)
+  select p_grupo in ('terreno','incorporacao','cef','adm_financeiro','taxas','financeiro','capital_permuta','capital_pagamento','comercial') $$;
 -- Taxas e Despesas financeiras: o estudo nasce com o valor padrão da empresa e só a
 -- diretoria ou o administrador muda (decisão do Moisés, 26/out/2026).
 create or replace function app.viab_restrito(p_grupo text)
@@ -104,34 +108,28 @@ insert into app.viabilidade_despesas (codigo, nome, grupo, tipo_padrao, deduz_vg
   ('outorga', 'Outorga onerosa e contrapartidas', 'projetos', 'verba', false, 9),
   ('assistencia_tecnica', 'Assistência técnica pós-obra', 'pos_obra', 'pct_obra_total', false, 10),
   ('estoque', 'Manutenção e taxas de unidades em estoque', 'pos_obra', 'verba', false, 11),
-  ('itbi_terreno', 'ITBI do terreno', 'terreno', 'verba', false, 12),
-  ('registro_terreno', 'Escritura e registro do terreno', 'terreno', 'verba', false, 13),
-  ('certidoes', 'Diligência e certidões', 'terreno', 'verba', false, 14),
-  ('registro_incorporacao', 'Registro da incorporação', 'incorporacao', 'verba', false, 15),
-  ('juridico', 'Jurídico', 'incorporacao', 'verba', false, 16),
-  ('seguros', 'Seguros e garantias', 'incorporacao', 'pct_obra_total', false, 17),
-  ('taxas_cef', 'Taxas e avaliações da CEF', 'cef', 'verba', false, 18),
-  ('adm_central', 'Administração central', 'adm_financeiro', 'pct_vgv', false, 19),
-  ('contabilidade', 'Contabilidade e auditoria', 'adm_financeiro', 'verba', false, 20),
-  ('iptu_obra', 'IPTU durante a obra', 'adm_financeiro', 'verba', false, 21),
-  ('taxa_desenvolvimento', 'Taxa de desenvolvimento', 'taxas', 'pct_lucro', false, 22),
-  ('taxa_gestao_obra', 'Taxa de gestão de obra', 'taxas', 'pct_obra_total', false, 23),
-  ('taxa_contingencias', 'Taxa de contingências', 'taxas', 'pct_obra_total', false, 24),
-  ('custo_alavancagem', 'Custo de alavancagem', 'financeiro', 'verba', false, 25),
-  ('juros_pj', 'Custo de juros PJ', 'financeiro', 'pct_obra_total', false, 26),
-  ('custo_financeiro', 'Custo financeiro', 'financeiro', 'verba', false, 27),
-  ('impostos', 'Impostos', 'financeiro', 'pct_vgv', false, 28),
-  ('capital_permuta', 'Custo de capital permuta financeira', 'capital_permuta', 'pct_aporte_permuta', false, 29),
-  ('capital_pagamento', 'Custo de capital pagamento terreno', 'capital_pagamento', 'pct_aporte_pagamento', false, 30),
-  ('construcao_pdv', 'Construção do PDV', 'comercial', 'verba', false, 31),
-  ('custo_fixo_comercial', 'Custo fixo comercial', 'comercial', 'verba_mensal', false, 32),
-  ('marketing', 'Marketing', 'comercial', 'pct_vgv', false, 33),
-  ('comissao', 'Comissão', 'comercial', 'pct_vgv', false, 34),
-  ('itbi_vendas', 'ITBI de unidades vendidas', 'comercial', 'pct_vgv', true, 35),
-  ('registro_vendas', 'Registro de unidades vendidas', 'comercial', 'pct_vgv', true, 36),
-  ('contratos_cef', 'Taxa de emissão de contratos CEF', 'comercial', 'verba', false, 37),
-  ('produto_caixa', 'Produto Caixa', 'comercial', 'pct_vgv', true, 38),
-  ('outros_comercial', 'Outros', 'comercial', 'verba', false, 39);
+  ('dg_terreno', 'Despesas gerais com terreno', 'terreno', 'pct_vgv', false, 12),
+  ('dg_incorporacao', 'Despesas gerais com incorporação', 'incorporacao', 'pct_vgv', false, 13),
+  ('dg_cef', 'Despesas gerais com CEF', 'cef', 'pct_vgv', false, 14),
+  ('dg_adm_financeiro', 'Despesas gerais com administrativo e financeiro', 'adm_financeiro', 'pct_vgv', false, 15),
+  ('taxa_desenvolvimento', 'Taxa de desenvolvimento', 'taxas', 'pct_vgv', false, 16),
+  ('taxa_gestao_obra', 'Taxa de gestão de obra', 'taxas', 'pct_obra_total', false, 17),
+  ('taxa_contingencias', 'Taxa de contingências', 'taxas', 'pct_vgv', false, 18),
+  ('custo_alavancagem', 'Custo de alavancagem', 'financeiro', 'verba', false, 19),
+  ('juros_pj', 'Custo de juros PJ', 'financeiro', 'pct_obra_total', false, 20),
+  ('custo_financeiro', 'Custo financeiro', 'financeiro', 'verba', false, 21),
+  ('impostos', 'Impostos', 'financeiro', 'pct_vgv', false, 22),
+  ('capital_permuta', 'Custo de capital permuta financeira', 'capital_permuta', 'pct_aporte_permuta', false, 23),
+  ('capital_pagamento', 'Custo de capital pagamento terreno', 'capital_pagamento', 'pct_aporte_pagamento', false, 24),
+  ('construcao_pdv', 'Construção do PDV', 'comercial', 'verba', false, 25),
+  ('custo_fixo_comercial', 'Custo fixo comercial', 'comercial', 'verba_mensal', false, 26),
+  ('marketing', 'Marketing', 'comercial', 'pct_vgv', false, 27),
+  ('comissao', 'Comissão', 'comercial', 'pct_vgv', false, 28),
+  ('itbi_vendas', 'ITBI de unidades vendidas', 'comercial', 'pct_vgv', true, 29),
+  ('registro_vendas', 'Registro de unidades vendidas', 'comercial', 'pct_vgv', true, 30),
+  ('contratos_cef', 'Taxa de emissão de contratos CEF', 'comercial', 'verba_unidade', false, 31),
+  ('produto_caixa', 'Produto Caixa', 'comercial', 'verba_unidade', false, 32),
+  ('outros_comercial', 'Outros', 'comercial', 'verba', false, 33);
 
 alter table app.viabilidade_despesas enable row level security;
 create policy ver on app.viabilidade_despesas for select to authenticated using (empresa_id in (select app.minhas_empresas()));
@@ -340,7 +338,7 @@ declare
   v_vgv numeric; v_vp numeric; v_vc numeric; v_vv numeric;
   v_com numeric; v_dedc numeric; v_dedp numeric; v_liq numeric;
   v_oi numeric; v_raso numeric; v_ot numeric; v_obras numeric;
-  v_pfc numeric; v_pf numeric; v_terr numeric; v_pl numeric; v_l0 numeric; v_lb numeric;
+  v_pfc numeric; v_pf numeric; v_terr numeric; v_l0 numeric; v_lb numeric;
   v_linhas jsonb; v_sec jsonb; v_lucro numeric;
   DT constant text[] := array['terreno','incorporacao','cef','adm_financeiro','taxas','financeiro','capital_permuta','capital_pagamento'];
 begin
@@ -355,7 +353,8 @@ begin
     from app.viabilidade_tipologias where viabilidade_id = p_id;
   v_vv := v_vgv - v_vp - v_vc;
   b := jsonb_build_object('area', v_area, 'unidades', v_un - v_unp - v_unc, 'pct_vgv', v_vv);
-  -- VGV líquido: dedução em % e as despesas comerciais marcadas para deduzir
+  -- VGV líquido: dedução em % e as despesas comerciais marcadas para deduzir. Só a base da permuta financeira:
+  -- a receita é o VGV vendido e as despesas marcadas continuam nas comerciais (decisão do Moises, 11/nov/2026)
   v_com := app._viab_soma(p_id, array['comercial'], b);
   select coalesce(sum(app._viab_valor(l.tipo, l.valor, l.quantidade, b)), 0) into v_dedc
     from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
@@ -376,12 +375,9 @@ begin
   v_terr := v_pf + coalesce(v.pagamento_dinheiro, 0) + coalesce(v.comissao_dinheiro, 0);
   -- Aporte do custo de capital: a permuta financeira em dinheiro e o pagamento em dinheiro do terreno
   b := b || jsonb_build_object('pct_aporte_permuta', v_pf, 'pct_aporte_pagamento', coalesce(v.pagamento_dinheiro, 0));
-  -- % do lucro líquido (circular): lucro antes desses itens ÷ (1 + Σ%)
-  select coalesce(sum(l.valor), 0) into v_pl
-    from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
-   where l.viabilidade_id = p_id and l.tipo = 'pct_lucro' and d.grupo = any (DT);
-  v_l0 := v_liq - v_terr - v_obras - (v_com - v_dedc) - app._viab_soma(p_id, DT, b, true);
-  v_lb := case when v_l0 > 0 then round(v_l0 / (1 + v_pl / 100), 2) else 0 end;
+  -- % do lucro líquido: % × o lucro antes desses itens (decisão do Moises, 11/nov/2026)
+  v_l0 := v_vv - v_terr - v_obras - v_com - app._viab_soma(p_id, DT, b, true);
+  v_lb := case when v_l0 > 0 then round(v_l0, 2) else 0 end;
   b := b || jsonb_build_object('pct_lucro', v_lb);
   select coalesce(jsonb_agg(jsonb_build_object('id', y.id, 'grupo', y.grupo, 'secao', y.secao, 'base', y.base, 'valor', y.valor) order by y.ordem, y.criado_em)
                     filter (where auth.uid() is null or not app.viab_restrito(y.grupo) or app.eh_diretoria(v.empresa_id)), '[]'::jsonb),
@@ -409,7 +405,7 @@ begin
     'secoes', v_sec, 'despesas', v_terr + v_obras + v_com + (v_sec->>'despesas')::numeric + (v_sec->>'taxas')::numeric + (v_sec->>'financeiro')::numeric,
     'ebitda', v_lucro + (v_sec->>'taxas')::numeric + (v_sec->>'financeiro')::numeric,
     'lucro_sem_taxas', v_lucro + (v_sec->>'taxas')::numeric, 'lucro_liquido', v_lucro,
-    'margem_pct', case when v_liq > 0 then round(v_lucro / v_liq * 100, 2) end,
+    'margem_pct', case when v_vv > 0 then round(v_lucro / v_vv * 100, 2) end,
     'linhas', v_linhas);
 end $$;
 
@@ -751,6 +747,11 @@ begin
   perform app.exigir_editor(p.empresa_id);
   if p.fase is distinct from app._fase_entrada(p.empresa_id) then
     raise exception 'Estudo de viabilidade é da negociação (fase de entrada)' using errcode = '23514';
+  end if;
+  -- sem estudo, tira a marca: a negociação fica sem estudo válido (pedido do Moises, 11/nov/2026)
+  if p_viabilidade is null then
+    update app.processos set viabilidade_id = null where id = p.id;
+    return;
   end if;
   select * into v from app.viabilidades where id = p_viabilidade and empresa_id = p.empresa_id;
   if not found then raise exception 'Estudo não encontrado' using errcode = 'P0002'; end if;

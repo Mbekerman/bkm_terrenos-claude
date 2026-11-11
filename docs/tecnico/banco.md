@@ -164,7 +164,7 @@ A lista abaixo saiu do catálogo (`has_table_privilege('authenticated', ...)`) d
 
 | Permissão do `authenticated` | Tabelas |
 | --- | --- |
-| `insert`, `update`, `delete` | `app`: `analise_zoneamentos`, `area_interesse_terrenos`, `concorrencia_precos`, `confrontacoes`, `empresa_dominios` (só administrador, pela RLS), `equipe_prevista` (idem), `filtros_salvos`, `inscricao_partes`, `inscricoes_municipais`, `lembretes`, `matricula_partes`, `matriculas`, `membros` (só administrador), `oferta_partes`, `parte_corretores`, `reuniao_participantes`, `terreno_corretores`, `terreno_pessoas`, `viabilidade_linhas`, `viabilidade_tipologias`. `fluxo`: `apontamentos`, `automacoes`, `campo_opcoes`, `campos`, `checklist_itens`, `checklists`, `grupo_membros`, `grupos`, `modelo_tarefas`, `modelo_vinculos`, `modelos_quadro`, `recorrencias`, `tarefa_acessos`, `tarefa_campos`, `tarefa_etiquetas`, `tarefa_itens`, `tarefa_pessoas`, `vinculos` |
+| `insert`, `update`, `delete` | `app`: `analise_zoneamentos`, `area_interesse_terrenos`, `concorrencia_precos`, `confrontacoes`, `empresa_dominios` (só administrador, pela RLS), `equipe_prevista` (idem), `filtros_salvos`, `inscricao_partes`, `inscricoes_municipais`, `lembretes`, `matricula_partes`, `matriculas`, `membros` (só administrador), `oferta_partes`, `parte_corretores`, `reuniao_participantes`, `terreno_corretores`, `terreno_pessoas`, `terreno_viabilidades_outras`, `viabilidade_linhas`, `viabilidade_tipologias`. `fluxo`: `apontamentos`, `automacoes`, `campo_opcoes`, `campos`, `checklist_itens`, `checklists`, `grupo_membros`, `grupos`, `modelo_tarefas`, `modelo_vinculos`, `modelos_quadro`, `recorrencias`, `tarefa_acessos`, `tarefa_campos`, `tarefa_etiquetas`, `tarefa_itens`, `tarefa_pessoas`, `vinculos` |
 | `insert`, `update` (sem apagar: arquivar ou desativar) | `app`: `analises_urbanisticas`, `areas_interesse`, `atividades`, `concorrencia_empreendimentos`, `concorrencia_tipologias`, `concorrentes`, `corretores`, `diligencias`, `eixos_comerciais`, `ofertas`, `pessoas`, `pontos_interesse`, `reunioes`, `terreno_infraestrutura`, `terreno_viabilidades_tecnicas`. `fluxo`: `anexos`, `comentarios`, `etiquetas`, `listas`, `tarefas` |
 | só `insert` | `app.terrenos` (muda por `salvar_terreno`), `app.inscricao_valores` (correção = nova revisão) |
 | `insert` e `delete` | `fluxo.comentario_reacoes` |
@@ -234,6 +234,20 @@ Pedido do Moises. **Excluir** (diretor ou administrador, `app.excluir_terreno`) 
 
 Travas que deixam passar com `app.apagando_terreno = '1'` (só `_apagar_terreno` liga, dentro da transação): `tg_inscricao_historico`, `tg_analise_substituida`, `tg_matricula_leva_sqls`, `tg_inscricao_area`, `fluxo.tg_automacao_apagar`, `fluxo.tg_tarefa_item`, `fluxo.tg_aprovadores`. O teste final de `regras.sql` apaga todos os terrenos criados pelos outros testes, para pegar chave ou trava nova que impeça deletar.
 
+## Tratativa de imóvel sobreposto (10/nov/2026)
+
+Migration `20261015002000_tratativas.sql` (idempotente; é também o SQL avulso do banco real). Ver o resumo em [modelo.md](../modelo.md). Pontos de atenção para quem mexe:
+
+- `ofertas.vigente` e o status `aguardando` só mudam pelas RPCs: o gatilho `t_tratativa` recusa a escrita direta, a não ser com `app.tratativa = '1'` (ligado por `set_config` dentro das funções; conferido por `app._tratativa_rpc()`). O mesmo vale para `terrenos.em_espera_de` (`tg_terreno_espera`).
+- SQL e matrícula repetidos: os índices únicos por empresa saíram; `tg_inscricao_repetida` e `tg_matricula_repetida` recusam o repetido fora dos terrenos ligados em `terreno_sobreposicoes`, com `pg_advisory_xact_lock` para duas gravações ao mesmo tempo.
+- `app.ultima_acao_terreno` segue o filtro dos Logs do front (`ficha/Painel.tsx`): ignora `automatico`, ofertas aguardando e updates do terreno que só mexem em `em_espera_de`, `espera_avisada_em`, `versao` e `atualizado_*`.
+- Esconder é filtro (`v_mapa`, Funil, filtros), não RLS: a ficha do escondido abre pelo link.
+
+
+## Vários corretores por oferta (10/nov/2026)
+
+`app.oferta_corretores` (`20261015002100_oferta_corretores.sql`, #322) guarda os corretores de cada oferta (único por oferta e corretor). `ofertas.corretor_id` continua sendo o **principal**, lido pelo resto do sistema (Resumo, filtros, funil, completude): o corretor posto na oferta entra na lista (`tg_oferta_corretor_principal`); o primeiro posto numa oferta sem corretor vira o principal; tirado o principal, o mais antigo que sobrou passa a ser (`tg_oferta_corretor_sync`), e todo corretor da oferta entra em `terreno_corretores`. O que os gatilhos gravam por consequência vai como automático na auditoria. Escrita direta (oferta é tabela sem regra): leitura pela empresa, inserir e apagar por quem edita. A observação livre da oferta é `ofertas.observacoes`.
+
 ## Auditoria e histórico
 
 ### `app.auditoria`: o log de tudo
@@ -270,7 +284,7 @@ Leitura completa em `docs/modelo.md`, seções "Fases" e "Funil de cada fase".
 
 ### Partes (vários donos)
 
-Ver "Terreno com vários donos (partes)" em `docs/modelo.md`. Em resumo: todo terreno nasce com a parte "Vendedor 1" (trigger `t_parte1`, `20261015000300_terrenos.sql:962`). Matrículas e SQLs se ligam às partes por etiquetas (`matricula_partes`, `inscricao_partes`, com percentual opcional; o SQL fica dentro de uma matrícula da parte, `inscricao_partes.matricula_parte_id`). A partir da etapa da divisão (`fases_modelo.etapa_partes`, padrão Negociação), com duas ou mais partes ativas, cada parte ganha o próprio processo da mesma fase (`parte_id`, `principal_id`, código `NEG-00012-1`), e a negociação do terreno passa a andar pela parte mais atrasada (`app._sincronizar_principal`, `20261015000500_regras.sql:1426`), sem se mover à mão. Comprado só com todas as partes ativas compradas. Partes se criam e mudam por `salvar_parte`, `remover_parte` e `excluir_parte`; a leitura é `app.v_partes`.
+Ver "Terreno com vários donos (partes)" em `docs/modelo.md`. Em resumo: todo terreno nasce com a parte "Vendedor 1" (trigger `t_parte1`, `20261015000300_terrenos.sql:962`). Matrículas e SQLs se ligam às partes por etiquetas (`matricula_partes`, `inscricao_partes`, com percentual opcional; o SQL fica dentro de uma matrícula da parte, `inscricao_partes.matricula_parte_id`). A mesma matrícula em várias partes tem os mesmos SQLs em todas as cópias: os gatilhos `t_espelho` e `t_copia_sqls` mantêm as cópias iguais (pôr, tirar, mover e o percentual), e `v_etiquetas` conta o SQL uma vez por matrícula, de modo que a área se divide pelo % de cada parte na matrícula. A partir da etapa da divisão (`fases_modelo.etapa_partes`, padrão Negociação), com duas ou mais partes ativas, cada parte ganha o próprio processo da mesma fase (`parte_id`, `principal_id`, código `NEG-00012-1`), e a negociação do terreno passa a andar pela parte mais atrasada (`app._sincronizar_principal`, `20261015000500_regras.sql:1426`), sem se mover à mão. Comprado só com todas as partes ativas compradas. Partes se criam e mudam por `salvar_parte`, `remover_parte` e `excluir_parte`; a leitura é `app.v_partes`.
 
 ### Jornada, campos e tarefas da etapa
 

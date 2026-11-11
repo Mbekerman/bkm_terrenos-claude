@@ -17,15 +17,23 @@ left join app.terreno_infraestrutura ti on ti.terreno_id = t.id and ti.item = i.
 where i.ativo;
 
 -- Viabilidades técnicas: todo serviço do catálogo para todo terreno; o que não foi registrado é "não solicitada".
+-- Depois, as incluídas pelo usuário no terreno (servico nulo, id e outra), na ordem em que entraram.
 -- Vencida: retorno viável ou condicionado com a validade já passada.
 create view app.v_terreno_viabilidades_tecnicas with (security_invoker = true) as
 select t.id as terreno_id, t.empresa_id, i.codigo as servico, i.nome, i.ordem,
        coalesce(v.situacao, 'nao_solicitada') as situacao, v.concessionaria, v.solicitada_em, v.emitida_em, v.validade, v.condicoes,
-       coalesce(v.situacao in ('viavel','condicionada') and v.validade < current_date, false) as vencida
+       coalesce(v.situacao in ('viavel','condicionada') and v.validade < current_date, false) as vencida,
+       null::uuid as id, false as outra
 from app.terrenos t
 cross join app.itens_infraestrutura i
 left join app.terreno_viabilidades_tecnicas v on v.terreno_id = t.id and v.servico = i.codigo
-where i.ativo and i.viabilidade_tecnica;
+where i.ativo and i.viabilidade_tecnica
+union all
+select o.terreno_id, o.empresa_id, null, o.nome, (1000 + row_number() over (partition by o.terreno_id order by o.criado_em, o.id))::int,
+       o.situacao, o.concessionaria, o.solicitada_em, o.emitida_em, o.validade, o.condicoes,
+       coalesce(o.situacao in ('viavel','condicionada') and o.validade < current_date, false),
+       o.id, true
+from app.terreno_viabilidades_outras o;
 
 -- Inscrição com a revisão vigente do exercício mais recente.
 create view app.v_inscricoes with (security_invoker = true) as
@@ -245,18 +253,24 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        -- todos os corretores do terreno; ligar um corretor a uma parte também o põe aqui
        (select array_agg(tc.corretor_id order by tc.principal desc, tc.corretor_id) from app.terreno_corretores tc where tc.terreno_id = t.id) as corretor_ids,
        -- última proposta ativa (apresentada, em análise ou aceita); dividido em partes, a soma das partes em aberto
-       coalesce(pa.valor_total,
-         (select sum(y.valor_total) from app.processos c
-            cross join lateral (select x.valor_total from app.propostas x where x.processo_id = c.id
-                                and x.status in ('apresentada','em_analise','aceita') order by x.versao desc limit 1) y
-           where c.principal_id = pn.id and c.status in ('ativo','stand_by','concluido'))) as proposta_ativa_valor,
+       case when pa.id is not null then pa.valor_total else pz.valor end as proposta_ativa_valor,
        exists (select 1 from app.terreno_partes x where x.terreno_id = t.id and x.ativa) as tem_partes,
        u.zonas_siglas,
        -- parado há quanto tempo: última atividade, reunião realizada ou passagem do funil
        greatest((select max(a.ocorreu_em) from app.atividades a where a.terreno_id = t.id),
                 (select max(m.inicio) from app.reunioes m where m.terreno_id = t.id and m.status = 'realizada'),
                 (select max(x.em) from app.processo_transicoes x join app.processos c on c.id = x.processo_id where c.terreno_id = t.id),
-                t.criado_em) as ultima_movimentacao_em
+                t.criado_em) as ultima_movimentacao_em,
+       -- modalidades da pedida (oferta de referência) e da proposta ativa (pedido do Moises, 11/nov/2026); dividido em
+       -- partes, a proposta é a soma das últimas ativas de cada parte, como o valor
+       o.permuta_fin_pct as pedido_fin_pct, o.permuta_fis_pct as pedido_fis_pct, o.permuta_fis_unidades as pedido_fis_unidades,
+       case when pa.id is not null then pa.permuta_fin_pct else pz.fin_pct end as proposta_ativa_fin_pct,
+       case when pa.id is not null then pa.permuta_fis_pct else pz.fis_pct end as proposta_ativa_fis_pct,
+       case when pa.id is not null then pa.permuta_fis_unidades else pz.fis_unidades end as proposta_ativa_fis_unidades,
+       -- mínimos garantidos (11/nov/2026): R$ da permuta financeira e unidades da física em %
+       o.permuta_fin_minimo as pedido_fin_minimo, o.permuta_fis_min_unidades as pedido_fis_min_unidades,
+       case when pa.id is not null then pa.permuta_fin_minimo else pz.fin_minimo end as proposta_ativa_fin_minimo,
+       case when pa.id is not null then pa.permuta_fis_min_unidades else pz.fis_min_unidades end as proposta_ativa_fis_min_unidades
 from app.terrenos t
 join app.municipios mu on mu.id = t.municipio_id
 left join app.eixos_comerciais ec on ec.id = t.eixo_comercial_id
@@ -290,8 +304,20 @@ left join lateral (
   where tc.terreno_id = t.id and tc.principal limit 1
 ) cp on true
 left join lateral (select * from app.propostas x where x.processo_id = pn.id order by versao desc limit 1) lp on true
-left join lateral (select x.valor_total from app.propostas x where x.processo_id = pn.id
+left join lateral (select x.id, x.valor_total, x.permuta_fin_pct, x.permuta_fis_pct, x.permuta_fis_unidades,
+                          x.permuta_fin_minimo, x.permuta_fis_min_unidades
+                   from app.propostas x where x.processo_id = pn.id
                    and x.status in ('apresentada','em_analise','aceita') order by versao desc limit 1) pa on true
+-- dividido em partes (sem proposta ativa do terreno): a soma das últimas ativas de cada parte
+left join lateral (
+  select sum(y.valor_total) as valor, sum(y.permuta_fin_pct) as fin_pct, sum(y.permuta_fis_pct) as fis_pct,
+         sum(y.permuta_fis_unidades)::int as fis_unidades,
+         sum(y.permuta_fin_minimo) as fin_minimo, sum(y.permuta_fis_min_unidades)::int as fis_min_unidades
+    from app.processos c
+    cross join lateral (select x.* from app.propostas x where x.processo_id = c.id
+                        and x.status in ('apresentada','em_analise','aceita') order by x.versao desc limit 1) y
+   where pa.id is null and c.principal_id = pn.id and c.status in ('ativo','stand_by','concluido')
+) pz on true
 left join app.viabilidades vb on vb.id = pn.viabilidade_id
 left join app.viabilidade_config vc on vc.empresa_id = t.empresa_id
 left join app.v_urbanismo_vigente u on u.terreno_id = t.id
@@ -1052,7 +1078,12 @@ begin
             or exists (select 1 from jsonb_array_elements(pend) i where (i->>'ok')::boolean is not true and (i->>'bloqueio_gestor')::boolean)) then
       raise exception 'Você não pode forçar este avanço' using errcode = '42501';
     end if;
-    if coalesce(trim(p_comentario), '') = '' then raise exception 'Justifique o avanço forçado' using errcode = '22023'; end if;
+    -- a justificativa é opcional (pedido do Moises, 10/nov/2026): o avanço fica marcado como forçado no histórico;
+    -- só o item que o administrador marcou "Avança com justificativa" na Jornada ainda a exige
+    if coalesce(trim(p_comentario), '') = '' and exists (select 1 from jsonb_array_elements(pend) i
+         where (i->>'ok')::boolean is not true and coalesce((i->>'justifica')::boolean, false)) then
+      raise exception 'Justifique: a Jornada pede justificativa para passar sem este item' using errcode = '22023';
+    end if;
     v_forcado := true;
   end if;
 
@@ -1163,7 +1194,7 @@ end $$;
 
 -- Arrastar no quadro de etapas. Para frente, passa por cada etapa com as
 -- regras de mover_etapa (se uma falhar, nada muda; aprovação só na última).
--- Para trás, exige motivo e vai para o histórico como "retorno".
+-- Para trás, com o motivo opcional, vai para o histórico como "retorno".
 create or replace function app.mover_para_etapa(p_processo uuid, p_etapa text, p_forcar boolean default false, p_comentario text default null)
 returns jsonb
 language plpgsql security definer set search_path = ''
@@ -1186,7 +1217,6 @@ begin
       end if;
     end loop;
   elsif alvo < atual then
-    if coalesce(trim(p_comentario), '') = '' then raise exception 'Informe o motivo para voltar de etapa' using errcode = '22023'; end if;
     if exists (select 1 from app.aprovacoes where processo_id = p.id and status = 'pendente') then
       raise exception 'Há um pedido de aprovação em aberto: aguarde a decisão ou cancele o pedido' using errcode = '22023';
     end if;
@@ -1233,27 +1263,24 @@ begin
     raise exception 'Status inválido nesta fase' using errcode = '22023';
   end if;
   v_entrada := p.fase = app._fase_entrada(p.empresa_id);
+  -- os campos do encerramento são todos opcionais (pedido do Moises, 10/nov/2026): o que vier é conferido,
+  -- o que faltar se completa depois na faixa da ficha (app.editar_encerramento)
   if p_status in ('perdido','descartado') then
-    select * into mo from app.motivos_encerramento where empresa_id = p.empresa_id and status = p_status and codigo = p_motivo and ativo;
-    if not found then raise exception 'Escolha o motivo na lista' using errcode = '22023'; end if;
-    if p_status = 'perdido' and coalesce(trim(p_detalhe), '') = '' then raise exception 'Conte o que aconteceu (relato)' using errcode = '22023'; end if;
-    if mo.exige_texto and coalesce(trim(p_detalhe), '') = '' then raise exception 'Descreva o motivo' using errcode = '22023'; end if;
-  elsif p_motivo is not null then
+    if nullif(trim(p_motivo), '') is not null then
+      select * into mo from app.motivos_encerramento where empresa_id = p.empresa_id and status = p_status and codigo = p_motivo and ativo;
+      if not found then raise exception 'Escolha o motivo na lista' using errcode = '22023'; end if;
+    end if;
+  elsif nullif(trim(p_motivo), '') is not null then
     raise exception 'Motivo só para Perdido e Descartado' using errcode = '22023';
   end if;
   if p_status = 'concluido' then
     select codigo into ultima from app.etapas_modelo where empresa_id = p.empresa_id and fase = p.fase order by ordem desc limit 1;
     if p.etapa_atual <> ultima then raise exception 'A fase se conclui na última etapa' using errcode = '22023'; end if;
-    if v_entrada and p.parte_id is null and (coalesce(trim(p_detalhe), '') = '' or coalesce(trim(p_pontos_sucesso), '') = '') then
-      raise exception 'Escreva o relato e os pontos de sucesso da compra' using errcode = '22023';
-    end if;
-    if coalesce(trim(p_detalhe), '') = '' then raise exception 'Escreva o relato da conclusão' using errcode = '22023'; end if;
   elsif p_pontos_sucesso is not null then
     raise exception 'Pontos de sucesso só na conclusão' using errcode = '22023';
   end if;
   if p_status = 'stand_by' then
-    if p_retomar_em is null or p_retomar_em <= current_date then raise exception 'Informe uma data futura para retomar' using errcode = '22023'; end if;
-    if coalesce(trim(p_detalhe), '') = '' then raise exception 'Justifique o stand by' using errcode = '22023'; end if;
+    if p_retomar_em is not null and p_retomar_em <= current_date then raise exception 'A data para retomar precisa ser futura' using errcode = '22023'; end if;
   elsif p_retomar_em is not null then
     raise exception 'Data de retomada só para Stand By' using errcode = '22023';
   end if;
@@ -1261,7 +1288,7 @@ begin
     raise exception 'Arquivar ou manter as tarefas só em Perdido e Descartado' using errcode = '22023';
   end if;
   return app._passagem(p.id, 'status', p_status, p_forcar, p_comentario,
-    jsonb_strip_nulls(jsonb_build_object('motivo', p_motivo, 'detalhe', nullif(trim(p_detalhe), ''),
+    jsonb_strip_nulls(jsonb_build_object('motivo', nullif(trim(p_motivo), ''), 'detalhe', nullif(trim(p_detalhe), ''),
                                          'pontos_sucesso', nullif(trim(p_pontos_sucesso), ''), 'retomar_em', p_retomar_em,
                                          'tarefas', p_tarefas)));
 end $$;
@@ -1296,6 +1323,45 @@ begin
     perform app._abrir_negociacoes_partes(p.id);
   else
     perform app._sincronizar_principal(p.principal_id);
+  end if;
+end $$;
+
+-- Completar depois o que ficou em branco ao encerrar (pedido do Moises, 10/nov/2026): motivo, relato,
+-- pontos de sucesso e data de retomar, na faixa de Stand By, Perdido, Descartado ou Concluído da ficha.
+-- Só as chaves enviadas mudam; texto vazio apaga. A auditoria do processo guarda o antes e o depois.
+create or replace function app.editar_encerramento(p_processo uuid, p_dados jsonb)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare p app.processos; v_motivo text; v_retomar date;
+begin
+  select * into p from app.processos where id = p_processo for update;
+  if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
+  perform app.exigir_editor(p.empresa_id);
+  if p.status = 'ativo' then raise exception 'A fase está ativa: não há encerramento para editar' using errcode = '22023'; end if;
+  perform app._chaves_permitidas(p_dados, array['motivo','detalhe','pontos_sucesso','retomar_em']);
+  if p_dados ? 'motivo' then
+    if p.status not in ('perdido','descartado') then raise exception 'Motivo só para Perdido e Descartado' using errcode = '22023'; end if;
+    v_motivo := nullif(trim(p_dados->>'motivo'), '');
+    if v_motivo is not null and not exists (select 1 from app.motivos_encerramento
+        where empresa_id = p.empresa_id and status = p.status and codigo = v_motivo and (ativo or codigo = p.motivo_encerramento)) then
+      raise exception 'Escolha o motivo na lista' using errcode = '22023';
+    end if;
+  end if;
+  if p_dados ? 'pontos_sucesso' and p.status <> 'concluido' then raise exception 'Pontos de sucesso só na conclusão' using errcode = '22023'; end if;
+  if p_dados ? 'retomar_em' then
+    if p.status <> 'stand_by' then raise exception 'Data de retomada só para Stand By' using errcode = '22023'; end if;
+    v_retomar := nullif(p_dados->>'retomar_em', '')::date;
+    if v_retomar is not null and v_retomar <= current_date then raise exception 'A data para retomar precisa ser futura' using errcode = '22023'; end if;
+  end if;
+  update app.processos set
+    motivo_encerramento  = case when p_dados ? 'motivo' then v_motivo else motivo_encerramento end,
+    detalhe_encerramento = case when p_dados ? 'detalhe' then nullif(trim(p_dados->>'detalhe'), '') else detalhe_encerramento end,
+    pontos_sucesso       = case when p_dados ? 'pontos_sucesso' then nullif(trim(p_dados->>'pontos_sucesso'), '') else pontos_sucesso end,
+    retomar_em           = case when p_dados ? 'retomar_em' then v_retomar else retomar_em end
+  where id = p.id;
+  if p.status = 'stand_by' and p_dados ? 'retomar_em' then
+    perform app._lembretes_padrao(p.empresa_id, 'processos', p.id, 'stand_by_retomar');
   end if;
 end $$;
 
@@ -1574,8 +1640,10 @@ begin
     raise exception 'Esta parte já foi comprada' using errcode = '22023';
   end if;
   perform app._parte_pode_sair(tp);
+  perform set_config('app.sem_espelho', '1', true);   -- só as etiquetas desta parte saem; as cópias das outras ficam
   delete from app.inscricao_partes where parte_id = tp.id;
   delete from app.matricula_partes where parte_id = tp.id;
+  perform set_config('app.sem_espelho', '', true);
   update app.terreno_partes set ativa = false, removida_em = now(), motivo_remocao = trim(p_motivo) where id = tp.id;
   for v_principal in select distinct principal_id from app.processos where parte_id = tp.id and principal_id is not null loop
     perform app._sincronizar_principal(v_principal);
@@ -1610,8 +1678,10 @@ begin
      or exists (select 1 from app.proposta_partes where parte_id = tp.id) then
     raise exception 'A parte % já tem histórico: tire-a do terreno com um motivo', tp.nome using errcode = '22023';
   end if;
+  perform set_config('app.sem_espelho', '1', true);   -- só as etiquetas desta parte saem; as cópias das outras ficam
   delete from app.inscricao_partes where parte_id = tp.id;
   delete from app.matricula_partes where parte_id = tp.id;
+  perform set_config('app.sem_espelho', '', true);
   delete from app.terreno_pessoas where parte_id = tp.id;
   delete from app.terreno_partes where id = tp.id;
 end $$;
@@ -1631,7 +1701,7 @@ begin
      where processo_id = c.id and status = 'pendente';
     update app.processos set status = p_status,
            motivo_encerramento  = p_dados->>'motivo',
-           detalhe_encerramento = 'Com a negociação do terreno: ' || (p_dados->>'detalhe'),
+           detalhe_encerramento = 'Com a negociação do terreno' || coalesce(': ' || (p_dados->>'detalhe'), ''),
            retomar_em           = (p_dados->>'retomar_em')::date,
            data_encerramento    = now()
      where id = c.id;
@@ -1655,11 +1725,19 @@ from (
   from app.matricula_partes c join app.matriculas m on m.id = c.matricula_id
   window w as (partition by c.matricula_id)
   union all
+  -- o SQL nas cópias da mesma matrícula conta uma vez (pedido do Moises, 10/nov/2026): a divisão é entre as matrículas
+  -- em que ele está (e as cópias soltas), e cada linha leva a fração do grupo dela
   select 'inscricao', c.id, c.empresa_id, c.terreno_id, c.parte_id, c.inscricao_id, c.percentual, c.matricula_parte_id,
-         i.area_cadastral_m2,
-         sum(c.percentual) over w, count(*) filter (where c.percentual is null) over w, count(*) over w
+         i.area_cadastral_m2, g.soma_informada, g.sem_percentual, g.copias
   from app.inscricao_partes c join app.inscricoes_municipais i on i.id = c.inscricao_id
-  window w as (partition by c.inscricao_id)
+  left join app.matricula_partes mp on mp.id = c.matricula_parte_id
+  join (
+    select inscricao_id, grupo, sum(percentual) over w as soma_informada, count(*) filter (where percentual is null) over w as sem_percentual, count(*) over w as copias
+    from (select x.inscricao_id, coalesce(y.matricula_id, x.id) as grupo, max(x.percentual) as percentual
+            from app.inscricao_partes x left join app.matricula_partes y on y.id = x.matricula_parte_id
+           group by x.inscricao_id, coalesce(y.matricula_id, x.id)) gg
+    window w as (partition by inscricao_id)
+  ) g on g.inscricao_id = c.inscricao_id and g.grupo = coalesce(mp.matricula_id, c.id)
 ) x;
 grant select on app.v_etiquetas to authenticated;
 
@@ -1738,10 +1816,17 @@ grant select on app.v_partes to authenticated;
 -- informada, a antiga).
 -- ---------------------------------------------------------------------
 drop function if exists app.registrar_proposta(uuid, text, numeric, text, text, date, date, text);
+drop function if exists app.registrar_proposta(uuid, text, numeric, text, text, date, date, text, uuid[]);
+drop function if exists app.registrar_proposta(uuid, text, numeric, text, text, date, date, text, uuid[], numeric, numeric, int);
 create or replace function app.registrar_proposta(
   p_processo uuid, p_origem text, p_valor numeric, p_forma text,
   p_condicoes text default null, p_data_apresentacao date default current_date,
-  p_validade date default null, p_status text default 'apresentada', p_partes uuid[] default null)
+  p_validade date default null, p_status text default 'apresentada', p_partes uuid[] default null,
+  -- as mesmas modalidades da pedida (pedido do Moises, 11/nov/2026): p_valor é o dinheiro, nulo só com permuta;
+  -- p_forma nula = derivada das modalidades
+  p_permuta_fin_pct numeric default null, p_permuta_fis_pct numeric default null, p_permuta_fis_unidades int default null,
+  -- mínimos garantidos (pedido do Moises, 11/nov/2026): R$ na permuta financeira, unidades na física em %
+  p_permuta_fin_minimo numeric default null, p_permuta_fis_min_unidades int default null)
 returns uuid
 language plpgsql security definer set search_path = ''
 as $$
@@ -1753,6 +1838,18 @@ begin
   if p.fase is distinct from app._fase_entrada(p.empresa_id) then raise exception 'Proposta só na negociação (fase de entrada)' using errcode = '22023'; end if;
   if p.status <> 'ativo' then raise exception 'A negociação não está ativa' using errcode = '22023'; end if;
   if p_status not in ('rascunho','apresentada','em_analise') then raise exception 'Uma proposta nova começa como rascunho, apresentada ou em análise' using errcode = '22023'; end if;
+  if p_valor is null and p_permuta_fin_pct is null and p_permuta_fis_pct is null and p_permuta_fis_unidades is null then
+    raise exception 'Informe o valor em dinheiro ou alguma permuta' using errcode = '22023';
+  end if;
+  if p_permuta_fis_pct is not null and p_permuta_fis_unidades is not null then
+    raise exception 'A permuta física vai em percentual ou em unidades, não nos dois' using errcode = '22023';
+  end if;
+  if p_permuta_fin_minimo is not null and p_permuta_fin_pct is null then
+    raise exception 'O mínimo garantido vale só com permuta financeira' using errcode = '22023';
+  end if;
+  if p_permuta_fis_min_unidades is not null and p_permuta_fis_pct is null then
+    raise exception 'O mínimo de unidades vale só com permuta física em percentual' using errcode = '22023';
+  end if;
 
   -- as partes da proposta
   select array_agg(id) into v_ativas from app.terreno_partes where terreno_id = p.terreno_id and ativa;
@@ -1778,9 +1875,13 @@ begin
    order by x.versao desc limit 1;
 
   insert into app.propostas (empresa_id, processo_id, versao, origem, proposta_anterior_id, data_apresentacao, validade,
-                             valor_total, forma_pagamento, condicoes_pagamento, status, viabilidade_id)
+                             valor_total, forma_pagamento, condicoes_pagamento, status, viabilidade_id,
+                             permuta_fin_pct, permuta_fis_pct, permuta_fis_unidades, permuta_fin_minimo, permuta_fis_min_unidades)
   values (p.empresa_id, p.id, coalesce((select max(versao) from app.propostas where processo_id = p.id), 0) + 1, p_origem, v_ant,
-          p_data_apresentacao, p_validade, p_valor, p_forma, p_condicoes, p_status, p.viabilidade_id)
+          p_data_apresentacao, p_validade, p_valor,
+          coalesce(p_forma, app.forma_modalidades(p_valor, p_permuta_fin_pct, p_permuta_fis_pct, p_permuta_fis_unidades)),
+          p_condicoes, p_status, p.viabilidade_id, p_permuta_fin_pct, p_permuta_fis_pct, p_permuta_fis_unidades,
+          p_permuta_fin_minimo, p_permuta_fis_min_unidades)
   returning id into v_id;
   insert into app.proposta_partes (proposta_id, parte_id, empresa_id) select v_id, x, p.empresa_id from unnest(v_partes) x;
   return v_id;
@@ -3042,7 +3143,7 @@ grant execute on function
   app.definir_temperatura(uuid, int), app.definir_oferta_referencia(uuid, uuid),
   app.checar_avanco(uuid), app.checar_passagem(uuid, text, text),
   app.mover_etapa(uuid, boolean, text), app.mover_para_etapa(uuid, text, boolean, text), app.mover_subetapa(uuid, text, boolean, text),
-  app.encerrar_processo(uuid, text, text, text, date, text, boolean, text, text), app.retomar_processo(uuid),
+  app.encerrar_processo(uuid, text, text, text, date, text, boolean, text, text), app.retomar_processo(uuid), app.editar_encerramento(uuid, jsonb),
   app.decidir_aprovacao(uuid, boolean, text), app.cancelar_aprovacao(uuid),
   app.abrir_fase(uuid, text, boolean, text), app.fases_do_terreno(uuid),
   app.salvar_fase(uuid, text, jsonb), app.apagar_fase(uuid, text),
@@ -3052,7 +3153,7 @@ grant execute on function
   app.adicionar_prerequisito(uuid, text, text, text, text), app.remover_prerequisito(uuid),
   app.salvar_motivo(uuid, text, text, jsonb), app.apagar_motivo(uuid, text, text),
   app.salvar_checklist(uuid, text, text, text, boolean, int, text, jsonb), app.remover_checklist(uuid, text, text, text),
-  app.registrar_proposta(uuid, text, numeric, text, text, date, date, text, uuid[]), app.atualizar_status_proposta(uuid, text), app.excluir_proposta(uuid),
+  app.registrar_proposta(uuid, text, numeric, text, text, date, date, text, uuid[], numeric, numeric, int, numeric, int), app.atualizar_status_proposta(uuid, text), app.excluir_proposta(uuid),
   app.vincular_viabilidade(uuid, text, numeric, numeric, uuid),
   app.registrar_documento(uuid, text, text, text, uuid, uuid, uuid, text, bigint, date, uuid), app.revisar_documento(uuid, boolean),
   app.arquivar_terreno(uuid, text), app.reativar_terreno(uuid)

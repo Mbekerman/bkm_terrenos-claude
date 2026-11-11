@@ -4,11 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { data as fd, diasEntre, hojeISO, m2, milhoes, somarDias, FORMA } from '../lib/format';
+import { modProposta, resumoMod } from '../lib/modalidades';
 import { Ic } from '../components/Moldura';
-import { abrirQuadro, OPT, pedirCampo, SECOES } from './edicao';
-import { completude, ITEM_COMPLETUDE, TEMP, type Ficha as F, type R } from './dados';
+import { abrirQuadro, OPT, pedirCampo, Quadro, SECOES } from './edicao';
+import { completude, ITEM_COMPLETUDE, TEMP, TP_N, type Ficha as F, type R } from './dados';
 import { Avanco, procsAvanco, useAvanco } from './Avanco';
 import { useComercial } from './Comercial';
+import { useRentabilidade } from '../viab/Viabilidade';
 
 // Painel lateral da ficha, porte de tools/prototipo/proto_painel.js: coluna própria à direita (280 a 360 px; some quando
 // não cabe), recolhível, com o quadro de avanço no topo e o seletor Logs / Ações. Logs: toda alteração do terreno, do
@@ -92,10 +94,14 @@ const ROT: Record<string, string> = {
   zona_fiscal: 'zona fiscal', endereco_prefeitura: 'endereço', origem: 'origem', nome: 'nome', pessoa_nome: 'pessoa principal', telefone: 'telefone', email: 'e-mail',
   documento: 'CPF/CNPJ', observacoes: 'observação', valor_pedido: 'valor', forma_pagamento_pedida: 'forma de pagamento', observacao_pagamento: 'condições', aceita_permuta: 'aceita permuta',
   comissao_pct: 'comissão', comissao_valor: 'comissão', corretor_id: 'corretor', validade: 'validade', status: 'status', data_oferta: 'data', forma_pagamento: 'condição', area_m2: 'área',
+  permuta_fin_pct: 'permuta financeira (% VGVL)', permuta_fis_pct: 'permuta física (%)', permuta_fis_unidades: 'permuta física (unidades)', permuta_fin_minimo: 'mínimo garantido da permuta financeira', permuta_fis_min_unidades: 'mínimo de unidades da permuta física',
+  concessionaria: 'concessionária', solicitada_em: 'data do pedido', emitida_em: 'data da emissão', condicoes: 'condições', situacao: 'situação',
   inicio: 'data', link: 'link da reunião', pauta: 'pauta', resumo: 'o que foi tratado', encaminhamentos: 'encaminhamentos', modalidade: 'modalidade', local: 'local', duracao_min: 'duração',
 };
 const lista = (ks: string[]) => [...new Set(ks.map((k) => ROT[k] ?? k.replace(/_/g, ' ')))].join(', ');
 const PROP_ST: Record<string, string> = { rascunho: 'Rascunho', apresentada: 'Apresentada', em_analise: 'Em análise', aceita: 'Aceita', recusada: 'Recusada', expirada: 'Expirada', retirada: 'Retirada', substituida: 'Substituída' };
+const VT_DISP: Record<string, string> = { nao_verificado: 'Não verificado', sim: 'Sim', parcial: 'Parcial', nao: 'Não', nao_se_aplica: 'Não se aplica' };
+const VT_ITEM: Record<string, string> = { energia: 'Energia', agua: 'Água', esgoto: 'Esgoto', drenagem: 'Drenagem', gas: 'Gás canalizado', asfalto: 'Asfalto', iluminacao: 'Iluminação pública', calcada: 'Calçada' };
 const VT_SIT: Record<string, string> = { nao_solicitada: 'Não solicitada', solicitada: 'Solicitada', viavel: 'Viável', condicionada: 'Condicionada', nao_viavel: 'Não viável' };
 
 function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
@@ -123,7 +129,18 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
         if (k === 'area_adotada_m2') {
           continue;
         }
+        /* relevo medido sozinho (topo/relevo.ts › app.registrar_topografia): um log com o perfil e a fonte das cotas; a poligonal
+           nova apaga a medição (fica no log do ajuste) */
+        if (k.startsWith('topo_')) {
+          if (k === 'topo_calculado_em' && d?.topo_perfil) {
+            const nm = d.topo_perfil === 'inclinado' && d.topo_declividade_pct != null ? `Inclinado · ${Number(d.topo_declividade_pct).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` : TP_N[d.topo_perfil] ?? d.topo_perfil;
+            linhas.push(`Classificação topográfica: ${nm} (${d.topo_fonte === 'laser' ? 'laser 2020 da prefeitura' : 'cotas do Google'})`); secs.add('relevo'); q0 ??= 'relevo';
+          }
+          continue;
+        }
         if (k === 'historico_uso') { linhas.push('Histórico de uso alterado'); secs.add('histuso'); q0 ??= 'histuso'; continue; }
+        /* data da visita técnica: mora na aba Infraestrutura (ficha/Infra.tsx) */
+        if (k === 'visita_tecnica_em') { linhas.push(`Data da visita técnica: ${x?.[k] ? fd(x[k]) : '—'} → ${d?.[k] ? fd(d[k]) : '—'}`); secs.add('visita'); q0 ??= 'visita'; continue; }
         /* itens descartados do "Falta preencher" (10/nov/2026): o log diz quais saíram e quais voltaram a ser pedidos */
         if (k === 'completude_dispensada') {
           const av = new Set((x?.[k] as string[] | null) ?? []), dv = new Set((d?.[k] as string[] | null) ?? []);
@@ -143,8 +160,8 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       if (!linhas.length) return null;
       if (topoComp && !secs.size) return { txt: linhas.length === 1 ? linhas[0] : 'Falta preencher alterado', det: linhas.length > 1 ? linhas : undefined, topo: '.fi-comp-b' };
       const s1 = secs.size === 1 ? [...secs][0] : null;
-      const txt = linhas.length === 1 ? linhas[0] : s1 && SECOES[s1] ? `${SECOES[s1].titulo} editado` : s1 === 'areas' ? 'Áreas e dimensões editadas' : 'Ficha editada';
-      return { txt, det: linhas.length > 1 ? linhas : undefined, aba: 'terreno', q: q0 };
+      const txt = linhas.length === 1 ? linhas[0] : s1 && SECOES[s1] ? `${SECOES[s1].titulo} editado` : s1 === 'areas' ? 'Dimensões editadas' : 'Ficha editada';
+      return { txt, det: linhas.length > 1 ? linhas : undefined, aba: s1 === 'visita' || s1 === 'relevo' ? 'infra' : s1 === 'histuso' ? 'historico-uso' : 'terreno', q: q0 };
     }
     case 'matriculas':
       return { txt: ins ? `Matrícula adicionada: ${o.numero}` : del ? `Matrícula removida: ${o.numero}` : `Matrícula alterada (${o.numero}): ${lista(mudou(x, d))}`,
@@ -181,20 +198,23 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
     case 'confrontacoes':
       return { txt: ins ? `Confrontação adicionada: ${o.tipo ?? ''}` : del ? `Confrontação removida: ${o.tipo ?? ''}` : 'Confrontação alterada', aba: 'terreno' };
     case 'ofertas': {
-      if (ins) return { txt: `Oferta registrada: ${milhoes(o.valor_pedido)}`, det: [o.forma_pagamento_pedida && FORMA[o.forma_pagamento_pedida] ? 'Forma: ' + FORMA[o.forma_pagamento_pedida] : null].filter(Boolean) as string[], aba: 'comercial', q: 'ofertas' };
+      if (ins) return { txt: o.valor_pedido != null ? `Oferta registrada: ${milhoes(o.valor_pedido)}` : `Oferta registrada${o.numero ? ` (nº ${o.numero})` : ''}`, det: [o.forma_pagamento_pedida && FORMA[o.forma_pagamento_pedida] ? 'Forma: ' + FORMA[o.forma_pagamento_pedida] : null].filter(Boolean) as string[], aba: 'comercial', q: 'ofertas' };
       if (del) return { txt: `Oferta removida: ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'ofertas' };
       const ks = mudou(x, d);
       if (!ks.length) return null;
       const det = ks.filter((k) => k === 'valor_pedido').map(() => `Valor: ${milhoes(x?.valor_pedido)} → ${milhoes(d?.valor_pedido)}`);
       return { txt: `Oferta alterada (${milhoes(o.valor_pedido)}): ${lista(ks)}`, det: det.length ? det : undefined, aba: 'comercial', q: 'cond' };
     }
+    case 'oferta_corretores':
+      /* vários corretores na oferta (card da oferta, 10/nov/2026); o primeiro, posto junto com a oferta, vai no log dela */
+      return ins ? { txt: 'Corretor incluído na oferta', aba: 'comercial', q: 'ofertas' } : del ? { txt: 'Corretor tirado da oferta', aba: 'comercial', q: 'ofertas' } : null;
     case 'oferta_partes': {
       const n = c.partes.get(o.parte_id) ?? 'parte';
-      return { txt: del ? `Valor da parte removido: ${n}` : `Valor da parte (${n}): ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'partes-com' };
+      return { txt: del ? `Valor da parte removido: ${n}` : `Valor da parte (${n}): ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'cond' };
     }
     case 'propostas': {
-      if (del) return { txt: `Proposta v${o.versao} excluída (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${milhoes(o.valor_total)}`, aba: 'comercial', q: 'propostas' };
-      if (ins) return { txt: `Proposta v${o.versao} registrada (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${milhoes(o.valor_total)}`, det: [o.condicoes_pagamento].filter(Boolean), aba: 'comercial', q: 'propostas' };
+      if (del) return { txt: `Proposta v${o.versao} excluída (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${resumoMod(modProposta(o), milhoes)}`, aba: 'comercial', q: 'propostas' };
+      if (ins) return { txt: `Proposta v${o.versao} registrada (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${resumoMod(modProposta(o), milhoes)}`, det: [o.condicoes_pagamento].filter(Boolean), aba: 'comercial', q: 'propostas' };
       if (x?.status !== d?.status) return { txt: `Proposta v${o.versao}: ${PROP_ST[d?.status] ?? d?.status}`, aba: 'comercial', q: 'propostas' };
       const ks = mudou(x, d);
       return ks.length ? { txt: `Proposta v${o.versao} alterada: ${lista(ks)}`, aba: 'comercial', q: 'propostas' } : null;
@@ -217,9 +237,39 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
     }
     case 'documentos': return ins ? { txt: `Documento enviado: ${o.nome ?? o.tipo_documento}`, aba: 'documentos' } : null;
     case 'analises_urbanisticas': return ins ? { txt: `Análise urbanística registrada${o.fonte ? ` (${o.fonte})` : ''}`, aba: 'terreno', q: 'indices' } : null;
+    case 'terreno_infraestrutura': {
+      const nome = VT_ITEM[o.item] ?? o.item;
+      if (del) return null;
+      if ((x?.disponibilidade ?? 'nao_verificado') !== d?.disponibilidade) return { txt: `Visita técnica · ${nome}: ${VT_DISP[x?.disponibilidade] ?? 'Não verificado'} → ${VT_DISP[d?.disponibilidade] ?? d?.disponibilidade}`, aba: 'infra', q: 'visita' };
+      if ((x?.observacoes ?? null) !== (d?.observacoes ?? null)) return { txt: `Visita técnica · ${nome}: observação alterada`, det: d?.observacoes ? [d.observacoes] : undefined, aba: 'infra', q: 'visita' };
+      return null;
+    }
     case 'terreno_viabilidades_tecnicas':
-      return x?.situacao !== d?.situacao ? { txt: `Viabilidade técnica · ${o.servico}: ${VT_SIT[x?.situacao] ?? 'Não solicitada'} → ${VT_SIT[d?.situacao] ?? d?.situacao}`, aba: 'infra' } : null;
-    case 'estudos_massa': return ins ? { txt: `Estudo de massa pedido: ${o.nome ?? ''}`, aba: 'massa' } : null;
+      return x?.situacao !== d?.situacao ? { txt: `Viabilidade técnica · ${VT_ITEM[o.servico] ?? o.servico}: ${VT_SIT[x?.situacao] ?? 'Não solicitada'} → ${VT_SIT[d?.situacao] ?? d?.situacao}`, aba: 'infra', q: 'vtec' }
+        : mudou(x, d).length ? { txt: `Viabilidade técnica · ${VT_ITEM[o.servico] ?? o.servico}: ${lista(mudou(x, d))}`, aba: 'infra', q: 'vtec' } : null;
+    case 'terreno_viabilidades_outras':
+      if (ins) return { txt: `Viabilidade técnica incluída: ${o.nome}`, aba: 'infra', q: 'vtec' };
+      if (del) return { txt: `Viabilidade técnica excluída: ${o.nome}`, aba: 'infra', q: 'vtec' };
+      if (x?.nome !== d?.nome) return { txt: `Viabilidade técnica renomeada: ${x?.nome} → ${d?.nome}`, aba: 'infra', q: 'vtec' };
+      return x?.situacao !== d?.situacao ? { txt: `Viabilidade técnica · ${o.nome}: ${VT_SIT[x?.situacao] ?? 'Não solicitada'} → ${VT_SIT[d?.situacao] ?? d?.situacao}`, aba: 'infra', q: 'vtec' }
+        : mudou(x, d).length ? { txt: `Viabilidade técnica · ${o.nome}: ${lista(mudou(x, d))}`, aba: 'infra', q: 'vtec' } : null;
+    case 'estudos_massa': {
+      if (ins) return { txt: `Estudo de massa pedido: ${o.nome ?? ''}`, aba: 'massa' };
+      if (del) return { txt: `Estudo de massa apagado: ${o.nome ?? ''}`, aba: 'massa' };
+      if (!x || !d) return null;
+      /* salvar_estudo_massa grava em dois passos (os dados, depois os totais das tipologias): o que não mudou nada não entra */
+      const mud = Object.keys(d).filter((k) => !['atualizado_em', 'eficiencia_pct', 'entregue_em'].includes(k) && JSON.stringify(d[k]) !== JSON.stringify(x[k]));
+      if (!mud.length) return null;
+      if (mud.every((k) => k === 'area_privativa_m2' || k === 'unidades')) return { txt: `${d.nome}: tipologias atualizadas`, aba: 'massa' };
+      if (x.situacao !== 'entregue' && d.situacao === 'entregue') return { txt: `${d.nome} entregue`, aba: 'massa' };
+      if (!x.valido && d.valido) return { txt: `${d.nome} é o estudo de massa válido`, aba: 'massa' };
+      if (x.valido && !d.valido) return null; // a troca do válido aparece pelo novo válido
+      if (x.nome !== d.nome) return { txt: `Estudo de massa renomeado: ${x.nome} → ${d.nome}`, aba: 'massa' };
+      if (x.arquiteto_id !== d.arquiteto_id) return { txt: `${d.nome}: arquiteto ${c.nomes.get(d.arquiteto_id) ?? 'trocado'}`, aba: 'massa' };
+      if (x.briefing !== d.briefing || x.prazo !== d.prazo) return { txt: `${d.nome}: pedido alterado`, aba: 'massa' };
+      if (x.observacoes !== d.observacoes) return { txt: `${d.nome}: observações alteradas`, aba: 'massa' };
+      return { txt: `${d.nome}: dados do arquiteto atualizados`, aba: 'massa' };
+    }
     default: return null;
   }
 }
@@ -551,12 +601,19 @@ function Logs({ f, pn, set, irAba }: { f: F; pn: PN; set: (p: Partial<PN>) => vo
   );
 }
 
+/** sem o painel (celular ou tela estreita), os mesmos Logs viram a aba Histórico da ficha */
+export function Historico({ f, irAba }: { f: F; irAba: (k: string) => void }) {
+  const [pn, set] = usePN();
+  return <Quadro aba="historico" id="logs" primeiro titulo="Histórico"><div className="fi-hist"><Logs f={f} pn={pn} set={set} irAba={irAba} /></div></Quadro>;
+}
+
 /* ---------- ações: próximas ações da negociação (proto_painel.js › proximasAcoes; tarefas entram com o porte das tarefas) ---------- */
 interface Acao { sev: string; i: 'pause' | 'check' | 'clock' | 'warn' | 'fwd' | 'money' | 'edit'; txt: string; fix?: [string, () => void] }
 function useAcoes(f: F, irAba: (k: string) => void): Acao[] {
   const procs = procsAvanco(f), neg = procs.find((p) => f.fases.find((x) => x.k === p.fase)?.entrada) ?? procs[0];
   const adv = useAvanco(f, neg ?? { id: '', fase: '', etapa: '', sub: null, status: '', desde: null, encerrado: null });
   const com = useComercial(f).data;
+  const rent = useRentabilidade(f);
   const L: Acao[] = [];
   const d = neg ? adv.data : undefined;
   if (d?.p.status === 'stand_by') L.push({ sev: 'warn', i: 'pause', txt: `Negociação em Stand By. Retomar em ${fd(d.p.retomar_em)}` });
@@ -569,7 +626,8 @@ function useAcoes(f: F, irAba: (k: string) => void): Acao[] {
     r.itens.filter((x) => !x.ok && x.tipo !== 'aprovacao_pendente').forEach((x) => L.push({ sev: 'warn', i: 'fwd', txt: x.texto }));
     if (r.ok && !ped) L.push({ sev: 'good', i: 'fwd', txt: `Pronto para ${r.proxima_tipo === 'status' ? 'concluir como Comprado' : 'avançar para ' + (r.proxima_nome ?? '')}${(r.aprovacoes ?? []).length ? ' (pede aprovação)' : ''}` });
     const lp = com?.props.slice().sort((a, b) => b.versao - a.versao)[0];
-    if (lp && ['apresentada', 'em_analise'].includes(lp.status)) L.push({ sev: 'warn', i: 'money', txt: lp.origem === 'bkm' ? `Cobrar resposta da proposta v${lp.versao} (enviada em ${fd(lp.data_apresentacao)})` : `Responder à proposta v${lp.versao} do vendedor (${milhoes(lp.valor_total)})`, fix: ['Ver propostas', () => { abrirQuadro('comercial', 'propostas'); irAba('comercial'); }] });
+    if (lp && ['apresentada', 'em_analise'].includes(lp.status)) L.push({ sev: 'warn', i: 'money', txt: lp.origem === 'bkm' ? `Cobrar resposta da proposta v${lp.versao} (enviada em ${fd(lp.data_apresentacao)})` : `Responder à proposta v${lp.versao} do vendedor (${resumoMod(modProposta(lp), milhoes)})`, fix: ['Ver propostas', () => { abrirQuadro('comercial', 'propostas'); irAba('comercial'); }] });
+    if (rent) L.push({ sev: 'crit', i: 'money', txt: `Levar ao comitê: rentabilidade abaixo da mínima: ${rent.txt}`, fix: ['Ver estudo', () => irAba('viabilidade')] });
     if (!f.temp) L.push({ sev: 'warn', i: 'warn', txt: 'Avaliar a temperatura do terreno' });
     const agora = new Date().toISOString();
     const pr = com?.reus.filter((x) => x.status !== 'realizada' && x.status !== 'cancelada' && x.inicio && x.inicio >= agora).sort((a, b) => (a.inicio < b.inicio ? -1 : 1))[0];

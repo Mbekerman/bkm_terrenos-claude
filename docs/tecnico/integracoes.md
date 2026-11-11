@@ -122,7 +122,7 @@ As variáveis do serviço Cloud Run e o caminho do deploy estão em [deploy-e-am
 
 **Para quê.** Cotas do terreno **fora de São Paulo** (em São Paulo, sempre o laser 2020; ver seção 11): relevo da poligonal e o topográfico preliminar.
 
-**Onde.** Só no protótipo: `proto_gmap.js:253` (relevo) e `proto_topo.js:79-85` (grade de 5 m, em lotes de 512 pontos). O React ainda não tem relevo nem topográfico.
+**Onde.** Protótipo: `proto_gmap.js:253` (relevo) e `proto_topo.js:79-85` (grade de 5 m, em lotes de 512 pontos). React: `cotasGoogle` em `topo/gerar.ts` (relevo e topográfico fora de São Paulo).
 
 **Custo e limites registrados.** A origem do Google tem cerca de 9,5 m de resolução; por isso a grade é de 5 m: os 9 pontos por m² pedidos de início "não acrescentam nada e custariam ~US$ 6 por terreno" (CLAUDE.md, Topográfico preliminar). Validação de 27/out/2026 com 4 levantamentos de campo em SP: laser 6 a 9 cm, curvas antigas da prefeitura 0,2 a 0,4 m, **Google 1,2 a 2,3 m**. Com cotas do Google, o DXF sai sem os pontos do Google, só com as curvas (decisão do Moisés com o advogado).
 
@@ -206,7 +206,7 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 - Protótipo: `proto_topo.js` (`TOPO_MDT`, `:28`: `/geosampa/Download/File/125?key=cd_quadricula&value=<folha>`; as folhas que cobrem a área vêm da camada `geoportal:quadricula_folha_mdt_mds_2020`). As folhas são lidas no navegador pelo **laz-perf 0.0.7** (`https://cdn.jsdelivr.net/npm/laz-perf@0.0.7/lib/web/`, ou a meta `lazperf-url`).
 - Ferramenta: `tools/topografia/medir.py` (seção 15).
 - Banco: `app.topografia_config`, `app.classificar_topografia`, `app.registrar_topografia`.
-- React: **ainda não** (relevo e topográfico ficaram para depois na primeira versão).
+- React: o relevo medido sozinho (`topo/relevo.ts` › `medirRelevo`, `cotasLaser` em `topo/gerar.ts`, desde 10/nov/2026). As folhas são lidas pelo **laz-perf 0.0.7 do npm** (versão fixa no `package.json`), empacotado com o app e carregado só quando o laser é usado (o `.wasm` sai em `/assets`): o React não carrega script de CDN. O topográfico de São Paulo usa o mesmo `cotasLaser` (`gerarTopografico`, desde o PR deste porte); a ortofoto `Orto_IGC_2023` (WMS do GeoSampa, em pedaços de até 4.000 px) é a reserva da imagem quando o Google não responde.
 
 **Custo.** Nenhum. **Limites:** cada folha tem vários MB; terreno grande baixa várias.
 
@@ -249,7 +249,7 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 
 ## 13. IBGE, setores censitários (Censo 2022)
 
-**Para quê.** As camadas de **renda familiar estimada** e **densidade demográfica bruta** no mapa, e na ficha (aba Entorno) "Renda e população do entorno" e "Perfil da população" por raio (500 m, 1, 2, 3 km e Poligonal). Cidades com dados: São Paulo (`3550308`) e São José dos Campos (`3549904`).
+**Para quê.** As camadas de **renda familiar estimada** e **densidade demográfica bruta** no mapa, e na ficha (aba Entorno) "Renda e população do entorno" e "Perfil da população" por raio (500 m, 1, 2, 3 km e Personalizado, digitado em km, de 0,1 a 20 km, guardado na conta da pessoa em `app.preferencias_usuario`; a Poligonal saiu do React por ora, 11/nov/2026). Cidades com dados: São Paulo (`3550308`) e São José dos Campos (`3549904`).
 
 **De onde vem.** O FTP público do IBGE (`https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022`): malha oficial dos setores, agregados de renda do responsável, demografia, domicílios e básico, e a composição das áreas de ponderação. Só a ferramenta de geração fala com o IBGE; o sistema lê arquivos prontos.
 

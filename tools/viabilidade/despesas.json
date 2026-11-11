@@ -1,5 +1,5 @@
 {
-  "_nota": "Lista padrão de itens do estudo de viabilidade estática (decisão do Moisés, 26/out/2026). Cada empresa recebe uma cópia e o administrador edita em Configurações › Viabilidade. O protótipo (build.py) e o teste do banco (supabase/tests/regras.sql) leem este arquivo; a migration 20261015001000_viabilidade.sql traz os mesmos itens, grupos e bases (app.viab_tipos, app.viab_secao). O grupo define a seção, as bases de cálculo aceitas e se o item é fixo (Taxas, Despesas financeiras e Despesas comerciais: aparece sempre no estudo, sem incluir nem tirar). Os dois custos de capital (decisão do Moisés, 28/out/2026) têm um grupo cada, dentro de Despesas financeiras, com uma base só, o Aporte: o valor em dinheiro da permuta financeira e o pagamento em dinheiro do terreno.",
+  "_nota": "Lista padrão de itens do estudo de viabilidade estática (decisão do Moisés, 26/out/2026). Cada empresa recebe uma cópia e o administrador edita em Configurações › Viabilidade. O protótipo (build.py) e o teste do banco (supabase/tests/regras.sql) leem este arquivo; a migration 20261015001000_viabilidade.sql traz os mesmos itens, grupos e bases (app.viab_tipos, app.viab_secao). O grupo define a seção, as bases de cálculo aceitas e se o item é fixo (Despesas gerais, Taxas, Despesas financeiras e Despesas comerciais: aparece sempre no estudo, sem incluir nem tirar). Despesas gerais: um item fixo por grupo, \"Despesas gerais com …\", em % do VGV (pedido do Moises, 11/nov/2026, no lugar da lista de itens que se incluíam por busca). Os dois custos de capital (decisão do Moisés, 28/out/2026) têm um grupo cada, dentro de Despesas financeiras, com uma base só, o Aporte: o valor em dinheiro da permuta financeira e o pagamento em dinheiro do terreno.",
   "secoes": {
     "obra": "Custo de obras",
     "terreno": "Custo do terreno",
@@ -61,7 +61,7 @@
     "terreno": {
       "nome": "Terreno",
       "secao": "despesas",
-      "fixo": false,
+      "fixo": true,
       "tipos": [
         "pct_vgv",
         "pct_obra_total",
@@ -72,7 +72,7 @@
     "incorporacao": {
       "nome": "Incorporação",
       "secao": "despesas",
-      "fixo": false,
+      "fixo": true,
       "tipos": [
         "pct_vgv",
         "pct_obra_total",
@@ -83,7 +83,7 @@
     "cef": {
       "nome": "CEF",
       "secao": "despesas",
-      "fixo": false,
+      "fixo": true,
       "tipos": [
         "pct_vgv",
         "pct_obra_total",
@@ -94,7 +94,7 @@
     "adm_financeiro": {
       "nome": "Administrativo e financeiro",
       "secao": "despesas",
-      "fixo": false,
+      "fixo": true,
       "tipos": [
         "pct_vgv",
         "pct_obra_total",
@@ -255,82 +255,34 @@
       "deduz": false
     },
     {
-      "codigo": "itbi_terreno",
-      "nome": "ITBI do terreno",
+      "codigo": "dg_terreno",
+      "nome": "Despesas gerais com terreno",
       "grupo": "terreno",
-      "tipo": "verba",
-      "valor": null,
-      "deduz": false
-    },
-    {
-      "codigo": "registro_terreno",
-      "nome": "Escritura e registro do terreno",
-      "grupo": "terreno",
-      "tipo": "verba",
-      "valor": null,
-      "deduz": false
-    },
-    {
-      "codigo": "certidoes",
-      "nome": "Diligência e certidões",
-      "grupo": "terreno",
-      "tipo": "verba",
-      "valor": null,
-      "deduz": false
-    },
-    {
-      "codigo": "registro_incorporacao",
-      "nome": "Registro da incorporação",
-      "grupo": "incorporacao",
-      "tipo": "verba",
-      "valor": null,
-      "deduz": false
-    },
-    {
-      "codigo": "juridico",
-      "nome": "Jurídico",
-      "grupo": "incorporacao",
-      "tipo": "verba",
-      "valor": null,
-      "deduz": false
-    },
-    {
-      "codigo": "seguros",
-      "nome": "Seguros e garantias",
-      "grupo": "incorporacao",
-      "tipo": "pct_obra_total",
-      "valor": null,
-      "deduz": false
-    },
-    {
-      "codigo": "taxas_cef",
-      "nome": "Taxas e avaliações da CEF",
-      "grupo": "cef",
-      "tipo": "verba",
-      "valor": null,
-      "deduz": false
-    },
-    {
-      "codigo": "adm_central",
-      "nome": "Administração central",
-      "grupo": "adm_financeiro",
       "tipo": "pct_vgv",
       "valor": null,
       "deduz": false
     },
     {
-      "codigo": "contabilidade",
-      "nome": "Contabilidade e auditoria",
-      "grupo": "adm_financeiro",
-      "tipo": "verba",
+      "codigo": "dg_incorporacao",
+      "nome": "Despesas gerais com incorporação",
+      "grupo": "incorporacao",
+      "tipo": "pct_vgv",
       "valor": null,
       "deduz": false
     },
     {
-      "codigo": "iptu_obra",
-      "nome": "IPTU durante a obra",
+      "codigo": "dg_cef",
+      "nome": "Despesas gerais com CEF",
+      "grupo": "cef",
+      "tipo": "pct_vgv",
+      "valor": null,
+      "deduz": false
+    },
+    {
+      "codigo": "dg_adm_financeiro",
+      "nome": "Despesas gerais com administrativo e financeiro",
       "grupo": "adm_financeiro",
-      "tipo": "verba",
+      "tipo": "pct_vgv",
       "valor": null,
       "deduz": false
     },
@@ -338,7 +290,7 @@
       "codigo": "taxa_desenvolvimento",
       "nome": "Taxa de desenvolvimento",
       "grupo": "taxas",
-      "tipo": "pct_lucro",
+      "tipo": "pct_vgv",
       "valor": null,
       "deduz": false
     },
@@ -354,7 +306,7 @@
       "codigo": "taxa_contingencias",
       "nome": "Taxa de contingências",
       "grupo": "taxas",
-      "tipo": "pct_obra_total",
+      "tipo": "pct_vgv",
       "valor": null,
       "deduz": false
     },
@@ -458,7 +410,7 @@
       "codigo": "contratos_cef",
       "nome": "Taxa de emissão de contratos CEF",
       "grupo": "comercial",
-      "tipo": "verba",
+      "tipo": "verba_unidade",
       "valor": null,
       "deduz": false
     },
@@ -466,9 +418,9 @@
       "codigo": "produto_caixa",
       "nome": "Produto Caixa",
       "grupo": "comercial",
-      "tipo": "pct_vgv",
+      "tipo": "verba_unidade",
       "valor": null,
-      "deduz": true
+      "deduz": false
     },
     {
       "codigo": "outros_comercial",

@@ -2,6 +2,7 @@
    filtros, quem passa e as contagens. Funções puras sobre TerFx, que carregarFx monta de app.v_terrenos, dos processos e
    do que a completude da ficha pede. Dentro de um filtro as opções somam (ou); entre filtros, todos valem (e). Faixa com
    mínimo ou máximo deixa de fora quem não tem o dado, salvo "Incluir sem informação". */
+import { escondidos } from '../lib/escondidos';
 import { supabase } from '../lib/supabase';
 import { FORMA, ORIGEM, data as fd, milhoes } from '../lib/format';
 import { completude, proprietariosCompletos, TEMP, type Ficha } from '../ficha/dados';
@@ -14,13 +15,13 @@ export interface EtapaFx { k: string; nome: string; subs: SubFx[] }
 export interface FaseFx { k: string; nome: string; ativo: boolean; etapas: EtapaFx[] }
 export interface TerFx {
   id: string; nome: string; codigo: string | null; uf: string | null; cidade: string | null; zona: string | null; bairro: string | null; temp: number | null;
-  pedido: number | null; area: number | null; proposta: number | null; vgv: number | null; corretores: string[]; forma: string | null;
+  pedido: number | null; area: number | null; proposta: number | null; vgv: number | null; corretores: string[]; forma: string | null; massaUn: number | null;
   origem: string | null; zonas: string[]; resp: string | null; ident: string | null; pct: number; procs: ProcFx[];
 }
 export interface DadosFx { fases: FaseFx[]; ters: TerFx[]; corretores: [string, string][]; pessoas: [string, string][] }
 
 export async function carregarFx(emp: string): Promise<DadosFx> {
-  const [v, t, p, f, e, s, mat, ins, pes, inf, itI, cor, pts] = await Promise.all([
+  const [v, t, p, f, e, s, mat, ins, pes, inf, itI, cor, pts, em] = await Promise.all([
     supabase.from('v_terrenos').select('id,nome,codigo,uf,municipio,zona,bairro,logradouro,numero,temperatura,valor_pedido,area_adotada_m2,proposta_ativa_valor,vgv,corretor_ids,forma_pagamento_pedida,origem_cadastro,zonas_siglas,responsavel_id,data_identificacao').eq('empresa_id', emp),
     supabase.from('terrenos').select('id,latitude,testada_principal_m,situacao_ocupacao,completude_dispensada').eq('empresa_id', emp),
     supabase.from('processos').select('terreno_id,fase,etapa_atual,subetapa_atual,status,data_inicio').eq('empresa_id', emp).is('parte_id', null).order('data_inicio'),
@@ -34,8 +35,10 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
     supabase.from('itens_infraestrutura').select('codigo,viabilidade_tecnica'),
     supabase.from('corretores').select('id,pessoas(nome_razao_social)').eq('empresa_id', emp),
     supabase.from('terreno_partes').select('id,terreno_id').eq('empresa_id', emp).eq('ativa', true),
+    supabase.from('estudos_massa').select('terreno_id,unidades').eq('empresa_id', emp).eq('valido', true),
   ]);
-  for (const r of [v, t, p, f, e, s, mat, ins, pes, inf, itI, cor, pts]) if (r.error) throw r.error;
+  for (const r of [v, t, p, f, e, s, mat, ins, pes, inf, itI, cor, pts, em]) if (r.error) throw r.error;
+  const massaUn = Object.fromEntries((em.data as R[]).map((x) => [x.terreno_id, x.unidades == null ? null : +x.unidades]));
   const fases: FaseFx[] = (f.data as R[]).map((x) => ({
     k: x.codigo, nome: x.nome, ativo: x.ativo !== false,
     etapas: (e.data as R[]).filter((y) => y.fase === x.codigo).map((y) => ({
@@ -52,7 +55,8 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
   const tr = Object.fromEntries((t.data as R[]).map((x) => [x.id, x]));
   const procs: Record<string, ProcFx[]> = {};
   for (const x of p.data as R[]) (procs[x.terreno_id] ??= []).push({ fase: x.fase, etapa: x.etapa_atual, sub: x.subetapa_atual, status: x.status });
-  const vs = v.data as R[];
+  const esc = await escondidos(emp);
+  const vs = (v.data as R[]).filter((x) => !esc.has(x.id));
   const ids = [...new Set(vs.map((x) => x.responsavel_id).filter(Boolean))];
   const us = ids.length ? await supabase.from('usuarios').select('user_id,nome,email').in('user_id', ids) : { data: [], error: null };
   if (us.error) throw us.error;
@@ -65,7 +69,7 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
     return {
       id: x.id, nome: x.nome ?? '', codigo: x.codigo ?? null, uf: x.uf, cidade: x.municipio, zona: x.zona, bairro: x.bairro, temp: x.temperatura, pedido: x.valor_pedido == null ? null : +x.valor_pedido,
       area: x.area_adotada_m2 == null ? null : +x.area_adotada_m2, proposta: x.proposta_ativa_valor == null ? null : +x.proposta_ativa_valor,
-      vgv: x.vgv == null ? null : +x.vgv, corretores: x.corretor_ids ?? [], forma: x.forma_pagamento_pedida, origem: x.origem_cadastro,
+      vgv: x.vgv == null ? null : +x.vgv, corretores: x.corretor_ids ?? [], forma: x.forma_pagamento_pedida, origem: x.origem_cadastro, massaUn: massaUn[x.id] ?? null,
       zonas: zs(x.zonas_siglas), resp: x.responsavel_id, ident: x.data_identificacao, pct: completude(fic).pct, procs: procs[x.id] ?? [],
     };
   });
@@ -77,7 +81,7 @@ export async function carregarFx(emp: string): Promise<DadosFx> {
 /* ---------- definição dos filtros ---------- */
 export type Filtro = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 /** onde o filtro vale: no quadro do Funil a descida fase › etapa já é o filtro do funil */
-export type Ctx = 'mapa' | 'kanban';
+export type Ctx = 'mapa' | 'kanban' | 'terrenos';
 export interface Def {
   k: string; g: string; l: string; tipo: 'lista' | 'faixa' | 'marca' | 'periodo' | 'numero'; funil?: boolean; busca?: boolean; dica?: string; dica2?: string;
   un?: string; op?: (d: DadosFx, f: Filtro) => [string, string, string?][]; v?: (t: TerFx) => unknown; p?: (t: TerFx, eu: string | null) => boolean;

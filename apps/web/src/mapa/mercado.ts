@@ -8,12 +8,14 @@ export const MK_SIT: Record<string, [string, string, string]> = {
   pronto: ['Pronto', '#f0dbff', '#6b2c91'], usado: ['Usado', '#ffd8e8', '#8f1d52'], nao_informado: ['Sem situação', '#e3e3e3', '#444746'],
 };
 /* faixas do R$/m² médio das unidades à venda (soma dos preços ÷ soma das áreas), cada uma com a sua cor; a situação vai no
-   desenho dentro do quadrado (pedido do Moisés, 5/nov/2026; proto_mercado.js › MK_FX, MK_GLIFO). O limite de baixo entra na faixa. */
-export const MK_FX: [number, string, string][] = [[7000, 'Abaixo de 7 mil', '#5e4fa2'], [8000, '7 a 8 mil', '#3288bd'], [9000, '8 a 9 mil', '#66c2a5'], [10000, '9 a 10 mil', '#abdda4'],
-  [11000, '10 a 11 mil', '#e6f598'], [13000, '11 a 13 mil', '#fee08b'], [15000, '13 a 15 mil', '#fdae61'], [18000, '15 a 18 mil', '#f46d43'], [25000, '18 a 25 mil', '#d53e4f'], [Infinity, 'Acima de 25 mil', '#9e0142']];
+   desenho dentro do quadrado (pedido do Moisés, 5/nov/2026; proto_mercado.js › MK_FX, MK_GLIFO). O limite de baixo entra na faixa.
+   Cores pastel (opção A, escolhida pelo Moises em 10/nov/2026): a mesma ordem de antes, mais clara e menos saturada, para a
+   concorrência não brigar com os terrenos sobre o satélite. */
+export const MK_FX: [number, string, string][] = [[7000, 'Abaixo de 7 mil', '#a59ec4'], [8000, '7 a 8 mil', '#90b8d1'], [9000, '8 a 9 mil', '#aed4c8'], [10000, '9 a 10 mil', '#d2e7cf'],
+  [11000, '10 a 11 mil', '#e9efce'], [13000, '11 a 13 mil', '#eee5cc'], [15000, '13 a 15 mil', '#e8d0b9'], [18000, '15 a 18 mil', '#e2b6a8'], [25000, '18 a 25 mil', '#da9ba2'], [Infinity, 'Acima de 25 mil', '#cc6690']];
 export const MK_FX_CHAVES = [...MK_FX.map((_, i) => 'f' + i), 'fx'];
 export const mkFxK = (e: { preco?: number | null; area?: number | null }) => { const v = e.preco != null && (e.area || 0) > 0 ? e.preco / e.area! : null; return v == null ? 'fx' : 'f' + MK_FX.findIndex((f) => v < f[0]); };
-export const mkFxInfo = (k: string): [string, string] => (k === 'fx' ? ['Sem preço', '#bdc1c6'] : [MK_FX[+k.slice(1)][1], MK_FX[+k.slice(1)][2]]);
+export const mkFxInfo = (k: string): [string, string] => (k === 'fx' ? ['Sem preço', '#d3d6d8'] : [MK_FX[+k.slice(1)][1], MK_FX[+k.slice(1)][2]]);
 /* o desenho de cada situação: lançamento estrela, em obras guindaste, pronto prédio */
 export const MK_GLIFO: Record<string, string> = {
   lancamento: 'M12 3.5l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.4l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z',
@@ -125,3 +127,40 @@ export const mkMarcaHtml = (e: { sit?: string; preco?: number | null; area?: num
   return `<span class="mk-b${dest ? ' mk-dest-b' : ''}" style="background:${dest ? '#202124' : f};border-color:${dest ? '#fff' : 'rgba(0,0,0,.45)'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="${dest ? '#fff' : g}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="${d}"/></svg></span>`;
 };
 export const mkFxMarcaHtml = (k: string) => `<span class="mk-b" style="background:${mkFxInfo(k)[1]};border-color:rgba(0,0,0,.45)"></span>`;
+
+/* ---------- agrupamento (pedido do Moises, 10/nov/2026) ----------
+   Até o zoom 13, empreendimentos próximos (menos de MK_GRUPO_PX na tela) com a mesma situação e a mesma faixa de R$/m² viram uma
+   bolha na cor da faixa, com o desenho da situação e o tamanho pela soma das unidades; o número fica só na dica. A partir do
+   zoom 14 cada um aparece sozinho. O clique na bolha aproxima até enquadrar os empreendimentos dela. */
+export const MK_GRUPO_ZOOM = 13;
+export const MK_GRUPO_PX = 40;
+export interface GrupoMk { k: string; sit: string; fx: string; lat: number; lng: number; emps: Emp[]; unidades: number }
+const mundo = (lat: number, lng: number, z: number) => {
+  const w = 256 * 2 ** z, s = Math.sin((lat * Math.PI) / 180);
+  return [(w * (lng + 180)) / 360, w * (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI))];
+};
+/** junta pela ordem das unidades (o maior puxa os vizinhos); sozinho volta como grupo de um */
+export function mkAgrupar(lista: Emp[], zoom: number): GrupoMk[] {
+  const R = MK_GRUPO_PX, z = Math.floor(zoom), grade = new Map<string, { g: GrupoMk; x: number; y: number }[]>(), out: GrupoMk[] = [];
+  const ord = [...lista].sort((a, b) => (b.unidades || 0) - (a.unidades || 0));
+  for (const e of ord) {
+    const sit = mkSitK(e), fx = mkFxK(e), k = sit + '|' + fx, [x, y] = mundo(e.lat, e.lng, z), cx = Math.floor(x / R), cy = Math.floor(y / R);
+    let achou: { g: GrupoMk; x: number; y: number } | null = null;
+    for (let i = -1; i <= 1 && !achou; i++) for (let j = -1; j <= 1 && !achou; j++)
+      for (const c of grade.get(k + ':' + (cx + i) + ':' + (cy + j)) || []) if ((c.x - x) ** 2 + (c.y - y) ** 2 < R * R) { achou = c; break; }
+    if (achou) { achou.g.emps.push(e); achou.g.unidades += e.unidades || 0; continue; }
+    const g: GrupoMk = { k, sit, fx, lat: e.lat, lng: e.lng, emps: [e], unidades: e.unidades || 0 };
+    out.push(g);
+    const ck = k + ':' + cx + ':' + cy; (grade.get(ck) || grade.set(ck, []).get(ck)!).push({ g, x, y });
+  }
+  /* a bolha fica no meio dos empreendimentos dela */
+  for (const g of out) if (g.emps.length > 1) { g.lat = g.emps.reduce((s, e) => s + e.lat, 0) / g.emps.length; g.lng = g.emps.reduce((s, e) => s + e.lng, 0) / g.emps.length; }
+  return out;
+}
+/** diâmetro da bolha pela soma das unidades, numa escala fixa (o mesmo grupo tem o mesmo tamanho em qualquer lugar) */
+export const mkGrupoTam = (un: number) => Math.round(Math.min(60, 24 + 0.5 * Math.sqrt(Math.max(0, un))));
+export const mkGrupoTitulo = (g: GrupoMk) => `${mkSitNome(g.sit)} · ${g.fx === 'fx' ? 'sem preço' : 'R$/m² ' + mkFxInfo(g.fx)[0].toLowerCase()} · ${g.emps.length.toLocaleString('pt-BR')} empreendimentos · ${g.unidades.toLocaleString('pt-BR')} unidades`;
+export const mkGrupoHtml = (g: GrupoMk) => {
+  const f = mkFxInfo(g.fx)[1], t = mkGrupoTam(g.unidades), d = MK_GLIFO[g.sit];
+  return `<span class="mk-grp-b" style="width:${t}px;height:${t}px;background:${f}"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:${Math.round(t * 0.5)}px;height:${Math.round(t * 0.5)}px"><path fill="none" stroke="${mkTinta(f)}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="${d}"/></svg></span>`;
+};

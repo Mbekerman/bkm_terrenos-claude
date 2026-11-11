@@ -121,9 +121,9 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 /* barra de abas da ficha: o mouse em cima mostra o dedinho, como em qualquer botão; a mão fechada só aparece com o botão
    do mouse apertado, quando a barra pode ser arrastada (pedido do Moisés, 9/nov/2026, trocando a mãozinha aberta de 6/nov) */
 .fi-abas.desliza, .fi-abas.desliza button { cursor: pointer }
-.fi-abas.segurando, .fi-abas.segurando button, .fi-abas.arrastando, .fi-abas.arrastando button { cursor: grabbing }
-.fi-abas.arrastando, .fi-abas.arrastando button { user-select: none }
-.fi-abas.arrastando button:hover { background: none }
+:is(.fi-abas, .fi-subabas).segurando, :is(.fi-abas, .fi-subabas).segurando button, :is(.fi-abas, .fi-subabas).arrastando, :is(.fi-abas, .fi-subabas).arrastando button { cursor: grabbing }
+:is(.fi-abas, .fi-subabas).arrastando, :is(.fi-abas, .fi-subabas).arrastando button { user-select: none }
+:is(.fi-abas, .fi-subabas).arrastando button:hover { background: none }
 
 /* unidade dentro do campo também em metros e m² (pedido do Moisés, 6/nov/2026); nos campos editados no lugar, sem recuo */
 .adorno.m > input { padding-right: 30px !important }
@@ -160,6 +160,8 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 :is(.area, .inl-c) .adorno:is(.m, .m2) > .adorno-t { position: static; transform: none; margin-left: 4px; color: inherit }
 .kv-vivo select.inl-x { field-sizing: content; padding-right: 22px !important; background-position: right 2px center !important; background-size: 16px 16px !important }
 /* barra das abas contínua, como roleta (pedido do Moisés, 6/nov/2026): rola de lado com as abas das pontas cortadas */
+/* a barra de chips das seções é a mesma roleta (10/nov/2026) */
+.fi-subabas.roleta { overscroll-behavior-x: contain; touch-action: pan-x pan-y }
 .fi-abas.roleta { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y }
 .fi-abas.roleta::-webkit-scrollbar { display: none }
 /* seletor de raio da renda e do perfil some com o quadro fechado (pedido do Moisés, 6/nov/2026; no celular, o display:flex !important do seletor passava por cima) */
@@ -182,9 +184,16 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 @media (max-width: 899px) { .tgav-redim { display: none } }
 :root[data-tema="escuro"] .tgav-redim::after { background: #444746 }
 :root[data-tema="escuro"] .tgav-redim:hover::after, :root[data-tema="escuro"] body.mp-arrastando .tgav-redim::after { background: #a8c7fa }
-/* a gaveta encosta na barra de cima: o fio no alto separa o título dela da barra, que tem o mesmo fundo (pedido do Moisés, 6/nov/2026) */
-@media (min-width: 900px) { .tgav-mapa { border-top: 1px solid var(--m-outline-var, #c4c7c5) } }
-:root[data-tema="escuro"] .tgav-mapa { border-top-color: #2d2f31 }
+/* borda da gaveta no Material 3 à risca (side sheet: elevação nível 3 e canto de 16 px na borda de entrada; pedido do
+   Moises, 11/nov/2026): sem o fio cinza da lateral nem o do alto; a sombra separa a gaveta da página e da barra de cima,
+   e a pega de arrastar a largura só aparece com o mouse em cima, no foco ou arrastando (o cursor de redimensionar fica) */
+@media (min-width: 900px) {
+  .tgav { border-left: 0; border-radius: 16px 0 0 0; box-shadow: 0 1px 3px rgba(0,0,0,.30), 0 4px 8px 3px rgba(0,0,0,.15) }
+  .tgav-redim::after { opacity: 0; transition: opacity .15s, background .15s, height .15s, margin .15s }
+  .tgav-redim:hover::after, .tgav-redim:focus-visible::after, body.mp-arrastando .tgav-redim::after { opacity: 1 }
+  /* no escuro a elevação aparece no tom da superfície, um acima do fundo da página */
+  :root[data-tema="escuro"] .tgav { background: #1e1f20; box-shadow: 0 1px 3px rgba(0,0,0,.6), 0 4px 8px 3px rgba(0,0,0,.35) }
+}
 /* título do quadro nunca espreme letra por letra: sem espaço, as ações (a busca de endereço) descem para a linha de baixo
    (pedido do Moisés, 6/nov/2026) */
 .fi-aba .sec-h > h2 { flex: 0 1 auto; min-width: min(100%, max-content) }
@@ -320,6 +329,8 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 
 /* Partes da proposta (pedido do Moises, 9/nov/2026): escolha no formulário e etiquetas na lista */
 .pp-partes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.pp-area { margin-top: 8px; font-size: 14px }
+.pp-area .muted { font-size: 13px }
 .pp-pts { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px }
 .pp-pts .chip.ni { color: var(--texto-suave) }
 .pp-sobre { margin-bottom: 16px } .pp-sobre .bt { font-weight: 500 }
@@ -397,6 +408,14 @@ html[data-tema="escuro"] .pt2-donos li { border-color: #444746 } html[data-tema=
 .iptu-venal .area.iptu-tot .al { color: #1f1f1f; font-weight: 500 }
 .iptu-venal .area.iptu-tot .av { font-weight: 600; color: #0b57d0 }
 .iptu-dest .area .al { color: #041e49 }
+/* Panorama do IPTU (pedido do Moises, 11/nov/2026): todos os cards no mesmo respiro, rótulo numa linha só (Rot troca pela forma
+   curta sem caber; reticências só em último caso) e o valor logo abaixo */
+.iptu-pan .areas.iptu-venal, .iptu-pan .iptu-pares { gap: 8px; margin-bottom: 8px }
+:root:not(#_) .iptu-pan .area { padding: 10px 12px; min-width: 0 }
+:root:not(#_) .iptu-pan .area .al { min-height: 0; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative }
+.iptu-pan .area .al:has(> span + span) > .al-m { position: absolute; visibility: hidden; left: 0; top: 0 }
+.iptu-pan .area .av { font-size: 17px; line-height: 22px; white-space: nowrap; overflow: hidden } /* o valor encolhe até caber (Cabe), nunca corta */
+.iptu-pan .iptu-dest .area .av { font-size: 20px; line-height: 26px }
 .iptu-dest .area .av { font-size: 24px; line-height: 30px; font-weight: 400; color: #041e49 }
 :root[data-tema="escuro"] .iptu-dest .area { background: #004a77 }
 :root[data-tema="escuro"] .iptu-venal .area.iptu-tot .al { color: #e3e3e3 }
@@ -438,3 +457,114 @@ html[data-tema="escuro"] .etq-conta { background: #a8c7fa; color: #062e6f }
 .ptcom-mats .etq { height: 28px; font-size: 13px; cursor: pointer }
 .ptcom-mats .etq-n { cursor: pointer; padding-right: 10px }
 .ptm-dlg { display: flex; flex-direction: column; gap: 12px }
+
+/* bolha de empreendimentos agrupados (até o zoom 13): círculo na cor da faixa, com contorno branco, tamanho pelas unidades */
+.mk.g.mk-grp { cursor: pointer }
+.mk-grp-b { display: grid; place-items: center; box-sizing: border-box; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 1px 4px rgba(0,0,0,.35) }
+.mk-grp-b svg { display: block }
+
+/* ===== Corretores (pedido do Moises, 11/nov/2026): lista com busca e a ficha do corretor ===== */
+.cr-pag { max-width: 1100px }
+.cr-barra { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px }
+.cr-barra .search.cr-busca { margin: 0; max-width: 560px; flex: 1 1 320px; min-height: 44px !important; height: 44px }
+.cr-lista { padding: 0; overflow: hidden }
+.cr-l { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 10px var(--q-px, 24px); border-top: 1px solid var(--m-outline-var, #c4c7c5); color: inherit; text-decoration: none }
+.cr-l:first-child { border-top: 0 }
+.cr-l:hover { background: var(--m-sc-low, #f0f4f9) }
+.cr-l.inativo .cr-n, .cr-l.inativo .cr-av { opacity: .6 }
+.cr-av { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #c2e7ff; color: #001d35; font-weight: 500 }
+.cr-t { flex: 1; min-width: 0; display: flex; flex-direction: column }
+.cr-n { font-size: 16px; line-height: 24px; font-weight: 500 }
+.cr-s { font-size: 13px; line-height: 18px; color: var(--m-on-var, #444746); overflow-wrap: anywhere }
+.cr-c { flex: none; display: flex; flex-direction: column; align-items: flex-end; text-align: right; font-size: 14px }
+.cr-chip { margin-left: 8px; vertical-align: 2px }
+.cr-trilha { display: flex; align-items: center; gap: 4px; font-size: 14px; color: var(--m-on-var, #444746); margin-bottom: 8px }
+.cr-trilha a { color: var(--m-primary, #0b57d0); text-decoration: none }
+.cr-ap { font-weight: 400 }
+.cr-sec { margin-bottom: 16px; padding: 0 }
+.cr-sec .sec-b { padding: 16px var(--q-px, 24px) 20px }
+.cr-tbl td { vertical-align: top }
+.cr-tbl a { color: inherit; text-decoration: none; font-weight: 500 }
+.cr-tbl a:hover { color: var(--m-primary, #0b57d0) }
+.cr-of { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 28px }
+.cr-of .chip { margin: 0 }
+.cr-hist { list-style: none; margin: 0; padding: 0 }
+.cr-hist li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-top: 1px solid var(--m-outline-var, #c4c7c5) }
+.cr-hist li:first-child { border-top: 0 }
+.cr-igual { margin-top: 12px; color: #7a5900 }
+@media (max-width: 640px) {
+  .cr-l { flex-wrap: wrap; padding: 12px 16px }
+  .cr-c { align-items: flex-start; text-align: left; width: 100%; padding-left: 56px }
+  .cr-hist li { flex-direction: column; gap: 2px }
+}
+/* Documentos (pastinha) e Jornada (no ⋮) fora da roleta: o ícone da aba aberta fica marcado (pedido do Moises, 11/nov/2026) */
+.fi-fim .iconbtn.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35) }
+html[data-tema="escuro"] .fi-fim .iconbtn.atual { background: #004a77; color: #c2e7ff }
+/* ⋮ do cabeçalho da ficha: Jornada e Histórico antes de Excluir (pedido do Moises, 11/nov/2026) */
+.mt-mais > .iconbtn.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35) }
+.mt-mais .adv-menu button.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35); font-weight: 500 }
+.mt-mais .adv-menu .mt-sep { height: 1px; margin: 4px 0; background: var(--m-outline-var, #c4c7c5) }
+html[data-tema="escuro"] .mt-mais > .iconbtn.atual, html[data-tema="escuro"] .mt-mais .adv-menu button.atual { background: #004a77; color: #c2e7ff }
+/* selo Válido / Inválido das listas de estudos de massa e de viabilidade, clicável (pedido do Moises, 11/nov/2026) */
+.chip.selo-val { font: inherit; font-size: 12px; font-weight: 500; line-height: 16px; color: var(--m-on-var, #444746) }
+.chip.selo-val.clic { cursor: pointer }
+.chip.selo-val.clic:not(.good):hover { background: rgba(31, 31, 31, .06) !important }
+.chip.selo-val.clic.good:hover { filter: brightness(.96) }
+.chip.selo-val:disabled { opacity: .6; cursor: default }
+html[data-tema="escuro"] .chip.selo-val:not(.good) { color: #c4c7c5 }
+/* lista dos estudos de massa (como a de viabilidade): o nome abre o estudo na janela */
+/* lista dos estudos de massa: a tabela da viabilidade, com a linha toda clicável (pedidos do Moises, 11/nov/2026) */
+.ems-lista tr.ems-lin { cursor: pointer }
+.ems-lista tr.ems-lin:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
+.ems-lista .ems-nome { color: #0b57d0; font-weight: 500 }
+html[data-tema="escuro"] .ems-lista .ems-nome { color: #a8c7fa }
+/* janela do estudo de massa (as mesmas regras do PR #339 no styles.css, para valer também da aba) */
+.dialog.ems-pop { width: min(1100px, 100%); padding: 24px 0 0; overflow: hidden }
+/* a rolagem fica no corpo, abaixo do título, e a barra para antes do canto arredondado de baixo (pedido do Moises, 11/nov/2026) */
+.ems-pop-b { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 24px }
+.ems-pop-b::-webkit-scrollbar-track { margin-bottom: 16px }
+.dialog.ems-pop > .dh { padding: 0 24px }
+.ems-pop-b .sec { border: 0 !important; box-shadow: none !important; margin: 0 !important }
+.dialog .ems-form { padding: 0; border: 0 !important; margin: 0 }
+.dialog .ems-form .field { flex: 1 1 100% !important }
+/* aberta da aba da ficha, a janela fica dentro da aba: o título do estudo não se prende como os quadros da ficha */
+.fi-aba .ems-pop-b .sec > .sec-h { position: static !important }
+/* raio personalizado (pedidos do Moises, 11/nov/2026): o lápis no botão e, editando, o próprio segmento vira o campo,
+   sem caixa própria, com o contorno azul do foco na forma do segmento e o "m" depois do número */
+.rd-raios .rd-cust-b { display: inline-flex; align-items: center; justify-content: center; gap: 6px }
+.rd-raios .rd-cust { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 12px; border-left: 1px solid var(--m-outline, #c4c7c5); border-radius: 0 20px 20px 0; box-shadow: inset 0 0 0 2px var(--m-primary, #0b57d0); color: var(--m-on-surface, #1f1f1f) }
+.rd-raios .rd-cust input { all: unset; width: 5ch; font: inherit; font-size: 13px; font-weight: 500; text-align: right; color: inherit; caret-color: currentColor }
+.rd-raios .rd-cust input::placeholder { color: inherit; opacity: .6; font-weight: 400 }
+.rd-raios .rd-cust-u { font-size: 13px; font-weight: 500 }
+.rd-raios .rd-cust .ic, .rd-raios .rd-cust svg { margin-left: 2px; flex: none }
+/* Resumo do estudo de massa válido (pedido do Moises, 11/nov/2026) */
+.ems-res tfoot td { font-weight: 500; border-top: 1px solid #c4c7c5 }
+html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
+/* Pipeline, coluna Etapa: etapa e subetapa em até 3 linhas, sem o tracinho (pedido do Moises, 11/nov/2026) */
+.lista-ter .tb-et { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; overflow-wrap: normal }
+.lista-ter .tb-et-e, .lista-ter .tb-et-s { display: block }
+/* Pipeline: nome do corretor em até 2 linhas e imobiliária numa só, com reticências no que passar (pedido do Moises, 11/nov/2026) */
+.lista-ter .tb-nome2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: normal }
+.lista-ter .tb-corte { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+/* Pipeline: janela das propostas do terreno (olho da coluna Proposta; pedido do Moises, 11/nov/2026) */
+.pp-pop { width: min(920px, calc(100vw - 32px)) }
+.pp-tbl td { vertical-align: top }
+.pp-cond { max-width: 260px; white-space: pre-wrap }
+/* aba de encolher a gaveta da ficha, como a do painel do Google Maps (pedido do Moises, 11/nov/2026): na borda esquerda,
+   no meio da altura; encolhida, a gaveta sai pela direita e só a aba fica na tela, com a seta virada para dentro.
+   Só no computador (no celular a gaveta cobre a tela e fecha no X). */
+.tgav-aba { display: none }
+@media (min-width: 900px) {
+  .tgav { transition: transform .2s cubic-bezier(.2,0,0,1) }
+  .tgav.encolhida { transform: translateX(100%); box-shadow: none }
+  .tgav > .tgav-h, .tgav > .tgav-b { transition: visibility 0s }
+  .tgav.encolhida > .tgav-h, .tgav.encolhida > .tgav-b, .tgav.encolhida > .tgav-redim { visibility: hidden; transition: visibility 0s .2s }
+  .tgav-aba { display: flex; align-items: center; justify-content: center; position: absolute; z-index: 41; left: -23px; top: 50%;
+    width: 23px; height: 48px; margin-top: -24px; padding: 0 0 0 1px; border: 0; border-radius: 8px 0 0 8px; cursor: pointer;
+    background: #fff; color: #444746; box-shadow: -1px 1px 3px rgba(0,0,0,.25), -2px 2px 6px rgba(0,0,0,.10) }
+  .tgav-aba:hover { background: #f1f3f4; color: #1f1f1f }
+  .tgav-aba:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px }
+  .tgav.encolhida .tgav-aba svg { transform: rotate(180deg) }
+  :root[data-tema="escuro"] .tgav-aba { background: #1e1f20; color: #c4c7c5; box-shadow: -1px 1px 3px rgba(0,0,0,.6) }
+  :root[data-tema="escuro"] .tgav-aba:hover { background: #282a2c; color: #e3e3e3 }
+}
