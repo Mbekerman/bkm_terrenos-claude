@@ -20,8 +20,9 @@ export interface Ctx {
 
 const VB_ADD: Record<string, string> = {
   obra_atipica: 'Adicionar item atípico', obra_nao_incidente: 'Adicionar item', projetos: 'Adicionar projeto', pos_obra: 'Adicionar item',
-  terreno: 'Adicionar despesa', incorporacao: 'Adicionar despesa', cef: 'Adicionar despesa', adm_financeiro: 'Adicionar despesa',
 };
+// Despesas gerais: um item fixo por grupo ("Despesas gerais com …", em % do VGV), na mesma tabela de Comercial
+// (pedido do Moises, 11/nov/2026); os grupos continuam, para a DRE.
 /** a aba Obras sempre abre com todos os quadros fechados (decisão do Moisés, 28/out/2026) */
 export const vbQPadrao = () => new Set(['raso', 'g-obra_nao_incidente', 'g-projetos', 'g-pos_obra']);
 const semAcento = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -29,18 +30,25 @@ const m2 = (x: number | null | undefined) => (x == null ? '—' : nf(x, 2) + ' m
 const pctTxt = (a: number, b: number) => (b > 0 ? nf(a / b * 100, 1) + '%' : '—');
 
 /* ---------- campo de número que grava ao sair ---------- */
+/* Percentual (fmt "pct"): o % faz parte do texto, logo depois do número, e sempre com duas casas ("12,50%"), em vez
+   do % fixo na direita do campo; enquanto se digita, o ",00%" que falta aparece em cinza depois do texto (data-suf,
+   mostrarSombra em lib/mascara.ts) (pedido do Moises, 11/nov/2026). */
+const pctIn = (v: number | null | undefined, d: number) =>
+  v == null ? '' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: Math.max(2, d) }) + '%';
 function Num({ v, d = 2, fmt, aoMudar, aoSair, ...rest }: {
   v: number | null; d?: number; fmt: string; aoMudar: (n: number | null) => void; aoSair: (mudou: boolean) => void;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onBlur' | 'onFocus'>) {
-  const [txt, setTxt] = useState(vin(v, d));
+  const pct = fmt === 'pct';
+  const mostra = (n: number | null) => (pct ? pctIn(n, d) : vin(n, d));
+  const [txt, setTxt] = useState(mostra(v));
   const foco = useRef(false), ult = useRef(v), ini = useRef(v);
   ult.current = v;
-  if (!foco.current && txt !== vin(v, d)) setTxt(vin(v, d));
+  if (!foco.current && txt !== mostra(v)) setTxt(mostra(v));
   return (
-    <input data-fmt={fmt} inputMode="decimal" value={txt} {...rest}
+    <input data-fmt={fmt} data-suf={pct ? '%' : undefined} inputMode="decimal" value={txt} {...rest}
       onFocus={() => { foco.current = true; ini.current = ult.current; }}
-      onChange={(e) => { setTxt(e.target.value); aoMudar(lerNum(e.target.value)); }}
-      onBlur={() => { foco.current = false; setTxt(vin(ult.current, d)); aoSair(ini.current !== ult.current); }} />
+      onChange={(e) => { setTxt(e.target.value); aoMudar(lerNum(e.target.value.replace('%', ''))); }}
+      onBlur={() => { foco.current = false; setTxt(mostra(ult.current)); aoSair(ini.current !== ult.current); }} />
   );
 }
 
@@ -58,8 +66,11 @@ function CampoHd({ x, k, rot, d = 2, dica }: { x: Ctx; k: Hd; rot: string; d?: n
   const pct = k === 'permuta_fin_pct' || k === 'deducao_vgv_pct';
   return (
     <div className="field"><label htmlFor={`vb-${k}`}>{rot}</label>
-      <Adorno t={pct ? 'pct' : 'moeda'}><Num id={`vb-${k}`} v={x.v[k]} d={d} fmt={pct ? 'pct' : 'moeda'} disabled={x.ro}
-        aoMudar={(n) => mudarHd(x, k, n)} aoSair={(m) => { if (m) salvarHd(x, { [k]: x.v[k] }); }} /></Adorno>
+      {(() => {
+        const campo = <Num id={`vb-${k}`} v={x.v[k]} d={d} fmt={pct ? 'pct' : 'moeda'} disabled={x.ro}
+          aoMudar={(n) => mudarHd(x, k, n)} aoSair={(m) => { if (m) salvarHd(x, { [k]: x.v[k] }); }} />;
+        return pct ? campo : <Adorno t="moeda">{campo}</Adorno>;
+      })()}
       {dica && <div className="hint">{dica}</div>}
     </div>
   );
@@ -196,8 +207,11 @@ function LinhaRow({ x, l }: { x: Ctx; l: Linha }) {
             mudarLinha(x, l.id, dados); gravarLinha(x, l.id, dados);
           }}>{tipos.map((k) => <option key={k} value={k}>{VB_TIPO[k]}</option>)}</select></label>}
       <label className="vb-c vb-mult"><span className="vb-l">{l.tipo === 'area' ? 'Valor unitário' : 'Valor'}</span>
-        <Adorno t={ehPct(l.tipo) ? 'pct' : 'moeda'}><Num v={l.valor} d={4} fmt={ehPct(l.tipo) ? 'pct' : 'moeda'} aria-label={`Valor de ${nome}`} disabled={dis}
-          aoMudar={(n) => mudarLinha(x, l.id, { valor: n })} aoSair={(m) => { if (m) gravarLinha(x, l.id, { valor: x.v.linhas.find((y) => y.id === l.id)?.valor ?? null }); }} /></Adorno></label>
+        {(() => {
+          const campo = <Num v={l.valor} d={4} fmt={ehPct(l.tipo) ? 'pct' : 'moeda'} aria-label={`Valor de ${nome}`} disabled={dis}
+            aoMudar={(n) => mudarLinha(x, l.id, { valor: n })} aoSair={(m) => { if (m) gravarLinha(x, l.id, { valor: x.v.linhas.find((y) => y.id === l.id)?.valor ?? null }); }} />;
+          return ehPct(l.tipo) ? campo : <Adorno t="moeda">{campo}</Adorno>;
+        })()}</label>
       {l.tipo === 'verba_mensal'
         ? <label className="vb-c vb-qtd"><span className="vb-l">Meses</span><Num v={l.quantidade} d={2} fmt="num" aria-label={`Meses de ${nome}`} disabled={dis}
           aoMudar={(n) => mudarLinha(x, l.id, { quantidade: n != null && n > 0 ? n : 1 })} aoSair={(m) => { if (m) gravarLinha(x, l.id, { quantidade: x.v.linhas.find((y) => y.id === l.id)?.quantidade ?? 1 }); }} /></label>

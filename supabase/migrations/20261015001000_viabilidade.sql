@@ -71,7 +71,9 @@ returns text language sql immutable set search_path = '' as $$
               when p_grupo in ('taxas','financeiro','comercial') then p_grupo else 'despesas' end
 $$;
 create or replace function app.viab_fixo(p_grupo text)
-returns boolean language sql immutable set search_path = '' as $$ select p_grupo in ('taxas','financeiro','capital_permuta','capital_pagamento','comercial') $$;
+returns boolean language sql immutable set search_path = '' as $$
+  -- Despesas gerais também: um item fixo por grupo (pedido do Moises, 11/nov/2026)
+  select p_grupo in ('terreno','incorporacao','cef','adm_financeiro','taxas','financeiro','capital_permuta','capital_pagamento','comercial') $$;
 -- Taxas e Despesas financeiras: o estudo nasce com o valor padrão da empresa e só a
 -- diretoria ou o administrador muda (decisão do Moisés, 26/out/2026).
 create or replace function app.viab_restrito(p_grupo text)
@@ -106,34 +108,28 @@ insert into app.viabilidade_despesas (codigo, nome, grupo, tipo_padrao, deduz_vg
   ('outorga', 'Outorga onerosa e contrapartidas', 'projetos', 'verba', false, 9),
   ('assistencia_tecnica', 'Assistência técnica pós-obra', 'pos_obra', 'pct_obra_total', false, 10),
   ('estoque', 'Manutenção e taxas de unidades em estoque', 'pos_obra', 'verba', false, 11),
-  ('itbi_terreno', 'ITBI do terreno', 'terreno', 'verba', false, 12),
-  ('registro_terreno', 'Escritura e registro do terreno', 'terreno', 'verba', false, 13),
-  ('certidoes', 'Diligência e certidões', 'terreno', 'verba', false, 14),
-  ('registro_incorporacao', 'Registro da incorporação', 'incorporacao', 'verba', false, 15),
-  ('juridico', 'Jurídico', 'incorporacao', 'verba', false, 16),
-  ('seguros', 'Seguros e garantias', 'incorporacao', 'pct_obra_total', false, 17),
-  ('taxas_cef', 'Taxas e avaliações da CEF', 'cef', 'verba', false, 18),
-  ('adm_central', 'Administração central', 'adm_financeiro', 'pct_vgv', false, 19),
-  ('contabilidade', 'Contabilidade e auditoria', 'adm_financeiro', 'verba', false, 20),
-  ('iptu_obra', 'IPTU durante a obra', 'adm_financeiro', 'verba', false, 21),
-  ('taxa_desenvolvimento', 'Taxa de desenvolvimento', 'taxas', 'pct_lucro', false, 22),
-  ('taxa_gestao_obra', 'Taxa de gestão de obra', 'taxas', 'pct_obra_total', false, 23),
-  ('taxa_contingencias', 'Taxa de contingências', 'taxas', 'pct_obra_total', false, 24),
-  ('custo_alavancagem', 'Custo de alavancagem', 'financeiro', 'verba', false, 25),
-  ('juros_pj', 'Custo de juros PJ', 'financeiro', 'pct_obra_total', false, 26),
-  ('custo_financeiro', 'Custo financeiro', 'financeiro', 'verba', false, 27),
-  ('impostos', 'Impostos', 'financeiro', 'pct_vgv', false, 28),
-  ('capital_permuta', 'Custo de capital permuta financeira', 'capital_permuta', 'pct_aporte_permuta', false, 29),
-  ('capital_pagamento', 'Custo de capital pagamento terreno', 'capital_pagamento', 'pct_aporte_pagamento', false, 30),
-  ('construcao_pdv', 'Construção do PDV', 'comercial', 'verba', false, 31),
-  ('custo_fixo_comercial', 'Custo fixo comercial', 'comercial', 'verba_mensal', false, 32),
-  ('marketing', 'Marketing', 'comercial', 'pct_vgv', false, 33),
-  ('comissao', 'Comissão', 'comercial', 'pct_vgv', false, 34),
-  ('itbi_vendas', 'ITBI de unidades vendidas', 'comercial', 'pct_vgv', true, 35),
-  ('registro_vendas', 'Registro de unidades vendidas', 'comercial', 'pct_vgv', true, 36),
-  ('contratos_cef', 'Taxa de emissão de contratos CEF', 'comercial', 'verba', false, 37),
-  ('produto_caixa', 'Produto Caixa', 'comercial', 'pct_vgv', false, 38),
-  ('outros_comercial', 'Outros', 'comercial', 'verba', false, 39);
+  ('dg_terreno', 'Despesas gerais com terreno', 'terreno', 'pct_vgv', false, 12),
+  ('dg_incorporacao', 'Despesas gerais com incorporação', 'incorporacao', 'pct_vgv', false, 13),
+  ('dg_cef', 'Despesas gerais com CEF', 'cef', 'pct_vgv', false, 14),
+  ('dg_adm_financeiro', 'Despesas gerais com administrativo e financeiro', 'adm_financeiro', 'pct_vgv', false, 15),
+  ('taxa_desenvolvimento', 'Taxa de desenvolvimento', 'taxas', 'pct_vgv', false, 16),
+  ('taxa_gestao_obra', 'Taxa de gestão de obra', 'taxas', 'pct_obra_total', false, 17),
+  ('taxa_contingencias', 'Taxa de contingências', 'taxas', 'pct_vgv', false, 18),
+  ('custo_alavancagem', 'Custo de alavancagem', 'financeiro', 'verba', false, 19),
+  ('juros_pj', 'Custo de juros PJ', 'financeiro', 'pct_obra_total', false, 20),
+  ('custo_financeiro', 'Custo financeiro', 'financeiro', 'verba', false, 21),
+  ('impostos', 'Impostos', 'financeiro', 'pct_vgv', false, 22),
+  ('capital_permuta', 'Custo de capital permuta financeira', 'capital_permuta', 'pct_aporte_permuta', false, 23),
+  ('capital_pagamento', 'Custo de capital pagamento terreno', 'capital_pagamento', 'pct_aporte_pagamento', false, 24),
+  ('construcao_pdv', 'Construção do PDV', 'comercial', 'verba', false, 25),
+  ('custo_fixo_comercial', 'Custo fixo comercial', 'comercial', 'verba_mensal', false, 26),
+  ('marketing', 'Marketing', 'comercial', 'pct_vgv', false, 27),
+  ('comissao', 'Comissão', 'comercial', 'pct_vgv', false, 28),
+  ('itbi_vendas', 'ITBI de unidades vendidas', 'comercial', 'pct_vgv', true, 29),
+  ('registro_vendas', 'Registro de unidades vendidas', 'comercial', 'pct_vgv', true, 30),
+  ('contratos_cef', 'Taxa de emissão de contratos CEF', 'comercial', 'verba_unidade', false, 31),
+  ('produto_caixa', 'Produto Caixa', 'comercial', 'verba_unidade', false, 32),
+  ('outros_comercial', 'Outros', 'comercial', 'verba', false, 33);
 
 alter table app.viabilidade_despesas enable row level security;
 create policy ver on app.viabilidade_despesas for select to authenticated using (empresa_id in (select app.minhas_empresas()));
