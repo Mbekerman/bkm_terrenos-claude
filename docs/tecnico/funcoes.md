@@ -183,6 +183,15 @@ Toda mudança de etapa, subetapa ou status passa por `app._passagem` (interna), 
 | `app.excluir_proposta(p_proposta uuid)` → `void` | Exclui a proposta (fica a linha de `delete` na auditoria); quem apontava para ela em `proposta_anterior_id` passa à anterior dela. Recusa proposta com documento. | editor (diretor, gestor, analista) | apaga `propostas` (e `proposta_partes` em cascata) | ✓ | `20261015000500_regras.sql` |
 | `app.vincular_viabilidade(p_processo uuid, p_nome text, p_vgv numeric, p_margem_pct numeric, p_bkm_id uuid)` → `uuid` | Cria uma viabilidade resumida (nome, VGV, margem, id externo do BKM) e liga ao processo. Anterior ao estudo de viabilidade completo; ver `criar_viabilidade` e `vincular_estudo`. | editor (diretor, gestor, analista) | grava `processos`, `viabilidades` |  | `20261015000500_regras.sql:1798` |
 
+### Corretores
+
+| Função | O que faz | Quem pode | Grava | Front | Onde |
+| --- | --- | --- | --- | --- | --- |
+| `app.criar_corretor(p_empresa uuid, p_dados jsonb)` → `uuid` | Cria o corretor e a pessoa dele (nome, e-mail e celular obrigatórios; CPF com 11 dígitos, que reaproveita a pessoa com o mesmo CPF e recusa se ela já é corretor; CNPJ com 14). | editor (diretor, gestor, analista) | grava `pessoas`, `corretores` | ✓ | `20261015002000_tratativas.sql` |
+| `app.salvar_corretor(p_corretor uuid, p_dados jsonb)` → `void` | Grava só as chaves que vierem (`nome`, `email`, `celular`, `cpf` em `pessoas`; `apelido`, `rg`, `creci`, `imobiliaria`, `creci_juridico`, `cnpj`, `endereco`, `observacoes`, `ativo` em `corretores`), com as regras do `criar_corretor`; CPF de outra pessoa da empresa é recusado. Corretor não se apaga: `ativo = false`. | editor (diretor, gestor, analista) | grava `pessoas`, `corretores` | ✓ | `20261015002200_corretores.sql` |
+
+A lista lê `app.v_corretores` (`security_invoker`): dados da pessoa e do corretor, `qtd_terrenos` (terrenos de `terreno_corretores` e das ofertas), `qtd_ofertas` e `ultima_oferta`; terreno excluído não conta, porque a RLS de `terrenos` o esconde.
+
 ### Documentos
 
 O arquivo sobe direto para o Storage (bucket `documentos`, caminho começando pelo `empresa_id`); depois o front chama a RPC, que cria a versão.

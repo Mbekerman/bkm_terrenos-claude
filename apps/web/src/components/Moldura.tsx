@@ -15,10 +15,19 @@ import { abrirNovo } from '../novo/estado';
 // são os do protótipo, em styles.css. Primeira versão: Mapa e Funil no menu, sem tema escuro.
 
 /** Itens do menu na primeira versão: [rota, rótulo, ícone]. */
-const NAV: [string, string, keyof typeof BI][] = [
+const NAV: [string, string, keyof typeof BI | keyof typeof BI_EXTRA][] = [
   ['mapa', 'Mapa', 'mapa'],
   ['funil', 'Funil', 'funil'],
+  ['corretores', 'Corretores', 'corretores'],
 ];
+/* ícones de linha no traço dos ícones BKM que o protótipo não tem (o protótipo não tinha a página Corretores) */
+const TRACO = 'fill="none" style="stroke:var(--marinho)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"';
+const BI_EXTRA = {
+  corretores: `<path d="M38 46 C46.3 46 53 39.3 53 31 C53 22.7 46.3 16 38 16 C29.7 16 23 22.7 23 31 C23 39.3 29.7 46 38 46 Z" ${TRACO}/>`
+    + `<path d="M12 80 C12 64 23.6 54 38 54 C52.4 54 64 64 64 80" ${TRACO}/>`
+    + `<path d="M62 46 C68.6 46 74 40.6 74 34 C74 27.4 68.6 22 62 22" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>`
+    + `<path d="M70 56 C79 59 84 67 84 78" fill="none" style="stroke:var(--azul-bkm)" stroke-width="3.03" stroke-linecap="round" stroke-linejoin="round"/>`,
+} as const;
 const CHAVE_MENU = 'bkm-terrenos-menu';
 /** O que a moldura passa às telas: o texto da busca da barra superior. */
 export interface ContextoMoldura { busca: string }
@@ -33,8 +42,9 @@ export function Ic({ n, s = 20 }: { n: keyof typeof P; s?: number }) {
 }
 
 /** Ícone BKM do protótipo (bi). */
-export function Bi({ n, s = 32 }: { n: keyof typeof BI; s?: number }) {
-  return <svg className="bkm-ico" viewBox="0 0 96 96" width={s} height={s} style={{ width: s, height: s }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: BI[n] }} />;
+export function Bi({ n, s = 32 }: { n: keyof typeof BI | keyof typeof BI_EXTRA; s?: number }) {
+  const html = n in BI_EXTRA ? BI_EXTRA[n as keyof typeof BI_EXTRA] : BI[n as keyof typeof BI];
+  return <svg className="bkm-ico" viewBox="0 0 96 96" width={s} height={s} style={{ width: s, height: s }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 /** Selo do ambiente ao lado do logo (fora da produção). */
