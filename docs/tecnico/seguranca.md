@@ -115,6 +115,8 @@ Matrícula repetida (10/nov/2026, #308): os gatilhos `app.tg_sql_espelho` e `app
 
 Reuniões com @ (9/nov/2026, #256): `app.tg_participante_mencao` é `security definer` com `search_path` fixo e só avisa quem é membro da empresa da reunião (o mesmo filtro de `app._notificar`); o link digitado da reunião só é aceito com `http://` ou `https://` (check no banco), para nunca virar `javascript:` no `href`; pessoas de fora marcadas não recebem nada. Quando o convite por e-mail existir, o BD-M4 vale também para os participantes de fora.
 
+Preferências do usuário (11/nov/2026, #346): `app.preferencias_usuario` guarda escolhas de tela por pessoa (hoje o raio da aba Mercado). É a exceção à regra do `empresa_id`: a linha é da pessoa, não da empresa. RLS `for all` com `user_id = auth.uid()` em `using` e `with check`, então ninguém lê nem grava a de outro (testado em `regras.sql`); sem função nova; a chave é limitada a `[a-z0-9_]{1,60}`. Não guardar ali nada sensível nem nada que outra pessoa precise ver.
+
 Informativos que merecem atenção: o papel `basico` lê tudo (BD-I1); o projeto Supabase é dividido com o monitor (BD-I4: rodar o Security Advisor do Supabase e conferir a RLS de `public.im_*` no repositório do monitor); texto do usuário vai para notificações e futuros e-mails, que precisarão escapar HTML (BD-I5); **nenhum segredo real no histórico do git** (FI-I1, 627 commits varridos; só a chave publicável, que é pública por desenho).
 
 ## O que está bem feito (não reavaliar à toa)

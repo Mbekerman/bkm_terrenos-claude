@@ -364,6 +364,21 @@ grant select on app.usuarios to authenticated;
 grant select, insert, update, delete on app.empresa_dominios to authenticated;
 create trigger t_aud after insert or update or delete on app.empresa_dominios for each row execute function app.tg_auditoria();
 
+-- Preferências de cada usuário (pedido do Moises, 11/nov/2026): o que a pessoa escolhe na tela e deve
+-- acompanhá-la em qualquer computador, por chave (ex.: 'mercado_raio', o raio da renda e do perfil da
+-- população na aba Mercado). Sem empresa: é da pessoa, não de um terreno; cada um só vê e muda as suas.
+create table app.preferencias_usuario (
+  user_id       uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  chave         text not null check (chave ~ '^[a-z0-9_]{1,60}$'),
+  valor         jsonb not null,
+  atualizado_em timestamptz not null default now(),
+  primary key (user_id, chave)
+);
+alter table app.preferencias_usuario enable row level security;
+create policy minhas on app.preferencias_usuario for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+grant select, insert, update, delete on app.preferencias_usuario to authenticated;
+
 revoke execute on function app.gerar_arroba(text, uuid), app.tg_usuario_novo(), app.tg_usuario_login(), app._aplicar_equipe_prevista(uuid, uuid, text),
   app.hook_antes_de_criar_usuario(jsonb), app.mudar_arroba(uuid, text), app.salvar_minha_foto(text), app.tg_mencoes(), app.tg_participante_mencao() from public;
 grant execute on function app.mudar_arroba(uuid, text), app.salvar_minha_foto(text) to authenticated;

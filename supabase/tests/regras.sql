@@ -4342,6 +4342,19 @@ select pg_temp.como(:'leitor');
 select pg_temp.falha(format($$insert into app.oferta_corretores (oferta_id, corretor_id, empresa_id) values (%L, %L, %L)$$, :'ofc', :'cor2', :'emp'), 'leitura não põe corretor na oferta');
 reset role;
 
+-- Preferências do usuário (11/nov/2026): cada um grava e lê só as suas.
+select pg_temp.como(:'analista');
+insert into app.preferencias_usuario (chave, valor) values ('mercado_raio', '{"rd":{"raio":1500,"cust":1500}}');
+insert into app.preferencias_usuario (chave, valor) values ('mercado_raio', '{"rd":{"raio":2000,"cust":1500}}')
+  on conflict (user_id, chave) do update set valor = excluded.valor, atualizado_em = now();
+select pg_temp.ok((select valor->'rd'->>'raio' = '2000' from app.preferencias_usuario where chave = 'mercado_raio'),
+  'a preferência grava e regrava pela chave, no usuário logado');
+select pg_temp.como(:'diretor');
+select pg_temp.ok(not exists (select 1 from app.preferencias_usuario), 'ninguém vê a preferência de outra pessoa');
+select pg_temp.falha(format($$insert into app.preferencias_usuario (user_id, chave, valor) values (%L, 'x', '1')$$, :'analista'),
+  'ninguém grava preferência em nome de outra pessoa');
+reset role;
+
 -- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
 -- e os catálogos sem empresa continuam legíveis por quem está logado.
 reset role;

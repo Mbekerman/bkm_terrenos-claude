@@ -153,12 +153,13 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
             {lista.length > 0 && <div style={{ height: 16 }} />}
           </>}
           {lista.length ? (
-            <div className="dt-wrap vb-lista"><table className="dt compacta"><thead><tr><th className="esq">Estudo</th><th>VGV líquido</th><th>Lucro líquido</th><th>Margem</th><th>Atualizado</th><th>Válido</th></tr></thead><tbody>
+            <div className="dt-wrap vb-lista"><table className="dt compacta ems-lista"><thead><tr><th className="esq">Estudo</th><th>VGV líquido</th><th>Lucro líquido</th><th>Margem</th><th>Atualizado</th><th>Válido</th></tr></thead><tbody>
               {lista.map((v) => {
                 const lig = vi?.id === v.id;
                 return (
-                  <tr key={v.id}>
-                    <td className="esq"><button className="linkbtn" onClick={() => abrirEstudo(v.id)}>{v.nome}</button></td>
+                  <tr key={v.id} className="ems-lin" tabIndex={0} title={`Abrir ${v.nome}`} onClick={() => abrirEstudo(v.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirEstudo(v.id); } }}>
+                    <td className="esq"><span className="ems-nome">{v.nome}</span></td>
                     <td className="num">{mi(v.vv)}</td><td className="num">{mi(v.lucro)}</td><td className="num">{pct1(v.margem)}</td><td>{fd(v.atualizado)}</td>
                     <td><SeloValido valido={lig} pode={!ro && negAtiva} nome={v.nome} porque={ro ? '' : 'Sem negociação ativa, o estudo não se marca como válido'}
                       clicar={() => (lig ? ac.desvincular(v.nome) : ac.vincular(v.id, v.nome))} /></td>
