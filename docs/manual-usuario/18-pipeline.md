@@ -24,6 +24,8 @@ Os terrenos ficam sempre **agrupados por cidade**, com um título para cada cida
 | **Temperatura** | As barrinhas de 1 a 5 e o número | temperatura |
 | **Responsável** | A foto (ou as iniciais) de quem cuida do terreno; o mouse em cima mostra o nome | nome |
 
+As células de **Estudo de massa**, **Viabilidade**, **Empreendimento** e **Negociação** mostram só os valores, um por linha, sem rótulo. O **ⓘ** antes do título dessas colunas abre um balão com o que é cada linha, de cima para baixo (fecha no clique fora, no Esc ou no ⓘ). O mouse parado sobre um valor também diz o que ele é.
+
 O que não foi preenchido aparece como um traço cinza (—); o mouse em cima diz o que falta ("Sem corretor", "Sem estudo de massa válido"...).
 
 Os olhos não abrem a ficha: a janela do estudo abre sobre a tabela. Na janela do estudo de massa, quem edita pode mudar o estudo, ver o pedido e criar o estudo de viabilidade, como na aba Estudos Técnicos da ficha.

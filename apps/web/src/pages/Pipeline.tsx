@@ -112,7 +112,9 @@ function Av({ r }: { r: NonNullable<Linha['resp']> }) {
 }
 
 type Ver = (t: Linha, qual: 'viab' | 'massa') => void;
-interface Col { k: string; l: string; cls?: string; w: number | null; v: (t: Linha, ver: Ver) => React.ReactNode }
+/** o que cada linha da célula mostra, no balão do ⓘ do título (as células só mostram os valores; pedido do Moises, 11/nov/2026) */
+interface Info { t: string; d: string; forte?: boolean }
+interface Col { k: string; l: string; cls?: string; w: number | null; v: (t: Linha, ver: Ver) => React.ReactNode; info?: Info[] }
 /** o olho fica à direita da coluna, com respiro do texto (pedido do Moises, 11/nov/2026) */
 const ComOlho = ({ olhos, children }: { olhos: React.ReactNode[]; children: React.ReactNode }) => (
   <div className="tb-olhos"><div className="tb-olhos-c">{children}</div><div className="tb-olhos-b">{olhos}</div></div>
@@ -123,8 +125,8 @@ const Olho = ({ rot, onClick }: { rot: string; onClick: () => void }) => (
 const olhoViab = (t: Linha, ver: Ver) => <Olho key="v" rot={`Abrir a viabilidade válida de ${t.nome}`} onClick={() => ver(t, 'viab')} />;
 const olhoMassa = (t: Linha, ver: Ver) => <Olho key="m" rot={`Abrir o estudo de massa válido de ${t.nome}`} onClick={() => ver(t, 'massa')} />;
 /** linha rótulo e valor das colunas de números (Projeto e Negociação): o rótulo à esquerda, o valor à direita */
-const Kv = ({ l, v, fraco }: { l: React.ReactNode; v: React.ReactNode; fraco?: boolean }) => (
-  <div className={`tb-kv${fraco ? ' fraco' : ''}`}><span className="tb-kl">{l}</span><span className="tb-kvv">{v}</span></div>
+const Kv = ({ l, v, fraco }: { l: string; v: React.ReactNode; fraco?: boolean }) => (
+  <div className={`tb-kv${fraco ? ' fraco' : ''}`} title={l}><span className="tb-kvv">{v}</span></div>
 );
 const pct2 = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 /* títulos do Moisés (4/nov/2026, segunda versão); as chaves são as da ordenação (filtros/ordem.ts); w = largura fixa da coluna
@@ -137,19 +139,23 @@ const COLS: Col[] = [
   { k: 'area', l: 'Imóvel', w: 200, v: (t) => <>
     <div>{t.area != null ? m2(t.area) : <Nada s="Sem área" />}</div>
     <div className="t2 tb-zt" title={[t.zonas, t.topo].filter(Boolean).join(' · ') || undefined}>{[t.zonas, t.topo].filter(Boolean).join(' · ') || <Nada s="Sem zoneamento" />}</div></> },
-  { k: 'massa', l: 'Estudo de massa', cls: 'num', w: 208, v: (t, ver) => (t.temMassa ? <ComOlho olhos={[olhoMassa(t, ver)]}>
+  { k: 'massa', l: 'Estudo de massa', cls: 'num', w: 208, info: [
+    { t: 'Unidades', d: 'quantidade de unidades', forte: true }, { t: 'Área privativa total', d: 'soma das áreas privativas das tipologias' }], v: (t, ver) => (t.temMassa ? <ComOlho olhos={[olhoMassa(t, ver)]}>
     <Kv l="Unidades" v={t.mUn != null ? num(t.mUn) : '—'} />
-    <Kv fraco l={<span title="Área privativa total do estudo de massa válido">Privativa</span>} v={t.mArea != null ? m2(Math.round(t.mArea)) : '—'} /></ComOlho> : <Vazio s="Sem estudo de massa válido" />) },
-  { k: 'viab', l: 'Viabilidade', cls: 'num', w: 212, v: (t, ver) => (t.temEstudo ? <ComOlho olhos={[olhoViab(t, ver)]}>
+    <Kv fraco l="Área privativa total" v={t.mArea != null ? m2(Math.round(t.mArea)) : '—'} /></ComOlho> : <Vazio s="Sem estudo de massa válido" />) },
+  { k: 'viab', l: 'Viabilidade', cls: 'num', w: 212, info: [
+    { t: 'VGV', d: 'valor geral de vendas', forte: true }, { t: 'L.L.', d: 'margem líquida: lucro líquido ÷ VGV líquido' }], v: (t, ver) => (t.temEstudo ? <ComOlho olhos={[olhoViab(t, ver)]}>
     <Kv l="VGV" v={t.vgv != null ? mi(t.vgv) : <Nada s="—" />} />
-    <Kv fraco l={<span title="Margem líquida do estudo válido: lucro líquido ÷ VGV líquido">L.L.</span>} v={t.ll != null ? pct2(t.ll) : '—'} /></ComOlho> : <Vazio s="Sem estudo de viabilidade válido" />) },
+    <Kv fraco l="L.L., margem líquida" v={t.ll != null ? pct2(t.ll) : '—'} /></ComOlho> : <Vazio s="Sem estudo de viabilidade válido" />) },
   /* a junção das duas, quando a tela estreita: VGV e L.L. da viabilidade; unidades da viabilidade ou, sem ela, do estudo de
      massa; cada olho na linha do dado que ele abre (VGV: viabilidade; Unidades: estudo de massa) */
-  { k: 'estudo', l: 'Empreendimento', cls: 'num', w: 212, v: (t, ver) => (t.temEstudo || t.temMassa ? <div className="tb-emp">
+  { k: 'estudo', l: 'Empreendimento', cls: 'num', w: 212, info: [
+    { t: 'VGV', d: 'valor geral de vendas da viabilidade válida', forte: true }, { t: 'Unidades', d: 'da viabilidade; sem ela, do estudo de massa' }, { t: 'L.L.', d: 'margem líquida: lucro líquido ÷ VGV líquido' }], v: (t, ver) => (t.temEstudo || t.temMassa ? <div className="tb-emp">
     {t.temEstudo && <><Kv l="VGV" v={t.vgv != null ? mi(t.vgv) : <Nada s="—" />} />{olhoViab(t, ver)}</>}
     <Kv fraco l="Unidades" v={(t.temEstudo ? t.un : t.mUn) != null ? num((t.temEstudo ? t.un : t.mUn)!) : '—'} />{t.temMassa ? olhoMassa(t, ver) : <span />}
-    {t.temEstudo && <><Kv fraco l={<span title="Margem líquida do estudo válido: lucro líquido ÷ VGV líquido">L.L.</span>} v={t.ll != null ? pct2(t.ll) : '—'} /><span /></>}</div> : <Vazio s="Sem estudo de massa nem de viabilidade válido" />) },
-  { k: 'preco', l: 'Negociação', cls: 'num', w: 176, v: (t) => (t.pedido == null && t.proposta == null ? <Vazio s="Sem valor pedido nem proposta" /> : <>
+    {t.temEstudo && <><Kv fraco l="L.L., margem líquida" v={t.ll != null ? pct2(t.ll) : '—'} /><span /></>}</div> : <Vazio s="Sem estudo de massa nem de viabilidade válido" />) },
+  { k: 'preco', l: 'Negociação', cls: 'num', w: 176, info: [
+    { t: 'Pedida', d: 'valor pedido na oferta de referência', forte: true }, { t: 'Proposta', d: 'valor da proposta ativa' }], v: (t) => (t.pedido == null && t.proposta == null ? <Vazio s="Sem valor pedido nem proposta" /> : <>
     <Kv l="Pedida" v={t.pedido != null ? mi(t.pedido) : <Nada s="—" />} />
     <Kv fraco l="Proposta" v={t.proposta != null ? mi(t.proposta) : '—'} /></>) },
   { k: 'corretor', l: 'Corretor', w: 168, v: (t) => {
@@ -327,6 +333,7 @@ export default function Pipeline() {
     const i = L.findIndex((x) => x.k === c.k), st = L[i];
     return (
       <th key={c.k} ref={c.k === 'ter' ? setTh : undefined} className={`col-${c.k} ${c.cls ?? ''}`} scope="col" aria-sort={st ? (st.dir === 'desc' ? 'descending' : 'ascending') : 'none'}>
+        {c.info && <InfoCol c={c} />}
         <button type="button" className="dt-sort" onClick={() => fx.setO(alternar(L, c.k))}
           title={st ? (st.dir === 'asc' ? 'Crescente: clique para decrescente' : 'Decrescente: clique para tirar a ordem') : 'Ordenar em ordem crescente'}>
           {c.l}<span className="dt-ar" aria-hidden="true">{st ? (st.dir === 'desc' ? '↓' : '↑') : '↕'}</span>
@@ -413,4 +420,31 @@ function MassaPop({ cod, fechar }: { cod: string; fechar: () => void }) {
   const q = useFicha(cod);
   useEffect(() => { if (q.isFetched && !q.data) fechar(); }, [q.isFetched, q.data]); // eslint-disable-line react-hooks/exhaustive-deps
   return q.data ? <PopMassa f={q.data} fechar={fechar} /> : null;
+}
+
+/** ⓘ antes do título: o clique abre o balão com o que cada linha da célula mostra; fecha no clique fora, no Esc ou no ⓘ */
+function InfoCol({ c }: { c: Col }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setAberto(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); setAberto(false); } };
+    document.addEventListener('mousedown', fora);
+    document.addEventListener('keydown', esc, true);
+    return () => { document.removeEventListener('mousedown', fora); document.removeEventListener('keydown', esc, true); };
+  }, [aberto]);
+  return (
+    <span className="tb-info" ref={ref}>
+      <button type="button" className="tb-info-b" aria-expanded={aberto} aria-label={`O que a coluna ${c.l} mostra`} title={`O que a coluna ${c.l} mostra`}
+        onClick={(e) => { e.stopPropagation(); setAberto((a) => !a); }}>
+        <svg viewBox="0 0 24 24" width={16} height={16} aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.75" /><path d="M12 11v6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /><circle cx="12" cy="7.6" r="1.2" fill="currentColor" /></svg>
+      </button>
+      {aberto && <span className="tb-info-pop" role="tooltip">
+        <span className="tb-info-t">{c.l}</span>
+        <span className="tb-info-s">De cima para baixo, em cada linha:</span>
+        {c.info!.map((x, i) => <span key={x.t} className="tb-info-l"><span className="tb-info-n">{i + 1}</span><span><b className={x.forte ? 'forte' : undefined}>{x.t}</b><span className="tb-info-d">{x.d}</span></span></span>)}
+      </span>}
+    </span>
+  );
 }

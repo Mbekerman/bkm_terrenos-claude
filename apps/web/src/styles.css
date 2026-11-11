@@ -4976,6 +4976,25 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .lista-ter td > .tb-kv + .tb-kv { margin-top: 0 }
 .tb-viab { flex: none; width: 24px; height: 24px; margin: -4px 0 -4px 0; color: var(--m-on-var, #444746) }
 .tb-viab:hover { color: #0b57d0 }
+/* ⓘ dos títulos (pedido do Moises, 11/nov/2026): as células só mostram os valores; o balão diz o que é cada linha */
+.tb-info { position: relative; display: inline-flex; vertical-align: middle; margin-right: 4px }
+.tb-info-b { display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -4px 0; padding: 0; border: 0; border-radius: 12px; background: none; color: var(--m-on-var, #444746); cursor: pointer }
+.tb-info-b:hover, .tb-info-b[aria-expanded="true"] { background: rgba(11, 87, 208, .08); color: #0b57d0 }
+.tb-info-b:focus-visible { outline: 2px solid #0b57d0; outline-offset: 1px }
+.tb-info-pop { position: absolute; top: calc(100% + 10px); right: -8px; z-index: 30; width: 260px; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 12px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.12); text-align: left; white-space: normal; font-size: 13px; line-height: 18px; font-weight: 400; color: #1f1f1f; text-transform: none; letter-spacing: 0; cursor: default }
+.tb-info-pop::before { content: ""; position: absolute; top: -6px; right: 14px; width: 12px; height: 12px; background: #fff; transform: rotate(45deg); box-shadow: -2px -2px 3px rgba(0,0,0,.05) }
+.lista-ter th:not(.num) .tb-info-pop { right: auto; left: -8px } .lista-ter th:not(.num) .tb-info-pop::before { right: auto; left: 14px }
+.tb-info-t { font-size: 14px; font-weight: 500 }
+.tb-info-s { font-size: 12px; color: #444746 }
+.tb-info-l { display: flex; gap: 10px; align-items: flex-start }
+.tb-info-n { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 10px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500 }
+.tb-info-l b { display: block; font-weight: 400 } .tb-info-l b.forte { font-weight: 500 }
+.tb-info-d { display: block; font-size: 12px; color: #444746 }
+.lista-ter th.num .dt-sort + .tb-info, .lista-ter th.num .tb-info { order: 0 }
+.lista-ter th:has(.tb-info) { white-space: nowrap }
+html[data-tema="escuro"] .tb-info-pop, html[data-tema="escuro"] .tb-info-pop::before { background: #2d2f31; color: #e3e3e3 }
+html[data-tema="escuro"] :is(.tb-info-s, .tb-info-d) { color: #c4c7c5 }
+html[data-tema="escuro"] .tb-info-n { background: #004a77; color: #c2e7ff }
 .tb-olhos { display: flex; align-items: flex-start; gap: 12px }
 .tb-olhos-c { flex: 1 1 auto; min-width: 0 }
 .tb-olhos-b { flex: none; display: flex; flex-direction: column; gap: 4px; margin: -6px -6px -6px 0 }
@@ -5012,7 +5031,10 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .tb-wrap.estreito .lista-ter tbody tr:not(.tb-grp) > td { border-bottom: 0 !important }
 .tb-wrap.estreito .lista-ter thead th { height: 40px; padding-bottom: 8px !important; font-weight: 500 }
 /* colunas alinhadas à direita: a seta da ordem vem antes do título, e título e valor terminam na mesma borda */
-.lista-ter th.num .dt-sort, .tb-wrap.estreito .lista-ter th.col-area .dt-sort { flex-direction: row-reverse }
+.tb-wrap.estreito .lista-ter th.col-area .dt-sort { flex-direction: row-reverse }
+/* colunas de números: a seta da ordem fica no recuo, à direita, para o ⓘ encostar no título e o título terminar com os valores */
+.lista-ter th.num .dt-sort { position: relative }
+.lista-ter th.num .dt-ar { position: absolute; left: 100%; margin-left: 1px }
 .lista-ter th.meio .dt-sort { display: flex; justify-content: center; margin: 0 auto }
 .tb-wrap.estreito .lista-ter td.col-area, .tb-wrap.estreito .lista-ter th.col-area { text-align: right !important }
 .tb-wrap.estreito .lista-ter th.col-area .dt-sort { margin-left: auto }
