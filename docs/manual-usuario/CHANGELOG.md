@@ -8,7 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
-- **Estudo de massa: botão "Salvar" no fim do estudo** (Estudos Técnicos › Estudos de massa), no lugar de "Marcar como entregue" no alto. Salvar dá o estudo por entregue e só exige uma unidade lançada; a área construída e o resto podem ficar para depois. (#330)
+- **Estudo de massa: botão "Salvar" no fim do estudo** (Estudos Técnicos › Estudos de massa), no lugar de "Marcar como entregue" no alto. Salvar dá o estudo por entregue e só exige uma unidade lançada; a área construída e o resto podem ficar para depois. (#331)
 - **Correção: estudo de viabilidade no celular** (ficha aberta pelo Mapa ou pelo Pipeline › Estudos Técnicos › Estudos de viabilidade): tocar no estudo ou em "Novo estudo" não mostrava nada, porque o estudo abria por trás da ficha. Agora abre por cima. (#329)
 - **Página Corretores** (menu lateral): lista dos corretores com busca, Ativos e Inativos, Novo corretor e a ficha de cada um, com os dados editáveis no lugar, Desativar, os terrenos e ofertas em que ele aparece e o histórico das alterações. O Novo corretor avisa quando já existe um corretor com o mesmo nome ou e-mail. Ver [Corretores](17-corretores.md). (#328)
 - **Lançar estudo pronto** (ficha › Estudos Técnicos › Estudos de massa): o botão "Lançar estudo", ao lado de "Solicitar estudo", cria o estudo sem pedido ao arquiteto e abre a ficha dele para digitar as tipologias, as áreas e os índices de um estudo que já chegou pronto. Ver [Estudos de massa](14-ficha-estudos-de-massa.md#lançar-um-estudo-que-já-está-pronto). (#327)
