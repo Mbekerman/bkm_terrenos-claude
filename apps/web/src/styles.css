@@ -4997,9 +4997,9 @@ html[data-tema="escuro"] :is(.tb-info-s, .tb-info-d) { color: #c4c7c5 }
 html[data-tema="escuro"] .tb-info-n { background: #004a77; color: #c2e7ff }
 .tb-olhos { display: flex; align-items: flex-start; gap: 12px }
 .tb-olhos-c { flex: 1 1 auto; min-width: 0 }
-.tb-olhos-b { flex: none; display: flex; flex-direction: column; gap: 4px; margin: -6px -6px -6px 0 }
+.tb-olhos-b { flex: none; display: flex; flex-direction: column; gap: 4px; margin: -6px 2px -6px 0 }
 .lista-ter .tb-olhos-b .tb-viab { width: 32px; height: 32px; margin: 0 }
-.tb-emp { display: grid; grid-template-columns: minmax(0, 1fr) 32px; column-gap: 12px; row-gap: 0; align-items: center; margin-right: -6px }
+.tb-emp { display: grid; grid-template-columns: minmax(0, 1fr) 32px; column-gap: 12px; row-gap: 0; align-items: center; margin-right: 2px }
 .tb-emp > .tb-kv { line-height: 20px; font-size: inherit } .tb-emp > .tb-kv.fraco { font-size: 12px }
 .lista-ter .tb-emp .tb-viab { width: 32px; height: 32px; margin: -6px 0 }
 .dialog.ems-pop { width: min(1100px, 100%); padding: 24px 0 }
@@ -5430,3 +5430,8 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 .of-obs-p { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--m-outline-var, #c4c7c5) }
 #sec-ofertas .of-obs-p .of-obs-t { margin-top: 0 }
 .of-obs-pn { font-size: 13px; font-weight: 500; color: var(--m-on-surface-var, #444746) }
+/* colunas com olho: o ⓘ fica na borda direita, na mesma reta do olho (pedido do Moises, 11/nov/2026) */
+.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info { position: absolute; right: 18px; bottom: 6px; margin: 0 }
+.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-b { margin: 0 }
+.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-pop { left: auto; right: -8px }
+.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-pop::before { left: auto; right: 14px }
