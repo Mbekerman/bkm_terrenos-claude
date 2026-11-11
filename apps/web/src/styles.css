@@ -2106,6 +2106,10 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .vb-pop-nome:focus { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: -1px }
 .vb-pop-h .vb-acoes { align-self: center }
 .vb-pop-sc { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 0 24px 24px }
+/* a barra de rolagem para antes do canto arredondado de baixo (pedido do Moises, 11/nov/2026) */
+.vb-pop-sc::-webkit-scrollbar-track { margin-bottom: 20px }
+/* nas demais janelas, que rolam inteiras, a barra fica entre os cantos arredondados */
+.dialog::-webkit-scrollbar-track { margin: 20px 0 }
 .vb-pop-meta { display: none }
 /* indicadores e botões das seções fixos no topo ao rolar (decisão do Moisés, 26/out/2026) */
 .vb-fixo { position: sticky; top: 0; z-index: 5; margin: 0 -24px 16px; padding: 12px 24px 0; background: var(--m-surface, #f8fafd); border-bottom: 1px solid var(--linha) }

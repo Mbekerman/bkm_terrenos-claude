@@ -512,7 +512,10 @@ html[data-tema="escuro"] .chip.selo-val:not(.good) { color: #c4c7c5 }
 .ems-lista .ems-nome { color: #0b57d0; font-weight: 500 }
 html[data-tema="escuro"] .ems-lista .ems-nome { color: #a8c7fa }
 /* janela do estudo de massa (as mesmas regras do PR #339 no styles.css, para valer também da aba) */
-.dialog.ems-pop { width: min(1100px, 100%); padding: 24px 0 }
+.dialog.ems-pop { width: min(1100px, 100%); padding: 24px 0 0; overflow: hidden }
+/* a rolagem fica no corpo, abaixo do título, e a barra para antes do canto arredondado de baixo (pedido do Moises, 11/nov/2026) */
+.ems-pop-b { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 24px }
+.ems-pop-b::-webkit-scrollbar-track { margin-bottom: 16px }
 .dialog.ems-pop > .dh { padding: 0 24px }
 .ems-pop-b .sec { border: 0 !important; box-shadow: none !important; margin: 0 !important }
 .dialog .ems-form { padding: 0; border: 0 !important; margin: 0 }
