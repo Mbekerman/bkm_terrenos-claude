@@ -137,7 +137,7 @@ O Moises decidiu entrar em produção sem a semana de teste com 5 a 10 terrenos 
 1. Backup e limpeza dos dados de teste: `/mnt/project-files/producao/1-backup.sql` e `2-apagar.sql` (o `3-restaurar-se-precisar.sql` volta tudo enquanto nenhum terreno real tiver sido cadastrado). Ficam usuários, equipe prevista, configuração, zoneamento e parâmetros, municípios, setores, cache de lotes, pontos de interesse da empresa, concorrência e o esquema `public`.
 2. PR `develop → main`.
 3. Variáveis do `terrenos-web` (item 2 acima) e Redirect URL (item 3).
-4. Supabase › Authentication › Sessions: **Inactivity timeout** = `720` horas (30 dias); **Time-box user sessions** desligado (0). Sem isso a sessão não vence nunca (o refresh token do Supabase não expira sozinho); a conferência no navegador (`lib/inatividade.ts`) é a segunda trava.
+4. Supabase › Authentication › Sessions: **Inactivity timeout** = `720` horas (30 dias); **Time-box user sessions** desligado (0). Feito pelo Moises em 11/nov/2026. Sem isso a sessão não vence nunca (o refresh token do Supabase não expira sozinho); vencida, a renovação falha e o supabase-js sai sozinho, sem código no front.
 5. Primeiro login do Arnon e da Cecília: o papel vem da `app.equipe_prevista` (Cecília gestora abaixo do Moises, Arnon analista abaixo da Cecília), em qualquer ordem de entrada. Conferir com `select u.email, m.papel, s.email superior from app.membros m join app.usuarios u using (user_id) left join app.usuarios s on s.user_id = m.superior_id;`.
 6. A partir daqui, toda mudança no banco é **migration nova** (nada de editar as antigas) e todo SQL avulso termina com o `revoke` das funções novas.
 

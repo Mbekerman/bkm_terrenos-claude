@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
-import { acompanharUso, esquecerUso, liberarMarcacao, marcarUso, venceuPorInatividade } from './inatividade';
 import type { Empresa, Membro, Papel, Usuario } from './types';
 
 interface Sessao {
@@ -34,27 +33,9 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      // Mais de 30 dias sem usar neste navegador: sai e pede o Google de novo. Quem acabou de entrar pelo
-      // Google (volta do login) não conta, mesmo com o registro antigo no navegador.
-      const entrouAgora = Date.now() - Date.parse(data.session?.user.last_sign_in_at ?? '') < 10 * 60 * 1000;
-      liberarMarcacao();
-      if (data.session && !entrouAgora && venceuPorInatividade()) {
-        esquecerUso();
-        await supabase.auth.signOut({ scope: 'local' });
-        setSession(null);
-      } else {
-        if (data.session) marcarUso(true);
-        setSession(data.session);
-      }
-      setAuthPronto(true);
-    });
-    const { data } = supabase.auth.onAuthStateChange((e, s) => {
-      if (e === 'SIGNED_OUT') esquecerUso();
-      setSession(s);
-    });
-    const parar = acompanharUso();
-    return () => { data.subscription.unsubscribe(); parar(); };
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthPronto(true); });
+    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => data.subscription.unsubscribe();
   }, []);
 
   async function carregar(uid: string) {
