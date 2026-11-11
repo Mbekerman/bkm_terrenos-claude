@@ -22,7 +22,7 @@ import AbaMassa from './Massa';
 import AbaJornada from './Jornada';
 import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
-import { abrirQuadroJa, focar, OPT, pedirCampo, segurarRolagem, useSalvar, Vivo } from './edicao';
+import { abrirQuadroJa, focar, OPT, pedirCampo, segurarRolagem, useSalvar, useSobraSecao, Vivo } from './edicao';
 import { useToast } from '../components/ui';
 import MenuTerreno from '../components/MenuTerreno';
 import { useNavigate } from 'react-router-dom';
@@ -423,6 +423,9 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   useRelevoAuto(f);
   /* trocar de aba pela barra (ou pela subaba de Estudos Técnicos) não mexe na rolagem (pedido do Moises, 11/nov/2026) */
   const irAbaFixo = (k: string) => { segurarRolagem(); irAba(k); };
+  /* a seção sempre deixa rolar até as barras travarem, mesmo vazia (pedido do Moises, 11/nov/2026) */
+  const mainR = useRef<HTMLDivElement>(null);
+  useSobraSecao(mainR, aba);
   const c = completude(f);
   const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
   const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;
@@ -443,7 +446,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
     : aba === 'historico' ? <Historico f={f} irAba={irAba} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
-    <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main" data-terreno={f.codigo}>
+    <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main" data-terreno={f.codigo} ref={mainR}>
       <LinhaTopo f={f} rotulo={naGaveta} />
       {voltar && <button className="back" onClick={voltar.ir}><Ic n="back" s={20} />{voltar.rotulo}</button>}
       <div className="dhead fi-head">

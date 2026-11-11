@@ -8,6 +8,8 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
+- **Ficha na gaveta: a largura mínima é a da barra das abas.** Ao estreitar a gaveta no Mapa ou no Pipeline, ela para exatamente onde a barra das abas, a pastinha e o alerta (quando falta algo) ainda cabem inteiros, em vez dos 800 px fixos. Ver [2. Mapa](02-mapa.md). (#340)
+- **Ficha: dá para rolar até as barras travarem em qualquer seção**, mesmo vazia ou curta: a seção ganha espaço vazio embaixo até a altura da tela. Ver [4. Visão geral](04-ficha-visao-geral.md). (#340)
 - **Ficha: ao trocar de seção, cada uma volta onde você a deixou.** O topo da ficha e as barras ficam na mesma altura; com as barras presas no alto, a seção nova aparece na última posição em que você a viu e, se ainda não tinha sido aberta, do começo, logo abaixo das barras. Ver [4. Visão geral](04-ficha-visao-geral.md). (#338)
 - **Estudo de viabilidade: nomes.** O VGV sem as unidades de permuta e de comissão volta a se chamar **VGV líquido** (indicador, lista, DRE e L.L. do Pipeline), e o valor sobre o qual se calcula a permuta financeira passa a se chamar **Base da permuta**. Os itens em % do lucro líquido (como o custo de alavancagem) passam a incidir sobre o lucro do projeto antes deles: 30% de alavancagem custa 30% do lucro sem contar ela. Ver [15. Viabilidades](15-ficha-viabilidades.md). (#337)
 - **Ficha: Jornada e Histórico no ⋮ do topo da ficha**, à direita do responsável (na gaveta, ao lado de Abrir página), antes de Excluir terreno, para todos os papéis. Saíram da barra das abas e do ⋮ dela, que volta a aparecer só quando a barra não cabe. (#336)

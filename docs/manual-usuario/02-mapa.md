@@ -50,7 +50,7 @@ No computador, clicar no **pino**, na **poligonal** ou na **lupa** da linha abre
 - clicar noutro terreno troca o terreno da gaveta;
 - **X** ou **Esc** fecham;
 - **"Abrir página"** leva à ficha em tela própria;
-- a largura da gaveta se arrasta pela borda esquerda (mínimo 800 px, para a barra das abas da ficha caber inteira); dois cliques na borda voltam ao padrão; o sistema lembra a largura;
+- a largura da gaveta se arrasta pela borda esquerda (no mínimo, a largura em que a barra das abas da ficha cabe inteira); dois cliques na borda voltam ao padrão; o sistema lembra a largura;
 - **a gaveta lembra onde você parou em cada terreno**: a aba, a posição da rolagem e quais quadros estavam abertos ou fechados em cada aba. Ao reabrir a gaveta daquele terreno (depois de fechar, trocar de terreno ou até fechar o navegador), tudo volta como estava. Terreno que nunca foi aberto começa na Visão geral, do topo. Fica guardado neste navegador, para os 50 terrenos abertos mais recentemente; em outro computador ou navegador, a gaveta começa do zero.
 
 A gaveta tem tudo que a ficha tem e se edita igual; o código, o nome e a temperatura ficam no cabeçalho dela, e o ícone ao lado ("Abrir página") leva à ficha em tela própria. Ver [04](04-ficha-visao-geral.md).
