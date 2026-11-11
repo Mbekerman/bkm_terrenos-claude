@@ -217,8 +217,11 @@ abas.
 ### Gaveta
 
 - Painel que entra pela **direita** (ficha sobre o mapa ou sobre a tabela, filtros) por cima do conteúdo, encostado na barra de
-  cima com um fio separando.
-- **Largura arrastável** pela borda (pega de 4×48 px que fica azul e cresce no hover; cursor `col-resize`; setas do teclado
+  cima. A gaveta da ficha segue o side sheet do Material 3 à risca (decisão do Moises, 11/nov/2026): sem fio na lateral nem no
+  alto, sombra de elevação nível 3 (`0 1px 3px rgba(0,0,0,.3), 0 4px 8px 3px rgba(0,0,0,.15)`) e canto de 16 px no alto à
+  esquerda; no escuro, fundo `#1e1f20`. É a exceção à regra "fio e espaço, não sombra" da seção 4: a gaveta flutua sobre a
+  página, não é um quadro dentro dela.
+- **Largura arrastável** pela borda (pega de 4×48 px que só aparece com o mouse em cima, no foco ou arrastando, e fica azul; cursor `col-resize`; setas do teclado
   também mudam, Shift dá passos maiores); mínimo 480 px; nunca cobre a lista do lado; **dois cliques voltam ao padrão**;
   guardada no navegador.
 - Cabeçalho: código, nome, "Abrir página" e X. Fecha no X ou Esc (Esc não fecha se houver menu ou janela aberta por cima, nem
