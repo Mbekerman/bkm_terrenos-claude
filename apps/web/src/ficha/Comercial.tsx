@@ -659,7 +659,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
                   <button type="button" aria-pressed={v.fisModo !== 'un'} onClick={() => setV((x) => ({ ...x, fisModo: 'pct' }))}>%</button>
                   <button type="button" aria-pressed={v.fisModo === 'un'} onClick={() => setV((x) => ({ ...x, fisModo: 'un', fis: (x.fis ?? '').replace(/\D.*$/, '') }))}>Unid.</button>
                 </span></div></div>
-              {v.fisModo !== 'un' && lerNum(v.fis ?? '') != null && <div className="field"><label htmlFor="pp-umin">Mínimo de unidades garantido (opcional)</label><Adorno t="un"><input id="pp-umin" inputMode="numeric" value={v.fisMin ?? ''}
+              {v.fisModo !== 'un' && lerNum(v.fis ?? '') != null && <div className="field"><label htmlFor="pp-umin">Mínimo de unidades (opcional)</label><Adorno t="un"><input id="pp-umin" inputMode="numeric" value={v.fisMin ?? ''}
                 onChange={(e) => setV((x) => ({ ...x, fisMin: e.target.value.replace(/\D/g, '') }))} /></Adorno></div>}
               <div className="field"><label htmlFor="pp-s">Status</label><select id="pp-s" value={v.status} onChange={m('status')}><option value="apresentada">Apresentada</option><option value="em_analise">Em análise</option><option value="rascunho">Rascunho</option></select></div>
               <div className="field"><label htmlFor="pp-d">Apresentada em</label><input id="pp-d" type="date" value={v.data} onChange={m('data')} /></div>

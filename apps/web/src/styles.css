@@ -4699,8 +4699,9 @@ html[data-tema="escuro"] .cond-b { background: #1e1f20 } html[data-tema="escuro"
 .pfis { display: flex; gap: 6px; align-items: center; min-width: 0 }
 .pfis > .adorno { flex: 1 1 auto; min-width: 0 }
 .pfis-seg { display: inline-flex; flex: none; border: 1px solid #747775; border-radius: 16px; overflow: hidden; height: 28px }
-.pfis-seg button { border: 0; background: transparent; padding: 0 8px; font: inherit; font-size: 12px; color: #444746; cursor: pointer }
+.pfis-seg button { border: 0; background: transparent; padding: 0 8px; margin: 0; height: 100%; min-height: 0; min-width: 0; display: inline-flex; align-items: center; line-height: 1; font: inherit; font-size: 12px; color: #444746; cursor: pointer; box-shadow: none; border-radius: 0 }
 .pfis-seg button + button { border-left: 1px solid #747775 }
+.seg.pfis-seg button { min-height: 0 !important; height: 100%; padding: 0 8px !important; font-size: 12px }
 .pfis-seg button[aria-pressed="true"] { background: #c2e7ff; color: #001d35; font-weight: 500 }
 html[data-tema="escuro"] .pfis-seg, html[data-tema="escuro"] .pfis-seg button + button { border-color: #8e918f }
 html[data-tema="escuro"] .pfis-seg button { color: #c4c7c5 } html[data-tema="escuro"] .pfis-seg button[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
