@@ -8,6 +8,8 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
+- **Estudos de massa como a viabilidade.** A aba mostra só a lista, com um resumo de cada estudo: unidades, tipologias, área privativa total e média, data de atualização e o selo **Válido**. Pedir, lançar, ver e editar o estudo acontece numa janela. Ver [14. Estudos de massa](14-ficha-estudos-de-massa.md). (#342)
+- **Selo Válido clicável** nos estudos de massa e de viabilidade: no Inválido, torna aquele o válido (o anterior deixa de ser); no Válido, tira a marca e o terreno fica sem válido. Ver [14. Estudos de massa](14-ficha-estudos-de-massa.md) e [15. Viabilidades](15-ficha-viabilidades.md). (#342)
 - **Ficha na gaveta: a largura mínima é a da barra das abas.** Ao estreitar a gaveta no Mapa ou no Pipeline, ela para exatamente onde a barra das abas, a pastinha e o alerta (quando falta algo) ainda cabem inteiros, em vez dos 800 px fixos. Ver [2. Mapa](02-mapa.md). (#340)
 - **Ficha: dá para rolar até as barras travarem em qualquer seção**, mesmo vazia ou curta: a seção ganha espaço vazio embaixo até a altura da tela. Ver [4. Visão geral](04-ficha-visao-geral.md). (#340)
 - **Ficha: ao trocar de seção, cada uma volta onde você a deixou.** O topo da ficha e as barras ficam na mesma altura; com as barras presas no alto, a seção nova aparece na última posição em que você a viu e, se ainda não tinha sido aberta, do começo, logo abaixo das barras. Ver [4. Visão geral](04-ficha-visao-geral.md). (#338)
