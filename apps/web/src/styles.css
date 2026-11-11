@@ -2094,7 +2094,7 @@ body.mp-cheia .sv-x { top: calc(12px + env(safe-area-inset-top, 0px)) }
 .vb-met { margin-bottom: 4px }
 .vb-lista td .linkbtn { text-align: left }
 .vb-cfg-r { grid-template-columns: 64px minmax(180px, 2fr) minmax(170px, 1.2fr) minmax(190px, 1.3fr) 100px 84px 52px 64px }
-.vb-pop { position: fixed; inset: 0; z-index: 35; display: flex; align-items: center; justify-content: center; padding: 24px }
+.vb-pop { position: fixed; inset: 0; z-index: 38; display: flex; align-items: center; justify-content: center; padding: 24px }
 .vb-pop-fundo { position: absolute; inset: 0; background: rgba(29, 46, 92, .45) }
 .vb-pop-d { position: relative; display: flex; flex-direction: column; width: min(1320px, 100%); height: 100%; background: var(--m-surface, #f8fafd); border-radius: 28px; box-shadow: 0 8px 32px rgba(0,0,0,.25); overflow: hidden }
 .vb-pop-h { display: flex; align-items: flex-start; gap: 16px; padding: 20px 20px 12px 24px; border-bottom: 1px solid var(--linha) }
