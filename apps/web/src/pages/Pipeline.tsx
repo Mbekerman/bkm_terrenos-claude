@@ -218,7 +218,7 @@ const COLS: Col[] = [
     return <><div className="tb-nome2" title={c[0].nome}>{c[0].nome}</div>
       {c.length > 1 ? <div className="t2 tb-corte" title={c.slice(1).map((x) => x.nome).join(', ')}>+{c.length - 1} corretor{c.length > 2 ? 'es' : ''}</div> : c[0].imob ? <div className="t2 tb-corte" title={c[0].imob}>{c[0].imob}</div> : null}</>;
   } },
-  { k: 'temp', l: 'Temperatura', w: 116, v: (t) => <TempMini v={t.temp} /> },
+  { k: 'temp', l: 'Temperatura', cls: 'meio', w: 116, v: (t) => <TempMini v={t.temp} /> },
   /* etapa em cima, subetapa embaixo (sem tracinho); estreita, na medida de "Primeiro Contato", e quebra em até 3 linhas
      (pedidos do Moises, 11/nov/2026) */
   { k: 'etapa', l: 'Etapa', w: 148, v: (t) => (t.etapa ? <div className="tb-et" title={t.etapa.dica}>
