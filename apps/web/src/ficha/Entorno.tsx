@@ -90,7 +90,7 @@ export function EntornoAuto({ f }: { f: Ficha }) {
     pontos de interesse, cada um num chip; o Entorno de Estudos Técnicos saiu */
 export default function AbaMercado({ f }: { f: Ficha }) {
   /* um raio para cada quadro (pedido do Moisés, 6/nov/2026: antes era o mesmo nos dois) */
-  const rd = useRaioSalvo('rd'), pf = useRaioSalvo('pf');
+  const { rd, pf } = useRaiosSalvos();
   if (f.lat == null || f.lng == null) return <section className="sec"><div className="empty">Localize o terreno (aba Terreno, Localização) para ver o mercado.</div></section>;
   return (
     <div className="stack">
@@ -195,25 +195,53 @@ function useSetores(demo: boolean) {
 }
 /* seletor de raio: 500 m, 1, 2, 3 km e Personalizado com lápis, em que a pessoa digita o raio em km,
    de 0,1 a 20 km (pedidos do Moises, 11/nov/2026; a Poligonal saiu por ora). O raio escolhido e o personalizado
-   de cada quadro ficam guardados no navegador e valem para todos os terrenos. */
+   de cada quadro ficam guardados no banco, por pessoa (app.preferencias_usuario), e valem para todos os terrenos. */
 const raioTxt = (m: number) => num(m / 1000, 2) + ' km'; // sempre em km (pedido do Moises, 11/nov/2026)
-const RAIO_LKEY = 'bkm-terrenos-mercado-raio';
-interface RaioSalvo { raio: Raio; cust: number | null; mudar: (raio: Raio, cust?: number | null) => void }
+const RAIO_LKEY = 'bkm-terrenos-mercado-raio'; // cópia no navegador: abre na hora, antes do banco responder
+const RAIO_CHAVE = 'mercado_raio'; // app.preferencias_usuario: acompanha a pessoa em qualquer computador
+interface RaioVal { raio: Raio; cust: number | null }
+interface RaioSalvo extends RaioVal { mudar: (raio: Raio, cust?: number | null) => void }
+type Raios2 = { rd: RaioVal; pf: RaioVal };
 const raioOk = (n: unknown): n is number => typeof n === 'number' && n >= RAIO_MIN && n <= RAIO_MAX;
-function useRaioSalvo(id: 'rd' | 'pf'): RaioSalvo {
-  const [v, setV] = useState<{ raio: Raio; cust: number | null }>(() => {
-    try {
-      const o = JSON.parse(localStorage.getItem(RAIO_LKEY) || '{}')[id];
-      if (o) return { raio: raioOk(o.raio) ? o.raio : 1000, cust: raioOk(o.cust) ? o.cust : null };
-    } catch { /* sem armazenamento */ }
-    return { raio: 1000, cust: null };
-  });
-  const mudar = (raio: Raio, cust?: number | null) => {
-    const n = { raio, cust: cust === undefined ? v.cust : cust };
-    setV(n);
-    try { const t = JSON.parse(localStorage.getItem(RAIO_LKEY) || '{}'); t[id] = n; localStorage.setItem(RAIO_LKEY, JSON.stringify(t)); } catch { /* sem armazenamento */ }
+function lerRaios(o: unknown): Raios2 {
+  const um = (x: unknown): RaioVal => {
+    const v = (x ?? {}) as { raio?: unknown; cust?: unknown };
+    return { raio: raioOk(v.raio) ? v.raio : 1000, cust: raioOk(v.cust) ? v.cust : null };
   };
-  return { ...v, mudar };
+  const t = (o ?? {}) as { rd?: unknown; pf?: unknown };
+  return { rd: um(t.rd), pf: um(t.pf) };
+}
+function useRaiosSalvos(): { rd: RaioSalvo; pf: RaioSalvo } {
+  const { session } = useSessao();
+  const uid = session?.user.id;
+  const [v, setV] = useState<Raios2>(() => {
+    try { return lerRaios(JSON.parse(localStorage.getItem(RAIO_LKEY) || '{}')); } catch { return lerRaios(null); }
+  });
+  const mexeu = useRef(false); // escolha feita antes de o banco responder vale mais que a lida
+  useEffect(() => {
+    if (!uid) return;
+    let vivo = true;
+    supabase.from('preferencias_usuario').select('valor').eq('chave', RAIO_CHAVE).maybeSingle().then(({ data, error }) => {
+      if (!vivo || error || !data || mexeu.current) return;
+      const n = lerRaios(data.valor);
+      setV(n);
+      try { localStorage.setItem(RAIO_LKEY, JSON.stringify(n)); } catch { /* sem armazenamento */ }
+    });
+    return () => { vivo = false; };
+  }, [uid]);
+  const gravar = (n: Raios2) => {
+    mexeu.current = true;
+    setV(n);
+    try { localStorage.setItem(RAIO_LKEY, JSON.stringify(n)); } catch { /* sem armazenamento */ }
+    if (uid) void supabase.from('preferencias_usuario')
+      .upsert({ user_id: uid, chave: RAIO_CHAVE, valor: n, atualizado_em: new Date().toISOString() }, { onConflict: 'user_id,chave' })
+      .then(({ error }) => { if (error) console.error(error); });
+  };
+  const um = (id: 'rd' | 'pf'): RaioSalvo => ({
+    ...v[id],
+    mudar: (raio, cust) => gravar({ ...v, [id]: { raio, cust: cust === undefined ? v[id].cust : cust } }),
+  });
+  return { rd: um('rd'), pf: um('pf') };
 }
 function Raios({ r: { raio, cust, mudar } }: { r: RaioSalvo }) {
   const toast = useToast();
@@ -237,7 +265,7 @@ function Raios({ r: { raio, cust, mudar } }: { r: RaioSalvo }) {
             <input name="r" inputMode="decimal" data-fmt="num" data-dec={2} aria-label="Raio personalizado, em km" placeholder="ex.: 1,5"
               defaultValue={cust != null ? num(cust / 1000, 2) : ''} autoFocus onFocus={(e) => e.currentTarget.select()}
               onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fim.current = true; setEd(false); } }}
-              onBlur={(e) => aplicar(e.currentTarget.value)} /><span className="rd-cust-u">km</span>
+              onBlur={(e) => aplicar(e.currentTarget.value)} /><span className="rd-cust-u">km</span><Ic n="edit" s={16} />
           </form>
         : <button type="button" className="rd-cust-b" aria-pressed={ativo} title={cust == null ? `Digitar o raio, de ${raioTxt(RAIO_MIN)} a ${raioTxt(RAIO_MAX)}` : ativo ? 'Alterar o raio' : `Usar ${raioTxt(cust)} (clique de novo para alterar)`}
             onClick={() => { if (cust != null && !ativo) mudar(cust); else { fim.current = false; setEd(true); } }}>
