@@ -17,6 +17,18 @@ create table app.ofertas (
   forma_pagamento_pedida text check (forma_pagamento_pedida in ('dinheiro','permuta_fisica','permuta_financeira','permuta_geral','permuta_com_torna')),
   observacao_pagamento   text,
   aceita_permuta         text,
+  -- modalidades pedidas além do dinheiro (valor_pedido), combináveis (pedido do Moises, 11/nov/2026):
+  -- permuta financeira em % do VGV líquido e permuta física em % ou em unidades; com várias partes,
+  -- a soma das partes (o front regrava, como o valor). forma_pagamento_pedida passa a ser derivada delas.
+  permuta_fin_pct        numeric(7,4) check (permuta_fin_pct > 0 and permuta_fin_pct <= 100),
+  permuta_fis_pct        numeric(7,4) check (permuta_fis_pct > 0 and permuta_fis_pct <= 100),
+  permuta_fis_unidades   int check (permuta_fis_unidades > 0),
+  -- mínimos garantidos (pedido do Moises, 11/nov/2026): em R$ na permuta financeira e em unidades na física em %;
+  -- na pedida a tela não os usa (o Moises escolheu só na proposta, 11/nov/2026), mas as colunas ficam, já aplicadas no banco
+  permuta_fin_minimo       numeric(16,2) check (permuta_fin_minimo > 0),
+  permuta_fis_min_unidades int check (permuta_fis_min_unidades > 0),
+  check (permuta_fin_minimo is null or permuta_fin_pct is not null),
+  check (permuta_fis_min_unidades is null or permuta_fis_pct is not null),
   comissao_pct           numeric(5,2) check (comissao_pct >= 0 and comissao_pct <= 100),
   comissao_valor         numeric(14,2) check (comissao_valor >= 0),
   validade               date,
@@ -52,6 +64,18 @@ create table app.oferta_partes (
   valor_pedido numeric(14,2) check (valor_pedido > 0),
   -- forma de pagamento pedida por esta parte (nula = a da oferta)
   forma_pagamento text check (forma_pagamento in ('dinheiro','permuta_fisica','permuta_financeira','permuta_geral','permuta_com_torna')),
+  -- modalidades combináveis (pedido do Moises, 11/nov/2026): dinheiro (valor_pedido), permuta financeira em % do
+  -- VGV líquido e permuta física em % ou em unidades (uma das duas); forma_pagamento é derivada delas
+  permuta_fin_pct      numeric(7,4) check (permuta_fin_pct > 0 and permuta_fin_pct <= 100),
+  permuta_fis_pct      numeric(7,4) check (permuta_fis_pct > 0 and permuta_fis_pct <= 100),
+  permuta_fis_unidades int check (permuta_fis_unidades > 0),
+  check (permuta_fis_pct is null or permuta_fis_unidades is null),
+  -- mínimos garantidos (pedido do Moises, 11/nov/2026): em R$ na permuta financeira e em unidades na física em %;
+  -- na pedida a tela não os usa (o Moises escolheu só na proposta, 11/nov/2026), mas as colunas ficam, já aplicadas no banco
+  permuta_fin_minimo       numeric(16,2) check (permuta_fin_minimo > 0),
+  permuta_fis_min_unidades int check (permuta_fis_min_unidades > 0),
+  check (permuta_fin_minimo is null or permuta_fin_pct is not null),
+  check (permuta_fis_min_unidades is null or permuta_fis_pct is not null),
   -- informações gerais do que esta parte pediu nesta oferta (a composição das partes muda de oferta para oferta)
   observacoes  text,
   primary key (oferta_id, parte_id)
@@ -68,6 +92,39 @@ begin
   return new;
 end $$;
 create trigger t_parte before insert or update on app.oferta_partes for each row execute function app.tg_oferta_parte();
+
+-- Forma de pagamento derivada das modalidades (pedido do Moises, 11/nov/2026): dinheiro + permuta = com torna;
+-- financeira + física = permuta geral; uma só = ela. Sem permuta nenhuma, fica a que estava (dados antigos).
+create or replace function app.forma_modalidades(p_dinheiro numeric, p_fin numeric, p_fis_pct numeric, p_fis_un int)
+returns text language sql immutable set search_path = '' as $$
+  select case
+    when p_fin is null and p_fis_pct is null and p_fis_un is null then case when p_dinheiro is not null then 'dinheiro' end
+    when p_dinheiro is not null then 'permuta_com_torna'
+    when p_fin is not null and coalesce(p_fis_pct, p_fis_un) is not null then 'permuta_geral'
+    when p_fin is not null then 'permuta_financeira'
+    else 'permuta_fisica' end $$;
+
+-- o gatilho repete a conta em vez de chamar a função: quem grava a oferta não tem execute nas funções internas
+create or replace function app.tg_forma_oferta()
+returns trigger language plpgsql set search_path = '' as $$
+declare f text;
+begin
+  if new.permuta_fin_pct is not null or new.permuta_fis_pct is not null or new.permuta_fis_unidades is not null
+     or (tg_op = 'UPDATE' and (old.permuta_fin_pct, old.permuta_fis_pct, old.permuta_fis_unidades)
+                              is distinct from (new.permuta_fin_pct, new.permuta_fis_pct, new.permuta_fis_unidades)) then
+    f := case
+      when new.permuta_fin_pct is null and new.permuta_fis_pct is null and new.permuta_fis_unidades is null
+        then case when new.valor_pedido is not null then 'dinheiro' end
+      when new.valor_pedido is not null then 'permuta_com_torna'
+      when new.permuta_fin_pct is not null and coalesce(new.permuta_fis_pct, new.permuta_fis_unidades) is not null then 'permuta_geral'
+      when new.permuta_fin_pct is not null then 'permuta_financeira'
+      else 'permuta_fisica' end;
+    if tg_table_name = 'ofertas' then new.forma_pagamento_pedida := f; else new.forma_pagamento := f; end if;
+  end if;
+  return new;
+end $$;
+create trigger t_forma before insert or update on app.ofertas for each row execute function app.tg_forma_oferta();
+create trigger t_forma before insert or update on app.oferta_partes for each row execute function app.tg_forma_oferta();
 
 -- ---------------------------------------------------------------------
 -- Viabilidades vinculadas (TEMPORÁRIO: vira view sobre o BKM)
@@ -211,7 +268,18 @@ create table app.propostas (
   proposta_anterior_id uuid references app.propostas(id),
   data_apresentacao    date,
   validade             date,
-  valor_total          numeric(14,2) not null check (valor_total > 0),
+  -- valor em dinheiro; nulo só com alguma permuta (pedido do Moises, 11/nov/2026: as mesmas modalidades da pedida)
+  valor_total          numeric(14,2) check (valor_total > 0),
+  permuta_fin_pct      numeric(7,4) check (permuta_fin_pct > 0 and permuta_fin_pct <= 100),
+  permuta_fis_pct      numeric(7,4) check (permuta_fis_pct > 0 and permuta_fis_pct <= 100),
+  permuta_fis_unidades int check (permuta_fis_unidades > 0),
+  check (permuta_fis_pct is null or permuta_fis_unidades is null),
+  check (valor_total is not null or permuta_fin_pct is not null or permuta_fis_pct is not null or permuta_fis_unidades is not null),
+  -- mínimos garantidos (pedido do Moises, 11/nov/2026): em R$ na permuta financeira e em unidades na física em %
+  permuta_fin_minimo       numeric(16,2) check (permuta_fin_minimo > 0),
+  permuta_fis_min_unidades int check (permuta_fis_min_unidades > 0),
+  check (permuta_fin_minimo is null or permuta_fin_pct is not null),
+  check (permuta_fis_min_unidades is null or permuta_fis_pct is not null),
   forma_pagamento      text not null check (forma_pagamento in ('dinheiro','permuta_fisica','permuta_financeira','permuta_geral','permuta_com_torna')),
   condicoes_pagamento  text,
   status               text not null check (status in ('rascunho','apresentada','em_analise','aceita','recusada','expirada','retirada','substituida')),

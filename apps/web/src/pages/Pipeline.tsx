@@ -1,3 +1,4 @@
+import { finTxt, fisTxt, modDe, temMod, type Modalidades } from '../lib/modalidades';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,7 +29,7 @@ import { alternar } from '../filtros/ordem';
 type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 interface Linha {
   id: string; codigo: string; nome: string; endereco: string; cidade: string | null; zona: string | null; area: number | null;
-  zonas: string | null; topo: string | null; vgv: number | null; un: number | null; mUn: number | null; mArea: number | null; temMassa: boolean; temEstudo: boolean; vid: string | null; ll: number | null; pedido: number | null; proposta: number | null;
+  zonas: string | null; topo: string | null; vgv: number | null; un: number | null; mUn: number | null; mArea: number | null; temMassa: boolean; temEstudo: boolean; vid: string | null; ll: number | null; pedido: number | null; proposta: number | null; ped: Modalidades; prop: Modalidades;
   corretores: { nome: string; imob: string | null }[]; temp: number | null; resp: { nome: string; foto: string | null } | null;
   /* só para a busca da barra superior */
   busca: TerrenoMapa;
@@ -36,7 +37,7 @@ interface Linha {
 
 async function carregar(emp: string): Promise<Linha[]> {
   const [v, t, pr, cor, mat, ins, em] = await Promise.all([
-    supabase.from('v_terrenos').select('id,codigo,nome,logradouro,numero,bairro,zona,municipio,area_adotada_m2,zonas_siglas,vgv,margem_pct,valor_pedido,proposta_ativa_valor,corretor_ids,temperatura,responsavel_id,negociacao_id').eq('empresa_id', emp),
+    supabase.from('v_terrenos').select('id,codigo,nome,logradouro,numero,bairro,zona,municipio,area_adotada_m2,zonas_siglas,vgv,margem_pct,valor_pedido,pedido_fin_pct,pedido_fis_pct,pedido_fis_unidades,proposta_ativa_valor,proposta_ativa_fin_pct,proposta_ativa_fis_pct,proposta_ativa_fis_unidades,proposta_ativa_fin_minimo,proposta_ativa_fis_min_unidades,corretor_ids,temperatura,responsavel_id,negociacao_id').eq('empresa_id', emp),
     supabase.from('terrenos').select('id,topo_perfil,topo_declividade_pct').eq('empresa_id', emp),
     supabase.from('processos').select('id,viabilidade_id').eq('empresa_id', emp).not('viabilidade_id', 'is', null),
     supabase.from('corretores').select('id,imobiliaria,pessoas(nome_razao_social)').eq('empresa_id', emp),
@@ -78,6 +79,8 @@ async function carregar(emp: string): Promise<Linha[]> {
       area: x.area_adotada_m2 == null ? null : +x.area_adotada_m2, zonas: zs(x.zonas_siglas), topo,
       vgv: x.vgv == null ? null : +x.vgv, un: vid ? unDe[vid] ?? null : null, temEstudo: !!vid, mUn: ms?.unidades == null ? null : +ms.unidades, mArea: ms?.area_privativa_m2 == null ? null : +ms.area_privativa_m2, temMassa: !!ms, vid: vid ?? null, ll: x.margem_pct == null ? null : +x.margem_pct,
       pedido: x.valor_pedido == null ? null : +x.valor_pedido, proposta: x.proposta_ativa_valor == null ? null : +x.proposta_ativa_valor,
+      ped: modDe({ valor: x.valor_pedido, fin: x.pedido_fin_pct, fisPct: x.pedido_fis_pct, fisUn: x.pedido_fis_unidades }),
+      prop: modDe({ valor: x.proposta_ativa_valor, fin: x.proposta_ativa_fin_pct, fisPct: x.proposta_ativa_fis_pct, fisUn: x.proposta_ativa_fis_unidades, finMin: x.proposta_ativa_fin_minimo, fisMinUn: x.proposta_ativa_fis_min_unidades }),
       corretores, temp: x.temperatura ?? null, resp: uN[x.responsavel_id] ?? null,
       busca: { codigo: x.codigo, nome: x.nome, bairro: x.bairro, zona: x.zona, municipio: x.municipio, corretor: corretores.map((c) => c.nome).join(' '),
         endereco, matriculas: mats[x.id], sqls: sqls[x.id] } as unknown as TerrenoMapa,
@@ -129,6 +132,14 @@ const Kv = ({ l, v, fraco }: { l: string; v: React.ReactNode; fraco?: boolean })
   <div className={`tb-kv${fraco ? ' fraco' : ''}`} title={l}><span className="tb-kvv">{v}</span></div>
 );
 const pct2 = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+const INFO_MOD = (de: string) => [{ t: 'Dinheiro', d: `valor em dinheiro da ${de}`, forte: true }, { t: '% VGVL', d: 'permuta financeira, em % do VGV líquido' },
+  { t: 'Unid. ou % física', d: 'permuta física, em unidades ou em percentual' },
+  ...(de === 'proposta ativa' ? [{ t: '*', d: 'Tem mínimo garantido (R$ na financeira, unidades na física em %). O mouse parado no valor mostra o mínimo.' }] : [])];
+/** as três linhas das modalidades; a que não foi pedida fica com o traço discreto */
+const Mods = ({ m, vazio }: { m: Modalidades; vazio: string }) => (!temMod(m) ? <Vazio s={vazio} /> : <>
+  <Kv l="Dinheiro" v={m.din != null ? mi(m.din) : <Nada s="—" />} />
+  <Kv fraco l={`Permuta financeira: ${finTxt(m) ?? 'não pedida'}`} v={finTxt(m, true) ?? <Nada s="—" />} />
+  <Kv fraco l={`Permuta física: ${fisTxt(m) ?? 'não pedida'}`} v={fisTxt(m, true) ?? <Nada s="—" />} /></>);
 /* títulos do Moisés (4/nov/2026, segunda versão); as chaves são as da ordenação (filtros/ordem.ts); w = largura fixa da coluna
    (a coluna Terreno fica com o resto); reorganização de 11/nov/2026, pedida pelo Moises */
 const COLS: Col[] = [
@@ -154,10 +165,10 @@ const COLS: Col[] = [
     {t.temEstudo && <><Kv l="VGV" v={t.vgv != null ? mi(t.vgv) : <Nada s="—" />} />{olhoViab(t, ver)}</>}
     <Kv fraco l="Unidades" v={(t.temEstudo ? t.un : t.mUn) != null ? num((t.temEstudo ? t.un : t.mUn)!) : '—'} />{t.temMassa ? olhoMassa(t, ver) : <span />}
     {t.temEstudo && <><Kv fraco l="L.L., margem líquida" v={t.ll != null ? pct2(t.ll) : '—'} /><span /></>}</div> : <Vazio s="Sem estudo de massa nem de viabilidade válido" />) },
-  { k: 'preco', l: 'Negociação', w: 176, info: [
-    { t: 'Pedida', d: 'valor pedido na oferta de referência', forte: true }, { t: 'Proposta', d: 'valor da proposta ativa' }], v: (t) => (t.pedido == null && t.proposta == null ? <Vazio s="Sem valor pedido nem proposta" /> : <>
-    <Kv l="Pedida" v={t.pedido != null ? mi(t.pedido) : <Nada s="—" />} />
-    <Kv fraco l="Proposta" v={t.proposta != null ? mi(t.proposta) : '—'} /></>) },
+  /* Pedida e Proposta (pedido do Moises, 11/nov/2026, no lugar de Negociação): três linhas, na mesma ordem nas duas,
+     dinheiro, permuta financeira em % do VGV líquido e permuta física em unidades ou em % */
+  { k: 'preco', l: 'Pedida', w: 136, info: INFO_MOD('oferta de referência'), v: (t) => <Mods m={t.ped} vazio="Sem pedido" /> },
+  { k: 'prop', l: 'Proposta', w: 136, info: INFO_MOD('proposta ativa'), v: (t) => <Mods m={t.prop} vazio="Sem proposta ativa" /> },
   { k: 'corretor', l: 'Corretor', w: 168, v: (t) => {
     const c = t.corretores;
     if (!c.length) return <Vazio s="Sem corretor" />;
@@ -170,7 +181,7 @@ const COLS: Col[] = [
 
 /* colunas que saem quando a tabela não cabe, nesta ordem (pedido do Moises, 11/nov/2026); a cidade não é coluna: as linhas
    ficam sempre agrupadas por cidade, com um título para cada uma */
-const SAI = ['resp', 'temp', 'corretor', 'junta', 'zona', 'preco', 'estudo'];
+const SAI = ['resp', 'temp', 'corretor', 'junta', 'zona', 'prop', 'preco', 'estudo'];
 /** colunas visíveis em cada nível; no passo "junta", Estudo de massa e Viabilidade viram uma coluna só, Empreendimento
     (pedido do Moises, 11/nov/2026) */
 const visiveis = (nivel: number) => {
@@ -472,7 +483,8 @@ function InfoCol({ c }: { c: Col }) {
       {aberto && <span className="tb-info-pop" role="tooltip">
         <span className="tb-info-t">{c.l}</span>
         <span className="tb-info-s">De cima para baixo, em cada linha:</span>
-        {c.info!.map((x, i) => <span key={x.t} className="tb-info-l"><span className="tb-info-n">{i + 1}</span><span><b className={x.forte ? 'forte' : undefined}>{x.t}</b><span className="tb-info-d">{x.d}</span></span></span>)}
+        {c.info!.filter((x) => x.t !== '*').map((x, i) => <span key={x.t} className="tb-info-l"><span className="tb-info-n">{i + 1}</span><span><b className={x.forte ? 'forte' : undefined}>{x.t}</b><span className="tb-info-d">{x.d}</span></span></span>)}
+        {c.info!.filter((x) => x.t === '*').map((x) => <span key="*" className="tb-info-s" style={{ marginTop: 8 }}><b>*</b> {x.d}</span>)}
       </span>}
     </span>
   );
