@@ -27,6 +27,10 @@ function minimo(g: HTMLElement | null) {
   const alerta = g.querySelector('.complete .fi-comp-n') && !fim?.querySelector('.fi-alerta') ? 40 : 0;
   return Math.ceil(g.getBoundingClientRect().width - a.clientWidth + conteudo + alerta + 1);
 }
+const POR_CIMA = '.adv-mais.aberto,.mp-ctx,.dialog,.scrim,[role=dialog]:not(#tgav),[role=menu]:not([hidden]),[role=listbox]:not([hidden]),[role=tooltip]';
+const CAMPO = 'input,textarea,select,[contenteditable=""],[contenteditable="true"]';
+/** os menus ⋮ ficam montados e escondidos pelo CSS: só conta o que aparece */
+const visivel = (e: HTMLElement) => (e.checkVisibility ? e.checkVisibility({ visibilityProperty: true }) : e.getClientRects().length > 0);
 const lerW = () => { try { return Number(localStorage.getItem(GAV_KEY)) || null; } catch { return null; } };
 // No Pipeline (/terrenos/A123/gaveta; proto_tabela.js › tgavPos), `naTabela`: a gaveta cobre a tabela a partir do fim da
 // coluna 1 (`lado` é o título dela) e, com a tabela em tela cheia, começa no alto da tela.
@@ -127,15 +131,32 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
   const navegar = useNavigate();
   const fecharR = useRef(fechar);
   fecharR.current = fechar;
+  /* algo aberto por cima (janela, menu, lista, balão) ou um campo em edição na gaveta: o Esc e o clique fora fecham
+     primeiro isso, e só o seguinte fecha a gaveta (pedido do Moises, 11/nov/2026) */
+  const temPorCima = () => [...document.querySelectorAll<HTMLElement>(POR_CIMA)].some(visivel);
+  const editando = () => { const a = document.activeElement; return !!a && !!el.current?.contains(a) && a.matches(CAMPO); };
   useEffect(() => {
     const k = (ev: KeyboardEvent) => {
-      if (ev.key !== 'Escape' || ev.defaultPrevented || document.querySelector('.adv-mais.aberto,.mp-ctx,.dialog,.scrim')) return;
-      if ((ev.target as HTMLElement).matches?.('input,textarea,select')) return;
+      if (ev.key !== 'Escape' || ev.defaultPrevented || temPorCima()) return;
+      if ((ev.target as HTMLElement).matches?.(CAMPO)) return;
       fecharR.current(); ev.preventDefault();
     };
     document.addEventListener('keydown', k);
     return () => document.removeEventListener('keydown', k);
   }, []);
+  /* no Pipeline, o clique fora da tabela e da gaveta fecha a gaveta; o clique na tabela continua trocando o terreno */
+  useEffect(() => {
+    if (!naTabela) return;
+    const p = (ev: PointerEvent) => {
+      if (ev.button > 0) return;
+      const t = ev.target as Element | null;
+      if (!t?.isConnected || !document.getElementById('root')?.contains(t)) return; // janelas e listas soltas no body
+      if (t.closest('#tgav,table.lista-ter') || temPorCima() || editando()) return;
+      fecharR.current();
+    };
+    document.addEventListener('pointerdown', p, true);
+    return () => document.removeEventListener('pointerdown', p, true);
+  }, [naTabela]);
   const f = q.data;
   const irAba = (k: string) => {
     setAba(k); gravarRol();
