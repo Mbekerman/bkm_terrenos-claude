@@ -10,19 +10,35 @@ No menu lateral, **Terrenos** (o primeiro item). A página se chama **Pipeline**
 
 ## As colunas
 
+Os terrenos ficam sempre **agrupados por cidade**, com um título para cada cidade e quantos terrenos ela tem (veja "Cidades", abaixo).
+
 | Coluna | O que mostra | Ordena por |
 |---|---|---|
-| **Terreno** | Nome em cima; código e endereço embaixo | nome |
-| **Cidade** | Município | cidade |
+| **Terreno** | Nome em cima; código e endereço embaixo (o endereço longo termina em "…"; o mouse em cima mostra inteiro) | nome |
 | **Região** | Zona Norte, Zona Sul, Centro... | região |
 | **Imóvel** | Área adotada, zoneamento ("ZM / ZC") e perfil topográfico | área |
-| **Projeto** | VGV, unidades e **L.L.** (margem líquida: lucro líquido ÷ VGV líquido, o mesmo número de "Margem líquida" no popup do estudo) do estudo de viabilidade válido, com o **olho** ao lado do VGV, que abre o estudo válido no popup sem abrir a ficha; "Sem estudo válido" quando não há | VGV |
+| **Estudo de massa** | Unidades e área privativa total do estudo de massa válido, com o **olho** à direita, que abre o estudo numa janela | unidades |
+| **Viabilidade** | VGV e **L.L.** (margem líquida: lucro líquido ÷ VGV líquido, o mesmo número de "Margem líquida" no popup do estudo) do estudo de viabilidade válido, com o **olho** à direita, que abre o estudo no popup | VGV |
 | **Negociação** | Pedida (valor pedido da oferta de referência) e Proposta (a proposta ativa) | valor pedido |
 | **Corretor** | O corretor principal e a imobiliária; com mais de um, "+N corretores" (o mouse em cima mostra os nomes) | primeiro corretor |
-| **Temperatura** | As barrinhas de 1 a 5 | temperatura |
+| **Temperatura** | As barrinhas de 1 a 5 e o número | temperatura |
 | **Responsável** | A foto (ou as iniciais) de quem cuida do terreno; o mouse em cima mostra o nome | nome |
 
-O que ainda não foi preenchido aparece em cinza: "Sem área", "Zoneamento não consultado", "Topografia não medida", "Sem corretor".
+O que não foi preenchido aparece como um traço cinza (—); o mouse em cima diz o que falta ("Sem corretor", "Sem estudo de massa válido"...).
+
+Os olhos não abrem a ficha: a janela do estudo abre sobre a tabela. Na janela do estudo de massa, quem edita pode mudar o estudo, ver o pedido e criar o estudo de viabilidade, como na aba Estudos Técnicos da ficha.
+
+## Tela menor
+
+Quando a tabela não cabe na largura, as colunas saem nesta ordem: **Responsável**, **Temperatura**, **Corretor**; depois **Estudo de massa** e **Viabilidade** viram uma coluna só, **Empreendimento** (VGV, unidades e L.L., com um olho para cada estudo); depois saem **Região**, **Negociação** e **Empreendimento**. Terreno e Imóvel ficam sempre. No celular, cada linha mostra só o terreno e o imóvel.
+
+## Cidades
+
+- O título de cada cidade fica **preso no alto da tabela** enquanto passam os terrenos dela, logo abaixo dos títulos das colunas.
+- Clicar no título (ou na seta) **recolhe** os terrenos daquela cidade; clicar de novo mostra.
+- Para **mudar a ordem das cidades**, arraste o título pela alça de seis pontos, à esquerda. Uma linha azul mostra onde a cidade vai cair. Pelo teclado, com o foco no título, **Alt + ↑** e **Alt + ↓**. No celular, as setas ↑ e ↓ no título sobem e descem a cidade.
+- A ordem das cidades e as recolhidas ficam guardadas no seu navegador. Cidade que você ainda não arrumou entra em ordem alfabética, depois das arrumadas; "Sem cidade" fica por último.
+- A ordenação pelo título das colunas vale dentro de cada cidade.
 
 ## Ordenar
 
@@ -54,3 +70,4 @@ O que ainda não foi preenchido aparece em cinza: "Sem área", "Zoneamento não 
 
 - Editar valores direto na tabela: a edição é na ficha (na gaveta ou na página).
 - Escolher quais colunas aparecem.
+- Mudar a ordem das cidades no celular arrastando (use as setas).

@@ -132,6 +132,31 @@ export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void 
   );
 }
 
+/** o estudo de massa válido do terreno numa janela, aberto pelo olho da tabela do Pipeline (pedido do Moises, 11/nov/2026):
+    a mesma ficha do estudo da aba, editável para quem edita, com Ver pedido e Criar estudo de viabilidade */
+export function PopMassa({ f, fechar }: { f: Ficha; fechar: () => void }) {
+  const { edita } = useSessao();
+  const qc = useQueryClient(), q = useMassa(f), L = useListas();
+  const membros = L.data?.membros ?? [];
+  const nome = (id: string | null | undefined) => (id ? membros.find((x) => x.user_id === id)?.nome ?? '—' : '—');
+  const [janela, setJanela] = useState<null | 'pedido' | 'viab'>(null);
+  const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-massa', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); qc.invalidateQueries({ queryKey: ['mapa'] }); };
+  const m = q.data?.ms.find((x) => x.valido) ?? null;
+  return (
+    <Dialogo titulo={`${f.codigo} · ${f.nome}`} sub="Estudo de massa válido" cls="ems-pop" onFechar={() => { if (!janela) fechar(); }}>
+      <div className="ems-pop-b">
+        {q.isLoading ? <div className="empty">Carregando…</div>
+          : q.error ? <div className="banner warn">Não foi possível ler o estudo de massa: {(q.error as Error).message}</div>
+          : m ? <FichaEstudo key={m.id} m={m} viabs={q.data!.viabs} edita={edita} recarregar={recarregar}
+            abrir={(t) => { if (t !== 'apagar') setJanela(t); }} marcarValido={() => {}} />
+          : <div className="empty">Este terreno não tem estudo de massa válido.</div>}
+      </div>
+      {janela === 'pedido' && m ? <JanelaPedido m={m} membros={membros} nome={nome} edita={edita} fechar={() => setJanela(null)} recarregar={recarregar} /> : null}
+      {janela === 'viab' && m ? <JanelaViab m={m} fechar={() => setJanela(null)} criado={() => { setJanela(null); recarregar(); }} /> : null}
+    </Dialogo>
+  );
+}
+
 /* ---------- Solicitar estudo (formulário de inclusão, com rascunho no navegador) ---------- */
 function FormSolicitar({ modo, f, membros, fechar, criado }: { modo: 'pedir' | 'lancar'; f: Ficha; membros: R[]; fechar: () => void; criado: (id: string) => void }) {
   const toast = useToast();
