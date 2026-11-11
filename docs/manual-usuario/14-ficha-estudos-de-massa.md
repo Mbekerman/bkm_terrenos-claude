@@ -16,6 +16,16 @@ Dois quadros: **Estudos de massa** (a lista) e, logo abaixo, a **ficha do estudo
 
 O estudo nasce como **Solicitado**, com o nome "Estudo de massa 1", 2, 3..., e o arquiteto recebe o aviso no sino. O que você digita no formulário fica guardado no navegador até registrar (como nos outros formulários; **"Limpar dados do formulário"** apaga).
 
+## Lançar um estudo que já está pronto
+
+Quando o estudo já chegou pronto (de um arquiteto de fora, por e-mail, ou feito antes do sistema), não precisa pedir:
+
+1. No quadro **Estudos de massa**, clique em **"Lançar estudo"**.
+2. Dê um **Nome** (em branco, vira "Estudo de massa 1", 2, 3...) e escolha o **Responsável na equipe** (vem marcado com você; é quem responde pelo estudo dentro da BKM).
+3. Clique em **"Criar e lançar"**.
+
+O estudo nasce **Em elaboração**, ninguém recebe aviso, e a ficha do estudo abre logo abaixo para você digitar as tipologias, as áreas, as vagas e os índices. Depois, **"Marcar como entregue"** e, se for o caso, **"Marcar como válido"**, como num estudo pedido.
+
 ## A lista
 
 Uma linha por estudo: nome, arquiteto, situação (**Solicitado**, **Em elaboração** ou **Entregue**), unidades, área privativa, área construída, eficiência e a bolinha **Válido**. Clique no nome para abrir a ficha dele embaixo. Sem escolher, abre o válido (ou o último).
