@@ -4961,9 +4961,13 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .lista-ter td.col-ter { min-width: 240px; max-width: 340px }
 .lista-ter td.col-cid, .lista-ter td.col-zona { white-space: nowrap }
 .tb-c1 { display: flex; gap: 8px; align-items: flex-start }
+.tb-vgv { display: flex; align-items: center; justify-content: flex-end; gap: 2px }
+.tb-viab { flex: none; width: 28px; height: 28px; margin: -4px 0 -4px -6px; color: var(--m-on-var, #444746) }
+.tb-viab:hover { color: #0b57d0 }
 .tb-c1t { min-width: 0 }
 .tb-c1t .t1 { font-weight: 500; overflow-wrap: anywhere }
 .tb-ord { display: inline-grid; place-items: center; min-width: 16px; height: 16px; margin-left: 2px; padding: 0 4px; border-radius: 8px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500; line-height: 16px }
+.lista-ter tbody tr { cursor: pointer }
 .lista-ter tr.tb-sel > td { background: #d3e3fd !important }
 /* tela cheia: a tabela cobre a página, acima do menu e abaixo das janelas */
 .ter-pg.on { position: fixed; inset: 0; z-index: 31; overflow: auto; background: var(--m-surface, #f8fafd); padding: 16px 24px 24px }

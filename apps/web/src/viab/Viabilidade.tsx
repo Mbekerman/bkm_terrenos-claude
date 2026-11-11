@@ -28,7 +28,7 @@ const VB_ROT: Record<Sec, string> = { tip: 'Tipologias', terreno: 'Terreno', com
 let aberto: string | null = null;
 const subs = new Set<() => void>();
 export function abrirEstudo(id: string | null) { aberto = id; subs.forEach((f) => f()); }
-const useAberto = () => useSyncExternalStore((f) => { subs.add(f); return () => { subs.delete(f); }; }, () => aberto);
+export const useAberto = () => useSyncExternalStore((f) => { subs.add(f); return () => { subs.delete(f); }; }, () => aberto);
 
 function useDiretoria() {
   const { membro } = useSessao();
@@ -234,7 +234,8 @@ export function PopEstudo({ f }: { f: Ficha }) {
   const { empresa } = useSessao();
   const q = useEstudos(f.id, f.negId, empresa?.id);
   const loc = useLocation(), navegar = useNavigate();
-  const naPagina = loc.pathname.startsWith(`/terrenos/${f.codigo}`);
+  /* na página da ficha (não na gaveta do Pipeline, /terrenos/A123/gaveta, nem na tabela) */
+  const naPagina = new RegExp(`^/terrenos/${f.codigo}(/|$)`).test(loc.pathname) && !loc.pathname.startsWith(`/terrenos/${f.codigo}/gaveta`);
   const lista = q.data?.lista;
   /* o endereço abre o estudo pela ordem no terreno: /terrenos/A123/viabilidade/2 */
   const ini = useRef(false);

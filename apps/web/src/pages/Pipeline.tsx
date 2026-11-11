@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { escondidos } from '../lib/escondidos';
@@ -8,7 +8,8 @@ import { Carregando, Erro } from '../components/ui';
 import { Ic, type ContextoMoldura } from '../components/Moldura';
 import { abrirNovo } from '../novo/estado';
 import { TEMP, TP_N, ZONA } from '../ficha/dados';
-import { usePreCarregarFicha } from '../ficha/Ficha';
+import { usePreCarregarFicha, useFicha } from '../ficha/Ficha';
+import { abrirEstudo, PopEstudo, useAberto } from '../viab/Viabilidade';
 import GavetaFicha from '../ficha/Gaveta';
 import { bate } from '../mapa/dados';
 import type { TerrenoMapa } from '../mapa/dados';
@@ -26,7 +27,7 @@ import { alternar } from '../filtros/ordem';
 type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 interface Linha {
   id: string; codigo: string; nome: string; endereco: string; cidade: string | null; zona: string | null; area: number | null;
-  zonas: string | null; topo: string | null; vgv: number | null; un: number | null; temEstudo: boolean; ll: number | null; pedido: number | null; proposta: number | null;
+  zonas: string | null; topo: string | null; vgv: number | null; un: number | null; temEstudo: boolean; vid: string | null; ll: number | null; pedido: number | null; proposta: number | null;
   corretores: { nome: string; imob: string | null }[]; temp: number | null; resp: { nome: string; foto: string | null } | null;
   /* só para a busca da barra superior */
   busca: TerrenoMapa;
@@ -71,7 +72,7 @@ async function carregar(emp: string): Promise<Linha[]> {
     return {
       id: x.id, codigo: x.codigo ?? '', nome: x.nome ?? x.codigo ?? '', endereco, cidade: x.municipio ?? null, zona: x.zona ?? null,
       area: x.area_adotada_m2 == null ? null : +x.area_adotada_m2, zonas: zs(x.zonas_siglas), topo,
-      vgv: x.vgv == null ? null : +x.vgv, un: vid ? unDe[vid] ?? null : null, temEstudo: !!vid, ll: x.margem_pct == null ? null : +x.margem_pct,
+      vgv: x.vgv == null ? null : +x.vgv, un: vid ? unDe[vid] ?? null : null, temEstudo: !!vid, vid: vid ?? null, ll: x.margem_pct == null ? null : +x.margem_pct,
       pedido: x.valor_pedido == null ? null : +x.valor_pedido, proposta: x.proposta_ativa_valor == null ? null : +x.proposta_ativa_valor,
       corretores, temp: x.temperatura ?? null, resp: uN[x.responsavel_id] ?? null,
       busca: { codigo: x.codigo, nome: x.nome, bairro: x.bairro, zona: x.zona, municipio: x.municipio, corretor: corretores.map((c) => c.nome).join(' '),
@@ -98,7 +99,7 @@ function Av({ r }: { r: NonNullable<Linha['resp']> }) {
     {r.foto ? <img src={r.foto} alt="" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : ini}</span>;
 }
 
-interface Col { k: string; l: string; cls?: string; v: (t: Linha) => React.ReactNode }
+interface Col { k: string; l: string; cls?: string; v: (t: Linha, verViab: (t: Linha) => void) => React.ReactNode }
 /* títulos do Moisés (4/nov/2026, segunda versão); as chaves são as da ordenação (filtros/ordem.ts) */
 const COLS: Col[] = [
   { k: 'ter', l: 'Terreno', cls: 'esq', v: (t) => (
@@ -111,8 +112,9 @@ const COLS: Col[] = [
     <div>{t.area != null ? m2(t.area) : <Nada s="Sem área" />}</div>
     <div className="t2">{t.zonas ?? 'Zoneamento não consultado'}</div>
     <div className="t2">{t.topo ?? 'Topografia não medida'}</div></> },
-  { k: 'estudo', l: 'Projeto', cls: 'num', v: (t) => (t.temEstudo ? <>
-    <div>{t.vgv != null ? 'VGV ' + mi(t.vgv) : <Nada s="Sem VGV" />}</div>
+  { k: 'estudo', l: 'Projeto', cls: 'num', v: (t, ver) => (t.temEstudo ? <>
+    <div className="tb-vgv"><button type="button" className="iconbtn tb-viab" aria-label={`Ver a viabilidade válida de ${t.nome}`} title="Ver a viabilidade válida"
+      onClick={(e) => { e.stopPropagation(); ver(t); }}><Ic n="olho" s={18} /></button>{t.vgv != null ? 'VGV ' + mi(t.vgv) : <Nada s="Sem VGV" />}</div>
     <div className="t2">{t.un != null ? num(t.un) + ' unidades' : 'Sem unidades'}</div>
     {t.ll != null && <div className="t2" title="Margem líquida do estudo válido: lucro líquido ÷ receita líquida">L.L. {t.ll.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</div>}</> : <Nada s="Sem estudo válido" />) },
   { k: 'preco', l: 'Negociação', cls: 'num', v: (t) => <>
@@ -167,7 +169,7 @@ export default function Pipeline() {
   useEffect(() => {
     const fs = () => { if (!document.fullscreenElement && api.current) { api.current = false; cheiaR.current(false); } };
     const k = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || gav || fx.aberto || document.querySelector('.dialog,.scrim,#fx-dr')) return;
+      if (e.key !== 'Escape' || e.defaultPrevented || gav || fx.aberto || document.querySelector('.dialog,.scrim,#fx-dr,#vb-pop')) return;
       if (cheia && !document.fullscreenElement) { cheiaR.current(false); e.preventDefault(); }
     };
     document.addEventListener('fullscreenchange', fs);
@@ -186,6 +188,12 @@ export default function Pipeline() {
     if (tr) { const r = tr.getBoundingClientRect(); if (r.top < 80 || r.bottom > innerHeight) tr.scrollIntoView({ block: 'center' }); }
   }, [gav, q.data]);
 
+  /* olho da coluna Projeto: o popup do estudo válido sobre a tabela, sem abrir a ficha da linha (pedido do Moises,
+     11/nov/2026); com a gaveta do mesmo terreno aberta, o popup é o da própria ficha da gaveta */
+  const [viab, setViab] = useState<{ cod: string; vid: string } | null>(null);
+  const qc = useQueryClient();
+  const verViab = (t: Linha) => { if (!t.vid) return; if (gav === t.codigo) abrirEstudo(t.vid); else setViab({ cod: t.codigo, vid: t.vid }); };
+  const fecharViab = () => { setViab(null); void qc.invalidateQueries({ queryKey: ['mapa', 'pipeline'] }); };
   const abrirGav = (t: Linha) => navegar(gav === t.codigo ? '/terrenos' + location.hash : `/terrenos/${t.codigo}/gaveta${location.hash}`, { replace: !!gav });
     const total = todos.length, n = passam.length;
   const L = fx.o;
@@ -222,7 +230,7 @@ export default function Pipeline() {
             <tbody>{linhas.map((t) => (
               <tr key={t.id} data-cod={t.codigo} tabIndex={0} className={gav === t.codigo ? 'tb-sel' : undefined} aria-current={gav === t.codigo ? 'true' : undefined}
                 onClick={() => abrirGav(t)} onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) abrirGav(t); }} onMouseEnter={() => parado(t.codigo)} onMouseLeave={() => clearTimeout(preT.current)}>
-                {COLS.map((c) => <td key={c.k} className={`col-${c.k} ${c.cls ?? ''}`}>{c.v(t)}</td>)}
+                {COLS.map((c) => <td key={c.k} className={`col-${c.k} ${c.cls ?? ''}`}>{c.v(t, verViab)}</td>)}
               </tr>
             ))}</tbody>
           </table></div>}
@@ -232,6 +240,16 @@ export default function Pipeline() {
         aoSair={() => navegar('/terrenos', { replace: true })}
         abrirPagina={(aba) => navegar(`/terrenos/${gav}${aba === 'geral' ? '' : '/' + aba}`, { state: { de: 'terrenos' } })}
         abrirMapa={() => navegar(`/mapa/${gav}`)} />}
+      {viab && viab.cod !== gav && <ViabPop key={viab.vid} cod={viab.cod} vid={viab.vid} fechar={fecharViab} />}
     </div>
   );
+}
+
+/** o popup do estudo válido aberto pela tabela: carrega a ficha do terreno (o popup precisa dela) e fecha junto com ele */
+function ViabPop({ cod, vid, fechar }: { cod: string; vid: string; fechar: () => void }) {
+  const q = useFicha(cod), aberto = useAberto(), abriu = useRef(false);
+  useEffect(() => { if (q.data && !abriu.current) { abriu.current = true; abrirEstudo(vid); } }, [q.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (abriu.current && aberto == null) fechar(); }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (q.isFetched && !q.data) fechar(); }, [q.isFetched, q.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  return q.data ? <PopEstudo f={q.data} /> : null;
 }
