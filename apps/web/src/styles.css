@@ -2271,6 +2271,8 @@ body.vb-aberto { overflow: hidden }
 .adorno-t { position: absolute; top: 50%; transform: translateY(-50%); color: var(--m-on-var, #444746); font-size: 14px; line-height: 1; pointer-events: none }
 .adorno.moeda > .adorno-t { left: 12px }
 .adorno.pct > .adorno-t { right: 12px }
+.adorno.un > input { padding-right: 52px !important } .adorno.un > .adorno-t { right: 12px }
+.adorno.dias > input { padding-right: 50px !important } .adorno.dias > .adorno-t { right: 12px }
 input[data-fmt]:not([data-fmt="none"]) { font-variant-numeric: tabular-nums }
 :root[data-tema="escuro"] .adorno-t { color: #c4c7c5 }
 
@@ -4673,12 +4675,12 @@ html[data-tema="escuro"] .vt-obs { color: #c4c7c5; background: transparent !impo
 .qd-add { align-self: flex-start; margin-top: 10px }
 .nv-pl-h { font-size: 15px; font-weight: 500; margin: 20px 0 8px }
 .nv-lt .nv-sqls { display: flex; flex-direction: column; gap: 8px }
-.ptcom-r { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, .8fr) 160px 140px 190px; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px solid #e3e3e3 }
+.ptcom-r { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, .8fr) 150px 120px 110px 170px; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px solid #e3e3e3 }
 .ptcom-th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 500; color: #444746 }
 .ptcom-th > span:nth-child(n+3) { padding-left: 2px }
 /* Condições pedidas com as partes (10/nov/2026): blocos de resumo em cima, a soma das partes */
 .cond-resw { container-type: inline-size }
-.cond-res { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px }
+.cond-res { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px }
 .cond-b { background: #f0f4f9; border-radius: 16px; padding: 12px 16px; min-width: 0 }
 .cond-b .lbl { font-size: 12px; font-weight: 500; color: #444746 }
 .cond-b .big { font-size: 24px; line-height: 32px; font-weight: 300; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
@@ -4690,6 +4692,7 @@ html[data-tema="escuro"] .vt-obs { color: #c4c7c5; background: transparent !impo
 .ptcom-obs { grid-column: 1 / -1 }
 .ptcom-obs textarea { width: 100%; min-height: 56px; resize: vertical; font: inherit; box-sizing: border-box }
 .ptcom-obs > span:not(.lbl-f) { white-space: pre-wrap }
+@container (max-width: 560px) { .cond-res { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) } .cond-res > .cond-b:last-child { grid-column: 1 / -1 } }
 @container (max-width: 400px) { .cond-res { grid-template-columns: minmax(0, 1fr) } }
 html[data-tema="escuro"] .cond-b { background: #1e1f20 } html[data-tema="escuro"] .cond-b .lbl, html[data-tema="escuro"] .cond-sub { color: #c4c7c5 }
 .ptcom-p { min-width: 0 } .ptcom-p b { font-weight: 500 } .ptcom-p .faint { font-size: 13px }
@@ -4697,6 +4700,19 @@ html[data-tema="escuro"] .cond-b { background: #1e1f20 } html[data-tema="escuro"
 .ptcom-ml { display: none }
 .ptcom input.ptc-n { width: 100%; text-align: right } .ptcom select { width: 100% }
 .ptcom-tot { font-weight: 500 }
+/* permuta física: o número e o seletor % | Unid. lado a lado (pedido do Moises, 11/nov/2026) */
+.pfis { display: flex; gap: 6px; align-items: center; min-width: 0 }
+.pfis > .adorno { flex: 1 1 auto; min-width: 0 }
+.pfis-seg { display: inline-flex; flex: none; border: 1px solid #747775; border-radius: 16px; overflow: hidden; height: 28px }
+.pfis-seg button { border: 0; background: transparent; padding: 0 8px; margin: 0; height: 100%; min-height: 0; min-width: 0; display: inline-flex; align-items: center; line-height: 1; font: inherit; font-size: 12px; color: #444746; cursor: pointer; box-shadow: none; border-radius: 0 }
+.pfis-seg button + button { border-left: 1px solid #747775 }
+/* Nova proposta: 4 colunas fixas, na ordem pedida pelo Moises (11/nov/2026); 2 no estreito */
+.pp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--e4) }
+@media (max-width: 900px) { .pp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } .pp-grid > .pp-vazio { display: none } }
+.seg.pfis-seg button { min-height: 0 !important; height: 100%; padding: 0 8px !important; font-size: 12px }
+.pfis-seg button[aria-pressed="true"] { background: #c2e7ff; color: #001d35; font-weight: 500 }
+html[data-tema="escuro"] .pfis-seg, html[data-tema="escuro"] .pfis-seg button + button { border-color: #8e918f }
+html[data-tema="escuro"] .pfis-seg button { color: #c4c7c5 } html[data-tema="escuro"] .pfis-seg button[aria-pressed="true"] { background: #004a77; color: #c2e7ff }
 .ptcom-zona { display: block; font-size: 12px; color: #747775; margin-top: 2px }
 html[data-tema="escuro"] .ptcom-zona { color: #8e918f }
 .ptcom { container-type: inline-size }
@@ -4711,8 +4727,8 @@ html[data-tema="escuro"] .ptcom-zona { color: #8e918f }
 /* no celular: área e valor por m² lado a lado; valor pedido e condição na linha inteira, para caber 999 milhões e
    "Permuta financeira" sem os rótulos desencontrarem (pedido do Moises, 10/nov/2026) */
 @container (max-width: 480px) {
-  .ptcom-r { grid-template-areas: "p p" "ar m" "v v" "f f" "o o" }
-  .ptcom-p { grid-area: p } .ptcom-ar { grid-area: ar } .ptcom-m { grid-area: m } .ptcom-v { grid-area: v } .ptcom-f { grid-area: f } .ptcom-obs { grid-area: o }
+  .ptcom-r { grid-template-areas: "p p" "ar m" "v v" "fin fis" "o o" }
+  .ptcom-p { grid-area: p } .ptcom-ar { grid-area: ar } .ptcom-m { grid-area: m } .ptcom-v { grid-area: v } .ptcom-fin { grid-area: fin } .ptcom-fis { grid-area: fis } .ptcom-obs { grid-area: o }
   .ptcom-ar { align-self: end }
 }
 @media (max-width: 720px) {
@@ -4984,7 +5000,7 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .tb-cod { font-weight: 500; color: var(--m-on-surface, #1f1f1f) }
 .tb-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; white-space: nowrap }
 .tb-kv .tb-kl { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--m-on-var, #444746) }
-.tb-kv .tb-kvv { font-variant-numeric: tabular-nums; text-align: left }
+.tb-kv .tb-kvv { font-variant-numeric: tabular-nums; text-align: left; overflow: hidden; text-overflow: ellipsis; min-width: 0 }
 .tb-kv.fraco { font-size: 12px; line-height: 18px } .tb-kv.fraco .tb-kvv { color: var(--m-on-var, #444746) }
 .lista-ter td > .tb-kv + .tb-kv { margin-top: 0 }
 .tb-viab { flex: none; width: 24px; height: 24px; margin: -4px 0 -4px 0; color: var(--m-on-var, #444746) }
@@ -4997,6 +5013,7 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .tb-info-pop { position: absolute; top: calc(100% + 10px); right: -8px; z-index: 30; width: 260px; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 12px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.12); text-align: left; white-space: normal; font-size: 13px; line-height: 18px; font-weight: 400; color: #1f1f1f; text-transform: none; letter-spacing: 0; cursor: default }
 .tb-info-pop::before { content: ""; position: absolute; top: -6px; right: 14px; width: 12px; height: 12px; background: #fff; transform: rotate(45deg); box-shadow: -2px -2px 3px rgba(0,0,0,.05) }
 .lista-ter th:not(.num) .tb-info-pop { right: auto; left: -8px } .lista-ter th:not(.num) .tb-info-pop::before { right: auto; left: 14px }
+.lista-ter th:not(.num):last-child .tb-info-pop { left: auto; right: -8px } .lista-ter th:not(.num):last-child .tb-info-pop::before { left: auto; right: 14px }
 .tb-info-t { font-size: 14px; font-weight: 500 }
 .tb-info-s { font-size: 12px; color: #444746 }
 .tb-info-l { display: flex; gap: 10px; align-items: flex-start }
