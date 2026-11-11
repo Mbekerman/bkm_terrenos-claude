@@ -468,7 +468,7 @@
       "grupo": "comercial",
       "tipo": "pct_vgv",
       "valor": null,
-      "deduz": true
+      "deduz": false
     },
     {
       "codigo": "outros_comercial",

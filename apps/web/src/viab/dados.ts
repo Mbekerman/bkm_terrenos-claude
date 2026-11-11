@@ -11,11 +11,11 @@ type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-expli
 const n = (x: unknown) => (x == null ? null : Number(x));
 
 export interface ResumoViab {
-  id: string; nome: string; vgv: number | null; liq: number | null; lucro: number | null; margem: number | null; unidades: number | null;
+  id: string; nome: string; vgv: number | null; vv: number | null; lucro: number | null; margem: number | null; unidades: number | null;
   atualizado: string; criado: string;
 }
 
-const COLS = 'id,nome,vgv,vgv_liquido,lucro_liquido,margem_pct,unidades,atualizado_em,criado_em';
+const COLS = 'id,nome,vgv,vgv_vendido,lucro_liquido,margem_pct,unidades,atualizado_em,criado_em';
 
 /** os estudos estáticos do terreno, na ordem em que foram criados (a ordem é o número do endereço, /viabilidade/2) e o
     válido (o da negociação, processos.viabilidade_id); `margemMin`: a rentabilidade mínima da empresa */
@@ -31,7 +31,7 @@ export function useEstudos(terreno: string, negId: string | null, empresa: strin
       ]);
       for (const r of [vs, pr, cf, up]) if (r.error) throw r.error;
       const lista: ResumoViab[] = ((vs.data ?? []) as R[]).map((x) => ({
-        id: x.id, nome: x.nome, vgv: n(x.vgv), liq: n(x.vgv_liquido), lucro: n(x.lucro_liquido), margem: n(x.margem_pct), unidades: n(x.unidades),
+        id: x.id, nome: x.nome, vgv: n(x.vgv), vv: n(x.vgv_vendido), lucro: n(x.lucro_liquido), margem: n(x.margem_pct), unidades: n(x.unidades),
         atualizado: x.atualizado_em, criado: x.criado_em,
       }));
       const p = pr.data as R | null;

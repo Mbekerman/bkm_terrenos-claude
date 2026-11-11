@@ -97,7 +97,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
   const abaixo = vi?.margem != null && margemMin != null && vi.margem < margemMin;
   const abaixoTxt = vi && `Rentabilidade abaixo da mínima: margem de ${nf(vi.margem, 1)}% no estudo válido, mínima de ${nf(margemMin, 1)}%`;
   const aviso = abaixo && <div className="banner warn" style={{ marginTop: 12 }}><Ic n="warn" /><div>{abaixoTxt}.</div></div>;
-  const vl = vi ? vi.liq ?? vi.vgv : null;
+  const vl = vi ? vi.vv ?? vi.vgv : null;
   const pc = (x: number | null | undefined, b: number | null) => (x != null && b ? nf(x / b * 100, 1) + '%' : '—');
   const novoBtn = !ro && <button className="btn sm" onClick={() => ac.novo(lista)}><Ic n="add" s={16} />Novo estudo</button>;
   return (
@@ -123,7 +123,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
               {margemMin != null && <div><div className="lbl">Mínima da empresa</div><div className="big">{nf(margemMin, 1)}%</div></div>}
             </div>
             <div className="dt-wrap"><table className="dt compacta"><thead><tr><th className="esq"><span className="sr-only">Item</span></th><th className="num">Valor</th><th className="num">% do VGV</th></tr></thead><tbody>
-              <tr><td className="esq">VGV líquido</td><td className="num">{mi(vl)}</td><td className="num">100%</td></tr>
+              <tr><td className="esq">VGV vendido</td><td className="num">{mi(vl)}</td><td className="num">100%</td></tr>
               <tr><td className="esq">Valor pedido</td><td className="num">{f.valorPedido ? mi(f.valorPedido) : '—'}</td><td className="num">{f.valorPedido ? pc(f.valorPedido, vl) : '—'}</td></tr>
               {q.data.ultProposta != null && <tr><td className="esq">Última proposta</td><td className="num">{mi(q.data.ultProposta)}</td><td className="num">{pc(q.data.ultProposta, vl)}</td></tr>}
               {vi.lucro != null && <tr><td className="esq">Lucro líquido</td><td className="num">{mi(vi.lucro)}</td><td className="num">{pc(vi.lucro, vl)}</td></tr>}
@@ -136,7 +136,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
         <div className="sec-b">
           {vi && <>
             <div className="metrics vb-met">
-              <div className="metric"><div className="ml">VGV líquido</div><div className="mv">{mi(vi.liq ?? vi.vgv)}</div></div>
+              <div className="metric"><div className="ml">VGV vendido</div><div className="mv">{mi(vi.vv ?? vi.vgv)}</div></div>
               <div className="metric"><div className="ml">Margem líquida</div><div className="mv">{pct1(vi.margem)}</div></div>
               <div className="metric"><div className="ml">Mínima da empresa</div><div className="mv">{margemMin == null ? '—' : nf(margemMin, 1) + '%'}</div></div>
             </div>
@@ -145,13 +145,13 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
             {lista.length > 0 && <div style={{ height: 16 }} />}
           </>}
           {lista.length ? (
-            <div className="dt-wrap vb-lista"><table className="dt compacta"><thead><tr><th className="esq">Estudo</th><th>VGV líquido</th><th>Lucro líquido</th><th>Margem</th><th>Atualizado</th><th>Válido</th></tr></thead><tbody>
+            <div className="dt-wrap vb-lista"><table className="dt compacta"><thead><tr><th className="esq">Estudo</th><th>VGV vendido</th><th>Lucro líquido</th><th>Margem</th><th>Atualizado</th><th>Válido</th></tr></thead><tbody>
               {lista.map((v) => {
                 const lig = vi?.id === v.id;
                 return (
                   <tr key={v.id}>
                     <td className="esq"><button className="linkbtn" onClick={() => abrirEstudo(v.id)}>{v.nome}</button></td>
-                    <td className="num">{mi(v.liq)}</td><td className="num">{mi(v.lucro)}</td><td className="num">{pct1(v.margem)}</td><td>{fd(v.atualizado)}</td>
+                    <td className="num">{mi(v.vv)}</td><td className="num">{mi(v.lucro)}</td><td className="num">{pct1(v.margem)}</td><td>{fd(v.atualizado)}</td>
                     <td><label className="vb-radio"><input type="radio" name={`vb-valido-${f.id}`} checked={lig} disabled={!lig && (!negAtiva || ro)}
                       onChange={() => { if (!lig) void ac.vincular(v.id, v.nome); }} aria-label={`${v.nome} é o estudo válido`} /></label></td>
                   </tr>
@@ -159,7 +159,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
               })}
             </tbody></table></div>
           ) : (
-            <div className="banner blue"><Ic n="money" /><div style={{ flex: 1 }}><div className="bt">Nenhum estudo</div><div>Monte o estudo de viabilidade estática: tipologias, custos e resultado (VGV líquido, lucro e margem).</div></div></div>
+            <div className="banner blue"><Ic n="money" /><div style={{ flex: 1 }}><div className="bt">Nenhum estudo</div><div>Monte o estudo de viabilidade estática: tipologias, custos e resultado (VGV vendido, lucro e margem).</div></div></div>
           )}
         </div>
       </Quadro>
@@ -354,7 +354,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
     <>
       <div className="vb-fixo">
         <div className="kpis vb-kpis" id="vb-kpis">
-          {([['VGV', mi(c.vgv)], ['VGV líquido', mi(c.liq)], ['Lucro líquido', mi(c.lucro)], ['Margem líquida', pct1(c.margem)]] as const).map(([l, x]) => (
+          {([['VGV', mi(c.vgv)], ['VGV vendido', mi(c.vv)], ['Lucro líquido', mi(c.lucro)], ['Margem líquida', pct1(c.margem)]] as const).map(([l, x]) => (
             <div key={l} className="kpi"><span className="v sm">{kpiV(x)}</span><span className="l">{l}</span></div>
           ))}
         </div>
@@ -421,13 +421,13 @@ function navTxt(k: Sec, c: Calc) {
   if (k === 'res') return 'Margem ' + pct1(c.margem);
   const x = c.SEC[k];
   if (!x) return '—';
-  return `${sem(mi(x))} · ${c.vgv > 0 ? nf(x / c.vgv * 100, 1) + '%' : '—'}`;
+  return `${sem(mi(x))} · ${c.vv > 0 ? nf(x / c.vv * 100, 1) + '%' : '—'}`;
 }
 function shTxt(k: Sec, c: Calc) {
   if (k === 'tip') return `${brl(c.vgv)} · ${nf(c.un)} unidades`;
   if (k === 'res') return `Lucro ${brl(c.lucro)} · margem ${pct1(c.margem)}`;
   const x = c.SEC[k];
-  return `${brl(x)} · ${c.vgv > 0 ? nf(x / c.vgv * 100, 1) + '%' : '—'} do VGV`;
+  return `${brl(x)} · ${c.vv > 0 ? nf(x / c.vv * 100, 1) + '%' : '—'} do VGV`;
 }
 
 function Secao({ k, ordem, c, irSec, acao, children }: { k: Sec; ordem: Sec[]; c: Calc; irSec: (k: Sec) => void; acao: ReactNode; children: ReactNode }) {
