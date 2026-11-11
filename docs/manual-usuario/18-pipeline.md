@@ -59,7 +59,7 @@ Quando a tabela não cabe na largura, as colunas saem nesta ordem: **Responsáve
 ## Abrir a ficha
 
 - **Clicar em qualquer lugar da linha** abre a ficha completa e editável numa gaveta à direita, que cobre a tabela a partir da primeira coluna. A linha do terreno fica acesa. O endereço vira `/terrenos/A123/gaveta`, e o link abre direto assim.
-- Com a gaveta aberta, **clicar noutra linha** troca o terreno da gaveta. Clicar de novo na mesma linha, o **X** ou o **Esc** fecham.
+- Com a gaveta aberta, **clicar noutra linha** troca o terreno da gaveta. Clicar de novo na mesma linha, o **X**, o **Esc** ou um **clique fora da tabela e da gaveta** (no título da página, no espaço abaixo das linhas, na barra de cima) fecham. Se houver um menu, um balão, uma janela ou um campo sendo editado, o Esc ou o clique fecham primeiro isso, e só o seguinte fecha a gaveta.
 - A largura da gaveta se arrasta pela borda esquerda (dois cliques voltam ao padrão), como a gaveta do Mapa.
 - O botão de tela, no alto da gaveta, abre a ficha na página dela.
 - Aberta a ficha na página, o botão de voltar dela volta para **Terrenos**.

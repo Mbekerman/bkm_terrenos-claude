@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
+- **Pipeline: o clique fora da tabela e da gaveta fecha a ficha**, como o Esc. Com um menu, balão, janela ou campo em edição aberto, o primeiro Esc ou clique fecha só isso. Ver [18. Pipeline](18-pipeline.md). (#344)
 - **Ícone da aba do navegador** com o miolo da casinha transparente: na aba que não está selecionada, o meio da casinha mostra a cor da aba, em vez de um triângulo branco. (#343)
 - **Viabilidade, Gerais: uma linha fixa por grupo**, "Despesas gerais com terreno", "…com incorporação", "…com CEF" e "…com administrativo e financeiro", todas nascendo em % do VGV, numa tabela igual à de Comercial. Os estudos que já existiam ficaram com o valor que tinham. **Padrões novos:** Taxa de emissão de contratos CEF e Produto Caixa em verba por unidade; Taxa de desenvolvimento e Taxa de contingências em % do VGV. Ver [15. Viabilidades](15-ficha-viabilidades.md). (#341)
 - **Viabilidade: o % vem junto do número**, sempre com duas casas ("12,50%"), alinhado à direita como os valores; enquanto você digita, o que falta (",00%") aparece em cinza logo depois. A parte em cinza dos campos em metros não cobre mais o último dígito. Ver [15. Viabilidades](15-ficha-viabilidades.md). (#341)
