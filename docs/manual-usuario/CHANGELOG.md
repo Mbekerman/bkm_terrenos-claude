@@ -8,7 +8,6 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
-
 - **Gaveta da ficha encolhe sem fechar.** No Mapa e no Pipeline, a aba com a seta no meio da borda esquerda recolhe a gaveta para a direita, como o painel do Google Maps; só a aba fica na tela. Clicar nela, no mesmo pino ou na mesma linha abre de novo. O X e o Esc continuam fechando. **Menu:** o item Terrenos passou a se chamar **Pipeline**, e o título da página passou a ser **Terrenos**. Ver [2. Mapa](02-mapa.md) e [18. Pipeline](18-pipeline.md). (#352)
 - **Pipeline: coluna Etapa**, antes de Responsável, com a etapa do funil em cima e a subetapa embaixo; quando a tabela estreita, sai logo depois de Corretor. A coluna **Responsável** ficou só com a foto, sem título visível (o mouse no alto da coluna diz o que ela é) e bem mais estreita. Etapa e subetapa quebram em até 3 linhas; o Imóvel mostra o perfil do relevo numa linha própria, sem a inclinação, e ficou mais estreito; Estudo de massa e Viabilidade ganharam o espaço tirado do Corretor, que ficou mais estreito, com o nome em até duas linhas; o olho na Proposta abre todas as propostas enviadas e recebidas do terreno; a Temperatura fica centralizada na coluna. Ver [18. Pipeline](18-pipeline.md). (#347)
 - **Janelas do estudo de massa e da viabilidade: barra de rolagem dentro da janela.** A barra de rolagem não passa mais pelos cantos arredondados. Na janela do estudo de massa, o título fica parado no alto e só o conteúdo rola. (#350)
