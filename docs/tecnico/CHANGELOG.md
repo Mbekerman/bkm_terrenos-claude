@@ -2,6 +2,10 @@
 
 Toda mudança que entra na `develop` ganha uma linha aqui, no mesmo PR (ver [como-manter.md](como-manter.md)). Do mais recente ao mais antigo. O que aconteceu antes de 8/nov/2026 está resumido em [historico.md](historico.md).
 
+## 2026-11-11
+
+- #326 Viabilidades técnicas incluídas pelo usuário (pedido do Moises, 11/nov/2026): tabela nova `app.terreno_viabilidades_outras` (mesmos campos e checks de `terreno_viabilidades_tecnicas`, nome único por terreno em `lower(nome)`, gatilho `tg_viab_outra` que limpa o nome e recusa em branco ou igual a um serviço fixo; RLS da empresa com `delete` para quem edita, `t_emp`, `t_aud`; testes em `regras.sql`). A view `v_terreno_viabilidades_tecnicas` ganha `id` e `outra` no fim e junta as incluídas com `ordem` 1000+. Front: `ficha/Infra.tsx` (Adicionar viabilidade, nome editável no lugar e lixeira nas incluídas; o nome da fixa não muda), `ficha/Painel.tsx` (logs da tabela nova). Banco real: `/mnt/project-files/viabilidades-outras/viabilidades-outras.sql`, antes do merge (sem as colunas novas da view, a leitura do quadro falha).
+
 ## 2026-11-10
 
 - #317 Viabilidades no React, partes 2 a 5: `viab/Secoes.tsx` com `SecTerreno` (campos de `app.salvar_viabilidade`), `SecLinhas` (Comercial, Gerais, Financeiras, Taxas), `SecObra` (raso por `obra_base`, atípico, não incidente, projetos, pós-obra; quadros fechados ao entrar, `vbQPadrao`), `SecDre` e `GrupoQ`/`LinhaRow` (item pela lista de `viabilidade_despesas` com busca, base, valor e meses; escrita direta em `viabilidade_linhas`, os gatilhos refazem os totais); `useRentabilidade` (Resumo, `SecPropostas` em `ficha/Comercial.tsx`, Ações em `ficha/Painel.tsx`); `viab/Modelos.tsx` (`modelos_viabilidade`, `salvar_modelo_viabilidade` com o `p_modelo` do mesmo nome, `marcar_modelo_padrao`, `apagar_modelo_viabilidade`, `criar_viabilidade` com `p_modelo`/`p_sem_modelo`); `MassaSel` (`app.vincular_massa`) e `ficha/Massa.tsx` abrindo o estudo por `abrirEstudo`. Porte de `proto_viab.js`. Sem SQL.

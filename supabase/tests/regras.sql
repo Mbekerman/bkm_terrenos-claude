@@ -205,6 +205,22 @@ insert into app.terreno_viabilidades_tecnicas (terreno_id, servico, empresa_id, 
 insert into app.terreno_viabilidades_tecnicas (terreno_id, servico, empresa_id, situacao, emitida_em, validade, condicoes) values (:'t1', 'energia', :'emp', 'condicionada', current_date - 10, current_date + 170, 'Reforço da rede pela incorporadora');
 select pg_temp.ok((select vencida and concessionaria = 'Sabesp' from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and servico = 'agua')
   and not (select vencida from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and servico = 'energia'), 'viabilidade com a validade passada sai como vencida');
+\echo '# viabilidades técnicas incluídas pelo usuário'
+insert into app.terreno_viabilidades_outras (terreno_id, empresa_id, nome, situacao) values (:'t1', :'emp', '  Drenagem   pluvial ', 'solicitada');
+insert into app.terreno_viabilidades_outras (terreno_id, empresa_id, nome) values (:'t1', :'emp', 'Telefonia');
+select pg_temp.ok((select string_agg(nome, ',' order by ordem) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and outra) = 'Drenagem pluvial,Telefonia'
+  and (select count(*) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1') = 6
+  and (select min(ordem) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and outra) > (select max(ordem) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and not outra),
+  'viabilidade digitada entra depois das quatro fixas, com o nome limpo');
+select pg_temp.falha(format($$insert into app.terreno_viabilidades_outras (terreno_id, empresa_id, nome) values (%L, %L, 'telefonia')$$, :'t1', :'emp'), 'nome repetido no terreno é recusado');
+select pg_temp.falha(format($$insert into app.terreno_viabilidades_outras (terreno_id, empresa_id, nome) values (%L, %L, 'Água')$$, :'t1', :'emp'), 'nome de viabilidade fixa é recusado');
+select pg_temp.falha(format($$insert into app.terreno_viabilidades_outras (terreno_id, empresa_id, nome) values (%L, %L, '   ')$$, :'t1', :'emp'), 'nome em branco é recusado');
+select pg_temp.falha(format($$update app.terreno_viabilidades_outras set situacao = 'viavel' where terreno_id = %L and nome = 'Telefonia'$$, :'t1'), 'retorno da digitada também exige a data de emissão');
+update app.terreno_viabilidades_outras set situacao = 'viavel', emitida_em = current_date - 400, validade = current_date - 1 where terreno_id = :'t1' and nome = 'Telefonia';
+select pg_temp.ok((select vencida from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1' and nome = 'Telefonia'), 'digitada vencida aparece como vencida');
+delete from app.terreno_viabilidades_outras where terreno_id = :'t1' and nome = 'Telefonia';
+select pg_temp.ok((select count(*) from app.v_terreno_viabilidades_tecnicas where terreno_id = :'t1') = 5
+  and exists (select 1 from app.auditoria where tabela = 'terreno_viabilidades_outras' and acao = 'delete'), 'digitada se apaga, com log');
 \echo '# classificação topográfica'
 select pg_temp.ok(app.classificar_topografia(:'emp', 3.9, 0.1) = 'plano' and app.classificar_topografia(:'emp', 5, 0.1) = 'plano'
   and app.classificar_topografia(:'emp', 9.5, 0.4) = 'inclinado' and app.classificar_topografia(:'emp', 12, 0.3) = 'acidentado_leve'

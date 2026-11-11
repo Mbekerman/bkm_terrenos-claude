@@ -6,6 +6,10 @@ Quem desenvolve: toda mudança que o usuário vê ganha uma linha aqui, na data 
 
 Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era testado no protótipo. Este registro começa no porte das telas para o sistema real.
 
+## 11/nov/2026
+
+- **Outras viabilidades técnicas** (ficha › Estudos Técnicos › Avaliação de infraestrutura): além de Energia, Água, Esgoto e Gás, "Adicionar viabilidade" inclui outra com o nome que você digitar, só naquele terreno; dá para renomear e excluir. Ver [Viabilidades técnicas](04-ficha-visao-geral.md#viabilidades-técnicas-aba-infraestrutura). (#326)
+
 ## 10/nov/2026
 
 - **Estudo de viabilidade completo** (ficha › Estudos Técnicos › Estudos de viabilidade): no estudo, as seções Terreno (permuta física e financeira, mínimo garantido, deduções, pagamento e comissão em dinheiro), Comercial, Obras (custo raso por área privativa ou construída, atípico, não incidente, projetos e pós-obra), Gerais, Financeiras e Taxas (só diretoria) e a DRE; o aviso "Rentabilidade abaixo da mínima" na Nova proposta e "Levar ao comitê" nas Ações do painel; "Salvar como modelo" e a escolha do modelo no Novo estudo; o vínculo com o estudo de massa (seguir o válido, trocar de estudo, quebrar o vínculo), e "Criar estudo de viabilidade" no estudo de massa abre o estudo criado. Ver [Estudos de viabilidade](15-ficha-viabilidades.md). (#317)

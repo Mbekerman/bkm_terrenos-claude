@@ -4611,6 +4611,12 @@ html[data-tema="escuro"] .tp-acidentado_intenso { --tp-f: #ffdcc4; --tp-b: #7a3a
 .vtec-h .vt-n { min-width: 120px }
 .vtec-c { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 12px; margin-top: 10px }
 .vtec-c .field.full { grid-column: 1 / -1 }
+.vtec-h .vt-nome { font: inherit; font-weight: 500; color: inherit; border: 0; border-bottom: 1px solid transparent; background: transparent; padding: 0; height: 28px; min-width: 120px; width: 200px; max-width: 100% }
+.vtec-h .vt-nome:hover { border-bottom-color: var(--m-outline, #747775) }
+.vtec-h .vt-nome:focus { outline: 0; border-bottom: 2px solid var(--m-primary, #0b57d0) }
+.vtec-h .vt-x { margin-left: auto }
+.vtec-add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; padding: 12px 0 4px; border-top: 1px solid var(--m-outline-v, #e3e3e3) }
+.vtec-add .field { flex: 1 1 220px; max-width: 360px }
 @media (max-width: 599px) {
   .vt-r { grid-template-columns: minmax(0, 1fr) auto } .vt-obs { grid-column: 1 / -1 }
   .vtec-c { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
