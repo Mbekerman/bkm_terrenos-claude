@@ -377,7 +377,10 @@ export function segurarRolagem(de?: Element | null) {
     if (p > alvo) { alvo = p; por(alvo); }
   };
   const fixa = () => { if (Math.abs(rol.scrollTop - y) > 1) rol.scrollTop = y; };
-  requestAnimationFrame(() => { decide(); fixa(); requestAnimationFrame(fixa); });
+  /* posta a vista, a altura guardada cai para o que ela pede: sem espaço vazio embaixo, a seção nova nunca rola para
+     baixo das barras (pedido do Moises, 11/nov/2026); a seção já ocupa a vista abaixo das barras (--fi-sobra) */
+  const assenta = () => { fixa(); if (main._folga !== solta) return; alvo = Math.min(alvo, precisaEm(rol.scrollTop)); if (natural() >= alvo) solta(); else por(alvo); };
+  requestAnimationFrame(() => { decide(); fixa(); requestAnimationFrame(assenta); });
   /* o primeiro scroll vem do próprio ajuste: espera a troca assentar */
   t = window.setTimeout(() => { if (main._folga === solta) ouve.addEventListener('scroll', encolher, { passive: true }); }, 400);
 }
@@ -402,7 +405,16 @@ export function useSobraSecao(ref: { current: HTMLElement | null }, dep: unknown
         const fundoVista = pag ? document.documentElement.clientHeight : r!.top + rol.clientTop + rol.clientHeight;
         let barras = parseFloat(getComputedStyle(abas).top) || 0;
         for (const b of main.querySelectorAll<HTMLElement>(':scope > .fi-abas-w, :scope > .fi-chips-w')) barras += b.offsetHeight;
-        const v = `${Math.max(0, Math.floor(fundoVista - topo - barras))}px`;
+        /* o que fica entre o fim da seção e o fim da rolagem (recuos e margens de baixo de quem a contém): sem descontar,
+           a seção rolaria além das barras e passaria por baixo delas */
+        let depois = parseFloat(getComputedStyle(main).marginBottom) || 0;
+        for (let n = main.parentElement; n; n = n.parentElement) {
+          const c = getComputedStyle(n);
+          depois += (parseFloat(c.paddingBottom) || 0) + (parseFloat(c.borderBottomWidth) || 0);
+          if (n === rol || n === document.body) break;
+          depois += parseFloat(c.marginBottom) || 0;
+        }
+        const v = `${Math.max(0, Math.floor(fundoVista - topo - barras - depois))}px`;
         if (main.style.getPropertyValue('--fi-sobra') !== v) main.style.setProperty('--fi-sobra', v);
       });
     };

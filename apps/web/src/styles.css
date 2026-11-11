@@ -4554,6 +4554,12 @@ html[data-tema="escuro"] .fi-chips-w .iconbtn { color: #c4c7c5 }
 /* a seção aberta ocupa ao menos a vista abaixo das barras presas: dá para rolar até elas travarem, mesmo vazia (pedido do
    Moises, 11/nov/2026; --fi-sobra medido em useSobraSecao) */
 .ficha-main > .fi-aba { min-height: var(--fi-sobra, 0px) }
+/* o respiro entre a última barra e o começo da seção fica sempre à vista: o que rola some abaixo dele, nunca encostado na
+   barra (pedido do Moises, 11/nov/2026); a faixa tem a altura do recuo de cima da seção */
+.ficha-main > .fi-abas-w:not(:has(~ .fi-chips-w)) { box-shadow: 0 20px 0 var(--m-surface, #f8fafd) }
+.ficha-main > .fi-chips-w:not(:has(~ .fi-chips-w)) { box-shadow: 0 4px 0 var(--m-surface, #f8fafd) }
+html[data-tema="escuro"] .ficha-main > .fi-abas-w:not(:has(~ .fi-chips-w)) { box-shadow: 0 20px 0 #131314 }
+html[data-tema="escuro"] .ficha-main > .fi-chips-w:not(:has(~ .fi-chips-w)) { box-shadow: 0 4px 0 #131314 }
 /* a barra de chips fica presa logo abaixo das abas (pedido do Moises, 11/nov/2026; --chips-top medido em BarraChips) */
 .fi-chips-w { position: sticky; top: var(--chips-top, calc(121px + env(safe-area-inset-top, 0px))); z-index: 14; padding-bottom: 12px; background: var(--m-surface, #f8fafd) }
 @media (max-width: 599px) { .fi-chips-w { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 4px } }
