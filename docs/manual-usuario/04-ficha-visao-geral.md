@@ -61,7 +61,7 @@ As abas da barra, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técn
 
 **Jornada** e **Histórico** ficam no **⋮ do topo da ficha** (à direita do responsável; na gaveta do Mapa e do Pipeline, ao lado do ícone Abrir página), antes de Excluir terreno. Histórico só aparece ali quando o painel da direita não está na tela. Com uma das duas aberta, o ⋮ fica em azul-claro.
 
-No computador, a ficha nunca fica estreita a ponto de cortar a barra: o painel da direita só aparece quando sobra espaço para a barra inteira, e a gaveta da ficha (no Mapa e no Pipeline) tem no mínimo 800 px.
+No computador, a ficha nunca fica estreita a ponto de cortar a barra: o painel da direita só aparece quando sobra espaço para a barra inteira, e a gaveta da ficha (no Mapa e no Pipeline) não fica mais estreita que a barra das abas inteira, contando o lugar do alerta quando falta algo na ficha.
 
 | Aba | Situação | Seção do manual |
 |---|---|---|
@@ -153,7 +153,7 @@ Igual à página, com:
 - o topo da ficha sem repetir o cabeçalho: no lugar da linha "fase · etapa · subetapa", o nome da fase fica em cima da linha do tempo, que já marca a etapa e a subetapa; ficam "Cadastrado em" (e a situação, quando é Stand By, Perdido ou Descartado), o responsável e "Ficha N% completa". No celular, onde a linha do tempo some, a fase · etapa · subetapa continua no topo;
 
 - **X** ou **Esc** para fechar;
-- a borda esquerda arrastável (mínimo 800 px, para a barra das abas caber inteira; dois cliques voltam ao padrão);
+- a borda esquerda arrastável (no mínimo, a largura em que a barra das abas cabe inteira; dois cliques voltam ao padrão);
 - clicar noutro terreno no mapa troca o terreno da gaveta.
 
 A gaveta da ficha e a gaveta de filtros não abrem juntas.

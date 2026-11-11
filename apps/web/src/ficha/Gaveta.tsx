@@ -10,9 +10,23 @@ import { guardarPos, lerPos } from './lembrar';
 // Gaveta da ficha na página Mapa (/mapa/A123/ficha; proto_tabela.js › pgFicha com UI.gav, tgavPosMapa): à direita, sobre o
 // mapa, do fim da lista mais 240 px até a borda (entre 600 e 900 px); X ou Esc fecham; "Abrir página" leva à ficha própria.
 // A aba fica só na gaveta, como no protótipo. A largura se arrasta pela borda esquerda, como a da lista do mapa (pedido do
-// Moisés, 5/nov/2026): guardada no navegador, nunca cobre a lista nem fica abaixo de 800 px, a largura em que a barra das abas cabe inteira, com o Histórico, o alerta,
-// a pastinha e o ⋮ (pedido do Moises, 11/nov/2026; antes 640); dois cliques voltam ao padrão.
+// Moisés, 5/nov/2026): guardada no navegador, nunca cobre a lista nem fica mais estreita que o necessário para a barra das
+// abas caber inteira, com a pastinha e, quando falta algo na ficha, o alerta (pedidos do Moises, 11/nov/2026: antes 640,
+// depois 800 fixos; agora medido na própria barra, `minimo`); dois cliques voltam ao padrão.
 const GAV_KEY = 'bkm-terrenos-ficha-gaveta', GAV_MIN = 800;
+/** a menor largura da gaveta em que a barra das abas cabe inteira: a largura de agora, menos o espaço da roleta, mais o
+ *  comprimento das abas, e o lugar do alerta quando ele pode aparecer (a ficha tem o que falta) e ainda não está na barra */
+function minimo(g: HTMLElement | null) {
+  const a = g?.querySelector<HTMLElement>('.fi-abas');
+  const bs = a ? [...a.children] as HTMLElement[] : [];
+  if (!g || !a || !bs.length) return null;
+  const cs = getComputedStyle(a);
+  const conteudo = bs[bs.length - 1].getBoundingClientRect().right - bs[0].getBoundingClientRect().left
+    + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const fim = g.querySelector('.fi-fim');
+  const alerta = g.querySelector('.complete .fi-comp-n') && !fim?.querySelector('.fi-alerta') ? 40 : 0;
+  return Math.ceil(g.getBoundingClientRect().width - a.clientWidth + conteudo + alerta + 1);
+}
 const lerW = () => { try { return Number(localStorage.getItem(GAV_KEY)) || null; } catch { return null; } };
 // No Pipeline (/terrenos/A123/gaveta; proto_tabela.js › tgavPos), `naTabela`: a gaveta cobre a tabela a partir do fim da
 // coluna 1 (`lado` é o título dela) e, com a tabela em tela cheia, começa no alto da tela.
@@ -67,16 +81,21 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
     return parar;
   }, [codigo, pronto]);
   const [wG, setWG] = useState(lerW);
-  const maxW = () => Math.max(GAV_MIN, innerWidth - Math.round(lado?.getBoundingClientRect().right || 0));
-  const limitar = (w: number) => Math.round(Math.max(GAV_MIN, Math.min(maxW(), w)));
+  /* a largura mínima, medida depois que a ficha aparece (antes dela, 800) */
+  const minR = useRef(GAV_MIN);
+  const gMin = () => minR.current;
+  const maxW = () => Math.max(gMin(), innerWidth - Math.round(lado?.getBoundingClientRect().right || 0));
+  const limitar = (w: number) => Math.round(Math.max(gMin(), Math.min(maxW(), w)));
   const guardar = (w: number | null) => { setWG(w == null ? null : limitar(w)); try { if (w == null) localStorage.removeItem(GAV_KEY); else localStorage.setItem(GAV_KEY, String(limitar(w))); } catch { /* sem storage */ } };
   const pos = () => {
     const g = el.current;
     if (!g) return;
+    const m = minimo(g);
+    if (m) minR.current = m;
     const top = innerWidth < 900 || cheia ? 0 : (document.querySelector('.top')?.getBoundingClientRect().bottom || 0), l = lado?.getBoundingClientRect().right || 0;
-    const w = Math.min(900, Math.max(GAV_MIN, Math.round(innerWidth * 0.5)));
+    const w = Math.min(900, Math.max(gMin(), Math.round(innerWidth * 0.5)));
     const left = innerWidth < 900 ? 0 : wG ? innerWidth - limitar(wG) : naTabela ? Math.round(l) : Math.max(Math.round(l) + 240, innerWidth - w);
-    g.style.left = Math.max(0, Math.min(left, innerWidth - GAV_MIN)) + 'px';
+    g.style.left = Math.max(0, Math.min(left, innerWidth - gMin())) + 'px';
     g.style.top = top + 'px';
     g.style.setProperty('--gav-h', innerHeight - top + 'px');
   };
@@ -100,8 +119,8 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
     addEventListener('pointermove', mover); addEventListener('pointerup', soltar);
   }
   function tecla(ev: React.KeyboardEvent) {
-    const w = el.current?.getBoundingClientRect().width ?? GAV_MIN, d = ev.shiftKey ? 80 : 20;
-    const n = ev.key === 'ArrowLeft' ? w + d : ev.key === 'ArrowRight' ? w - d : ev.key === 'Home' ? maxW() : ev.key === 'End' ? GAV_MIN : null;
+    const w = el.current?.getBoundingClientRect().width ?? gMin(), d = ev.shiftKey ? 80 : 20;
+    const n = ev.key === 'ArrowLeft' ? w + d : ev.key === 'ArrowRight' ? w - d : ev.key === 'Home' ? maxW() : ev.key === 'End' ? gMin() : null;
     if (n == null) return;
     ev.preventDefault(); guardar(n);
   }
