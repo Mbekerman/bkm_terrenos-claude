@@ -11,13 +11,19 @@ import { Ic } from './Moldura';
 // administrador. Excluir (diretor ou administrador): some de todos os lugares e fica 180 dias guardado. Deletar (só o
 // administrador): apaga tudo na hora, depois do aviso e do nome digitado. A permissão é conferida no banco
 // (app.excluir_terreno, app.deletar_terreno); aqui só se esconde o que a pessoa não pode fazer.
+// Na ficha, o menu também leva às abas Jornada e Histórico, antes de Excluir, para todos (pedido do Moises, 11/nov/2026);
+// Histórico só onde o painel da direita não aparece (classe tab-hist), como era na barra das abas.
+
+const ABAS_MENU: [string, string][] = [['jornada', 'Jornada'], ['historico', 'Histórico']];
 
 export interface TerrenoMenu { id: string; codigo: string; nome: string }
 
 const normal = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
 
-export default function MenuTerreno({ t, aoSair, className }: {
+export default function MenuTerreno({ t, aoSair, className, aba, ir }: {
   t: TerrenoMenu;
+  /** na ficha: a aba aberta e como ir a outra (Jornada e Histórico ficam neste menu) */
+  aba?: string; ir?: (k: string) => void;
   /** depois de excluir ou deletar: fechar a gaveta ou sair da página */
   aoSair: () => void;
   className?: string;
@@ -36,7 +42,8 @@ export default function MenuTerreno({ t, aoSair, className }: {
     document.addEventListener('pointerdown', fora); document.addEventListener('keydown', esc);
     return () => { document.removeEventListener('pointerdown', fora); document.removeEventListener('keydown', esc); };
   }, [menu]);
-  if (!admin && !diretor) return null;
+  const apaga = admin || diretor;
+  if (!apaga && !ir) return null;
 
   function abrir(k: 'excluir' | 'deletar') { setMenu(false); setDlg(k); }
   async function excluir() {
@@ -51,11 +58,15 @@ export default function MenuTerreno({ t, aoSair, className }: {
   }
   return (
     <div className={`adv-mais mt-mais${menu ? ' aberto' : ''}${className ? ' ' + className : ''}`} ref={ref}>
-      <button type="button" className="iconbtn" aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações do terreno" title="Mais ações" onClick={() => setMenu(!menu)}>
+      <button type="button" className={`iconbtn${aba && ABAS_MENU.some(([k]) => k === aba) ? ' atual' : ''}`} aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações do terreno" title="Mais ações" onClick={() => setMenu(!menu)}>
         <Ic n="mais" s={22} />
       </button>
       <div className="adv-menu" role="menu">
-        <button role="menuitem" onClick={() => abrir('excluir')}><Ic n="lixo" s={18} />Excluir terreno</button>
+        {ir && ABAS_MENU.map(([k, l]) => (
+          <button key={k} role="menuitemradio" aria-checked={k === aba} className={[k === aba ? 'atual' : '', k === 'historico' ? 'tab-hist' : ''].join(' ').trim() || undefined}
+            onClick={() => { setMenu(false); if (k !== aba) ir(k); }}>{l}</button>))}
+        {ir && apaga && <div className="mt-sep" role="separator" />}
+        {apaga && <button role="menuitem" onClick={() => abrir('excluir')}><Ic n="lixo" s={18} />Excluir terreno</button>}
         {admin && <button role="menuitem" className="danger" onClick={() => abrir('deletar')}><Ic n="block" s={18} />Deletar de vez</button>}
       </div>
       {dlg === 'excluir' && createPortal(

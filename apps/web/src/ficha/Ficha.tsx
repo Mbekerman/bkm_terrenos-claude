@@ -43,8 +43,10 @@ export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['via
     10/nov/2026), e o link antigo `/entorno` cai aqui */
 export const BARRA: [string, string, [string, string][]?][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'],
   ['estudos', 'Estudos Técnicos', ESTUDOS], ['mercado', 'Mercado'], ['jornada', 'Jornada'], ['documentos', 'Documentos'], ['historico', 'Histórico']];
-/** fora da roleta (pedido do Moises, 11/nov/2026): Jornada só no ⋮ e Documentos no ícone da pastinha, ao lado do alerta */
-const SO_MENU = new Set(['jornada', 'documentos']);
+/** fora da roleta (pedidos do Moises, 11/nov/2026): Documentos no ícone da pastinha, ao lado do alerta; Jornada e Histórico
+    no ⋮ do cabeçalho da ficha (MenuTerreno), antes de Excluir, e fora do ⋮ da barra das abas */
+const SO_MENU = new Set(['jornada', 'documentos', 'historico']);
+export const NO_TOPO = new Set(['jornada', 'historico']);
 /** Histórico só sem o painel (a classe o esconde onde o painel aparece) */
 const HIST = (k: string) => (k === 'historico' ? 'tab-hist' : undefined);
 /** as abas de conteúdo, na ordem (cada subaba é uma aba própria no endereço) */
@@ -236,10 +238,10 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
         {topoFora && c.faltam.length > 0 && <Faltam f={f} c={c} irAba={irAba} alerta />}
         <button type="button" className={`iconbtn fi-docs${aba === 'documentos' ? ' atual' : ''}`} aria-pressed={aba === 'documentos'} aria-label="Documentos" title="Documentos"
           onClick={() => { if (aba !== 'documentos') irT('documentos'); }}>{SVG_PASTA}</button>
-        <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`}>
-          <button className={`iconbtn adv-mb${aba === 'jornada' ? ' atual' : ''}`} aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações" title="Mais ações" onClick={() => setMenu(!menu)}>{SVG_DOTS}</button>
+        <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`} hidden={!sobra}>
+          <button className="iconbtn adv-mb" aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações" title="Mais ações" onClick={() => setMenu(!menu)}>{SVG_DOTS}</button>
           <div className="adv-menu" role="menu">
-            {BARRA.map(([k, l, s]) => s
+            {BARRA.filter(([k]) => !NO_TOPO.has(k)).map(([k, l, s]) => s
               ? [<div key={k} className="fi-mais-g">{l}</div>, ...s.map(([sk, sl]) => <button key={sk} role="menuitemradio" aria-checked={sk === aba} className={`fi-mais-sub${sk === aba ? ' atual' : ''}`} onClick={() => { setMenu(false); if (sk !== aba) irT(sk); }}>{sl}</button>)]
               : <button key={k} role="menuitemradio" aria-checked={k === aba} className={[k === aba ? 'atual' : '', HIST(k) ?? ''].join(' ').trim() || undefined} onClick={() => { setMenu(false); if (k !== aba) irT(k); }}>{l}</button>)}
           </div>
@@ -457,7 +459,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
             {!naGaveta && <><span className="fi-sep">·</span><span className="fi-temp"><TempTopo f={f} /></span></>}
           </div>
         </div>
-        <div className="fi-head-d"><Resp r={f.resp} />{!naGaveta && <MenuTerreno t={f} aoSair={() => navegar('/mapa', { replace: true })} />}</div>
+        <div className="fi-head-d"><Resp r={f.resp} />{!naGaveta && <MenuTerreno t={f} aba={aba} ir={irAbaFixo} aoSair={() => navegar('/mapa', { replace: true })} />}</div>
       </div>
       <div className="stack">
         <FaixaTratativa f={f} />

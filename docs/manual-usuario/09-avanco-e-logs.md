@@ -1,6 +1,6 @@
 # 09. Quadro de avanço e painel (Ações, Tarefas, Logs)
 
-**Disponível.** Na ficha, à direita, fica o **painel**. Em tela estreita (sem espaço para o painel), o quadro de avanço vai para a própria página e os Logs viram a aba **Histórico** (ver [Histórico sem o painel](#histórico-sem-o-painel)).
+**Disponível.** Na ficha, à direita, fica o **painel**. Em tela estreita (sem espaço para o painel), o quadro de avanço vai para a própria página e os Logs viram a aba **Histórico**, no ⋮ do topo da ficha (ver [Histórico sem o painel](#histórico-sem-o-painel)).
 
 ## O painel
 
@@ -144,7 +144,7 @@ Mostra as **tarefas em aberto** do terreno. Como as tarefas ainda não foram por
 
 ## Histórico sem o painel
 
-Quando a tela não tem espaço para o painel (janela estreita, ou a ficha aberta na gaveta do Mapa ou do Pipeline), a barra das abas ganha, no fim, a aba **Histórico**. Ela mostra os mesmos Logs do painel, com os mesmos filtros de usuários e de período, e o clique num log leva ao item do mesmo jeito. Os filtros escolhidos valem nos dois lugares. Com o painel na tela, a aba Histórico some.
+Quando a tela não tem espaço para o painel (janela estreita, ou a ficha aberta na gaveta do Mapa ou do Pipeline), o ⋮ do topo da ficha (à direita do responsável; na gaveta, ao lado de Abrir página) ganha o item **Histórico**, antes de Excluir terreno. Ela mostra os mesmos Logs do painel, com os mesmos filtros de usuários e de período, e o clique num log leva ao item do mesmo jeito. Os filtros escolhidos valem nos dois lugares. Com o painel na tela, o item Histórico some.
 
 ## O que não é possível
 

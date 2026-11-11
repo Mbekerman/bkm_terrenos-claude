@@ -4512,7 +4512,7 @@ body.fab-min .fab .fab-t { max-width: 0; opacity: 0 }
 .fi-abas { flex: 1 1 auto; min-width: 0; display: flex; gap: 2px; padding: 0; overflow: hidden }
 .fi-abas button[hidden] { display: none }
 /* Histórico só sem o painel (a regra .tab-hist do topo perdia para .fi-abas button) */
-@container pagina (min-width: 960px) { .fi-abas button.tab-hist, .fi-mais .adv-menu button.tab-hist { display: none } }
+@container pagina (min-width: 960px) { .fi-abas button.tab-hist, .fi-mais .adv-menu button.tab-hist, .mt-mais .adv-menu button.tab-hist { display: none } }
 .fi-hist { padding: 0 var(--q-px) 16px }
 .fi-fim { flex: none; display: flex; align-items: center; gap: 0; padding-left: 4px }
 .fi-fim .adv-mais[hidden] { display: none }

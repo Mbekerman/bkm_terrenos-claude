@@ -57,7 +57,9 @@ Quando você rola e o topo sai da vista, a barra das abas mostra um **botão de 
 
 ## Barra das abas
 
-As abas da barra, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mercado** (e **Histórico**, só onde o painel da direita não aparece). No fim da barra, à direita, ficam fixos três ícones: o **alerta** do que falta (só quando o topo da ficha sai da vista), a **pastinha**, que abre **Documentos**, e o **⋮**, que é o único caminho para a **Jornada**. O ícone da aba aberta (pastinha em Documentos, ⋮ na Jornada) fica em azul-claro.
+As abas da barra, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mercado**. No fim da barra, à direita, ficam o **alerta** do que falta (só quando o topo da ficha sai da vista) e a **pastinha**, que abre **Documentos** e fica em azul-claro com ela aberta.
+
+**Jornada** e **Histórico** ficam no **⋮ do topo da ficha** (à direita do responsável; na gaveta do Mapa e do Pipeline, ao lado do ícone Abrir página), antes de Excluir terreno. Histórico só aparece ali quando o painel da direita não está na tela. Com uma das duas aberta, o ⋮ fica em azul-claro.
 
 No computador, a ficha nunca fica estreita a ponto de cortar a barra: o painel da direita só aparece quando sobra espaço para a barra inteira, e a gaveta da ficha (no Mapa e no Pipeline) tem no mínimo 800 px.
 
@@ -72,7 +74,7 @@ No computador, a ficha nunca fica estreita a ponto de cortar a barra: o painel d
 | Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico**), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
 | Estudos Técnicos › Restrições e entorno e › Histórico de uso | Disponível | [07](07-ficha-parametros.md) |
 | Mercado | Disponível: Concorrência, Renda e população, Perfil da população e Pontos de interesse | [08](08-ficha-entorno.md) |
-| Jornada (pelo ⋮) | Disponível: linha do tempo e fases do terreno | [16](16-ficha-jornada.md) |
+| Jornada (pelo ⋮ do topo) | Disponível: linha do tempo e fases do terreno | [16](16-ficha-jornada.md) |
 | Documentos (pela pastinha) | **Ainda não disponível** (mostra "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
 **Estudos Técnicos** junta cinco partes, nesta ordem: Estudos de massa, Estudos de viabilidade, Avaliação de infraestrutura, Restrições e entorno e Histórico de uso. Com ela aberta, aparecem logo abaixo da barra cinco botões, um para cada parte; o que está aberto fica em azul-claro. Clicar em Estudos Técnicos abre a parte que você viu por último na sessão (da primeira vez, Estudos de massa).
@@ -81,7 +83,7 @@ No computador, a ficha nunca fica estreita a ponto de cortar a barra: o painel d
 
 - Clique na aba.
 - A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (com o mouse em cima, o cursor é o dedinho, como em qualquer botão; vira mão fechada enquanto você segura o botão do mouse). Solta com força, ela continua rodando e freia aos poucos.
-- O **⋮ "Mais ações"** (sempre visível) lista todas as abas, inclusive Jornada e Documentos, com as cinco partes de Estudos Técnicos embaixo do nome dela e a atual marcada.
+- O **⋮ "Mais ações"** da barra das abas (só quando a barra não cabe) lista as abas da barra e Documentos, com as cinco partes de Estudos Técnicos embaixo do nome dela e a atual marcada.
 
 Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos Técnicos, o da parte, como `/terrenos/A123/infra`), então dá para mandar o link direto para uma aba.
 
@@ -165,7 +167,7 @@ Quando o mesmo imóvel foi cadastrado mais de uma vez com lotes diferentes (ver 
 
 ## Excluir ou deletar o terreno
 
-Só para **diretor** e **administrador**: no topo da ficha, à direita do responsável (na gaveta do Mapa, ao lado do ícone **Abrir página**), fica o botão **⋮ Mais ações**. Para os outros papéis o botão não aparece.
+No topo da ficha, à direita do responsável (na gaveta do Mapa, ao lado do ícone **Abrir página**), fica o botão **⋮ Mais ações**, com Jornada e Histórico (para todos) e, embaixo de um fio, as opções abaixo, só para **diretor** e **administrador**.
 
 - **Excluir terreno** (diretor e administrador): pede confirmação e tira o terreno de todos os lugares para todos: lista, mapa, funil (inclusive o Backlog), busca, tarefas e avisos do sino. Nada é apagado: o terreno fica guardado por **180 dias** e o administrador pode **restaurar** nesse prazo, voltando com tudo (negociação, propostas, tarefas). Passados os 180 dias, o sistema apaga de vez sozinho.
 - **Deletar de vez** (só administrador): apaga **na hora** o terreno e tudo o que é dele (partes, matrículas e SQLs, negociação, ofertas, propostas, reuniões, estudos, documentos, tarefas e o histórico). Não passa pela lista de excluídos e **não tem volta**. A janela mostra o aviso e só libera o botão depois que você digita o nome do terreno (maiúsculas e espaços a mais não importam). Quando os documentos forem para o Google Drive, as pastas do terreno também serão apagadas.

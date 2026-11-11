@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
+- **Ficha: Jornada e Histórico no ⋮ do topo da ficha**, à direita do responsável (na gaveta, ao lado de Abrir página), antes de Excluir terreno, para todos os papéis. Saíram da barra das abas e do ⋮ dela, que volta a aparecer só quando a barra não cabe. (#334)
 - **Ficha: a página não rola mais ao trocar de aba, de seção ou de parte de Estudos Técnicos.** Se a seção nova for mais curta que a tela, sobra um espaço vazio embaixo, que some quando você rola para cima. **Jornada** saiu da barra das abas e fica só no ⋮ (agora sempre visível); **Documentos** virou o ícone da pastinha, ao lado do alerta. No computador, o painel da direita só aparece quando a barra das abas cabe inteira, e a gaveta da ficha tem no mínimo 800 px. (#333)
 - **Terrenos (Pipeline): a linha inteira abre a ficha** na gaveta da direita (o olhinho saiu), e a coluna Projeto ganha a terceira linha **L.L. xx,xx%**, a margem líquida do estudo válido. Ver [18. Pipeline](18-pipeline.md). (#332)
 - **Estudo de massa: botão "Salvar" no fim do estudo** (Estudos Técnicos › Estudos de massa), no lugar de "Marcar como entregue" no alto. Salvar dá o estudo por entregue e só exige uma unidade lançada; a área construída e o resto podem ficar para depois. (#331)
