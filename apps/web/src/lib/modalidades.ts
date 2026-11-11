@@ -17,10 +17,13 @@ export const temMod = (m: Modalidades) => m.din != null || m.fin != null || m.fi
 
 export const pctTxt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 1 : 0, maximumFractionDigits: 2 }) + '%';
 /** permuta física: "8 unid." ou "12,5% física"; com as duas (soma de partes diferentes), as duas */
-export const fisTxt = (m: Modalidades) => [m.fisUn != null ? `${m.fisUn.toLocaleString('pt-BR')} Unid.` : null,
-  m.fisPct != null ? `${pctTxt(m.fisPct)} física${m.fisMinUn != null ? ` (mín. ${m.fisMinUn.toLocaleString('pt-BR')} Unid.)` : ''}` : null]
+/* curto (Pipeline, pedido do Moises de 11/nov/2026): o mínimo garantido vira um * na frente do percentual, explicado no ⓘ */
+export const fisTxt = (m: Modalidades, curto = false) => [m.fisUn != null ? `${m.fisUn.toLocaleString('pt-BR')} Unid.` : null,
+  m.fisPct != null ? (curto ? `${m.fisMinUn != null ? '*' : ''}${pctTxt(m.fisPct)} física`
+    : `${pctTxt(m.fisPct)} física${m.fisMinUn != null ? ` (mín. ${m.fisMinUn.toLocaleString('pt-BR')} Unid.)` : ''}`) : null]
   .filter(Boolean).join(' + ') || null;
-export const finTxt = (m: Modalidades) => (m.fin != null ? `${pctTxt(m.fin)} VGVL${m.finMin != null ? ` (mín. ${rsCurto(m.finMin)})` : ''}` : null);
+export const finTxt = (m: Modalidades, curto = false) => (m.fin == null ? null
+  : curto ? `${m.finMin != null ? '*' : ''}${pctTxt(m.fin)} VGVL` : `${pctTxt(m.fin)} VGVL${m.finMin != null ? ` (mín. ${rsCurto(m.finMin)})` : ''}`);
 /** a proposta (ou o pedido) numa linha: "R$ 1,2 mi + 6% VGVL + 8 unid." */
 export const resumoMod = (m: Modalidades, dinheiro: (v: number) => string) =>
   [m.din != null ? dinheiro(m.din) : null, finTxt(m), fisTxt(m)].filter(Boolean).join(' + ') || '—';

@@ -20,7 +20,7 @@ Os terrenos ficam sempre **agrupados por cidade**, com um título para cada cida
 | **Estudo de massa** | Unidades e área privativa total do estudo de massa válido, com o **olho** à direita, que abre o estudo numa janela | unidades |
 | **Viabilidade** | VGV e **L.L.** (margem líquida: lucro líquido ÷ VGV líquido, o mesmo número de "Margem líquida" no popup do estudo) do estudo de viabilidade válido, com o **olho** à direita, que abre o estudo no popup | VGV |
 | **Pedida** | O que a oferta de referência pede, em três linhas: dinheiro, permuta financeira ("6% VGVL") e permuta física ("8 Unid." ou "12% física"); a linha do que não foi pedido fica com o traço | dinheiro pedido |
-| **Proposta** | O que a proposta ativa oferece, nas mesmas três linhas e na mesma ordem, com o mínimo garantido entre parênteses quando houver ("6% VGVL (mín. R$ 2 mi)", "15% física (mín. 6 Unid.)"); dividido em partes, a soma das propostas ativas das partes | dinheiro da proposta |
+| **Proposta** | O que a proposta ativa oferece, nas mesmas três linhas e na mesma ordem, com um asterisco na frente do percentual quando há mínimo garantido ("*6% VGVL", "*15% física"; o ⓘ da coluna explica, e o mouse parado no valor mostra o mínimo); dividido em partes, a soma das propostas ativas das partes | dinheiro da proposta |
 | **Corretor** | O corretor principal e a imobiliária; com mais de um, "+N corretores" (o mouse em cima mostra os nomes) | primeiro corretor |
 | **Temperatura** | As barrinhas de 1 a 5 e o número | temperatura |
 | **Responsável** | A foto (ou as iniciais) de quem cuida do terreno; o mouse em cima mostra o nome | nome |

@@ -132,13 +132,14 @@ const Kv = ({ l, v, fraco }: { l: string; v: React.ReactNode; fraco?: boolean })
   <div className={`tb-kv${fraco ? ' fraco' : ''}`} title={l}><span className="tb-kvv">{v}</span></div>
 );
 const pct2 = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
-const INFO_MOD = (de: string) => [{ t: 'Dinheiro', d: `valor em dinheiro da ${de}`, forte: true }, { t: '% VGVL', d: de === 'proposta ativa' ? 'permuta financeira, em % do VGV líquido, com o mínimo garantido quando houver' : 'permuta financeira, em % do VGV líquido' },
-  { t: 'Unid. ou % física', d: de === 'proposta ativa' ? 'permuta física, em unidades ou em percentual (com o mínimo de unidades quando houver)' : 'permuta física, em unidades ou em percentual' }];
+const INFO_MOD = (de: string) => [{ t: 'Dinheiro', d: `valor em dinheiro da ${de}`, forte: true }, { t: '% VGVL', d: 'permuta financeira, em % do VGV líquido' },
+  { t: 'Unid. ou % física', d: 'permuta física, em unidades ou em percentual' },
+  ...(de === 'proposta ativa' ? [{ t: '*', d: 'Tem mínimo garantido (R$ na financeira, unidades na física em %). O mouse parado no valor mostra o mínimo.' }] : [])];
 /** as três linhas das modalidades; a que não foi pedida fica com o traço discreto */
 const Mods = ({ m, vazio }: { m: Modalidades; vazio: string }) => (!temMod(m) ? <Vazio s={vazio} /> : <>
   <Kv l="Dinheiro" v={m.din != null ? mi(m.din) : <Nada s="—" />} />
-  <Kv fraco l={`Permuta financeira: ${finTxt(m) ?? 'não pedida'}`} v={finTxt(m) ?? <Nada s="—" />} />
-  <Kv fraco l={`Permuta física: ${fisTxt(m) ?? 'não pedida'}`} v={fisTxt(m) ?? <Nada s="—" />} /></>);
+  <Kv fraco l={`Permuta financeira: ${finTxt(m) ?? 'não pedida'}`} v={finTxt(m, true) ?? <Nada s="—" />} />
+  <Kv fraco l={`Permuta física: ${fisTxt(m) ?? 'não pedida'}`} v={fisTxt(m, true) ?? <Nada s="—" />} /></>);
 /* títulos do Moisés (4/nov/2026, segunda versão); as chaves são as da ordenação (filtros/ordem.ts); w = largura fixa da coluna
    (a coluna Terreno fica com o resto); reorganização de 11/nov/2026, pedida pelo Moises */
 const COLS: Col[] = [
@@ -167,7 +168,7 @@ const COLS: Col[] = [
   /* Pedida e Proposta (pedido do Moises, 11/nov/2026, no lugar de Negociação): três linhas, na mesma ordem nas duas,
      dinheiro, permuta financeira em % do VGV líquido e permuta física em unidades ou em % */
   { k: 'preco', l: 'Pedida', w: 136, info: INFO_MOD('oferta de referência'), v: (t) => <Mods m={t.ped} vazio="Sem pedido" /> },
-  { k: 'prop', l: 'Proposta', w: 210, info: INFO_MOD('proposta ativa'), v: (t) => <Mods m={t.prop} vazio="Sem proposta ativa" /> },
+  { k: 'prop', l: 'Proposta', w: 136, info: INFO_MOD('proposta ativa'), v: (t) => <Mods m={t.prop} vazio="Sem proposta ativa" /> },
   { k: 'corretor', l: 'Corretor', w: 168, v: (t) => {
     const c = t.corretores;
     if (!c.length) return <Vazio s="Sem corretor" />;
@@ -482,7 +483,8 @@ function InfoCol({ c }: { c: Col }) {
       {aberto && <span className="tb-info-pop" role="tooltip">
         <span className="tb-info-t">{c.l}</span>
         <span className="tb-info-s">De cima para baixo, em cada linha:</span>
-        {c.info!.map((x, i) => <span key={x.t} className="tb-info-l"><span className="tb-info-n">{i + 1}</span><span><b className={x.forte ? 'forte' : undefined}>{x.t}</b><span className="tb-info-d">{x.d}</span></span></span>)}
+        {c.info!.filter((x) => x.t !== '*').map((x, i) => <span key={x.t} className="tb-info-l"><span className="tb-info-n">{i + 1}</span><span><b className={x.forte ? 'forte' : undefined}>{x.t}</b><span className="tb-info-d">{x.d}</span></span></span>)}
+        {c.info!.filter((x) => x.t === '*').map((x) => <span key="*" className="tb-info-s" style={{ marginTop: 8 }}><b>*</b> {x.d}</span>)}
       </span>}
     </span>
   );

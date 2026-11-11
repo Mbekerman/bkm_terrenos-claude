@@ -657,7 +657,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
               {lerNum(v.fin ?? '') != null
                 ? <div className="field"><label htmlFor="pp-fmin">Mínimo garantido (opcional)</label><Adorno t="moeda"><input id="pp-fmin" inputMode="decimal" data-fmt="moeda" value={v.finMin ?? ''} onChange={m('finMin')} /></Adorno></div>
                 : <div className="pp-vazio" />}
-              <div className="field"><label htmlFor="pp-s">Status</label><select id="pp-s" value={v.status} onChange={m('status')}><option value="apresentada">Apresentada</option><option value="em_analise">Em análise</option><option value="rascunho">Rascunho</option></select></div>
+              <div className="pp-vazio" />
               <div className="pp-vazio" />
               <div className="field"><label htmlFor="pp-fis">Permuta física</label><div className="pfis">
                 <Adorno t={v.fisModo === 'un' ? 'un' : 'pct'}><input id="pp-fis" inputMode={v.fisModo === 'un' ? 'numeric' : 'decimal'} data-fmt={v.fisModo === 'un' ? undefined : 'pct'} value={v.fis ?? ''}
@@ -670,6 +670,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
                 ? <div className="field"><label htmlFor="pp-umin">Mínimo de unidades (opcional)</label><Adorno t="un"><input id="pp-umin" inputMode="numeric" value={v.fisMin ?? ''}
                   onChange={(e) => setV((x) => ({ ...x, fisMin: e.target.value.replace(/\D/g, '') }))} /></Adorno></div>
                 : <div className="pp-vazio" />}
+              <div className="field"><label htmlFor="pp-s">Status</label><select id="pp-s" value={v.status} onChange={m('status')}><option value="apresentada">Apresentada</option><option value="em_analise">Em análise</option><option value="rascunho">Rascunho</option></select></div>
               {/* validade em dias ou na data: um preenche o outro, contando de Apresentada em (pedido do Moises, 11/nov/2026) */}
               <div className="field"><label htmlFor="pp-d">Apresentada em</label><input id="pp-d" type="date" value={v.data}
                 onChange={(e) => { const d = e.target.value; setV((x) => { const n = diasVal(x); return { ...x, data: d, validade: d && n != null ? somarDias(d, n) : x.validade }; }); }} /></div>
