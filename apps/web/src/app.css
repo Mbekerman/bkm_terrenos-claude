@@ -184,9 +184,16 @@ body[data-rota="terrenos"] .main { container: pagina / inline-size }
 @media (max-width: 899px) { .tgav-redim { display: none } }
 :root[data-tema="escuro"] .tgav-redim::after { background: #444746 }
 :root[data-tema="escuro"] .tgav-redim:hover::after, :root[data-tema="escuro"] body.mp-arrastando .tgav-redim::after { background: #a8c7fa }
-/* a gaveta encosta na barra de cima: o fio no alto separa o título dela da barra, que tem o mesmo fundo (pedido do Moisés, 6/nov/2026) */
-@media (min-width: 900px) { .tgav-mapa { border-top: 1px solid var(--m-outline-var, #c4c7c5) } }
-:root[data-tema="escuro"] .tgav-mapa { border-top-color: #2d2f31 }
+/* borda da gaveta no Material 3 à risca (side sheet: elevação nível 3 e canto de 16 px na borda de entrada; pedido do
+   Moises, 11/nov/2026): sem o fio cinza da lateral nem o do alto; a sombra separa a gaveta da página e da barra de cima,
+   e a pega de arrastar a largura só aparece com o mouse em cima, no foco ou arrastando (o cursor de redimensionar fica) */
+@media (min-width: 900px) {
+  .tgav { border-left: 0; border-radius: 16px 0 0 0; box-shadow: 0 1px 3px rgba(0,0,0,.30), 0 4px 8px 3px rgba(0,0,0,.15) }
+  .tgav-redim::after { opacity: 0; transition: opacity .15s, background .15s, height .15s, margin .15s }
+  .tgav-redim:hover::after, .tgav-redim:focus-visible::after, body.mp-arrastando .tgav-redim::after { opacity: 1 }
+  /* no escuro a elevação aparece no tom da superfície, um acima do fundo da página */
+  :root[data-tema="escuro"] .tgav { background: #1e1f20; box-shadow: 0 1px 3px rgba(0,0,0,.6), 0 4px 8px 3px rgba(0,0,0,.35) }
+}
 /* título do quadro nunca espreme letra por letra: sem espaço, as ações (a busca de endereço) descem para a linha de baixo
    (pedido do Moisés, 6/nov/2026) */
 .fi-aba .sec-h > h2 { flex: 0 1 auto; min-width: min(100%, max-content) }
