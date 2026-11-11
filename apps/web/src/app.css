@@ -506,23 +506,11 @@ html[data-tema="escuro"] .mt-mais > .iconbtn.atual, html[data-tema="escuro"] .mt
 .chip.selo-val:disabled { opacity: .6; cursor: default }
 html[data-tema="escuro"] .chip.selo-val:not(.good) { color: #c4c7c5 }
 /* lista dos estudos de massa (como a de viabilidade): o nome abre o estudo na janela */
-/* lista dos estudos de massa: uma linha por estudo, toda clicável (pedido do Moises, 11/nov/2026) */
-.ems-lista { display: flex; flex-direction: column }
-.ems-lin { display: flex; align-items: center; gap: 16px; min-height: 48px; padding: 0 var(--q-px, 24px); border-top: 1px solid var(--line, #e3e3e3); cursor: pointer; white-space: nowrap; font-size: 14px }
-.ems-lin:first-child { border-top: 0 }
-.ems-lin:hover { background: rgba(11, 87, 208, .06) }
-.ems-lin:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
-.ems-lin .ems-nome { color: #0b57d0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; min-width: 40px; flex: 0 1 auto }
-.ems-lin .ems-nome + .ems-sit + .ems-d, .ems-lin .ems-nome + .ems-d { margin-left: auto }
-.ems-lin .ems-sit { flex: none; margin-left: -8px }
-.ems-lin .ems-d { flex: none; font-variant-numeric: tabular-nums; text-align: right }
-.ems-lin .ems-un { min-width: 80px } .ems-lin .ems-ap { min-width: 128px } .ems-lin .ems-apm { min-width: 140px } .ems-lin .ems-dt { min-width: 52px }
-.ems-lin .selo-val { min-width: 76px; justify-content: center }
-.ems-lin .ems-r { color: #444746 }
-.ems-lin .selo-val { flex: none }
-html[data-tema="escuro"] .ems-lin .ems-nome { color: #a8c7fa }
-html[data-tema="escuro"] .ems-lin .ems-r { color: #c4c7c5 }
-html[data-tema="escuro"] .ems-lin:hover { background: rgba(168, 199, 250, .08) }
+/* lista dos estudos de massa: a tabela da viabilidade, com a linha toda clicável (pedidos do Moises, 11/nov/2026) */
+.ems-lista tr.ems-lin { cursor: pointer }
+.ems-lista tr.ems-lin:focus-visible { outline: 2px solid #0b57d0; outline-offset: -2px }
+.ems-lista .ems-nome { color: #0b57d0; font-weight: 500 }
+html[data-tema="escuro"] .ems-lista .ems-nome { color: #a8c7fa }
 /* janela do estudo de massa (as mesmas regras do PR #339 no styles.css, para valer também da aba) */
 .dialog.ems-pop { width: min(1100px, 100%); padding: 24px 0 }
 .dialog.ems-pop > .dh { padding: 0 24px }

@@ -93,26 +93,23 @@ export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void 
           <button className="btn sm" onClick={() => setForm('pedir')}>Solicitar estudo</button></span> : null}>
         <div className="sec-b">
           {ms.length ? (
-            <div className="ems-lista">{ms.map((m) => {
-              const [st, cor] = SIT[m.situacao] ?? [m.situacao, ''];
-              const un = Number(m.unidades) || 0;
-              const media = un && m.area_privativa_m2 != null ? r2(Number(m.area_privativa_m2) / un) : null;
-              const entregue = m.situacao === 'entregue';
-              /* uma linha só, toda clicável (abre o estudo); o selo só liga e desliga o válido (pedido do Moises, 11/nov/2026) */
-              return (
-                <div key={m.id} className="ems-lin" role="button" tabIndex={0} title={`Abrir ${m.nome}`}
-                  onClick={() => setAberto(m.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAberto(m.id); } }}>
-                  <span className="ems-nome">{m.nome}</span>
-                  {entregue ? null : <span className={`chip ${cor} ems-sit`}>{st}</span>}
-                  <span className="ems-d ems-un">{un ? `${num(un)} Unid.` : '— Unid.'}</span>
-                  <span className="ems-d ems-ap"><span className="ems-r">A.P.:</span> {m.area_privativa_m2 != null ? m2(m.area_privativa_m2) : '—'}</span>
-                  <span className="ems-d ems-apm"><span className="ems-r">A.P. Média:</span> {media != null ? m2(media) : '—'}</span>
-                  <span className="ems-d ems-dt ems-r" title="Atualizado">{fd(m.atualizado_em)}</span>
-                  <SeloValido valido={!!m.valido} pode={edita && (entregue || !!m.valido)} nome={m.nome}
-                    porque={edita ? 'Só o estudo entregue pode ser o válido' : ''} clicar={() => marcar(m, !m.valido)} />
-                </div>
-              );
-            })}</div>
+            <div className="dt-wrap vb-lista"><table className="dt compacta ems-lista"><thead><tr><th className="esq">Estudo</th><th className="num">Unidades</th><th className="num">A.P.</th><th>Atualizado</th><th>Válido</th></tr></thead>
+              <tbody>{ms.map((m) => {
+                const un = Number(m.unidades) || 0;
+                const entregue = m.situacao === 'entregue';
+                /* a linha inteira abre o estudo; o selo só liga e desliga o válido (pedidos do Moises, 11/nov/2026) */
+                return (
+                  <tr key={m.id} className="ems-lin" tabIndex={0} title={`Abrir ${m.nome}`}
+                    onClick={() => setAberto(m.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAberto(m.id); } }}>
+                    <td className="esq"><span className="ems-nome">{m.nome}</span></td>
+                    <td className="num">{un ? num(un) : '—'}</td>
+                    <td className="num">{m.area_privativa_m2 != null ? m2(m.area_privativa_m2) : '—'}</td>
+                    <td>{fd(m.atualizado_em)}</td>
+                    <td><SeloValido valido={!!m.valido} pode={edita && (entregue || !!m.valido)} nome={m.nome}
+                      porque={edita ? 'Só o estudo entregue pode ser o válido' : ''} clicar={() => marcar(m, !m.valido)} /></td>
+                  </tr>
+                );
+              })}</tbody></table></div>
           ) : (
             <div className="banner blue"><Ic n="layers" /><div style={{ flex: 1 }}><div className="bt">Nenhum estudo de massa</div>
               <div>Peça o estudo ao arquiteto em Solicitar estudo, ou, com o estudo já pronto em mãos, use Novo estudo para digitar as tipologias, as áreas e os índices.</div></div></div>

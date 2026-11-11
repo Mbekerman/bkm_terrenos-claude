@@ -32,7 +32,7 @@ O estudo nasce **Em elaboração**, ninguém recebe aviso, e o estudo abre na ja
 
 ## A lista
 
-Uma linha só por estudo: **nome**, unidades (**"200 Unid."**), **A.P.** (área privativa total), **A.P. Média** (a área privativa por unidade: a total dividida pelas unidades), a data da última alteração e o selo **Válido** ou **Inválido**. O estudo ainda não entregue mostra a situação (**Solicitado** ou **Em elaboração**) ao lado do nome. Na tela estreita, o nome encurta com reticências para a linha caber.
+Uma tabela como a dos estudos de viabilidade, com cabeçalho e uma linha por estudo: **Estudo** (o nome), **Unidades**, **A.P.** (área privativa total), **Atualizado** (a data da última alteração) e **Válido** (o selo Válido ou Inválido).
 
 **Clique em qualquer lugar da linha** para abrir o estudo na janela (o cursor vira a mãozinha). O selo é a exceção: ele só liga e desliga o válido, sem abrir o estudo.
 
