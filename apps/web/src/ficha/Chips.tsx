@@ -61,7 +61,7 @@ export function BarraChips({ itens, ativo, ir, rotulo, sub }: {
     return () => { document.removeEventListener('pointerdown', fecha, true); document.removeEventListener('keydown', esc, true); };
   }, [menu]);
   return (
-    <div className={`fi-chips-w${sub ? ' sub' : ''}`} ref={wrap}>
+    <div className={`fi-chips-w${sub ? ' sub' : ''}`} ref={wrap} data-ativo={ativo ?? ''}>
       <div className="fi-subabas roleta" role="tablist" aria-label={rotulo} ref={barra}>
         {itens.map(([k, l]) => <button key={k} type="button" role="tab" data-t={k} aria-selected={k === ativo} aria-controls={`sec-${k}`} onClick={() => k !== ativo && ir(k)}>{l}</button>)}
       </div>
@@ -97,7 +97,7 @@ export function SecoesChips({ aba, rotulo, sub, children }: { aba: string; rotul
   const esc = chipEscolhido(L, aba);
   const ativo = esc && lista.some((x) => x[0] === esc) ? esc : lista[0]?.[0] ?? null;
   const ctx = useMemo(() => ({ reg, ativo }), [reg, ativo]);
-  /* trocar de chip não mexe na rolagem: a página fica onde estava e, com a seção nova mais curta, sobra espaço vazio
+  /* trocar de chip deixa as barras onde estão e, com elas presas, abre a seção na última posição dela; com a seção nova mais curta, sobra espaço vazio
      embaixo (segurarRolagem; pedidos do Moises, 11/nov/2026) */
   const ir = (k: string) => { segurarRolagem(); abrirQuadro(aba, k); };
   return (

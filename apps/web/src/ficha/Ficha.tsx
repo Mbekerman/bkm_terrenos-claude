@@ -22,7 +22,7 @@ import AbaMassa from './Massa';
 import AbaJornada from './Jornada';
 import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
-import { abrirQuadroJa, focar, OPT, pedirCampo, segurarRolagem, useSalvar, Vivo } from './edicao';
+import { abrirQuadroJa, focar, OPT, pedirCampo, segurarRolagem, useSalvar, useSobraSecao, Vivo } from './edicao';
 import { useToast } from '../components/ui';
 import MenuTerreno from '../components/MenuTerreno';
 import { useNavigate } from 'react-router-dom';
@@ -205,7 +205,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
   }, [menu]);
   const g = grupo(aba);
   useEffect(() => { if (ESTUDOS.some((x) => x[0] === aba)) try { sessionStorage.setItem(SUB_LEMBRA, aba); } catch { /* sem sessão */ } }, [aba]);
-  /* trocar de aba não mexe na rolagem (segurarRolagem; pedido do Moises, 11/nov/2026); o "o que falta" segue rolando ao campo */
+  /* trocar de aba deixa as barras onde estão e volta a seção à última posição dela (segurarRolagem; pedido do Moises, 11/nov/2026); o "o que falta" segue rolando ao campo */
   const irT = (k: string) => { segurarRolagem(); irAba(k); };
   const irG = (k: string) => { if (k === 'estudos') { if (g !== 'estudos') irT(subVista()); } else if (k !== aba) irT(k); };
   /* sem número nas abas: rolado o topo para fora da vista, o que falta aparece num botão de alerta na barra das abas,
@@ -423,6 +423,9 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   useRelevoAuto(f);
   /* trocar de aba pela barra (ou pela subaba de Estudos Técnicos) não mexe na rolagem (pedido do Moises, 11/nov/2026) */
   const irAbaFixo = (k: string) => { segurarRolagem(); irAba(k); };
+  /* a seção sempre deixa rolar até as barras travarem, mesmo vazia (pedido do Moises, 11/nov/2026) */
+  const mainR = useRef<HTMLDivElement>(null);
+  useSobraSecao(mainR, aba);
   const c = completude(f);
   const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
   const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;
@@ -443,7 +446,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
     : aba === 'historico' ? <Historico f={f} irAba={irAba} />
     : <section className="sec"><div className="empty">{PROXIMAS.has(aba) ? 'Esta aba está sendo portada do protótipo e entra nas próximas entregas.' : 'Esta aba entra depois da primeira versão.'}</div></section>;
   return (
-    <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main">
+    <div className={`ficha-wrap ${pn.aberto ? 'pn-on' : 'pn-off'}`}><div className="ficha-main" data-terreno={f.codigo} ref={mainR}>
       <LinhaTopo f={f} rotulo={naGaveta} />
       {voltar && <button className="back" onClick={voltar.ir}><Ic n="back" s={20} />{voltar.rotulo}</button>}
       <div className="dhead fi-head">

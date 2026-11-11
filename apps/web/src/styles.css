@@ -4551,6 +4551,9 @@ html[data-tema="escuro"] .fi-chips-w .iconbtn { color: #c4c7c5 }
 .fi-subabas button[aria-selected="true"] { background: #c2e7ff; border-color: transparent; color: #001d35 }
 .fi-subabas button:focus-visible { outline: 2px solid var(--m-primary, #0b57d0); outline-offset: 2px }
 .fi-chips-w + .fi-aba > .bl-c, .fi-chips-w + .fi-chips-w + .fi-aba > .bl-c { padding-top: 4px }
+/* a seção aberta ocupa ao menos a vista abaixo das barras presas: dá para rolar até elas travarem, mesmo vazia (pedido do
+   Moises, 11/nov/2026; --fi-sobra medido em useSobraSecao) */
+.ficha-main > .fi-aba { min-height: var(--fi-sobra, 0px) }
 /* a barra de chips fica presa logo abaixo das abas (pedido do Moises, 11/nov/2026; --chips-top medido em BarraChips) */
 .fi-chips-w { position: sticky; top: var(--chips-top, calc(121px + env(safe-area-inset-top, 0px))); z-index: 14; padding-bottom: 12px; background: var(--m-surface, #f8fafd) }
 @media (max-width: 599px) { .fi-chips-w { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 4px } }

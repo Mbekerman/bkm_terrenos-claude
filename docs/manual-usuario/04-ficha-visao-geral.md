@@ -61,7 +61,7 @@ As abas da barra, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técn
 
 **Jornada** e **Histórico** ficam no **⋮ do topo da ficha** (à direita do responsável; na gaveta do Mapa e do Pipeline, ao lado do ícone Abrir página), antes de Excluir terreno. Histórico só aparece ali quando o painel da direita não está na tela. Com uma das duas aberta, o ⋮ fica em azul-claro.
 
-No computador, a ficha nunca fica estreita a ponto de cortar a barra: o painel da direita só aparece quando sobra espaço para a barra inteira, e a gaveta da ficha (no Mapa e no Pipeline) tem no mínimo 800 px.
+No computador, a ficha nunca fica estreita a ponto de cortar a barra: o painel da direita só aparece quando sobra espaço para a barra inteira, e a gaveta da ficha (no Mapa e no Pipeline) não fica mais estreita que a barra das abas inteira, contando o lugar do alerta quando falta algo na ficha.
 
 | Aba | Situação | Seção do manual |
 |---|---|---|
@@ -91,7 +91,7 @@ Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos T�
 
 <a id="quadros-que-abrem-e-fecham"></a>
 
-Em todas as abas menos a Visão geral, cada **seção** (Identificação, Localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra. A barra dos botões fica **presa logo abaixo das abas** quando você rola a página, e trocar de seção, de aba ou de parte de Estudos Técnicos **não mexe na rolagem**: a página fica onde estava. Se a seção nova for mais curta que a tela, sobra um espaço vazio embaixo, que vai sumindo quando você rola para cima.
+Em todas as abas menos a Visão geral, cada **seção** (Identificação, Localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra. A barra dos botões fica **presa logo abaixo das abas** quando você rola a página, Ao trocar de seção, de aba ou de parte de Estudos Técnicos, as barras ficam onde estavam: se o topo da ficha ainda está à vista, nada rola. Com as barras já presas no alto, a seção nova aparece **onde você a deixou da última vez** (o sistema lembra a posição de cada seção de cada terreno enquanto a página está aberta) e, se você ainda não tinha aberto essa seção, aparece **do começo**, logo abaixo das barras. Mesmo uma seção vazia ou curta deixa rolar a página até as barras travarem no alto. Se a seção nova for mais curta que a tela, sobra um espaço vazio embaixo, que vai sumindo quando você rola para cima.
 
 Em Estudos Técnicos a barra é uma só, com as cinco partes; dentro de cada parte, os quadros (Relevo, Visita técnica, Viabilidades técnicas, Resumo da viabilidade...) continuam abrindo e fechando pela seta. Em Estudos de massa, o estudo aberto aparece embaixo da lista, também como quadro que abre e fecha.
 
@@ -153,7 +153,7 @@ Igual à página, com:
 - o topo da ficha sem repetir o cabeçalho: no lugar da linha "fase · etapa · subetapa", o nome da fase fica em cima da linha do tempo, que já marca a etapa e a subetapa; ficam "Cadastrado em" (e a situação, quando é Stand By, Perdido ou Descartado), o responsável e "Ficha N% completa". No celular, onde a linha do tempo some, a fase · etapa · subetapa continua no topo;
 
 - **X** ou **Esc** para fechar;
-- a borda esquerda arrastável (mínimo 800 px, para a barra das abas caber inteira; dois cliques voltam ao padrão);
+- a borda esquerda arrastável (no mínimo, a largura em que a barra das abas cabe inteira; dois cliques voltam ao padrão);
 - clicar noutro terreno no mapa troca o terreno da gaveta.
 
 A gaveta da ficha e a gaveta de filtros não abrem juntas.
