@@ -16,14 +16,15 @@ Os terrenos ficam sempre **agrupados por cidade**, com um título para cada cida
 |---|---|---|
 | **Terreno** | Nome em cima; código e endereço embaixo (o endereço longo termina em "…"; o mouse em cima mostra inteiro) | nome |
 | **Região** | Zona Norte, Zona Sul, Centro... | região |
-| **Imóvel** | Área adotada, zoneamento ("ZM / ZC") e perfil topográfico | área |
+| **Imóvel** | Área adotada, zoneamento ("ZM / ZC") e, na terceira linha, o perfil do relevo (Plano, Inclinado, Acidentado leve...), sem a inclinação em % | área |
 | **Estudo de massa** | Unidades e área privativa total do estudo de massa válido, com o **olho** à direita, que abre o estudo numa janela | unidades |
 | **Viabilidade** | VGV e **L.L.** (margem líquida: lucro líquido ÷ VGV líquido, o mesmo número de "Margem líquida" no popup do estudo) do estudo de viabilidade válido, com o **olho** à direita, que abre o estudo no popup | VGV |
 | **Pedida** | O que a oferta de referência pede, em três linhas: dinheiro, permuta financeira ("6% VGVL") e permuta física ("8 Unid." ou "12% física"); a linha do que não foi pedido fica com o traço | dinheiro pedido |
 | **Proposta** | O que a proposta ativa oferece, nas mesmas três linhas e na mesma ordem, com um asterisco na frente do percentual quando há mínimo garantido ("*6% VGVL", "*15% física"; o ⓘ da coluna explica, e o mouse parado no valor mostra o mínimo); dividido em partes, a soma das propostas ativas das partes | dinheiro da proposta |
 | **Corretor** | O corretor principal e a imobiliária; com mais de um, "+N corretores" (o mouse em cima mostra os nomes) | primeiro corretor |
 | **Temperatura** | As barrinhas de 1 a 5 e o número | temperatura |
-| **Responsável** | A foto (ou as iniciais) de quem cuida do terreno; o mouse em cima mostra o nome | nome |
+| **Etapa** | A etapa do funil em cima e a subetapa embaixo, em cinza e menor, quebrando em até 3 linhas quando o nome é longo, da fase mais adiante do terreno (o mouse em cima mostra fase › etapa › subetapa). Em Stand By, "Stand By" embaixo da etapa; Perdido e Descartado em cima, com a etapa embaixo; sem negociação, **Backlog** | ordem do funil |
+| **Responsável** | A foto (ou as iniciais) de quem cuida do terreno; o mouse em cima mostra o nome. A coluna não tem título visível, para ficar estreita; o mouse no alto dela diz "Responsável" | nome |
 
 As células de **Estudo de massa**, **Viabilidade**, **Empreendimento**, **Pedida** e **Proposta** mostram só os valores, um por linha, sem rótulo. O **ⓘ** depois do título dessas colunas abre um balão com o que é cada linha, de cima para baixo (fecha no clique fora, no Esc ou no ⓘ). O mouse parado sobre um valor também diz o que ele é. Em **Estudo de massa** e **Viabilidade**, a coluna tem a largura do que mostra, e o olho fica na mesma reta do ⓘ do título: logo depois do título ou, quando os valores são mais largos que ele, logo depois dos valores. Cada cidade tem uma linha cinza em cima e embaixo da sua faixa.
 
@@ -33,7 +34,7 @@ Os olhos não abrem a ficha: a janela do estudo abre sobre a tabela. Na janela d
 
 ## Tela menor
 
-Quando a tabela não cabe na largura, as colunas saem nesta ordem: **Responsável**, **Temperatura**, **Corretor**; depois **Estudo de massa** e **Viabilidade** viram uma coluna só, **Empreendimento** (VGV, unidades e L.L., com um olho para cada estudo); depois saem **Região**, **Proposta**, **Pedida** e **Empreendimento**. Terreno e Imóvel ficam sempre. No celular, cada linha mostra só o terreno e o imóvel.
+Quando a tabela não cabe na largura, as colunas saem nesta ordem: **Responsável**, **Temperatura**, **Corretor**, **Etapa**; depois **Estudo de massa** e **Viabilidade** viram uma coluna só, **Empreendimento** (VGV, unidades e L.L., com um olho para cada estudo); depois saem **Região**, **Proposta**, **Pedida** e **Empreendimento**. Na Proposta, quando o terreno já tem proposta, o olho à direita abre a janela **Propostas**: todas as propostas do terreno, enviadas pela BKM e recebidas do vendedor, da mais recente à mais antiga, com data e validade, valor, forma e condições de pagamento, partes e status (só para ver; registrar e mudar o status continua na aba Comercial da ficha). O Corretor é estreito: o nome quebra em até duas linhas ("Jefferson" em cima, "Rodrigues" embaixo) e a imobiliária fica numa linha só; o que passar disso termina em "…", e o mouse em cima mostra inteiro. Terreno e Imóvel ficam sempre. No celular, cada linha mostra só o terreno e o imóvel.
 
 ## Cidades
 

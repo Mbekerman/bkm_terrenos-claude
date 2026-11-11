@@ -13,8 +13,9 @@ import { usePreCarregarFicha, useFicha } from '../ficha/Ficha';
 import { abrirEstudo, PopEstudo, useAberto } from '../viab/Viabilidade';
 import GavetaFicha from '../ficha/Gaveta';
 import { PopMassa } from '../ficha/Massa';
-import { bate } from '../mapa/dados';
-import type { TerrenoMapa } from '../mapa/dados';
+import { PropostasPop } from '../components/PropostasPop';
+import { bate, faseAtual } from '../mapa/dados';
+import type { Fase, TerrenoMapa } from '../mapa/dados';
 import { BarraFx, GavetaFx, useFiltros } from '../filtros/Filtros';
 import { alternar } from '../filtros/ordem';
 
@@ -29,14 +30,14 @@ import { alternar } from '../filtros/ordem';
 type R = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 interface Linha {
   id: string; codigo: string; nome: string; endereco: string; cidade: string | null; zona: string | null; area: number | null;
-  zonas: string | null; topo: string | null; vgv: number | null; un: number | null; mUn: number | null; mArea: number | null; temMassa: boolean; temEstudo: boolean; vid: string | null; ll: number | null; pedido: number | null; proposta: number | null; ped: Modalidades; prop: Modalidades;
-  corretores: { nome: string; imob: string | null }[]; temp: number | null; resp: { nome: string; foto: string | null } | null;
+  zonas: string | null; topo: string | null; vgv: number | null; un: number | null; mUn: number | null; mArea: number | null; temMassa: boolean; temEstudo: boolean; vid: string | null; ll: number | null; pedido: number | null; proposta: number | null; ped: Modalidades; prop: Modalidades; nProp: number;
+  corretores: { nome: string; imob: string | null }[]; temp: number | null; etapa: { e: string; s: string | null; dica: string } | null; resp: { nome: string; foto: string | null } | null;
   /* só para a busca da barra superior */
   busca: TerrenoMapa;
 }
 
 async function carregar(emp: string): Promise<Linha[]> {
-  const [v, t, pr, cor, mat, ins, em] = await Promise.all([
+  const [v, t, pr, cor, mat, ins, em, fm, et, sb, ps, pp] = await Promise.all([
     supabase.from('v_terrenos').select('id,codigo,nome,logradouro,numero,bairro,zona,municipio,area_adotada_m2,zonas_siglas,vgv,margem_pct,valor_pedido,pedido_fin_pct,pedido_fis_pct,pedido_fis_unidades,proposta_ativa_valor,proposta_ativa_fin_pct,proposta_ativa_fis_pct,proposta_ativa_fis_unidades,proposta_ativa_fin_minimo,proposta_ativa_fis_min_unidades,corretor_ids,temperatura,responsavel_id,negociacao_id').eq('empresa_id', emp),
     supabase.from('terrenos').select('id,topo_perfil,topo_declividade_pct').eq('empresa_id', emp),
     supabase.from('processos').select('id,viabilidade_id').eq('empresa_id', emp).not('viabilidade_id', 'is', null),
@@ -44,8 +45,24 @@ async function carregar(emp: string): Promise<Linha[]> {
     supabase.from('matriculas').select('terreno_id,numero').eq('empresa_id', emp),
     supabase.from('inscricoes_municipais').select('terreno_id,inscricao').eq('empresa_id', emp),
     supabase.from('estudos_massa').select('terreno_id,unidades,area_privativa_m2').eq('empresa_id', emp).eq('valido', true),
+    /* etapa e subetapa (coluna Etapa): o processo da fase mais adiante, como a lista do mapa */
+    supabase.from('fases_modelo').select('codigo,nome,ordem,entrada,ativo').eq('empresa_id', emp).order('ordem'),
+    supabase.from('etapas_modelo').select('fase,codigo,nome,ordem').eq('empresa_id', emp).order('ordem'),
+    supabase.from('subetapas_modelo').select('fase,etapa,codigo,nome,ordem').eq('empresa_id', emp).order('ordem'),
+    supabase.from('processos').select('terreno_id,fase,etapa_atual,subetapa_atual,status,data_inicio').eq('empresa_id', emp).is('parte_id', null).order('data_inicio'),
+    /* quantas propostas cada terreno tem (o olho da Negociação só aparece com alguma) */
+    supabase.from('propostas').select('id,processos!inner(terreno_id)').eq('empresa_id', emp),
   ]);
-  for (const r of [v, t, pr, cor, mat, ins, em]) if (r.error) throw r.error;
+  for (const r of [v, t, pr, cor, mat, ins, em, fm, et, sb, ps, pp]) if (r.error) throw r.error;
+  const nPropDe: Record<string, number> = {};
+  for (const x of pp.data as R[]) { const k = (x.processos as R).terreno_id; nPropDe[k] = (nPropDe[k] ?? 0) + 1; }
+  const fases: Fase[] = (fm.data as R[]).map((x) => ({
+    k: x.codigo, nome: x.nome, entrada: !!x.entrada, ativo: x.ativo !== false,
+    etapas: (et.data as R[]).filter((y) => y.fase === x.codigo).map((y) => ({
+      k: y.codigo, nome: y.nome, subs: (sb.data as R[]).filter((z) => z.fase === x.codigo && z.etapa === y.codigo).map((z) => ({ k: z.codigo, nome: z.nome })) })),
+  }));
+  const procsDe: Record<string, TerrenoMapa['procs']> = {};
+  for (const x of ps.data as R[]) (procsDe[x.terreno_id] ??= []).push({ fase: x.fase, etapa: x.etapa_atual, sub: x.subetapa_atual, status: x.status });
   /* estudo de massa válido (um por terreno) */
   const massa = Object.fromEntries((em.data as R[]).map((x) => [x.terreno_id, x]));
   const esc = await escondidos(emp);
@@ -72,20 +89,39 @@ async function carregar(emp: string): Promise<Linha[]> {
     const endereco = [[x.logradouro, x.numero].filter(Boolean).join(', '), x.bairro].filter(Boolean).join(' · ');
     const corretores = ((x.corretor_ids ?? []) as string[]).map((id) => cN[id]).filter(Boolean);
     const topo = tp.topo_perfil
-      ? tp.topo_perfil === 'inclinado' && tp.topo_declividade_pct != null ? `Inclinado · ${Number(tp.topo_declividade_pct).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` : TP_N[tp.topo_perfil] ?? tp.topo_perfil
+      ? TP_N[tp.topo_perfil] ?? tp.topo_perfil
       : null;
     return {
       id: x.id, codigo: x.codigo ?? '', nome: x.nome ?? x.codigo ?? '', endereco, cidade: x.municipio ?? null, zona: x.zona ?? null,
       area: x.area_adotada_m2 == null ? null : +x.area_adotada_m2, zonas: zs(x.zonas_siglas), topo,
       vgv: x.vgv == null ? null : +x.vgv, un: vid ? unDe[vid] ?? null : null, temEstudo: !!vid, mUn: ms?.unidades == null ? null : +ms.unidades, mArea: ms?.area_privativa_m2 == null ? null : +ms.area_privativa_m2, temMassa: !!ms, vid: vid ?? null, ll: x.margem_pct == null ? null : +x.margem_pct,
-      pedido: x.valor_pedido == null ? null : +x.valor_pedido, proposta: x.proposta_ativa_valor == null ? null : +x.proposta_ativa_valor,
+      nProp: nPropDe[x.id] ?? 0, pedido: x.valor_pedido == null ? null : +x.valor_pedido, proposta: x.proposta_ativa_valor == null ? null : +x.proposta_ativa_valor,
       ped: modDe({ valor: x.valor_pedido, fin: x.pedido_fin_pct, fisPct: x.pedido_fis_pct, fisUn: x.pedido_fis_unidades }),
       prop: modDe({ valor: x.proposta_ativa_valor, fin: x.proposta_ativa_fin_pct, fisPct: x.proposta_ativa_fis_pct, fisUn: x.proposta_ativa_fis_unidades, finMin: x.proposta_ativa_fin_minimo, fisMinUn: x.proposta_ativa_fis_min_unidades }),
-      corretores, temp: x.temperatura ?? null, resp: uN[x.responsavel_id] ?? null,
+      corretores, temp: x.temperatura ?? null, resp: uN[x.responsavel_id] ?? null, etapa: etapaDe(fases, procsDe[x.id] ?? []),
       busca: { codigo: x.codigo, nome: x.nome, bairro: x.bairro, zona: x.zona, municipio: x.municipio, corretor: corretores.map((c) => c.nome).join(' '),
         endereco, matriculas: mats[x.id], sqls: sqls[x.id] } as unknown as TerrenoMapa,
     };
   });
+}
+
+/** Corretor estreitado de 168 para 128 px; o que sobra vai, por igual, para Estudo de massa, Viabilidade e Negociação (pedido do
+    Moises, 11/nov/2026) */
+const CORRETOR_W = 128, MAIS_ESTUDO = Math.floor((168 - CORRETOR_W) / 2);
+const SIT_N: Record<string, string> = { stand_by: 'Stand By', perdido: 'Perdido', descartado: 'Descartado' };
+/** etapa em cima e subetapa embaixo, do processo da fase mais adiante (a mesma regra da lista do mapa); Stand By vai
+    embaixo da etapa; Perdido, Descartado e a fase concluída no lugar da etapa; sem processo, Backlog */
+function etapaDe(fs: Fase[], procs: TerrenoMapa['procs']): Linha['etapa'] {
+  const a = faseAtual(fs, { procs } as TerrenoMapa), p = a?.p;
+  if (!a || !p) return null;
+  const f = fs.find((x) => x.k === a.k), e = f?.etapas.find((x) => x.k === p.etapa);
+  const en = e?.nome ?? p.etapa, sn = p.sub ? e?.subs.find((x) => x.k === p.sub)?.nome ?? p.sub : null;
+  const dica = (s: string | null, x: string) => [f?.nome, x, s].filter(Boolean).join(' › ');
+  if (p.status === 'ativo') return { e: en, s: sn, dica: dica(sn, en) };
+  if (p.status === 'stand_by') return { e: en, s: 'Stand By', dica: dica('Stand By', en) };
+  if (p.status === 'concluido') return { e: 'Concluído', s: f?.nome ?? null, dica: dica(null, 'Concluído') };
+  const sit = SIT_N[p.status] ?? p.status;
+  return { e: sit, s: en, dica: dica(en, sit) };
 }
 
 /* R$ em milhões; abaixo de 1 milhão, em mil (R$ 850 mil, não R$ 0,85 mi) */
@@ -114,7 +150,7 @@ function Av({ r }: { r: NonNullable<Linha['resp']> }) {
     {r.foto ? <img src={r.foto} alt="" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : ini}</span>;
 }
 
-type Ver = (t: Linha, qual: 'viab' | 'massa') => void;
+type Ver = (t: Linha, qual: 'viab' | 'massa' | 'prop') => void;
 /** o que cada linha da célula mostra, no balão do ⓘ do título (as células só mostram os valores; pedido do Moises, 11/nov/2026) */
 interface Info { t: string; d: string; forte?: boolean }
 interface Col { k: string; l: string; cls?: string; w: number | null; v: (t: Linha, ver: Ver) => React.ReactNode; info?: Info[] }
@@ -126,6 +162,7 @@ const Olho = ({ rot, onClick }: { rot: string; onClick: () => void }) => (
   <button type="button" className="iconbtn tb-viab" aria-label={rot} title={rot} onClick={(e) => { e.stopPropagation(); onClick(); }}><Ic n="olho" s={18} /></button>
 );
 const olhoViab = (t: Linha, ver: Ver) => <Olho key="v" rot={`Abrir a viabilidade válida de ${t.nome}`} onClick={() => ver(t, 'viab')} />;
+const olhoProp = (t: Linha, ver: Ver) => <Olho key="p" rot={`Ver as propostas de ${t.nome}`} onClick={() => ver(t, 'prop')} />;
 const olhoMassa = (t: Linha, ver: Ver) => <Olho key="m" rot={`Abrir o estudo de massa válido de ${t.nome}`} onClick={() => ver(t, 'massa')} />;
 /** linha rótulo e valor das colunas de números (Projeto e Negociação): o rótulo à esquerda, o valor à direita */
 const Kv = ({ l, v, fraco }: { l: string; v: React.ReactNode; fraco?: boolean }) => (
@@ -147,9 +184,11 @@ const COLS: Col[] = [
     <div className="tb-c1t"><div className="t1">{t.nome}</div>
       <div className="t2 tb-end" title={t.endereco || undefined}><span className="tb-cod">{t.codigo}</span>{t.endereco && <> · {t.endereco}</>}</div></div>) },
   { k: 'zona', l: 'Região', w: 132, v: (t) => regiao(t.zona) ?? <Vazio s="Sem região" /> },
-  { k: 'area', l: 'Imóvel', w: 200, v: (t) => <>
+  /* área, zoneamento e, na terceira linha, só o perfil do relevo, sem a inclinação (pedido do Moises, 11/nov/2026) */
+  { k: 'area', l: 'Imóvel', w: 150, v: (t) => <>
     <div>{t.area != null ? m2(t.area) : <Nada s="Sem área" />}</div>
-    <div className="t2 tb-zt" title={[t.zonas, t.topo].filter(Boolean).join(' · ') || undefined}>{[t.zonas, t.topo].filter(Boolean).join(' · ') || <Nada s="Sem zoneamento" />}</div></> },
+    <div className="t2 tb-zt" title={t.zonas ?? undefined}>{t.zonas ?? <Nada s="Sem zoneamento" />}</div>
+    {t.topo && <div className="t2 tb-zt">{t.topo}</div>}</> },
   { k: 'massa', l: 'Estudo de massa', w: 176, info: [
     { t: 'Unidades', d: 'quantidade de unidades', forte: true }, { t: 'Área privativa total', d: 'soma das áreas privativas das tipologias' }], v: (t, ver) => (t.temMassa ? <ComOlho olhos={[olhoMassa(t, ver)]}>
     <Kv l="Unidades" v={t.mUn != null ? num(t.mUn) : '—'} />
@@ -168,20 +207,29 @@ const COLS: Col[] = [
   /* Pedida e Proposta (pedido do Moises, 11/nov/2026, no lugar de Negociação): três linhas, na mesma ordem nas duas,
      dinheiro, permuta financeira em % do VGV líquido e permuta física em unidades ou em % */
   { k: 'preco', l: 'Pedida', w: 136, info: INFO_MOD('oferta de referência'), v: (t) => <Mods m={t.ped} vazio="Sem pedido" /> },
-  { k: 'prop', l: 'Proposta', w: 136, info: INFO_MOD('proposta ativa'), v: (t) => <Mods m={t.prop} vazio="Sem proposta ativa" /> },
-  { k: 'corretor', l: 'Corretor', w: 168, v: (t) => {
+  /* o olho abre todas as propostas do terreno, enviadas e recebidas (pedido do Moises, 11/nov/2026); só com alguma proposta */
+  { k: 'prop', l: 'Proposta', w: 168, info: INFO_MOD('proposta ativa'), v: (t, ver) => (t.nProp ? <ComOlho olhos={[olhoProp(t, ver)]}>
+    <Mods m={t.prop} vazio="Sem proposta ativa" /></ComOlho> : <Mods m={t.prop} vazio="Sem proposta ativa" />) },
+  /* estreita: o nome quebra em até 2 linhas ("Jefferson" / "Rodrigues"), e o que passar disso termina em reticências, inteiro na
+     dica (pedido do Moises, 11/nov/2026) */
+  { k: 'corretor', l: 'Corretor', w: CORRETOR_W, v: (t) => {
     const c = t.corretores;
     if (!c.length) return <Vazio s="Sem corretor" />;
-    return <><div>{c[0].nome}</div>
-      {c.length > 1 ? <div className="t2" title={c.slice(1).map((x) => x.nome).join(', ')}>+{c.length - 1} corretor{c.length > 2 ? 'es' : ''}</div> : c[0].imob ? <div className="t2">{c[0].imob}</div> : null}</>;
+    return <><div className="tb-nome2" title={c[0].nome}>{c[0].nome}</div>
+      {c.length > 1 ? <div className="t2 tb-corte" title={c.slice(1).map((x) => x.nome).join(', ')}>+{c.length - 1} corretor{c.length > 2 ? 'es' : ''}</div> : c[0].imob ? <div className="t2 tb-corte" title={c[0].imob}>{c[0].imob}</div> : null}</>;
   } },
   { k: 'temp', l: 'Temperatura', w: 116, v: (t) => <TempMini v={t.temp} /> },
-  { k: 'resp', l: 'Responsável', cls: 'meio', w: 112, v: (t) => (t.resp ? <span className="tb-resp" title={t.resp.nome}><Av r={t.resp} /><span className="sr-only">{t.resp.nome}</span></span> : <Vazio s="Sem responsável" />) },
+  /* etapa em cima, subetapa embaixo (sem tracinho); estreita, na medida de "Primeiro Contato", e quebra em até 3 linhas
+     (pedidos do Moises, 11/nov/2026) */
+  { k: 'etapa', l: 'Etapa', w: 148, v: (t) => (t.etapa ? <div className="tb-et" title={t.etapa.dica}>
+    <span className="tb-et-e">{t.etapa.e}</span>{t.etapa.s && <span className="t2 tb-et-s">{t.etapa.s}</span>}</div> : <span title="Sem negociação">Backlog</span>) },
+  /* só a foto, sem título visível, bem estreita (pedido do Moises, 11/nov/2026) */
+  { k: 'resp', l: 'Responsável', cls: 'meio sem-tit', w: 64, v: (t) => (t.resp ? <span className="tb-resp" title={t.resp.nome}><Av r={t.resp} /><span className="sr-only">{t.resp.nome}</span></span> : <Vazio s="Sem responsável" />) },
 ];
 
 /* colunas que saem quando a tabela não cabe, nesta ordem (pedido do Moises, 11/nov/2026); a cidade não é coluna: as linhas
    ficam sempre agrupadas por cidade, com um título para cada uma */
-const SAI = ['resp', 'temp', 'corretor', 'junta', 'zona', 'prop', 'preco', 'estudo'];
+const SAI = ['resp', 'temp', 'corretor', 'etapa', 'junta', 'zona', 'prop', 'preco', 'estudo'];
 /** colunas visíveis em cada nível; no passo "junta", Estudo de massa e Viabilidade viram uma coluna só, Empreendimento
     (pedido do Moises, 11/nov/2026) */
 const visiveis = (nivel: number) => {
@@ -193,6 +241,7 @@ const TER_MIN = 340;
 const TER_MAX = 560;
 /* Estudo de massa e Viabilidade não ganham a folga: ficam na medida do título com o ⓘ ou dos valores com o olho, e o olho
    fica no eixo do ⓘ (pedido do Moises, 11/nov/2026; `useOlhoX`) */
+/* Negociação também: o olho das propostas fica no eixo do ⓘ, como nas outras duas (pedido do Moises, 11/nov/2026) */
 const JUSTAS = ['massa', 'viab'];
 /** distância do título ao ⓘ e dos valores ao olho */
 const GAP_I = 6, GAP_O = 6;
@@ -212,6 +261,10 @@ function useOlhoX(dep: unknown[], ativo: boolean) {
       const x = Math.ceil(Math.max(s.getBoundingClientRect().right - l + GAP_I + 12, v + GAP_O + 16));
       n[k] = { x, w: x + 16 + (parseFloat(getComputedStyle(th).paddingRight) || 0) + 2 };
     }
+    /* Estudo de massa e Viabilidade na mesma largura, a da mais larga, com o ⓘ e o olho à mesma distância da borda direita;
+       a Negociação acompanha (pedido do Moises, 11/nov/2026) */
+    const W = Math.max(0, ...Object.values(n).map((o) => o.w)) + MAIS_ESTUDO;
+    for (const k of Object.keys(n)) n[k] = { x: W - (n[k].w - n[k].x), w: W };
     if (JSON.stringify(n) !== JSON.stringify(ox)) setOx(n);
   }, dep); // eslint-disable-line react-hooks/exhaustive-deps
   return ox;
@@ -315,8 +368,10 @@ export default function Pipeline() {
   const [viab, setViab] = useState<{ cod: string; vid: string } | null>(null);
   const [massaPop, setMassaPop] = useState<string | null>(null);
   const qc = useQueryClient();
+  const [propPop, setPropPop] = useState<Linha | null>(null);
   const verViab: Ver = (t, qual) => {
     if (qual === 'massa') { setMassaPop(t.codigo); return; }
+    if (qual === 'prop') { setPropPop(t); return; }
     if (!t.vid) return; if (gav === t.codigo) abrirEstudo(t.vid); else setViab({ cod: t.codigo, vid: t.vid });
   };
   const fecharViab = () => { setViab(null); void qc.invalidateQueries({ queryKey: ['mapa', 'pipeline'] }); };
@@ -371,8 +426,8 @@ export default function Pipeline() {
     return (
       <th key={c.k} ref={c.k === 'ter' ? setTh : undefined} className={`col-${c.k} ${c.cls ?? ''}`} scope="col" aria-sort={st ? (st.dir === 'desc' ? 'descending' : 'ascending') : 'none'}>
         <button type="button" className="dt-sort" onClick={() => fx.setO(alternar(L, c.k))}
-          title={st ? (st.dir === 'asc' ? 'Crescente: clique para decrescente' : 'Decrescente: clique para tirar a ordem') : 'Ordenar em ordem crescente'}>
-          {c.l}<span className="dt-ar" aria-hidden="true">{st ? (st.dir === 'desc' ? '↓' : '↑') : '↕'}</span>
+          title={(c.cls?.includes('sem-tit') ? c.l + ': ' : '') + (st ? (st.dir === 'asc' ? 'Crescente: clique para decrescente' : 'Decrescente: clique para tirar a ordem') : 'Ordenar em ordem crescente')}>
+          {c.cls?.includes('sem-tit') ? <span className="sr-only">{c.l}</span> : c.l}<span className="dt-ar" aria-hidden="true">{st ? (st.dir === 'desc' ? '↓' : '↑') : '↕'}</span>
           {st && L.length > 1 && <span className="tb-ord" aria-label={`${i + 1}ª ordem`}>{i + 1}</span>}
         </button>
         {c.info && <InfoCol c={c} />}
@@ -439,6 +494,7 @@ export default function Pipeline() {
         abrirPagina={(aba) => navegar(`/terrenos/${gav}${aba === 'geral' ? '' : '/' + aba}`, { state: { de: 'terrenos' } })}
         abrirMapa={() => navegar(`/mapa/${gav}`)} />}
       {viab && viab.cod !== gav && <ViabPop key={viab.vid} cod={viab.cod} vid={viab.vid} fechar={fecharViab} />}
+      {propPop && <PropostasPop id={propPop.id} codigo={propPop.codigo} nome={propPop.nome} fechar={() => setPropPop(null)} />}
       {massaPop && <MassaPop key={massaPop} cod={massaPop} fechar={() => setMassaPop(null)} />}
     </div>
   );
