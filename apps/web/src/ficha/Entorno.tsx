@@ -10,8 +10,9 @@ import { GMAPS_KEY } from '../lib/config';
 import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { m2 } from '../lib/format';
+import { Adorno } from '../lib/mascara';
 import DEMO_CFG from '../../../../tools/setores/demografia.json';
-import { carregarDemo, carregarSetores, estatArea, MUNICIPIOS_SETORES, perfilArea, RD_RAIOS, RENDA_MET, setores, temSetores, type Raio } from '../mapa/setores';
+import { carregarDemo, carregarSetores, estatArea, MUNICIPIOS_SETORES, perfilArea, RAIO_MAX, RAIO_MIN, RD_RAIOS, RENDA_MET, setores, temSetores, type Raio } from '../mapa/setores';
 import { carregarMercado, mercado, mkM2, mkPct, mkVso, MK_SIT, MK_GLIFO, brl, num as nmk, type Emp } from '../mapa/mercado';
 import { Resumo, TabelaEmp } from '../mapa/Concorrencia';
 import { Metodologia } from '../mapa/CamadasSetor';
@@ -193,10 +194,39 @@ function useSetores(demo: boolean) {
   }, [demo]);
   return st;
 }
-function Raios({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Raio) => void }) {
+/* seletor de raio: 500 m, 1, 2, 3 km e Personalizado com lápis, em que a pessoa digita o raio em metros,
+   de 100 m a 5 km (pedido do Moises, 11/nov/2026; a Poligonal saiu por ora) */
+const raioTxt = (m: number) => (m < 1000 ? num(m) + ' m' : num(m / 1000, 2) + ' km');
+function Raios({ raio, setRaio }: { raio: Raio; setRaio: (r: Raio) => void }) {
+  const toast = useToast();
+  const fixo = (r: Raio) => RD_RAIOS.some(([k]) => k === r);
+  const [cust, setCust] = useState<number | null>(typeof raio === 'number' && !fixo(raio) ? raio : null);
+  const [ed, setEd] = useState(false);
+  const ativo = typeof raio === 'number' && !fixo(raio);
+  const fim = useRef(false); // o blur da saída depois do Enter não aplica de novo
+  const aplicar = (v: string) => {
+    if (fim.current) return;
+    fim.current = true; setEd(false);
+    const s = v.replace(/\./g, '').replace(',', '.').trim();
+    if (!s) return;
+    const n = Math.round(Number(s));
+    if (!Number.isFinite(n) || n < RAIO_MIN || n > RAIO_MAX) { toast(`O raio vai de ${raioTxt(RAIO_MIN)} a ${raioTxt(RAIO_MAX)}.`, true); return; }
+    setCust(n); setRaio(n);
+  };
   return (
-    <div className="rd-raios seg" role="group" aria-label="Área">
-      {RD_RAIOS.map(([k, l]) => <button key={k} type="button" aria-pressed={raio === k} disabled={k === 'poly' && !f.poly} onClick={() => setRaio(k)}>{l}</button>)}
+    <div className="rd-raios seg" role="group" aria-label="Raio">
+      {RD_RAIOS.map(([k, l]) => <button key={k} type="button" aria-pressed={raio === k} onClick={() => setRaio(k)}>{l}</button>)}
+      {ed
+        ? <form className="rd-cust" onSubmit={(e) => { e.preventDefault(); aplicar((e.currentTarget.elements.namedItem('r') as HTMLInputElement).value); }}>
+            <Adorno t="m"><input name="r" inputMode="numeric" data-fmt="int" aria-label="Raio personalizado (m)" placeholder={`${RAIO_MIN} a ${num(RAIO_MAX)}`}
+              defaultValue={cust != null ? num(cust) : ''} autoFocus onFocus={(e) => e.currentTarget.select()}
+              onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fim.current = true; setEd(false); } }}
+              onBlur={(e) => aplicar(e.currentTarget.value)} /></Adorno>
+          </form>
+        : <button type="button" className="rd-cust-b" aria-pressed={ativo} title={cust == null ? 'Digitar o raio' : ativo ? 'Alterar o raio' : `Usar ${raioTxt(cust)} (clique de novo para alterar)`}
+            onClick={() => { if (cust != null && !ativo) setRaio(cust); else { fim.current = false; setEd(true); } }}>
+            {cust != null ? raioTxt(cust) : 'Personalizado'}<Ic n="edit" s={16} />
+          </button>}
     </div>
   );
 }
@@ -235,7 +265,7 @@ function SecRenda({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Rai
   }
   return (
     <Quadro aba="mercado" id="rd" chip="Renda e população" titulo="Renda e população do entorno">
-      <Raios f={f} raio={raio} setRaio={setRaio} />
+      <Raios raio={raio} setRaio={setRaio} />
       <div className="sec-b">{corpo}</div>
       {met && <Metodologia camada="renda" fechar={() => setMet(false)} />}
     </Quadro>
@@ -295,16 +325,16 @@ function SecPerfil({ f, raio, setRaio }: { f: Ficha; raio: Raio; setRaio: (r: Ra
   }
   return (
     <Quadro aba="mercado" id="pf" chip="Perfil da população" titulo="Perfil da população do entorno">
-      <Raios f={f} raio={raio} setRaio={setRaio} />
+      <Raios raio={raio} setRaio={setRaio} />
       <div className="sec-b">{corpo}</div>
       {met && <Dialogo titulo="Perfil da população: os dados" onFechar={() => setMet(false)} rodape={<button type="button" className="btn primary" onClick={() => setMet(false)}>Fechar</button>}>
         <div className="rd-mt">
           <p>Tudo vem do Censo Demográfico {c.censoAno} do IBGE, agregados por setor censitário: somas das variáveis publicadas, menos a idade média, que é estimada (ver abaixo).</p>
           <h3>Idade e sexo</h3><p>{c.idadeOrigem} Grupos usados: {c.idade.map((g: any) => g.rotulo).join(', ')}.</p>
-          <h3>Densidade demográfica</h3><p>População residente ÷ área do raio ou da poligonal, em habitantes por km². É bruta: a área inclui ruas, praças, parques e terrenos vazios.</p>
+          <h3>Densidade demográfica</h3><p>População residente ÷ área do círculo do raio, em habitantes por km². É bruta: a área inclui ruas, praças, parques e terrenos vazios.</p>
           <h3>Idade média</h3><p>É a única estimativa do quadro. O IBGE não publica a idade ano a ano por setor, só os cortes 0–4, 5–9, 10–14, 15–19, 20–24, 25–29, 30–39, 40–49, 50–59, 60–69 e 70+. Cada pessoa entra pela idade do meio do seu corte (2,5; 7,5; 12,5 ... 65) e quem tem 70 ou mais conta como 78 anos, a média real dessa faixa em São Paulo no Censo 2022. Conferido com a idade ano a ano da cidade inteira: dá 38,1 anos contra 38,1 de verdade em São Paulo e 37,4 contra 37,3 em São José dos Campos. Setor com algum corte em sigilo fica fora da média; se eles somam mais de 5% das pessoas, o quadro diz quanto entrou.</p>
           <h3>Moradores por domicílio</h3><p>Moradores dos domicílios particulares ocupados (permanentes e improvisados) ÷ esses domicílios; asilos, alojamentos e outros coletivos ficam fora.</p>
-          <h3>Raio e poligonal</h3><p>Cada setor entra pela fração da área dele que cai dentro, supondo os moradores espalhados por igual no setor.</p>
+          <h3>Raio</h3><p>Cada setor entra pela fração da área dele que cai dentro do círculo, supondo os moradores espalhados por igual no setor.</p>
           <h3>Sigilo</h3><p>Quando um setor tem poucas pessoas num grupo, o IBGE não divulga o número (X). Ele nunca vira zero: a diferença para o total aparece como "não divulgado". "5 ou mais moradores" é o total de domicílios menos os de 1 a 4, só nos setores com os quatro divulgados.</p>
           <p className="faint">Versão {c.versao}.</p>
         </div>

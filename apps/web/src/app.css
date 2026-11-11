@@ -515,3 +515,8 @@ html[data-tema="escuro"] .chip.selo-val:not(.good) { color: #c4c7c5 }
 .dialog .ems-form .field { flex: 1 1 100% !important }
 /* aberta da aba da ficha, a janela fica dentro da aba: o título do estudo não se prende como os quadros da ficha */
 .fi-aba .ems-pop-b .sec > .sec-h { position: static !important }
+/* raio personalizado (pedido do Moises, 11/nov/2026): o lápis no botão e o campo no lugar dele */
+.rd-raios .rd-cust-b { display: inline-flex; align-items: center; justify-content: center; gap: 6px }
+.rd-raios .rd-cust { display: flex; align-items: center; padding: 0 6px; border-left: 1px solid var(--m-outline, #c4c7c5) }
+.rd-raios .rd-cust .adorno { width: 120px }
+.rd-raios .rd-cust input { height: 30px; min-height: 30px; padding: 0 28px 0 8px; font-size: 13px; width: 100% }
