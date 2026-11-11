@@ -42,6 +42,8 @@ A lista dos estudos do terreno, com VGV líquido, lucro líquido, margem, a data
 - **Salvar como modelo**: guarda o estudo como modelo para os próximos (ver [Modelos de estudo](#modelos-de-estudo)).
 - **Apagar**: pede confirmação. O estudo válido não se apaga (marque outro como válido antes).
 
+**Campos de percentual**: o % vem junto do número, sempre com duas casas ("12,50%"). Enquanto você digita, o que falta (",00%") aparece em cinza logo depois do número.
+
 **Indicadores** (ficam presos no topo ao rolar): **VGV**, **VGV líquido**, **Lucro líquido** e **Margem líquida**. Eles se refazem enquanto você digita. A receita do estudo é o **VGV líquido** (o VGV sem as unidades de permuta e de comissão), e a margem líquida é o lucro líquido ÷ VGV líquido.
 
 **Botões das seções** (logo abaixo, também presos): Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE, cada um com o total e o % do VGV. Financeiras e Taxas só aparecem para a diretoria e o administrador. No fim de cada seção, os botões levam à anterior e à próxima.
@@ -82,7 +84,7 @@ O custo do terreno no estudo.
 
 ### Comercial
 
-Despesas de venda (corretagem, marketing, stand...). Cada linha tem a **base**: % do VGV, verba total, verba por unidade (pelas unidades vendidas, sem permuta e comissão) ou verba mensal, com a coluna **Meses**. "% do VGV" é sempre sobre o VGV líquido.
+Despesas de venda (corretagem, marketing, stand...). Cada linha tem a **base**: % do VGV, verba total, verba por unidade (pelas unidades vendidas, sem permuta e comissão) ou verba mensal, com a coluna **Meses**. "% do VGV" é sempre sobre o VGV líquido. **Taxa de emissão de contratos CEF** e **Produto Caixa** nascem em verba por unidade.
 
 ### Obras
 
@@ -95,7 +97,7 @@ Cada linha escolhe o item na lista da empresa (digite para buscar), a base (% do
 
 ### Gerais
 
-Despesas gerais em quatro quadros, como em Obras: **Terreno**, **Incorporação**, **CEF** e **Administrativo e financeiro**, com as bases % do VGV, % da obra total, % do lucro líquido ou verba.
+Uma tabela, como em Comercial, com quatro linhas fixas: **Despesas gerais com terreno**, **com incorporação**, **com CEF** e **com administrativo e financeiro**. Cada uma nasce em **% do VGV** e pode trocar para % da obra total, % do lucro líquido ou verba. Não se inclui nem se tira linha.
 
 ### Financeiras (só diretoria e administrador)
 
@@ -103,7 +105,7 @@ Despesas gerais em quatro quadros, como em Obras: **Terreno**, **Incorporação*
 
 ### Taxas (só diretoria e administrador)
 
-Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascidos com o valor padrão da empresa. Saem por último, depois do resultado sem as taxas. Os itens em **% do lucro líquido** (como o custo de alavancagem e a taxa de desenvolvimento) incidem sobre o lucro do projeto antes deles: 30% de alavancagem custa 30% do lucro calculado sem contar a própria alavancagem.
+Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascidos com o valor padrão da empresa. **Taxa de desenvolvimento** e **Taxa de contingências** nascem em % do VGV. Saem por último, depois do resultado sem as taxas. Os itens em **% do lucro líquido** (como o custo de alavancagem e a taxa de desenvolvimento) incidem sobre o lucro do projeto antes deles: 30% de alavancagem custa 30% do lucro calculado sem contar a própria alavancagem.
 
 ### DRE
 

@@ -1593,7 +1593,7 @@ select pg_temp.falha(format($$update app.viabilidade_linhas set despesa = 'marke
 select pg_temp.como(:'diretor');
 update app.viabilidade_linhas set valor = 4 where viabilidade_id = :'vb1' and despesa = 'impostos';
 update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra';
-update app.viabilidade_linhas set valor = 10 where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento';
+update app.viabilidade_linhas set tipo = 'pct_lucro', valor = 10 where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento';
 select pg_temp.como(:'analista');
 -- obra em camadas e despesas gerais
 insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, tipo, valor) values
@@ -1603,10 +1603,17 @@ insert into app.viabilidade_linhas (empresa_id, viabilidade_id, ordem, despesa, 
   (:'emp', :'vb1', 4, 'ligacoes', 'pct_obra_raso', 1),
   (:'emp', :'vb1', 5, 'projetos', 'pct_obra_total', 3),
   (:'emp', :'vb1', 6, 'aprovacoes', 'verba', 200000),
-  (:'emp', :'vb1', 7, 'assistencia_tecnica', 'pct_obra_total', 1),
-  (:'emp', :'vb1', 8, 'itbi_terreno', 'verba', 150000),
-  (:'emp', :'vb1', 9, 'registro_incorporacao', 'verba', 100000),
-  (:'emp', :'vb1', 10, 'adm_central', 'pct_vgv', 1);
+  (:'emp', :'vb1', 7, 'assistencia_tecnica', 'pct_obra_total', 1);
+-- despesas gerais: um item fixo por grupo, que nasce em % do VGV (pedido do Moises, 11/nov/2026)
+select pg_temp.ok((select count(*) = 4 and bool_and(l.tipo = 'pct_vgv') from app.viabilidade_linhas l
+                    join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
+                   where l.viabilidade_id = :'vb1' and app.viab_secao(d.grupo) = 'despesas'),
+  'estudo novo já vem com as quatro despesas gerais, em % do VGV');
+select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, valor) values (%L, %L, 'dg_cef', 'pct_vgv', 1)$$, :'emp', :'vb1'),
+  'despesa geral é item fixo: não entra duas vezes');
+update app.viabilidade_linhas set tipo = 'verba', valor = 150000 where viabilidade_id = :'vb1' and despesa = 'dg_terreno';
+update app.viabilidade_linhas set tipo = 'verba', valor = 100000 where viabilidade_id = :'vb1' and despesa = 'dg_incorporacao';
+update app.viabilidade_linhas set valor = 1 where viabilidade_id = :'vb1' and despesa = 'dg_adm_financeiro';
 select app.salvar_viabilidade(:'vb1', '{"custo_m2":3000,"deducao_vgv_pct":5,"permuta_fin_pct":8,"minimo_garantido":3000000,"pagamento_dinheiro":1000000,"comissao_dinheiro":200000,"deduz_vgv":["itbi_vendas","registro_vendas"]}');
 select pg_temp.ok((select vgv = 46000000 and permuta_valor = 2800000 and comissao_valor = 560000 and vgv_vendido = 42640000 and unidades = 150 and unidades_permuta = 10 and unidades_comissao = 2
   and area_privativa = 6500 and deducoes = 3284800 and vgv_liquido = 39355200 from app.viabilidades where id = :'vb1'),
