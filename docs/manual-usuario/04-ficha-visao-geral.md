@@ -57,7 +57,9 @@ Quando você rola e o topo sai da vista, a barra das abas mostra um **botão de 
 
 ## Barra das abas
 
-As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mercado, Jornada, Documentos**.
+As abas da barra, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mercado** (e **Histórico**, só onde o painel da direita não aparece). No fim da barra, à direita, ficam fixos três ícones: o **alerta** do que falta (só quando o topo da ficha sai da vista), a **pastinha**, que abre **Documentos**, e o **⋮**, que é o único caminho para a **Jornada**. O ícone da aba aberta (pastinha em Documentos, ⋮ na Jornada) fica em azul-claro.
+
+No computador, a ficha nunca fica estreita a ponto de cortar a barra: o painel da direita só aparece quando sobra espaço para a barra inteira, e a gaveta da ficha (no Mapa e no Pipeline) tem no mínimo 800 px.
 
 | Aba | Situação | Seção do manual |
 |---|---|---|
@@ -70,8 +72,8 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mer
 | Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico**), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
 | Estudos Técnicos › Restrições e entorno e › Histórico de uso | Disponível | [07](07-ficha-parametros.md) |
 | Mercado | Disponível: Concorrência, Renda e população, Perfil da população e Pontos de interesse | [08](08-ficha-entorno.md) |
-| Jornada | Disponível: linha do tempo e fases do terreno | [16](16-ficha-jornada.md) |
-| Documentos | **Ainda não disponível** (mostra "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
+| Jornada (pelo ⋮) | Disponível: linha do tempo e fases do terreno | [16](16-ficha-jornada.md) |
+| Documentos (pela pastinha) | **Ainda não disponível** (mostra "Esta aba entra depois da primeira versão") | [12](12-ainda-nao-disponivel.md) |
 
 **Estudos Técnicos** junta cinco partes, nesta ordem: Estudos de massa, Estudos de viabilidade, Avaliação de infraestrutura, Restrições e entorno e Histórico de uso. Com ela aberta, aparecem logo abaixo da barra cinco botões, um para cada parte; o que está aberto fica em azul-claro. Clicar em Estudos Técnicos abre a parte que você viu por último na sessão (da primeira vez, Estudos de massa).
 
@@ -79,7 +81,7 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mer
 
 - Clique na aba.
 - A barra é uma faixa contínua, como uma roleta: as abas das pontas aparecem cortadas pela borda. Para rolar a faixa sem trocar de aba: **Shift + roda do mouse**, deslize de lado no trackpad, ou **arraste com o mouse** (com o mouse em cima, o cursor é o dedinho, como em qualquer botão; vira mão fechada enquanto você segura o botão do mouse). Solta com força, ela continua rodando e freia aos poucos.
-- O **⋮ "Mais ações"** (só quando a barra não cabe) lista todas as abas, com as cinco partes de Estudos Técnicos embaixo do nome dela e a atual marcada.
+- O **⋮ "Mais ações"** (sempre visível) lista todas as abas, inclusive Jornada e Documentos, com as cinco partes de Estudos Técnicos embaixo do nome dela e a atual marcada.
 
 Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos Técnicos, o da parte, como `/terrenos/A123/infra`), então dá para mandar o link direto para uma aba.
 
@@ -87,7 +89,7 @@ Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos T�
 
 <a id="quadros-que-abrem-e-fecham"></a>
 
-Em todas as abas menos a Visão geral, cada **seção** (Identificação, Localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra. A barra dos botões fica **presa logo abaixo das abas** quando você rola a página, e trocar de seção **não mexe na rolagem**: a página fica onde estava (se a seção nova for mais curta, para no fim dela).
+Em todas as abas menos a Visão geral, cada **seção** (Identificação, Localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra. A barra dos botões fica **presa logo abaixo das abas** quando você rola a página, e trocar de seção, de aba ou de parte de Estudos Técnicos **não mexe na rolagem**: a página fica onde estava. Se a seção nova for mais curta que a tela, sobra um espaço vazio embaixo, que vai sumindo quando você rola para cima.
 
 Em Estudos Técnicos a barra é uma só, com as cinco partes; dentro de cada parte, os quadros (Relevo, Visita técnica, Viabilidades técnicas, Resumo da viabilidade...) continuam abrindo e fechando pela seta. Em Estudos de massa, o estudo aberto aparece embaixo da lista, também como quadro que abre e fecha.
 
@@ -149,7 +151,7 @@ Igual à página, com:
 - o topo da ficha sem repetir o cabeçalho: no lugar da linha "fase · etapa · subetapa", o nome da fase fica em cima da linha do tempo, que já marca a etapa e a subetapa; ficam "Cadastrado em" (e a situação, quando é Stand By, Perdido ou Descartado), o responsável e "Ficha N% completa". No celular, onde a linha do tempo some, a fase · etapa · subetapa continua no topo;
 
 - **X** ou **Esc** para fechar;
-- a borda esquerda arrastável (mínimo 640 px; dois cliques voltam ao padrão);
+- a borda esquerda arrastável (mínimo 800 px, para a barra das abas caber inteira; dois cliques voltam ao padrão);
 - clicar noutro terreno no mapa troca o terreno da gaveta.
 
 A gaveta da ficha e a gaveta de filtros não abrem juntas.

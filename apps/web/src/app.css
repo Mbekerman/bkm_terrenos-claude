@@ -490,3 +490,6 @@ html[data-tema="escuro"] .etq-conta { background: #a8c7fa; color: #062e6f }
   .cr-c { align-items: flex-start; text-align: left; width: 100%; padding-left: 56px }
   .cr-hist li { flex-direction: column; gap: 2px }
 }
+/* Documentos (pastinha) e Jornada (no ⋮) fora da roleta: o ícone da aba aberta fica marcado (pedido do Moises, 11/nov/2026) */
+.fi-fim .iconbtn.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35) }
+html[data-tema="escuro"] .fi-fim .iconbtn.atual { background: #004a77; color: #c2e7ff }
