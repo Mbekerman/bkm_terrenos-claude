@@ -46,7 +46,7 @@ apps/web/
 ├── .env.example          modelo do .env.local (só para npm run dev)
 ├── package.json          scripts dev, build, typecheck, preview
 ├── tsconfig.json         strict, noUnusedLocals, resolveJsonModule (lê os JSON de tools/setores)
-├── public/               favicon e marca (bkm-logo.svg, icone-*.svg)
+├── public/               favicon (casinha com o miolo recortado, transparente) e marca (bkm-logo.svg, icone-*.svg)
 └── src/
     ├── main.tsx          ponto de entrada: QueryClient, BrowserRouter, SessaoProvider, ToastProvider, Desfazer
     ├── App.tsx           portão (configurado? logado? tem empresa?) e as rotas
