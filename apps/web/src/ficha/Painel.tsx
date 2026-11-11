@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
 import { data as fd, diasEntre, hojeISO, m2, milhoes, somarDias, FORMA } from '../lib/format';
+import { modProposta, resumoMod } from '../lib/modalidades';
 import { Ic } from '../components/Moldura';
 import { abrirQuadro, OPT, pedirCampo, Quadro, SECOES } from './edicao';
 import { completude, ITEM_COMPLETUDE, TEMP, TP_N, type Ficha as F, type R } from './dados';
@@ -93,6 +94,7 @@ const ROT: Record<string, string> = {
   zona_fiscal: 'zona fiscal', endereco_prefeitura: 'endereço', origem: 'origem', nome: 'nome', pessoa_nome: 'pessoa principal', telefone: 'telefone', email: 'e-mail',
   documento: 'CPF/CNPJ', observacoes: 'observação', valor_pedido: 'valor', forma_pagamento_pedida: 'forma de pagamento', observacao_pagamento: 'condições', aceita_permuta: 'aceita permuta',
   comissao_pct: 'comissão', comissao_valor: 'comissão', corretor_id: 'corretor', validade: 'validade', status: 'status', data_oferta: 'data', forma_pagamento: 'condição', area_m2: 'área',
+  permuta_fin_pct: 'permuta financeira (% VGVL)', permuta_fis_pct: 'permuta física (%)', permuta_fis_unidades: 'permuta física (unidades)', permuta_fin_minimo: 'mínimo garantido da permuta financeira', permuta_fis_min_unidades: 'mínimo de unidades da permuta física',
   concessionaria: 'concessionária', solicitada_em: 'data do pedido', emitida_em: 'data da emissão', condicoes: 'condições', situacao: 'situação',
   inicio: 'data', link: 'link da reunião', pauta: 'pauta', resumo: 'o que foi tratado', encaminhamentos: 'encaminhamentos', modalidade: 'modalidade', local: 'local', duracao_min: 'duração',
 };
@@ -211,8 +213,8 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       return { txt: del ? `Valor da parte removido: ${n}` : `Valor da parte (${n}): ${milhoes(o.valor_pedido)}`, aba: 'comercial', q: 'cond' };
     }
     case 'propostas': {
-      if (del) return { txt: `Proposta v${o.versao} excluída (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${milhoes(o.valor_total)}`, aba: 'comercial', q: 'propostas' };
-      if (ins) return { txt: `Proposta v${o.versao} registrada (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${milhoes(o.valor_total)}`, det: [o.condicoes_pagamento].filter(Boolean), aba: 'comercial', q: 'propostas' };
+      if (del) return { txt: `Proposta v${o.versao} excluída (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${resumoMod(modProposta(o), milhoes)}`, aba: 'comercial', q: 'propostas' };
+      if (ins) return { txt: `Proposta v${o.versao} registrada (${o.origem === 'bkm' ? 'BKM' : 'vendedor'}): ${resumoMod(modProposta(o), milhoes)}`, det: [o.condicoes_pagamento].filter(Boolean), aba: 'comercial', q: 'propostas' };
       if (x?.status !== d?.status) return { txt: `Proposta v${o.versao}: ${PROP_ST[d?.status] ?? d?.status}`, aba: 'comercial', q: 'propostas' };
       const ks = mudou(x, d);
       return ks.length ? { txt: `Proposta v${o.versao} alterada: ${lista(ks)}`, aba: 'comercial', q: 'propostas' } : null;
@@ -624,7 +626,7 @@ function useAcoes(f: F, irAba: (k: string) => void): Acao[] {
     r.itens.filter((x) => !x.ok && x.tipo !== 'aprovacao_pendente').forEach((x) => L.push({ sev: 'warn', i: 'fwd', txt: x.texto }));
     if (r.ok && !ped) L.push({ sev: 'good', i: 'fwd', txt: `Pronto para ${r.proxima_tipo === 'status' ? 'concluir como Comprado' : 'avançar para ' + (r.proxima_nome ?? '')}${(r.aprovacoes ?? []).length ? ' (pede aprovação)' : ''}` });
     const lp = com?.props.slice().sort((a, b) => b.versao - a.versao)[0];
-    if (lp && ['apresentada', 'em_analise'].includes(lp.status)) L.push({ sev: 'warn', i: 'money', txt: lp.origem === 'bkm' ? `Cobrar resposta da proposta v${lp.versao} (enviada em ${fd(lp.data_apresentacao)})` : `Responder à proposta v${lp.versao} do vendedor (${milhoes(lp.valor_total)})`, fix: ['Ver propostas', () => { abrirQuadro('comercial', 'propostas'); irAba('comercial'); }] });
+    if (lp && ['apresentada', 'em_analise'].includes(lp.status)) L.push({ sev: 'warn', i: 'money', txt: lp.origem === 'bkm' ? `Cobrar resposta da proposta v${lp.versao} (enviada em ${fd(lp.data_apresentacao)})` : `Responder à proposta v${lp.versao} do vendedor (${resumoMod(modProposta(lp), milhoes)})`, fix: ['Ver propostas', () => { abrirQuadro('comercial', 'propostas'); irAba('comercial'); }] });
     if (rent) L.push({ sev: 'crit', i: 'money', txt: `Levar ao comitê: rentabilidade abaixo da mínima: ${rent.txt}`, fix: ['Ver estudo', () => irAba('viabilidade')] });
     if (!f.temp) L.push({ sev: 'warn', i: 'warn', txt: 'Avaliar a temperatura do terreno' });
     const agora = new Date().toISOString();

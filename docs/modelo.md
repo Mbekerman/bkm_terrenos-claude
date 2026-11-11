@@ -71,7 +71,8 @@ Um dono com várias matrículas é **uma** negociação. Vários donos que negoc
 - **Encerrar o terreno** leva as partes em aberto: Perdido e Descartado com o mesmo motivo, Stand By com a mesma data; retomar o terreno retoma as partes.
 - **Proposta** é feita a uma ou mais partes ativas do terreno (`proposta_partes`; pedido do Moises, 9/nov/2026): com uma parte só ela entra sozinha, com duas ou mais escolher é obrigatório, na negociação de uma parte é a dela. Nenhuma proposta muda o status de outra: com duas em aberto e parte em comum a ficha avisa, e quem edita muda o status de qualquer uma, exclui uma (`app.excluir_proposta`) ou deixa as duas; nos resumos vale a de maior versão. 
 - **Oferta** tem um ou mais corretores (`oferta_corretores`; `ofertas.corretor_id` é o principal, o primeiro posto) e uma observação livre (`observacoes`); Registrar oferta pede só o corretor e a observação, e o valor e a forma de pagamento vêm por parte em Condições pedidas.
-- **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço, a condição de pagamento e as informações gerais de cada uma quando informados; também com uma parte só; é outro dado que `ofertas.observacoes`, as impressões sobre a oferta); a negociação da parte usa como referência a oferta mais recente que a cobre. Na aba Comercial, o quadro Partes lista cada parte com a área adotada (soma dos lotes), o zoneamento, o valor pedido e o valor por m² (digitar um calcula o outro) e a condição de pagamento; só a oferta, sem proposta.
+- **Oferta** pode cobrir uma ou mais partes (`oferta_partes`, com o preço, a condição de pagamento e as informações gerais de cada uma quando informados; também com uma parte só; é outro dado que `ofertas.observacoes`, as impressões sobre a oferta); a negociação da parte usa como referência a oferta mais recente que a cobre. Na aba Comercial, o quadro Partes lista cada parte com a área adotada (soma dos lotes), o zoneamento, o dinheiro e o dinheiro por m² (digitar um calcula o outro), a permuta financeira e a permuta física; só a oferta, sem proposta.
+- **Modalidades do pedido e da proposta** (pedido do Moises, 11/nov/2026): a oferta, cada parte da oferta e a proposta guardam juntas o dinheiro (`valor_pedido`, na proposta `valor_total`), a permuta financeira em % do VGV líquido (`permuta_fin_pct`) e a permuta física em % (`permuta_fis_pct`) ou em unidades (`permuta_fis_unidades`), nunca as duas na mesma parte ou proposta. Na proposta, cada permuta pode ter o seu mínimo garantido, opcional (as colunas existem também na oferta e na parte, mas a tela da pedida não as usa; escolha do Moises, 11/nov/2026): em R$ na permuta financeira (`permuta_fin_minimo`) e em unidades na física em % (`permuta_fis_min_unidades`); o banco recusa o mínimo sem a modalidade dele. A forma de pagamento deixa de ser escolhida: o gatilho `t_forma` (oferta e parte) e `app.registrar_proposta` a derivam (`app.forma_modalidades`): só dinheiro, só uma permuta, `permuta_geral` (as duas permutas) ou `permuta_com_torna` (dinheiro com permuta); sem permuta nenhuma, a forma antiga fica. Com várias partes, a oferta guarda a soma de cada modalidade (o front regrava, como o valor). `v_terrenos` expõe `pedido_fin_pct`, `pedido_fis_pct`, `pedido_fis_unidades` e `proposta_ativa_fin_pct`, `_fis_pct`, `_fis_unidades` (dividido em partes, a soma das ativas de cada parte), que o Pipeline mostra nas colunas Pedida e Proposta. O % da permuta física não tem base definida (o Moises disse que não é % do VGVL): fica como digitado.
 - `v_partes`: cada parte com donos, corretores, matrículas, negociação (etapa, subetapa, prazo, status), preço pedido e última proposta. A temperatura é uma só, a do terreno (`terrenos.temperatura`, decisão do Moises, 9/nov/2026: vale também sem negociação, no Backlog).
 
 ## Papéis, hierarquia e configuração
@@ -569,8 +570,13 @@ erDiagram
     uuid corretor_id FK
     uuid ofertante_id FK
     date data_oferta
-    numeric valor_pedido
-    text forma_pagamento_pedida "5 opcoes"
+    numeric valor_pedido "dinheiro"
+    numeric permuta_fin_pct "% do VGV liquido"
+    numeric permuta_fis_pct "permuta fisica em %"
+    int permuta_fis_unidades "ou em unidades"
+    numeric permuta_fin_minimo "mínimo garantido em R$"
+    int permuta_fis_min_unidades "mínimo de unidades da física em %"
+    text forma_pagamento_pedida "derivada das modalidades"
     text observacao_pagamento
     text aceita_permuta
     numeric comissao_pct
@@ -600,8 +606,13 @@ erDiagram
   oferta_partes {
     uuid oferta_id PK
     uuid parte_id PK
-    numeric valor_pedido "da parte, se informado"
-    text forma_pagamento
+    numeric valor_pedido "dinheiro da parte"
+    numeric permuta_fin_pct "% do VGV liquido"
+    numeric permuta_fis_pct "% ou unidades, uma so"
+    int permuta_fis_unidades
+    numeric permuta_fin_minimo
+    int permuta_fis_min_unidades
+    text forma_pagamento "derivada"
     text observacoes "informações gerais da parte nesta oferta"
   }
   proposta_partes {
@@ -620,8 +631,13 @@ erDiagram
     uuid proposta_anterior_id FK
     date data_apresentacao
     date validade
-    numeric valor_total
-    text forma_pagamento
+    numeric valor_total "dinheiro; nulo so com permuta"
+    numeric permuta_fin_pct
+    numeric permuta_fis_pct
+    int permuta_fis_unidades
+    numeric permuta_fin_minimo
+    int permuta_fis_min_unidades
+    text forma_pagamento "derivada se nao vier"
     text condicoes_pagamento
     text status "8 opcoes"
   }
