@@ -23,6 +23,11 @@ create table app.ofertas (
   permuta_fin_pct        numeric(7,4) check (permuta_fin_pct > 0 and permuta_fin_pct <= 100),
   permuta_fis_pct        numeric(7,4) check (permuta_fis_pct > 0 and permuta_fis_pct <= 100),
   permuta_fis_unidades   int check (permuta_fis_unidades > 0),
+  -- mínimos garantidos (pedido do Moises, 11/nov/2026): em R$ na permuta financeira e em unidades na física em %
+  permuta_fin_minimo       numeric(16,2) check (permuta_fin_minimo > 0),
+  permuta_fis_min_unidades int check (permuta_fis_min_unidades > 0),
+  check (permuta_fin_minimo is null or permuta_fin_pct is not null),
+  check (permuta_fis_min_unidades is null or permuta_fis_pct is not null),
   comissao_pct           numeric(5,2) check (comissao_pct >= 0 and comissao_pct <= 100),
   comissao_valor         numeric(14,2) check (comissao_valor >= 0),
   validade               date,
@@ -64,6 +69,11 @@ create table app.oferta_partes (
   permuta_fis_pct      numeric(7,4) check (permuta_fis_pct > 0 and permuta_fis_pct <= 100),
   permuta_fis_unidades int check (permuta_fis_unidades > 0),
   check (permuta_fis_pct is null or permuta_fis_unidades is null),
+  -- mínimos garantidos (pedido do Moises, 11/nov/2026): em R$ na permuta financeira e em unidades na física em %
+  permuta_fin_minimo       numeric(16,2) check (permuta_fin_minimo > 0),
+  permuta_fis_min_unidades int check (permuta_fis_min_unidades > 0),
+  check (permuta_fin_minimo is null or permuta_fin_pct is not null),
+  check (permuta_fis_min_unidades is null or permuta_fis_pct is not null),
   -- informações gerais do que esta parte pediu nesta oferta (a composição das partes muda de oferta para oferta)
   observacoes  text,
   primary key (oferta_id, parte_id)
@@ -263,6 +273,11 @@ create table app.propostas (
   permuta_fis_unidades int check (permuta_fis_unidades > 0),
   check (permuta_fis_pct is null or permuta_fis_unidades is null),
   check (valor_total is not null or permuta_fin_pct is not null or permuta_fis_pct is not null or permuta_fis_unidades is not null),
+  -- mínimos garantidos (pedido do Moises, 11/nov/2026): em R$ na permuta financeira e em unidades na física em %
+  permuta_fin_minimo       numeric(16,2) check (permuta_fin_minimo > 0),
+  permuta_fis_min_unidades int check (permuta_fis_min_unidades > 0),
+  check (permuta_fin_minimo is null or permuta_fin_pct is not null),
+  check (permuta_fis_min_unidades is null or permuta_fis_pct is not null),
   forma_pagamento      text not null check (forma_pagamento in ('dinheiro','permuta_fisica','permuta_financeira','permuta_geral','permuta_com_torna')),
   condicoes_pagamento  text,
   status               text not null check (status in ('rascunho','apresentada','em_analise','aceita','recusada','expirada','retirada','substituida')),

@@ -3999,15 +3999,24 @@ select pg_temp.falha(format('select app.registrar_proposta(%L, %L, null, null, p
 select app.registrar_proposta(:'npp', 'bkm', 800000, null, p_partes => array[:'ppa']::uuid[], p_permuta_fin_pct => 5, p_permuta_fis_unidades => 4) as q5 \gset
 select pg_temp.ok((select forma_pagamento = 'permuta_com_torna' and valor_total = 800000 and permuta_fin_pct = 5 and permuta_fis_unidades = 4 from app.propostas where id = :'q5'),
   'proposta com dinheiro, financeira e física; a forma sai das modalidades');
-select app.registrar_proposta(:'npp', 'bkm', null, null, p_partes => array[:'ppa']::uuid[], p_permuta_fis_pct => 15) as q6 \gset
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, 100, null, p_partes => array[%L]::uuid[], p_permuta_fin_minimo => 500000)', :'npp', 'bkm', :'ppa'),
+  'mínimo garantido sem permuta financeira é recusado');
+select pg_temp.falha(format('select app.registrar_proposta(%L, %L, null, null, p_partes => array[%L]::uuid[], p_permuta_fis_unidades => 4, p_permuta_fis_min_unidades => 3)', :'npp', 'bkm', :'ppa'),
+  'mínimo de unidades vale só com a permuta física em percentual');
+select app.registrar_proposta(:'npp', 'bkm', null, null, p_partes => array[:'ppa']::uuid[], p_permuta_fis_pct => 15, p_permuta_fis_min_unidades => 6) as q6 \gset
 reset role;
-select pg_temp.ok((select proposta_ativa_valor is null and proposta_ativa_fis_pct = 15 and proposta_ativa_fin_pct is null from app.v_terrenos where id = :'tpp')
+select pg_temp.ok((select proposta_ativa_valor is null and proposta_ativa_fis_pct = 15 and proposta_ativa_fin_pct is null
+                          and proposta_ativa_fis_min_unidades = 6 and proposta_ativa_fin_minimo is null from app.v_terrenos where id = :'tpp')
     and (select forma_pagamento from app.propostas where id = :'q6') = 'permuta_fisica',
   'proposta só com permuta física, sem dinheiro; o resumo do terreno mostra as modalidades da proposta ativa');
 update app.negociacoes set oferta_referencia_id = :'ofm' where processo_id = :'npp';
-update app.ofertas set permuta_fin_pct = 7 where id = :'ofm';
-select pg_temp.ok((select valor_pedido = 900000 and pedido_fin_pct = 7 and pedido_fis_unidades is null from app.v_terrenos where id = :'tpp'),
-  'o resumo do terreno mostra as modalidades da oferta de referência');
+update app.ofertas set permuta_fin_pct = 7, permuta_fin_minimo = 2000000 where id = :'ofm';
+select pg_temp.ok((select valor_pedido = 900000 and pedido_fin_pct = 7 and pedido_fis_unidades is null and pedido_fin_minimo = 2000000 from app.v_terrenos where id = :'tpp'),
+  'o resumo do terreno mostra as modalidades da oferta de referência, com o mínimo garantido');
+select pg_temp.falha(format('update app.ofertas set permuta_fin_pct = null where id = %L', :'ofm'),
+  'sem a permuta financeira, o mínimo garantido não fica sozinho');
+select pg_temp.falha(format($$update app.oferta_partes set permuta_fis_min_unidades = 3, permuta_fis_pct = null, permuta_fis_unidades = 4 where oferta_id = %L and parte_id = %L$$, :'ofm', :'ppa'),
+  'o mínimo de unidades da parte vale só com a permuta física em percentual');
 
 -- ---------------------------------------------------------------------
 \echo '# excluir e deletar terreno (9/nov/2026)'

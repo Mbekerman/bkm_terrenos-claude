@@ -8,7 +8,7 @@ import { useTratativa } from './Tratativa';
 import { useSessao } from '../lib/sessao';
 import { Dialogo, useToast } from '../components/ui';
 import { Adorno } from '../lib/mascara';
-import { finTxt, fisTxt, modDe, resumoMod, pctTxt as pctMod, type Modalidades } from '../lib/modalidades';
+import { finTxt, fisTxt, modDe, modProposta, resumoMod, type Modalidades } from '../lib/modalidades';
 import { Ic } from '../components/Moldura';
 import { data as fd, hojeISO, milhoes, m2, somarDias } from '../lib/format';
 import type { Ficha, R } from './dados';
@@ -45,7 +45,7 @@ export function useComercial(f: Ficha) {
     queryFn: async (): Promise<Com> => {
       const neg = f.negId, nada = Promise.resolve({ data: null, error: null });
       const [of, ng, pr, tc, co, pp, ru, pt] = await Promise.all([
-        supabase.from('ofertas').select('id,numero,vigente,criado_por,data_oferta,valor_pedido,permuta_fin_pct,permuta_fis_pct,permuta_fis_unidades,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,validade,status,corretor_id,observacoes,criado_em,oferta_partes(parte_id,valor_pedido,permuta_fin_pct,permuta_fis_pct,permuta_fis_unidades,forma_pagamento,observacoes),oferta_corretores(id,corretor_id,criado_em)')
+        supabase.from('ofertas').select('id,numero,vigente,criado_por,data_oferta,valor_pedido,permuta_fin_pct,permuta_fis_pct,permuta_fis_unidades,permuta_fin_minimo,permuta_fis_min_unidades,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,validade,status,corretor_id,observacoes,criado_em,oferta_partes(parte_id,valor_pedido,permuta_fin_pct,permuta_fis_pct,permuta_fis_unidades,permuta_fin_minimo,permuta_fis_min_unidades,forma_pagamento,observacoes),oferta_corretores(id,corretor_id,criado_em)')
           .eq('terreno_id', f.id).order('data_oferta').order('criado_em'),
         neg ? supabase.from('negociacoes').select('oferta_referencia_id').eq('processo_id', neg).maybeSingle() : nada,
         neg ? supabase.from('processos').select('id,status,etapa_atual,subetapa_atual,subetapa_desde,motivo_encerramento,detalhe_encerramento').eq('id', neg).maybeSingle() : nada,
@@ -207,17 +207,18 @@ function JanelaMat({ L, x, c, rot, fechar }: { L: Lotes; x: R; c: R; rot: string
 }
 
 /** as colunas do pedido gravadas na oferta (uma parte) ou na linha da parte (várias) */
-type Patch = Partial<Record<'valor_pedido' | 'permuta_fin_pct' | 'permuta_fis_pct' | 'permuta_fis_unidades', number | null>>;
-const MODS = ['valor_pedido', 'permuta_fin_pct', 'permuta_fis_pct', 'permuta_fis_unidades'] as const;
-const modProp = (p: R): Modalidades => modDe({ valor: p.valor_total, fin: p.permuta_fin_pct, fisPct: p.permuta_fis_pct, fisUn: p.permuta_fis_unidades });
-const modRow = (x: R | null | undefined): Modalidades => modDe({ valor: x?.valor_pedido, fin: x?.permuta_fin_pct, fisPct: x?.permuta_fis_pct, fisUn: x?.permuta_fis_unidades });
+type Patch = Partial<Record<'valor_pedido' | 'permuta_fin_pct' | 'permuta_fis_pct' | 'permuta_fis_unidades' | 'permuta_fin_minimo' | 'permuta_fis_min_unidades', number | null>>;
+const MODS = ['valor_pedido', 'permuta_fin_pct', 'permuta_fis_pct', 'permuta_fis_unidades', 'permuta_fin_minimo', 'permuta_fis_min_unidades'] as const;
+const modProp = (p: R): Modalidades => modProposta(p);
+const modRow = (x: R | null | undefined): Modalidades => modDe({ valor: x?.valor_pedido, fin: x?.permuta_fin_pct, fisPct: x?.permuta_fis_pct, fisUn: x?.permuta_fis_unidades,
+  finMin: x?.permuta_fin_minimo, fisMinUn: x?.permuta_fis_min_unidades });
 
 /** campo de número que grava ao sair (Enter passa ao próximo); vazio = não informado */
-function CampoNum({ valor, t, gravar, rot, id, ph }: { valor: number | null; t: 'pct' | 'un'; gravar: (n: number | null) => void; rot: string; id?: string; ph?: string }) {
+function CampoNum({ valor, t, gravar, rot, id, ph }: { valor: number | null; t: 'pct' | 'un' | 'moeda'; gravar: (n: number | null) => void; rot: string; id?: string; ph?: string }) {
   const txt = (v: number | null) => (v == null ? '' : t === 'un' ? String(v) : numTxt(v));
   const [v, setV] = useState(txt(valor));
   useEffect(() => { setV(txt(valor)); }, [valor, t]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <Adorno t={t}><input className="ptc-n" id={id} inputMode={t === 'un' ? 'numeric' : 'decimal'} data-fmt={t === 'pct' ? 'pct' : undefined} value={v} placeholder={ph} aria-label={rot}
+  return <Adorno t={t}><input className="ptc-n" id={id} inputMode={t === 'un' ? 'numeric' : 'decimal'} data-fmt={t === 'un' ? undefined : t} value={v} placeholder={ph} aria-label={rot}
     onChange={(e) => setV(t === 'un' ? e.target.value.replace(/\D/g, '') : e.target.value)}
     onBlur={() => { const n = t === 'un' ? (v ? parseInt(v, 10) : null) : lerNum(v); if (n !== valor) gravar(n); }} /></Adorno>;
 }
@@ -230,16 +231,19 @@ function CampoFisica({ m, gravar, rot }: { m: Modalidades; gravar: (p: Patch) =>
   const trocar = (u: boolean) => {
     setUn(u);
     if (atual == null) return;
-    gravar(u ? { permuta_fis_pct: null, permuta_fis_unidades: Math.max(1, Math.round(atual)) } : { permuta_fis_unidades: null, permuta_fis_pct: Math.min(100, atual) });
+    gravar(u ? { permuta_fis_pct: null, permuta_fis_min_unidades: null, permuta_fis_unidades: Math.max(1, Math.round(atual)) } : { permuta_fis_unidades: null, permuta_fis_pct: Math.min(100, atual) });
   };
   return (
     <div className="pfis">
       <CampoNum valor={atual} t={un ? 'un' : 'pct'} rot={`${rot} ${un ? 'em unidades' : 'em %'}`}
-        gravar={(n) => gravar(un ? { permuta_fis_unidades: n, permuta_fis_pct: null } : { permuta_fis_pct: n, permuta_fis_unidades: null })} />
+        gravar={(n) => gravar(un ? { permuta_fis_unidades: n, permuta_fis_pct: null, permuta_fis_min_unidades: null } : { permuta_fis_pct: n, permuta_fis_unidades: null })} />
       <span className="seg pfis-seg" role="group" aria-label="Permuta física em">
         <button type="button" aria-pressed={!un} onClick={() => trocar(false)}>%</button>
         <button type="button" aria-pressed={un} onClick={() => trocar(true)}>Unid.</button>
       </span>
+      {/* mínimo de unidades garantido, só com a física em % (pedido do Moises, 11/nov/2026) */}
+      {!un && m.fisPct != null && <div className="pmin"><span className="pmin-l">mín.</span>
+        <CampoNum valor={m.fisMinUn ?? null} t="un" ph="unidades" rot={`${rot}: mínimo de unidades garantido`} gravar={(n) => gravar({ permuta_fis_min_unidades: n })} /></div>}
     </div>
   );
 }
@@ -273,8 +277,11 @@ function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar, gravarOb
         : <Adorno t="moeda"><input className="ptc-n" inputMode="decimal" data-fmt="moeda" value={vm} placeholder={area ? 'por m²' : 'sem área'} disabled={!area} aria-label={`Valor por m² de ${pa.nome}`}
           onChange={(e) => { setVm(e.target.value); const n = lerNum(e.target.value); setVv(n != null && area ? numTxt(Math.round(n * area)) : ''); }}
           onBlur={() => { const n = lerNum(vm); gravarValor(n != null && area ? Math.round(n * area) : null); }} /></Adorno>}</div>
-      <div className="ptcom-c field ptcom-fin">{L('Permuta financeira (% VGVL)')}{ro ? <span>{md.fin != null ? pctMod(md.fin) : '—'}</span>
-        : <CampoNum valor={md.fin} t="pct" rot={`Permuta financeira pedida por ${pa.nome}, em % do VGV líquido`} gravar={(n) => mudar(pa, { permuta_fin_pct: n })} />}</div>
+      <div className="ptcom-c field ptcom-fin">{L('Permuta financeira (% VGVL)')}{ro ? <span>{finTxt(md) ?? '—'}</span>
+        : <div className="pfin"><CampoNum valor={md.fin} t="pct" rot={`Permuta financeira pedida por ${pa.nome}, em % do VGV líquido`} gravar={(n) => mudar(pa, { permuta_fin_pct: n })} />
+          {/* mínimo garantido em R$, só com a permuta financeira (pedido do Moises, 11/nov/2026) */}
+          {md.fin != null && <div className="pmin"><span className="pmin-l">mín.</span>
+            <CampoNum valor={md.finMin ?? null} t="moeda" ph="garantido" rot={`Mínimo garantido da permuta financeira de ${pa.nome}`} gravar={(n) => mudar(pa, { permuta_fin_minimo: n })} /></div>}</div>}</div>
       <div className="ptcom-c field ptcom-fis">{L('Permuta física')}{ro ? <span>{fisTxt(md) ?? '—'}</span>
         : <CampoFisica m={md} rot={`Permuta física pedida por ${pa.nome}`} gravar={(p) => mudar(pa, p)} />}</div>
       {/* informações gerais da parte nesta oferta: a composição das partes pode mudar de uma oferta para outra (pedido do Moises, 10/nov/2026) */}
@@ -334,7 +341,11 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
     if ((p.permuta_fin_pct != null && (p.permuta_fin_pct <= 0 || p.permuta_fin_pct > 100)) || (p.permuta_fis_pct != null && (p.permuta_fis_pct <= 0 || p.permuta_fis_pct > 100))) {
       toast('O percentual vai de 0 a 100.', true); return;
     }
-    if (p.permuta_fis_unidades != null && p.permuta_fis_unidades <= 0) { toast('Informe ao menos uma unidade.', true); return; }
+    if ((p.permuta_fis_unidades != null && p.permuta_fis_unidades <= 0) || (p.permuta_fis_min_unidades != null && p.permuta_fis_min_unidades <= 0)) { toast('Informe ao menos uma unidade.', true); return; }
+    if (p.permuta_fin_minimo != null && p.permuta_fin_minimo <= 0) { toast('O mínimo garantido precisa ser maior que zero.', true); return; }
+    // sem a modalidade, o mínimo dela sai junto (o banco não aceita o mínimo sozinho)
+    if ('permuta_fin_pct' in p && p.permuta_fin_pct == null) p = { ...p, permuta_fin_minimo: null };
+    if ('permuta_fis_pct' in p && p.permuta_fis_pct == null) p = { ...p, permuta_fis_min_unidades: null };
     let error;
     if (um) ({ error } = await supabase.from('ofertas').update(p).eq('id', o.id));
     else {
@@ -348,7 +359,7 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
         for (const k of MODS) {
           const vs = linhas.map((l: R) => l[k]).filter((v: unknown) => v != null).map(Number);
           soma[k] = vs.length ? vs.reduce((a, b) => a + b, 0) : null;
-          if (k !== 'permuta_fis_unidades' && soma[k] != null && k !== 'valor_pedido') soma[k] = Math.min(100, soma[k]!);
+          if ((k === 'permuta_fin_pct' || k === 'permuta_fis_pct') && soma[k] != null) soma[k] = Math.min(100, soma[k]!);
         }
         if (MODS.some((k) => soma[k] !== (o[k] == null ? null : +o[k]))) ({ error } = await supabase.from('ofertas').update(soma).eq('id', o.id));
       }
@@ -376,7 +387,7 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
   const comPed = mds.map((x) => x.din != null || x.fin != null || x.fisPct != null || x.fisUn != null);
   const nCom = comPed.filter(Boolean).length;
   const soma = (k: keyof Modalidades) => { const xs = mds.map((x) => x[k]).filter((v): v is number => v != null); return xs.length ? xs.reduce((a, b) => a + b, 0) : null; };
-  const mT: Modalidades = { din: vT, fin: soma('fin'), fisPct: soma('fisPct'), fisUn: soma('fisUn') };
+  const mT: Modalidades = { din: vT, fin: soma('fin'), fisPct: soma('fisPct'), fisUn: soma('fisUn'), finMin: soma('finMin'), fisMinUn: soma('fisMinUn') };
   const permT = [finTxt(mT), fisTxt(mT)].filter(Boolean).join(' · ');
   const aT = P.reduce((s, pa) => s + (areaDe(pa.id) || 0), 0);
   // valor antigo, gravado para o terreno inteiro antes de existir o valor por parte
@@ -402,7 +413,7 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
             <div className="ptcom-r ptcom-tot"><div className="ptcom-p"><b>Total</b></div><div className="ptcom-c">{Lb('Área da parte')}<span>{aT ? m2(Math.round(aT * 100) / 100) : '—'}</span></div>
               <div className="ptcom-c">{Lb('Dinheiro')}<span>{vT != null ? brl(vT) : '—'}</span></div>
               <div className="ptcom-c">{Lb('Dinheiro por m²')}<span>{vT != null && aCom ? brl(vT / aCom) : '—'}</span></div>
-              <div className="ptcom-c">{Lb('Permuta financeira')}<span>{mT.fin != null ? pctMod(mT.fin) : '—'}</span></div>
+              <div className="ptcom-c">{Lb('Permuta financeira')}<span>{finTxt(mT) ?? '—'}</span></div>
               <div className="ptcom-c">{Lb('Permuta física')}<span>{fisTxt(mT) ?? '—'}</span></div></div>
           )}
         </div>}
@@ -568,7 +579,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const ativas = c.partes.filter((x) => x.ativa), nomeParte = (id: string) => c.partes.find((x) => x.id === id)?.nome ?? 'Parte';
   const [errPt, setErrPt] = useState(false);
   const abrir = () => {
-    const o = { origem: 'bkm', valor: '', fin: '', fis: '', fisModo: 'pct', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '', partes: ativas.length === 1 ? ativas[0].id : '' };
+    const o = { origem: 'bkm', valor: '', fin: '', fis: '', fisModo: 'pct', finMin: '', fisMin: '', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '', partes: ativas.length === 1 ? ativas[0].id : '' };
     const r = comRasc(kPr, o);
     r.partes = (r.partes ?? '').split(',').filter((id: string) => ativas.some((x) => x.id === id)).join(',') || o.partes; // rascunho com parte que saiu
     setV(r); setIni(o); setErrPt(false); abrirQuadro('comercial', 'propostas'); setForm(true);
@@ -595,6 +606,10 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
     }
     // as mesmas modalidades da pedida (pedido do Moises, 11/nov/2026); a forma de pagamento sai delas no banco
     const valor = lerNum(v.valor ?? ''), fin = lerNum(v.fin ?? ''), fisN = v.fisModo === 'un' ? (v.fis ? parseInt(v.fis, 10) : null) : lerNum(v.fis ?? '');
+    // mínimos garantidos (pedido do Moises, 11/nov/2026): só valem com a modalidade deles
+    const finMin = fin != null ? lerNum(v.finMin ?? '') : null;
+    const fisMinUn = fisN != null && v.fisModo !== 'un' && v.fisMin ? parseInt(v.fisMin, 10) : null;
+    if ((finMin != null && finMin <= 0) || (fisMinUn != null && fisMinUn <= 0)) { toast('Os mínimos garantidos precisam ser maiores que zero.', true); return; }
     if (valor == null && fin == null && fisN == null) { toast('Informe o valor em dinheiro ou alguma permuta.', true); return; }
     if ((valor != null && valor <= 0) || (fin != null && (fin <= 0 || fin > 100)) || (fisN != null && (fisN <= 0 || (v.fisModo !== 'un' && fisN > 100)))) {
       toast('Confira os valores: dinheiro maior que zero e percentuais de 0 a 100.', true); return;
@@ -604,6 +619,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
       p_processo: f.negId, p_origem: v.origem, p_valor: valor, p_forma: null, p_condicoes: (v.cond ?? '').trim() || null,
       p_data_apresentacao: v.data || null, p_validade: v.validade || null, p_status: v.status, p_partes: sel,
       p_permuta_fin_pct: fin, p_permuta_fis_pct: v.fisModo === 'un' ? null : fisN, p_permuta_fis_unidades: v.fisModo === 'un' ? fisN : null,
+      p_permuta_fin_minimo: finMin, p_permuta_fis_min_unidades: fisMinUn,
     });
     setGrav(false);
     if (error) { toast(error.message, true); return; }
@@ -646,6 +662,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
               <div className="field"><label htmlFor="pp-o">Origem</label><select id="pp-o" value={v.origem} onChange={m('origem')}><option value="bkm">BKM</option><option value="vendedor">Vendedor</option></select></div>
               <div className="field"><label htmlFor="pp-v">Dinheiro</label><Adorno t="moeda"><input id="pp-v" inputMode="decimal" data-fmt="moeda" value={v.valor} onChange={m('valor')} /></Adorno></div>
               <div className="field"><label htmlFor="pp-fin">Permuta financeira (% VGVL)</label><Adorno t="pct"><input id="pp-fin" inputMode="decimal" data-fmt="pct" value={v.fin ?? ''} onChange={m('fin')} /></Adorno></div>
+              {lerNum(v.fin ?? '') != null && <div className="field"><label htmlFor="pp-fmin">Mínimo garantido (opcional)</label><Adorno t="moeda"><input id="pp-fmin" inputMode="decimal" data-fmt="moeda" value={v.finMin ?? ''} onChange={m('finMin')} /></Adorno></div>}
               <div className="field"><label htmlFor="pp-fis">Permuta física</label><div className="pfis">
                 <Adorno t={v.fisModo === 'un' ? 'un' : 'pct'}><input id="pp-fis" inputMode={v.fisModo === 'un' ? 'numeric' : 'decimal'} data-fmt={v.fisModo === 'un' ? undefined : 'pct'} value={v.fis ?? ''}
                   onChange={(e) => setV((x) => ({ ...x, fis: x.fisModo === 'un' ? e.target.value.replace(/\D/g, '') : e.target.value }))} /></Adorno>
@@ -653,6 +670,8 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
                   <button type="button" aria-pressed={v.fisModo !== 'un'} onClick={() => setV((x) => ({ ...x, fisModo: 'pct' }))}>%</button>
                   <button type="button" aria-pressed={v.fisModo === 'un'} onClick={() => setV((x) => ({ ...x, fisModo: 'un', fis: (x.fis ?? '').replace(/\D.*$/, '') }))}>Unid.</button>
                 </span></div></div>
+              {v.fisModo !== 'un' && lerNum(v.fis ?? '') != null && <div className="field"><label htmlFor="pp-umin">Mínimo de unidades garantido (opcional)</label><Adorno t="un"><input id="pp-umin" inputMode="numeric" value={v.fisMin ?? ''}
+                onChange={(e) => setV((x) => ({ ...x, fisMin: e.target.value.replace(/\D/g, '') }))} /></Adorno></div>}
               <div className="field"><label htmlFor="pp-s">Status</label><select id="pp-s" value={v.status} onChange={m('status')}><option value="apresentada">Apresentada</option><option value="em_analise">Em análise</option><option value="rascunho">Rascunho</option></select></div>
               <div className="field"><label htmlFor="pp-d">Apresentada em</label><input id="pp-d" type="date" value={v.data} onChange={m('data')} /></div>
               <div className="field"><label htmlFor="pp-val">Validade</label><input id="pp-val" type="date" value={v.validade} onChange={m('validade')} /></div>

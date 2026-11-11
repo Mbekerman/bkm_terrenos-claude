@@ -94,7 +94,7 @@ const ROT: Record<string, string> = {
   zona_fiscal: 'zona fiscal', endereco_prefeitura: 'endereço', origem: 'origem', nome: 'nome', pessoa_nome: 'pessoa principal', telefone: 'telefone', email: 'e-mail',
   documento: 'CPF/CNPJ', observacoes: 'observação', valor_pedido: 'valor', forma_pagamento_pedida: 'forma de pagamento', observacao_pagamento: 'condições', aceita_permuta: 'aceita permuta',
   comissao_pct: 'comissão', comissao_valor: 'comissão', corretor_id: 'corretor', validade: 'validade', status: 'status', data_oferta: 'data', forma_pagamento: 'condição', area_m2: 'área',
-  permuta_fin_pct: 'permuta financeira (% VGVL)', permuta_fis_pct: 'permuta física (%)', permuta_fis_unidades: 'permuta física (unidades)',
+  permuta_fin_pct: 'permuta financeira (% VGVL)', permuta_fis_pct: 'permuta física (%)', permuta_fis_unidades: 'permuta física (unidades)', permuta_fin_minimo: 'mínimo garantido da permuta financeira', permuta_fis_min_unidades: 'mínimo de unidades da permuta física',
   concessionaria: 'concessionária', solicitada_em: 'data do pedido', emitida_em: 'data da emissão', condicoes: 'condições', situacao: 'situação',
   inicio: 'data', link: 'link da reunião', pauta: 'pauta', resumo: 'o que foi tratado', encaminhamentos: 'encaminhamentos', modalidade: 'modalidade', local: 'local', duracao_min: 'duração',
 };

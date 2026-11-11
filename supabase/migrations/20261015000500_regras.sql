@@ -266,7 +266,11 @@ select t.id, t.empresa_id, t.codigo, t.nome, t.situacao_cadastral, t.prioridade,
        o.permuta_fin_pct as pedido_fin_pct, o.permuta_fis_pct as pedido_fis_pct, o.permuta_fis_unidades as pedido_fis_unidades,
        case when pa.id is not null then pa.permuta_fin_pct else pz.fin_pct end as proposta_ativa_fin_pct,
        case when pa.id is not null then pa.permuta_fis_pct else pz.fis_pct end as proposta_ativa_fis_pct,
-       case when pa.id is not null then pa.permuta_fis_unidades else pz.fis_unidades end as proposta_ativa_fis_unidades
+       case when pa.id is not null then pa.permuta_fis_unidades else pz.fis_unidades end as proposta_ativa_fis_unidades,
+       -- mínimos garantidos (11/nov/2026): R$ da permuta financeira e unidades da física em %
+       o.permuta_fin_minimo as pedido_fin_minimo, o.permuta_fis_min_unidades as pedido_fis_min_unidades,
+       case when pa.id is not null then pa.permuta_fin_minimo else pz.fin_minimo end as proposta_ativa_fin_minimo,
+       case when pa.id is not null then pa.permuta_fis_min_unidades else pz.fis_min_unidades end as proposta_ativa_fis_min_unidades
 from app.terrenos t
 join app.municipios mu on mu.id = t.municipio_id
 left join app.eixos_comerciais ec on ec.id = t.eixo_comercial_id
@@ -300,13 +304,15 @@ left join lateral (
   where tc.terreno_id = t.id and tc.principal limit 1
 ) cp on true
 left join lateral (select * from app.propostas x where x.processo_id = pn.id order by versao desc limit 1) lp on true
-left join lateral (select x.id, x.valor_total, x.permuta_fin_pct, x.permuta_fis_pct, x.permuta_fis_unidades
+left join lateral (select x.id, x.valor_total, x.permuta_fin_pct, x.permuta_fis_pct, x.permuta_fis_unidades,
+                          x.permuta_fin_minimo, x.permuta_fis_min_unidades
                    from app.propostas x where x.processo_id = pn.id
                    and x.status in ('apresentada','em_analise','aceita') order by versao desc limit 1) pa on true
 -- dividido em partes (sem proposta ativa do terreno): a soma das últimas ativas de cada parte
 left join lateral (
   select sum(y.valor_total) as valor, sum(y.permuta_fin_pct) as fin_pct, sum(y.permuta_fis_pct) as fis_pct,
-         sum(y.permuta_fis_unidades)::int as fis_unidades
+         sum(y.permuta_fis_unidades)::int as fis_unidades,
+         sum(y.permuta_fin_minimo) as fin_minimo, sum(y.permuta_fis_min_unidades)::int as fis_min_unidades
     from app.processos c
     cross join lateral (select x.* from app.propostas x where x.processo_id = c.id
                         and x.status in ('apresentada','em_analise','aceita') order by x.versao desc limit 1) y
@@ -1811,13 +1817,16 @@ grant select on app.v_partes to authenticated;
 -- ---------------------------------------------------------------------
 drop function if exists app.registrar_proposta(uuid, text, numeric, text, text, date, date, text);
 drop function if exists app.registrar_proposta(uuid, text, numeric, text, text, date, date, text, uuid[]);
+drop function if exists app.registrar_proposta(uuid, text, numeric, text, text, date, date, text, uuid[], numeric, numeric, int);
 create or replace function app.registrar_proposta(
   p_processo uuid, p_origem text, p_valor numeric, p_forma text,
   p_condicoes text default null, p_data_apresentacao date default current_date,
   p_validade date default null, p_status text default 'apresentada', p_partes uuid[] default null,
   -- as mesmas modalidades da pedida (pedido do Moises, 11/nov/2026): p_valor é o dinheiro, nulo só com permuta;
   -- p_forma nula = derivada das modalidades
-  p_permuta_fin_pct numeric default null, p_permuta_fis_pct numeric default null, p_permuta_fis_unidades int default null)
+  p_permuta_fin_pct numeric default null, p_permuta_fis_pct numeric default null, p_permuta_fis_unidades int default null,
+  -- mínimos garantidos (pedido do Moises, 11/nov/2026): R$ na permuta financeira, unidades na física em %
+  p_permuta_fin_minimo numeric default null, p_permuta_fis_min_unidades int default null)
 returns uuid
 language plpgsql security definer set search_path = ''
 as $$
@@ -1834,6 +1843,12 @@ begin
   end if;
   if p_permuta_fis_pct is not null and p_permuta_fis_unidades is not null then
     raise exception 'A permuta física vai em percentual ou em unidades, não nos dois' using errcode = '22023';
+  end if;
+  if p_permuta_fin_minimo is not null and p_permuta_fin_pct is null then
+    raise exception 'O mínimo garantido vale só com permuta financeira' using errcode = '22023';
+  end if;
+  if p_permuta_fis_min_unidades is not null and p_permuta_fis_pct is null then
+    raise exception 'O mínimo de unidades vale só com permuta física em percentual' using errcode = '22023';
   end if;
 
   -- as partes da proposta
@@ -1861,11 +1876,12 @@ begin
 
   insert into app.propostas (empresa_id, processo_id, versao, origem, proposta_anterior_id, data_apresentacao, validade,
                              valor_total, forma_pagamento, condicoes_pagamento, status, viabilidade_id,
-                             permuta_fin_pct, permuta_fis_pct, permuta_fis_unidades)
+                             permuta_fin_pct, permuta_fis_pct, permuta_fis_unidades, permuta_fin_minimo, permuta_fis_min_unidades)
   values (p.empresa_id, p.id, coalesce((select max(versao) from app.propostas where processo_id = p.id), 0) + 1, p_origem, v_ant,
           p_data_apresentacao, p_validade, p_valor,
           coalesce(p_forma, app.forma_modalidades(p_valor, p_permuta_fin_pct, p_permuta_fis_pct, p_permuta_fis_unidades)),
-          p_condicoes, p_status, p.viabilidade_id, p_permuta_fin_pct, p_permuta_fis_pct, p_permuta_fis_unidades)
+          p_condicoes, p_status, p.viabilidade_id, p_permuta_fin_pct, p_permuta_fis_pct, p_permuta_fis_unidades,
+          p_permuta_fin_minimo, p_permuta_fis_min_unidades)
   returning id into v_id;
   insert into app.proposta_partes (proposta_id, parte_id, empresa_id) select v_id, x, p.empresa_id from unnest(v_partes) x;
   return v_id;
@@ -3137,7 +3153,7 @@ grant execute on function
   app.adicionar_prerequisito(uuid, text, text, text, text), app.remover_prerequisito(uuid),
   app.salvar_motivo(uuid, text, text, jsonb), app.apagar_motivo(uuid, text, text),
   app.salvar_checklist(uuid, text, text, text, boolean, int, text, jsonb), app.remover_checklist(uuid, text, text, text),
-  app.registrar_proposta(uuid, text, numeric, text, text, date, date, text, uuid[], numeric, numeric, int), app.atualizar_status_proposta(uuid, text), app.excluir_proposta(uuid),
+  app.registrar_proposta(uuid, text, numeric, text, text, date, date, text, uuid[], numeric, numeric, int, numeric, int), app.atualizar_status_proposta(uuid, text), app.excluir_proposta(uuid),
   app.vincular_viabilidade(uuid, text, numeric, numeric, uuid),
   app.registrar_documento(uuid, text, text, text, uuid, uuid, uuid, text, bigint, date, uuid), app.revisar_documento(uuid, boolean),
   app.arquivar_terreno(uuid, text), app.reativar_terreno(uuid)

@@ -42,6 +42,7 @@ Embaixo, uma linha por parte (ver [05](05-ficha-terreno.md#partes)), com:
 - o **dinheiro** e o **dinheiro por m²**, que se calculam um pelo outro (digite um e o outro muda). Aceita "12 mi" e precisa ser maior que zero;
 - a **permuta financeira**, em % do VGV líquido (de 0 a 100);
 - a **permuta física**, em **%** ou em **unidades**: o botão **% | Unid.** ao lado do campo escolhe. É uma ou outra, nunca as duas; trocar o botão leva o número junto.
+- o **mínimo garantido**, opcional: preenchida a permuta financeira, aparece embaixo dela o campo **mín.** para o valor mínimo garantido em R$; preenchida a permuta física em %, aparece embaixo dela o **mín.** para a quantidade mínima de unidades garantida. Sem a permuta, o mínimo dela sai junto.
 
 A forma de pagamento sai sozinha do que foi preenchido: só dinheiro, só uma permuta, **Permuta geral** (as duas permutas) ou **Permuta com torna** (dinheiro com alguma permuta). É ela que os filtros e as condições das tarefas usam.
 - **Informações gerais**, no fim de cada parte: um texto livre para o que aquele vendedor pediu (permuta, entrada, prazos). Vale para a parte naquela oferta: outra oferta tem o seu próprio texto, porque as partes podem mudar de uma oferta para outra. Não é o texto da oferta (as impressões sobre o corretor e a firmeza ficam no card da oferta). Grava ao sair do campo.
@@ -60,7 +61,7 @@ Com duas ou mais partes, embaixo vem o **Total**, com a soma de cada modalidade.
 1. Clique em **"Nova proposta"**.
 2. Preencha:
    - **Origem**: **BKM** (a BKM propõe) ou **Vendedor** (contraproposta);
-   - o que a proposta oferece, nas mesmas modalidades das Condições pedidas: **Dinheiro**, **Permuta financeira (% VGVL)** e **Permuta física** (em % ou em unidades, pelo botão **% | Unid.**). Preencha só o que vale; pelo menos uma precisa ser preenchida. A forma de pagamento sai delas;
+   - o que a proposta oferece, nas mesmas modalidades das Condições pedidas: **Dinheiro**, **Permuta financeira (% VGVL)** e **Permuta física** (em % ou em unidades, pelo botão **% | Unid.**), com o **Mínimo garantido** (R$) da permuta financeira e o **Mínimo de unidades garantido** da física em %, opcionais, que aparecem quando a permuta é preenchida. Preencha só o que vale; pelo menos uma precisa ser preenchida. A forma de pagamento sai delas;
    - **Status**: Apresentada, Em análise ou Rascunho;
    - **Partes da proposta**: para qual parte (dono) a proposta é feita. Pode ser uma, várias ou todas (**"Marcar todas"**, com três partes ou mais). Se o terreno tem **uma parte só**, ela já vem marcada; com **duas ou mais**, nenhuma vem marcada e o sistema **não deixa registrar** sem escolher pelo menos uma: o campo fica vermelho com o aviso "Escolha pelo menos uma parte". Logo abaixo das partes aparece a **área total da proposta**, que se refaz a cada parte marcada ou desmarcada: a soma das áreas das partes escolhidas (a mesma área que cada parte mostra no quadro Partes; com uma parte só, a área adotada do terreno), quantas partes de quantas e, com o valor total digitado, o valor por m². Parte sem área fica fora da soma e é citada embaixo ("Sem área: …"). As partes são as cadastradas na aba Terreno;
    - **Apresentada em** (data) e **Validade** (vem com 15 dias depois);
