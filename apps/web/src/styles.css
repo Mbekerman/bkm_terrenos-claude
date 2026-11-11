@@ -4955,23 +4955,126 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 
 /* ===================== tabela de terrenos (4/nov/2026; proto_tabela.js) ===================== */
 .ter-ac { display: flex; align-items: center; gap: 4px; flex-wrap: wrap }
-.lista-ter td { vertical-align: top }
-.lista-ter td .t2 { font-size: 12px; line-height: 16px; color: var(--m-on-var, #444746) }
+.tb-wrap { container: tertab / inline-size; overflow: visible }
+.dt.lista-ter { table-layout: fixed; width: 100%; overflow: visible !important }
+.lista-ter th, .lista-ter td { padding-left: 12px !important; padding-right: 12px !important }
+.lista-ter th:first-child, .lista-ter td:first-child { padding-left: 24px !important }
+.lista-ter th:last-child, .lista-ter td:last-child { padding-right: 24px !important }
+.lista-ter td { vertical-align: top; padding-top: 14px !important; padding-bottom: 14px !important; line-height: 20px; overflow-wrap: anywhere }
+.lista-ter th { vertical-align: bottom; height: 48px; padding-top: 0 !important; padding-bottom: 10px !important }
+.lista-ter td .t2 { font-size: 12px; line-height: 18px; color: var(--m-on-var, #444746) }
 .lista-ter td > div + div { margin-top: 2px }
-.lista-ter th .dt-sort { white-space: normal; text-align: left; line-height: 16px }
-.lista-ter th.num .dt-sort { text-align: right }
-.lista-ter th.col-ter { min-width: 240px }
-.lista-ter td.col-ter { min-width: 240px; max-width: 340px }
-.lista-ter td.col-cid, .lista-ter td.col-zona { white-space: nowrap }
-.tb-c1 { display: flex; gap: 8px; align-items: flex-start }
-.tb-vgv { display: flex; align-items: center; justify-content: flex-end; gap: 2px }
-.tb-viab { flex: none; width: 28px; height: 28px; margin: -4px 0 -4px -6px; color: var(--m-on-var, #444746) }
-.tb-viab:hover { color: #0b57d0 }
+.lista-ter th .dt-sort { white-space: nowrap; text-align: left; line-height: 16px }
+.lista-ter th.num .dt-sort { margin-left: auto }
+.lista-ter th.meio, .lista-ter td.meio { text-align: center !important }
+.lista-ter th.meio .dt-sort { margin: 0 auto }
 .tb-c1t { min-width: 0 }
 .tb-c1t .t1 { font-weight: 500; overflow-wrap: anywhere }
+.tb-end { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+.tb-cod { font-weight: 500; color: var(--m-on-surface, #1f1f1f) }
+.tb-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; white-space: nowrap }
+.tb-kv .tb-kl { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--m-on-var, #444746) }
+.tb-kv .tb-kvv { font-variant-numeric: tabular-nums; text-align: left }
+.tb-kv.fraco { font-size: 12px; line-height: 18px } .tb-kv.fraco .tb-kvv { color: var(--m-on-var, #444746) }
+.lista-ter td > .tb-kv + .tb-kv { margin-top: 0 }
+.tb-viab { flex: none; width: 24px; height: 24px; margin: -4px 0 -4px 0; color: var(--m-on-var, #444746) }
+.tb-viab:hover { color: #0b57d0 }
+/* ⓘ dos títulos (pedido do Moises, 11/nov/2026): as células só mostram os valores; o balão diz o que é cada linha */
+.tb-info { position: relative; display: inline-flex; vertical-align: middle; margin-left: 2px }
+.tb-info-b { display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -4px 0; padding: 0; border: 0; border-radius: 12px; background: none; color: var(--m-on-var, #444746); cursor: pointer }
+.tb-info-b:hover, .tb-info-b[aria-expanded="true"] { background: rgba(11, 87, 208, .08); color: #0b57d0 }
+.tb-info-b:focus-visible { outline: 2px solid #0b57d0; outline-offset: 1px }
+.tb-info-pop { position: absolute; top: calc(100% + 10px); right: -8px; z-index: 30; width: 260px; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 12px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.12); text-align: left; white-space: normal; font-size: 13px; line-height: 18px; font-weight: 400; color: #1f1f1f; text-transform: none; letter-spacing: 0; cursor: default }
+.tb-info-pop::before { content: ""; position: absolute; top: -6px; right: 14px; width: 12px; height: 12px; background: #fff; transform: rotate(45deg); box-shadow: -2px -2px 3px rgba(0,0,0,.05) }
+.lista-ter th:not(.num) .tb-info-pop { right: auto; left: -8px } .lista-ter th:not(.num) .tb-info-pop::before { right: auto; left: 14px }
+.tb-info-t { font-size: 14px; font-weight: 500 }
+.tb-info-s { font-size: 12px; color: #444746 }
+.tb-info-l { display: flex; gap: 10px; align-items: flex-start }
+.tb-info-n { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 10px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500 }
+.tb-info-l b { display: block; font-weight: 400 } .tb-info-l b.forte { font-weight: 500 }
+.tb-info-d { display: block; font-size: 12px; color: #444746 }
+.lista-ter th.num .dt-sort + .tb-info, .lista-ter th.num .tb-info { order: 0 }
+.lista-ter th:has(.tb-info) { white-space: nowrap }
+html[data-tema="escuro"] .tb-info-pop, html[data-tema="escuro"] .tb-info-pop::before { background: #2d2f31; color: #e3e3e3 }
+html[data-tema="escuro"] :is(.tb-info-s, .tb-info-d) { color: #c4c7c5 }
+html[data-tema="escuro"] .tb-info-n { background: #004a77; color: #c2e7ff }
+.tb-olhos { display: flex; align-items: flex-start; gap: 12px }
+.tb-olhos-c { flex: 1 1 auto; min-width: 0 }
+.tb-olhos-b { flex: none; display: flex; flex-direction: column; gap: 4px; margin: -6px 2px -6px 0 }
+.lista-ter .tb-olhos-b .tb-viab { width: 32px; height: 32px; margin: 0 }
+.tb-emp { display: grid; grid-template-columns: minmax(0, 1fr) 32px; column-gap: 12px; row-gap: 0; align-items: center; margin-right: 2px }
+.tb-emp > .tb-kv { line-height: 20px; font-size: inherit } .tb-emp > .tb-kv.fraco { font-size: 12px }
+.lista-ter .tb-emp .tb-viab { width: 32px; height: 32px; margin: -6px 0 }
+.dialog.ems-pop { width: min(1100px, 100%); padding: 24px 0 }
+.dialog.ems-pop > .dh { padding: 0 24px }
+.ems-pop-b .sec { border: 0 !important; box-shadow: none !important; margin: 0 !important }
+.tb-resp { display: inline-flex; vertical-align: top }
+.lista-ter td.col-temp .temp-mini { height: 20px; align-items: center }
 .tb-ord { display: inline-grid; place-items: center; min-width: 16px; height: 16px; margin-left: 2px; padding: 0 4px; border-radius: 8px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500; line-height: 16px }
 .lista-ter tbody tr { cursor: pointer }
+/* revisão de design de 11/nov/2026: o quadro vai de borda a borda (texto a 24 px, 16 no celular), cidade e região numa linha,
+   tudo alinhado à esquerda, só o Responsável no centro (pedido do Moises, 11/nov/2026), vazios como traço */
+.sec.lista:has(> #rows > .tb-wrap) { padding-left: 0 !important; padding-right: 0 !important; overflow: clip !important }
+.lista-ter td.col-cid, .lista-ter td.col-zona { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.lista-ter .tb-kv { justify-content: flex-start }
+.lista-ter .tb-kv .tb-kl { margin-right: auto; min-width: 0 }
+.lista-ter .tb-kv:not(.fraco) .tb-kvv { font-weight: 500 }
+.lista-ter .tb-vazio { color: #747775 }
+.lista-ter td.col-resp .avatar.sm { width: 28px; height: 28px; font-size: 12px; margin-top: -4px }
+.lista-ter .tb-end { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.tb-wrap.estreito .lista-ter .tb-zt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+/* celular: o Imóvel fica com 42% em toda linha, para os valores começarem na mesma reta (tudo à esquerda), e o Terreno com o resto */
+.tb-wrap.estreito .dt.lista-ter, .tb-wrap.estreito .lista-ter :is(thead, tbody) { display: block }
+.tb-wrap.estreito .lista-ter colgroup { display: none }
+.tb-wrap.estreito .lista-ter tr { display: flex }
+.tb-wrap.estreito .lista-ter :is(td, th).col-ter { flex: 1 1 auto; min-width: 0 }
+.tb-wrap.estreito .lista-ter :is(td, th).col-area { flex: 0 0 42%; min-width: 0 }
+.tb-wrap.estreito .lista-ter tr.tb-grp > th { flex: 1 1 auto; display: flex; align-items: center }
+.tb-wrap.estreito .lista-ter tbody tr:not(.tb-grp) { border-bottom: 1px solid var(--m-outline-var, #c4c7c5) }
+.tb-wrap.estreito .lista-ter tbody tr:not(.tb-grp) > td { border-bottom: 0 !important }
+.tb-wrap.estreito .lista-ter thead th { height: 40px; padding-bottom: 8px !important; font-weight: 500 }
+/* colunas de números: a seta da ordem fica no recuo, à direita, para o ⓘ encostar no título e o título terminar com os valores */
+.lista-ter th.num .dt-sort { position: relative }
+.lista-ter th.num .dt-ar { position: absolute; left: 100%; margin-left: 1px }
+.lista-ter th.meio .dt-sort { display: flex; justify-content: center; margin: 0 auto }
+@media (max-width: 599px) {
+  .ter-pg .ter-ac .tb-tela { display: none }
+  .ter-pg { padding-bottom: 96px }
+}
 .lista-ter tr.tb-sel > td { background: #d3e3fd !important }
+/* título de cada cidade, quando a coluna Cidade sai (tela estreita; pedido do Moises, 11/nov/2026) */
+.lista-ter tr.tb-grp { cursor: default }
+.lista-ter tr.tb-grp > th { position: static; text-align: left; vertical-align: middle; height: 40px; padding-top: 0 !important; padding-bottom: 0 !important; background: #f0f4f9 !important; border-bottom: 1px solid var(--m-outline-var, #c4c7c5); font-size: 14px !important; font-weight: 500; color: var(--m-on-surface, #1f1f1f) !important }
+.lista-ter tr.tb-grp > th .tb-grpn { margin-left: 8px; font-weight: 400; color: var(--m-on-var, #444746) }
+/* sempre agrupada por cidade (pedido do Moises, 11/nov/2026): o cabeçalho fica preso abaixo da barra do topo e o título da
+   cidade logo abaixo dele, até acabarem os terrenos daquela cidade; o título recolhe e se arrasta para mudar a ordem */
+.lista-ter thead th { top: var(--tb-top, 0px) !important; z-index: 3 !important }
+.tb-wrap.estreito .lista-ter thead { position: sticky; top: var(--tb-top, 0px); z-index: 3 }
+.tb-wrap.estreito .lista-ter thead th { position: static !important; display: flex; align-items: center; height: 40px; padding-top: 0 !important; padding-bottom: 0 !important }
+/* no celular o arraste não serve ao toque: as setas de subir e descer a cidade, com alvo de 40 px */
+.tb-mov { display: none }
+.tb-wrap.estreito .tb-alca { display: none }
+.tb-wrap.estreito .tb-mov { display: inline-flex; margin-left: auto }
+.tb-mov button { width: 40px; height: 40px; display: inline-grid; place-items: center; border: 0; background: none; border-radius: 20px; color: var(--m-on-var, #444746); cursor: pointer }
+.tb-mov button:disabled { opacity: .3; cursor: default }
+.tb-mov { gap: 4px }
+.lista-ter tr.tb-grp { position: sticky; top: calc(var(--tb-top, 0px) + var(--tb-th, 48px)); z-index: 2; cursor: pointer }
+.lista-ter tr.tb-grp > th { padding-left: 12px !important; user-select: none }
+.tb-wrap.estreito .lista-ter tr.tb-grp > th { padding-left: 4px !important }
+.tb-alca { display: inline-flex; vertical-align: middle; width: 24px; justify-content: center; margin-right: 0; color: var(--m-on-var, #444746); opacity: .55; cursor: grab }
+.lista-ter tr.tb-grp:hover .tb-alca { opacity: 1 }
+.tb-grpb { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; border: 0; background: none; padding: 4px 6px; margin: 0; border-radius: 8px; font: inherit; color: inherit; cursor: pointer }
+.tb-grpb:focus-visible { outline: 2px solid #0b57d0; outline-offset: 1px }
+.tb-chev { display: inline-flex; transition: transform .15s }
+.tb-cid:not(.fechada) .tb-chev { transform: rotate(90deg) }
+.tb-cid.arrastada { opacity: .45 }
+.tb-wrap.arrastando .lista-ter tbody tr:not(.tb-grp) { cursor: grabbing }
+.tb-cid.alvo-ant > tr:first-child > * { box-shadow: inset 0 3px 0 #0b57d0 }
+.tb-cid.alvo-dep > tr:last-child > * { box-shadow: inset 0 -3px 0 #0b57d0 }
+/* quadro estreito (celular): recuos menores */
+.tb-wrap.estreito .lista-ter th, .tb-wrap.estreito .lista-ter td { padding-left: 8px !important; padding-right: 8px !important }
+.tb-wrap.estreito .lista-ter th:first-child, .tb-wrap.estreito .lista-ter td:first-child { padding-left: 16px !important }
+.tb-wrap.estreito .lista-ter th:last-child, .tb-wrap.estreito .lista-ter td:last-child { padding-right: 16px !important }
 /* tela cheia: a tabela cobre a página, acima do menu e abaixo das janelas */
 .ter-pg.on { position: fixed; inset: 0; z-index: 31; overflow: auto; background: var(--m-surface, #f8fafd); padding: 16px 24px 24px }
 .ter-pg.on .page-h { margin-bottom: 16px }
@@ -4990,23 +5093,16 @@ body.tb-cheia .fab { display: none !important }
 body.tgav-on { overflow: hidden }
 body.tgav-on .fab { display: none !important }
 @media (max-width: 899px) {
-  .lista-ter td.col-cid, .lista-ter td.col-zona { white-space: normal }
   .tgav { left: 0 !important; top: 0 !important; z-index: 36; border-left: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px) }
   .tgav-h { padding-left: 16px } .tgav-b { padding: 8px 16px 24px }
   .ter-pg.on { padding: 12px 16px }
 }
-/* tabela empilhada (não cabe): a coluna 1 em cima, o resto em linhas curtas */
-.empilha .dt.lista-ter td.col-ter { max-width: none }
-.empilha .dt.lista-ter td:not(.col-ter) > div + div { margin-top: 0 }
-.empilha .dt.lista-ter td::before { content: none !important }
-.empilha .dt.lista-ter td:not(.col-ter) { flex-wrap: wrap; column-gap: 6px }
-.empilha .dt.lista-ter td:not(.col-ter) > div + div::before { content: "· "; color: var(--m-on-var, #444746) }
-.empilha .dt.lista-ter td.col-ter { padding-right: 0 !important }
 html[data-tema="escuro"] .tgav { background: #131314; border-color: #2d2f31; box-shadow: -8px 0 28px rgba(0,0,0,.5) }
 html[data-tema="escuro"] .tgav-h { border-color: #2d2f31 }
 html[data-tema="escuro"] .ter-pg.on { background: #131314 }
 html[data-tema="escuro"] .lista-ter tr.tb-sel > td { background: #004a77 !important; color: #c2e7ff }
 html[data-tema="escuro"] .lista-ter tr.tb-sel .t2 { color: #c2e7ff }
+html[data-tema="escuro"] .lista-ter tr.tb-grp > th { background: #1e1f20 !important; color: #e3e3e3 !important; border-color: #444746 }
 html[data-tema="escuro"] .tb-ord { background: #004a77; color: #c2e7ff }
 /* filtros: uma seção por vez, com os botões das seções no cabeçalho (4/nov/2026) */
 .fx-abas { flex: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 12px 24px; border-bottom: 1px solid #e3e3e3 }
@@ -5337,3 +5433,9 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 .of-obs-p { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--m-outline-var, #c4c7c5) }
 #sec-ofertas .of-obs-p .of-obs-t { margin-top: 0 }
 .of-obs-pn { font-size: 13px; font-weight: 500; color: var(--m-on-surface-var, #444746) }
+/* colunas com olho: o ⓘ fica na borda direita, na mesma reta do olho (pedido do Moises, 11/nov/2026) */
+.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info { position: absolute; right: 18px; bottom: 6px; margin: 0 }
+.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-b { margin: 0 }
+.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-pop { left: auto; right: -8px }
+.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-pop::before { left: auto; right: 14px }
+.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo):last-child .tb-info { right: 30px }
