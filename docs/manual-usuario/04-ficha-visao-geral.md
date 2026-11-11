@@ -66,7 +66,7 @@ As abas, nesta ordem: **Visão geral, Terreno, Comercial, Estudos Técnicos, Mer
 | Comercial | Disponível | [06](06-ficha-comercial.md) |
 | Parâmetros urbanísticos | Disponível, como seção da aba Terreno | [07](07-ficha-parametros.md) |
 | Estudos Técnicos › Estudos de massa | Disponível | [14](14-ficha-estudos-de-massa.md) |
-| Estudos Técnicos › Estudos de viabilidade | Disponível em parte: lista, Resumo da viabilidade e a seção Tipologias do estudo | [15](15-ficha-viabilidades.md) |
+| Estudos Técnicos › Estudos de viabilidade | Disponível | [15](15-ficha-viabilidades.md) |
 | Estudos Técnicos › Avaliação de infraestrutura | **Relevo** (com o **Topográfico**), **Visita técnica** e **Viabilidades técnicas** (veja abaixo) | esta |
 | Estudos Técnicos › Restrições e entorno e › Histórico de uso | Disponível | [07](07-ficha-parametros.md) |
 | Mercado | Disponível: Concorrência, Renda e população, Perfil da população e Pontos de interesse | [08](08-ficha-entorno.md) |

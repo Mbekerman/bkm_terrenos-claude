@@ -105,7 +105,8 @@ Lista o que vale fazer agora no terreno ("Próximas ações"), por exemplo:
 - **"Avaliar a temperatura do terreno"** (sem temperatura);
 - **"Completar"** a ficha (itens que faltam);
 - cobrar a resposta de uma proposta apresentada (**"Ver propostas"**);
-- decidir um pedido de aprovação.
+- decidir um pedido de aprovação;
+- **"Levar ao comitê: rentabilidade abaixo da mínima"**, em vermelho, quando a margem do estudo de viabilidade válido fica abaixo da mínima da empresa (**"Ver estudo"** abre os estudos de viabilidade).
 
 Com nada a fazer: "Nada pendente."
 

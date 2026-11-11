@@ -5270,6 +5270,21 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 .sec-adv .adv-enc-lk { background: none; border: 0; padding: 0; font: inherit; color: var(--m-primary, #0b57d0); cursor: pointer; }
 .sec-adv .adv-enc-lk:hover { text-decoration: underline; }
 
+/* Modelos de estudo de viabilidade (Novo estudo e Salvar como modelo; proto_viab.js › vbNovoHtml, vbModeloHtml) */
+.vb-mods { display: flex; flex-direction: column; gap: 6px; margin-top: 6px }
+.vb-mod-r { display: flex; align-items: center; gap: 8px }
+.vb-mod-r .opt-radio { flex: 1; min-width: 0; justify-content: flex-start; position: relative; padding: 8px 14px; white-space: normal; border: 1px solid #c4c7c5; border-radius: 8px }
+.vb-mod-r .opt-radio span { display: flex; flex-direction: column; gap: 2px }
+.vb-mod-r .opt-radio b { font-weight: 500 }
+.vb-mod-r .opt-radio small { font-size: 12px; line-height: 16px; opacity: .8 }
+.vb-escopo { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px }
+.vb-escopo .opt-radio { border: 1px solid #c4c7c5 }
+/* vínculo do estudo de viabilidade com o estudo de massa (proto_viab.js › vbMassaSel) */
+.vb-ms { margin: 0 0 16px; max-width: 560px }
+.vb-ms .field { margin: 0; display: flex; flex-direction: column; gap: 4px }
+.vb-ms select { width: 100% }
+.vb-ms-l { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap }
+.vb-ms-l .field { flex: 1; min-width: 220px }
 /* card da oferta (o "i" na lista de ofertas; pedido do Moises, 10/nov/2026) */
 .dialog:has(.of-card) { width: min(560px, 100%) }
 .of-card { display: flex; flex-direction: column; gap: 20px }

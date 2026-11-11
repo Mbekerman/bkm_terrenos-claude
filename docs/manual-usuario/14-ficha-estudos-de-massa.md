@@ -33,7 +33,7 @@ Os campos se editam no lugar, sem botão de salvar: cada um grava ao sair dele.
 - **Vagas:** cobertas e descobertas.
 - **Índices:** área privativa total (soma das tipologias), **área construída total**, **eficiência** (privativa ÷ construída, calculada), **C.A. legal** e **C.A. venal**.
 - **Análise:** observações do analista.
-- Embaixo, os **estudos de viabilidade** feitos com este estudo de massa (clique leva à aba Viabilidades).
+- Embaixo, os **estudos de viabilidade** feitos com este estudo de massa (o clique abre o estudo).
 
 **Regra:** o primeiro dado lançado passa o estudo de **Solicitado** para **Em elaboração**.
 
@@ -41,7 +41,7 @@ Os campos se editam no lugar, sem botão de salvar: cada um grava ao sair dele.
 
 - **"Marcar como entregue"**: pede as tipologias com área e quantidade e a área construída total; sem isso, o sistema avisa o que falta. Quem pediu o estudo é avisado no sino.
 - **"Marcar como válido"**: no estudo entregue que ainda não é o válido.
-- **"Criar estudo de viabilidade"**: no estudo entregue. Cria o estudo de viabilidade com o modelo padrão da empresa, já com as tipologias (título, área e quantidade) e a área construída deste estudo, que lá não se editam; preços, permuta e comissão são da viabilidade. No estudo válido, a janela pergunta se a viabilidade **segue o estudo de massa válido** (trocou o válido, ela troca junto) ou **fica presa a este estudo**.
+- **"Criar estudo de viabilidade"**: no estudo entregue. Cria o estudo de viabilidade com o modelo padrão da empresa, já com as tipologias (título, área e quantidade) e a área construída deste estudo, que lá não se editam; preços, permuta e comissão são da viabilidade. No estudo válido, a janela pergunta se a viabilidade **segue o estudo de massa válido** (trocou o válido, ela troca junto) ou **fica presa a este estudo**. Criado, o estudo de viabilidade abre na hora.
 - **"Apagar"**: só no estudo que não é o válido e não tem estudo de viabilidade preso a ele, com confirmação.
 
 Leitura vê tudo, sem editar.
@@ -49,4 +49,3 @@ Leitura vê tudo, sem editar.
 ## O que ainda não dá
 
 - Enviar o **PDF** e o **DWG** do estudo: entram com a aba Documentos.
-- Abrir o estudo de viabilidade criado: a aba Viabilidades está sendo portada.

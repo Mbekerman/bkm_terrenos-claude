@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useSessao } from '../lib/sessao';
@@ -10,6 +11,8 @@ import { data as fd } from '../lib/format';
 import { lerNum, Quadro } from '../ficha/edicao';
 import type { Ficha } from '../ficha/dados';
 import { brl, calcular, mi, nf, normTip, VB_RESTRITO, VB_SECAO, vin, type Calc, type Tip, type Viab } from './calc';
+import { SecDre, SecLinhas, SecObra, SecTerreno, vbQPadrao, type Ctx } from './Secoes';
+import { NovoEstudo, SalvarModelo, useModelos } from './Modelos';
 import { carregarEstudo, erroTxt, useDespesas, useEstudos, useRecarregar, type ResumoViab } from './dados';
 
 // Aba Viabilidades da ficha e o popup do estudo de viabilidade estática (porte de tools/prototipo/proto_viab.js ›
@@ -20,8 +23,6 @@ import { carregarEstudo, erroTxt, useDespesas, useEstudos, useRecarregar, type R
 type Sec = 'tip' | 'terreno' | 'comercial' | 'obra' | 'despesas' | 'financeiro' | 'taxas' | 'res';
 const VB_ORDEM: Sec[] = ['tip', 'terreno', 'comercial', 'obra', 'despesas', 'financeiro', 'taxas', 'res'];
 const VB_ROT: Record<Sec, string> = { tip: 'Tipologias', terreno: 'Terreno', comercial: 'Comercial', obra: 'Obras', despesas: 'Gerais', taxas: 'Taxas', financeiro: 'Financeiras', res: 'DRE' };
-/** seções já portadas; as outras mostram que entram na próxima entrega */
-const PRONTAS = new Set<Sec>(['tip']);
 
 /* ---------- o estudo aberto no popup (um por vez, de qualquer lugar da ficha) ---------- */
 let aberto: string | null = null;
@@ -44,15 +45,22 @@ const kpiV = (s: string) => {
 function useAcoes(f: Ficha) {
   const empresa = useSessao().empresa?.id;
   const toast = useToast(), recarregar = useRecarregar();
-  const novo = async (lista: ResumoViab[]) => {
-    const nome = lista.length ? `Estudo ${lista.length + 1}` : 'Estudo base';
-    /* sem escolha, o banco usa o modelo padrão da empresa (se houver); a escolha do modelo entra com os modelos */
-    const { data, error } = await supabase.rpc('criar_viabilidade', { p_terreno: f.id, p_nome: nome });
+  const modelos = useModelos(empresa).data ?? [];
+  const [pedirModelo, setPedirModelo] = useState<string | null>(null);
+  /** cria o estudo (com o modelo escolhido; sem escolha, o banco usa o padrão da empresa) e já o abre */
+  const criar = async (nome: string, modelo: string | null, perguntou: boolean) => {
+    const { data, error } = await supabase.rpc('criar_viabilidade', { p_terreno: f.id, p_nome: nome, p_modelo: modelo, p_sem_modelo: perguntou && !modelo });
     if (error) { toast(erroTxt(error), true); return; }
     /* como no protótipo, o estudo novo já vem com a primeira tipologia para preencher */
     await supabase.from('viabilidade_tipologias').insert({ empresa_id: f.t.empresa_id ?? empresa, viabilidade_id: data, nome: 'Tipologia 1', ordem: 1 });
-    recarregar(); abrirEstudo(data as string);
+    setPedirModelo(null); recarregar(); abrirEstudo(data as string);
   };
+  /** Novo estudo pergunta o modelo; sem nenhum modelo, cria direto */
+  const novo = (lista: ResumoViab[]) => {
+    const nome = lista.length ? `Estudo ${lista.length + 1}` : 'Estudo base';
+    if (modelos.length) setPedirModelo(nome); else void criar(nome, null, false);
+  };
+  const dlgNovo = pedirModelo != null && <NovoEstudo nomeIni={pedirModelo} modelos={modelos} onCriar={(n, m) => criar(n, m, true)} onFechar={() => setPedirModelo(null)} />;
   const duplicar = async (id: string, nome: string) => {
     const { data, error } = await supabase.rpc('criar_viabilidade', { p_terreno: f.id, p_nome: 'Cópia de ' + nome, p_copiar_de: id });
     if (error) { toast(erroTxt(error), true); return; }
@@ -64,10 +72,19 @@ function useAcoes(f: Ficha) {
     if (error) { toast(erroTxt(error), true); return; }
     recarregar(); toast(`${nome} é o estudo válido.`);
   };
-  return { novo, duplicar, vincular };
+  return { novo, duplicar, vincular, dlgNovo };
 }
 
 /* ---------- aba Viabilidades: Resumo da viabilidade e a lista dos estudos ---------- */
+/** margem do estudo válido abaixo da mínima da empresa (Configurações › Viabilidade): o aviso da negociação, da proposta e de "Levar ao comitê" */
+export function useRentabilidade(f: Ficha): { margem: number; minima: number; txt: string } | null {
+  const { empresa } = useSessao();
+  const d = useEstudos(f.id, f.negId, empresa?.id).data;
+  const vi = d?.lista.find((x) => x.id === d.valido);
+  if (!d || vi?.margem == null || d.margemMin == null || vi.margem >= d.margemMin) return null;
+  return { margem: vi.margem, minima: d.margemMin, txt: `margem de ${nf(vi.margem, 1)}% no estudo válido, mínima de ${nf(d.margemMin, 1)}%` };
+}
+
 export default function AbaViabilidade({ f }: { f: Ficha }) {
   const { empresa, edita } = useSessao();
   const q = useEstudos(f.id, f.negId, empresa?.id);
@@ -85,6 +102,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
   const novoBtn = !ro && <button className="btn sm" onClick={() => ac.novo(lista)}><Ic n="add" s={16} />Novo estudo</button>;
   return (
     <div className="stack">
+      {ac.dlgNovo}
       <Quadro aba="viabilidade" id="viab-res" primeiro titulo="Resumo da viabilidade">
         <div className="sec-b">
           {lista.length > 0 && (
@@ -149,6 +167,51 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
   );
 }
 
+/* ---------- vínculo com o estudo de massa (proto_viab.js › vbMassaSel): presa, título, área e quantidade das
+   tipologias e a área construída vêm do estudo de massa; "Quebrar vínculo" solta na hora (app.vincular_massa) ---------- */
+function MassaSel({ v, terreno, ro, aoMudar }: { v: Viab; terreno: string; ro: boolean; aoMudar: () => Promise<void> }) {
+  const toast = useToast(), qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ['viab-massas', terreno],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('estudos_massa').select('id,nome,situacao,valido').eq('terreno_id', terreno).order('ordem');
+      if (error) throw error;
+      return (data ?? []) as { id: string; nome: string; situacao: string; valido: boolean }[];
+    },
+  });
+  const todos = q.data ?? [];
+  const ms = todos.filter((m) => m.situacao === 'entregue'), val = todos.find((m) => m.valido) ?? null, m = todos.find((x) => x.id === v.estudo_massa_id) ?? null;
+  const [grav, setGrav] = useState(false);
+  if (!ms.length && !v.estudo_massa_id) return null;
+  const atual = v.segue_massa_valido ? 'valido' : v.estudo_massa_id ?? '';
+  const mudar = async (x: string) => {
+    if (grav || x === atual) return;
+    setGrav(true);
+    const { error } = await supabase.rpc('vincular_massa', { p_viab: v.id, p_estudo: x && x !== 'valido' ? x : null, p_seguir_valido: x === 'valido' });
+    setGrav(false);
+    if (error) { toast(erroTxt(error), true); return; }
+    await aoMudar(); qc.invalidateQueries({ queryKey: ['ficha-massa', terreno] });
+    const novo = x === 'valido' ? val : todos.find((y) => y.id === x);
+    toast(!x ? 'Vínculo quebrado: tipologias e área construída ficam e passam a se editar aqui.'
+      : v.estudo_massa_id ? `Trocado: tipologias e área construída do ${novo?.nome ?? 'estudo de massa'}.` : `Vinculada: tipologias e área construída voltaram às do ${novo?.nome ?? 'estudo de massa'}.`);
+  };
+  const ops = <>
+    <option value="valido" disabled={!val}>{val ? `Seguir o válido (${val.nome})` : 'Seguir o válido: nenhum ainda'}</option>
+    {ms.map((x) => <option key={x.id} value={x.id}>{x.nome}{x.valido ? ' · válido' : ''}</option>)}
+  </>;
+  if (!v.estudo_massa_id) return (
+    <div className="vb-ms"><label className="field"><span className="lbl-f">Vincular a um estudo de massa</span>
+      <select value="" disabled={ro || grav} onChange={(e) => mudar(e.target.value)}><option value="">Sem vínculo (tipologias e áreas digitadas aqui)</option>{ops}</select></label>
+      {!ro && <div className="hint">Vinculando, as tipologias e a área construída voltam a ser as do estudo de massa; preços, permuta e comissão ficam.</div>}</div>
+  );
+  return (
+    <div className="vb-ms"><div className="vb-ms-l"><label className="field"><span className="lbl-f">Vinculada ao estudo de massa</span>
+      <select value={atual} aria-label="Trocar o estudo de massa vinculado" disabled={ro || grav} onChange={(e) => mudar(e.target.value)}>{ops}</select></label>
+      {!ro && <button type="button" className="btn sm" disabled={grav} onClick={() => mudar('')}><Ic n="link" s={16} />Quebrar vínculo</button>}</div>
+      <div className="hint">Título, área e quantidade das tipologias e a área construída vêm do {m?.nome ?? 'estudo de massa'}{v.segue_massa_valido ? ' (o válido; trocou o válido, troca aqui)' : ''} e não se editam; aqui, preços, permuta e comissão.</div></div>
+  );
+}
+
 /* ---------- campo de número do estudo: formata ao digitar (máscara global), grava ao sair ---------- */
 function Num({ v, d = 2, fmt, aoMudar, aoSair, onFocus, ...rest }: {
   v: number | null; d?: number; fmt: string; aoMudar: (n: number | null) => void; aoSair: () => void;
@@ -189,6 +252,11 @@ export function PopEstudo({ f }: { f: Ficha }) {
     if (id && ordem >= 0) { if (loc.pathname !== `${base}/${ordem + 1}`) navegar(`${base}/${ordem + 1}`, { replace: true, state: loc.state }); }
     else if (/\/viabilidade\/\d+/.test(loc.pathname)) navegar(base, { replace: true, state: loc.state });
   }, [id, ordem]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* estudo criado fora desta lista (ex.: pela aba Estudos de massa): busca a lista de novo, uma vez por estudo */
+  const buscou = useRef<string | null>(null);
+  useEffect(() => {
+    if (id && lista && ordem < 0 && buscou.current !== id) { buscou.current = id; void q.refetch(); }
+  }, [id, ordem, lista]); // eslint-disable-line react-hooks/exhaustive-deps
   /* trocou de terreno (gaveta) ou saiu da ficha: fecha */
   useEffect(() => () => abrirEstudo(null), [f.id]);
   if (!id || !lista || ordem < 0) return null;
@@ -202,7 +270,9 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
   const D = useDespesas(empresa?.id);
   const [v, setV] = useState<Viab | null>(null);
   const [aba, setAba] = useState<Sec>('tip');
+  const [fechados, setFechados] = useState<Set<string>>(vbQPadrao);
   const [apagar, setApagar] = useState(false);
+  const [modelo, setModelo] = useState(false);
   const sc = useRef<HTMLDivElement>(null);
   const atual = useRef<Viab | null>(null);
   atual.current = v;
@@ -248,6 +318,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
   const acoes = ro ? null : <>
     {!valido && negAtiva && <button className="btn sm" onClick={() => v && ac.vincular(v.id, v.nome)}>Marcar como válido</button>}
     <button className="btn sm" onClick={() => v && ac.duplicar(v.id, v.nome)}>Duplicar</button>
+    <button className="btn sm" onClick={() => setModelo(true)}>Salvar como modelo</button>
     {!valido && <button className="btn text sm danger" onClick={() => setApagar(true)}>Apagar</button>}
   </>;
 
@@ -265,6 +336,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
   );
 
   const irSec = (k: Sec) => {
+    if (k === 'obra' && ab !== 'obra') setFechados(vbQPadrao());
     setAba(k);
     requestAnimationFrame(() => {
       const s = sc.current, fx = s?.querySelector<HTMLElement>('.vb-fixo');
@@ -273,6 +345,10 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
     });
   };
 
+  const ctx: Ctx | null = v && c ? {
+    v, c, desp, ro, dir, empresa: empresa!.id, setV, gravar, fechados,
+    alternar: (k) => setFechados((o) => { const n = new Set(o); if (n.has(k)) n.delete(k); else n.add(k); return n; }),
+  } : null;
   const corpo = !v || !c ? <div className="empty muted">Carregando…</div> : (
     <>
       <div className="vb-fixo">
@@ -294,8 +370,12 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
             setTimeout(() => { const i = document.querySelector<HTMLInputElement>(`[data-tp="${t.id}"] .vb-nome input`); i?.focus(); i?.select(); }, 30);
           });
         }}><Ic n="add" s={16} />Adicionar tipologia</button> : null}>
-        {PRONTAS.has(ab) && ab === 'tip' ? <Tipologias v={v} c={c} ro={ro} setV={setV} gravar={gravar} toast={toast} />
-          : <div className="empty muted">Esta seção do estudo está sendo portada do protótipo e entra na próxima entrega.</div>}
+        {ab === 'tip' ? <><MassaSel v={v} terreno={f.id} ro={ro} aoMudar={async () => { const x = await carregarEstudo(id); if (x) setV(x); recarregar(); }} />
+          <Tipologias v={v} c={c} ro={ro} setV={setV} gravar={gravar} toast={toast} /></>
+          : ab === 'terreno' ? <SecTerreno x={ctx!} />
+          : ab === 'obra' ? <SecObra x={ctx!} />
+          : ab === 'res' ? <SecDre x={ctx!} />
+          : <SecLinhas x={ctx!} sec={ab} />}
       </Secao>
     </>
   );
@@ -318,6 +398,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
           {corpo}
         </div>
       </div>
+      {modelo && v && <SalvarModelo viab={v.id} dir={dir} onFechar={() => setModelo(false)} />}
       {apagar && v && (
         <Dialogo titulo="Apagar o estudo?" onFechar={() => setApagar(false)}
           rodape={<><button className="btn text" onClick={() => setApagar(false)}>Cancelar</button>
