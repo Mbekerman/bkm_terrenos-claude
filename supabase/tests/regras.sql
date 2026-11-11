@@ -1615,15 +1615,15 @@ select pg_temp.ok((select obra_incidente = 19500000 and obra_raso = 20540000 and
   'obra: incidente 3.000/m² × 6.500 m² = 19,5 mi; raso + atípicos (100/m² e 2% do típico) = 20,54 mi; total + não incidente (verba e 1% do raso) = 21,7454 mi; + projetos e pós-obra (% da total) = 22,815216 mi');
 select pg_temp.ok((select permuta_financeira = 3148416 and custo_terreno = 4348416 from app.viabilidades where id = :'vb1'),
   'terreno: permuta financeira 8% do VGV líquido (3,148416 mi, acima do mínimo) + 1 mi em dinheiro + 0,2 mi de comissão');
-select pg_temp.ok((select despesas_gerais = 676400 and taxas = 964858.91 and custos_comerciais = 4698000 and despesas_total = 35208490.91
-  and ebitda = 7969968 and despesas_financeiras = 1705600 and lucro_sem_taxas = 6264368
-  and lucro_liquido = 5299509.09 and margem_pct = 13.47 from app.viabilidades where id = :'vb1'),
-  'gerais 676,4 mil, comerciais 4,698 mi: EBITDA 7,97 mi − financeiras (impostos 4%: 1,7056 mi) = sem taxas 6,264 mi − taxas 964,9 mil (com 10% do lucro) = lucro 5,299 mi, margem 13,47%');
-select pg_temp.ok((app.calcular_viabilidade(:'vb1')->>'lucro_liquido')::numeric = 5299509.09
+select pg_temp.ok((select despesas_gerais = 676400 and taxas = 1158677.09 and custos_comerciais = 4698000 and despesas_total = 35402309.09
+  and ebitda = 10101968 and despesas_financeiras = 1705600 and lucro_sem_taxas = 8396368
+  and lucro_liquido = 7237690.91 and margem_pct = 16.97 from app.viabilidades where id = :'vb1'),
+  'receita = VGV vendido (o VGV líquido é só a base da permuta): 42,64 mi − terreno − obras − comerciais (todas, 4,698 mi) − gerais (676,4 mil) = EBITDA 10,10 mi − financeiras (impostos 4%: 1,7056 mi) = sem taxas 8,396 mi − taxas 1,159 mi (com 10% do lucro) = lucro 7,238 mi, margem 16,97% do VGV vendido');
+select pg_temp.ok((app.calcular_viabilidade(:'vb1')->>'lucro_liquido')::numeric = 7237690.91
   and not exists (select 1 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x where app.viab_restrito(x->>'grupo')),
   'fora da diretoria, o cálculo conta Taxas e Financeiras no lucro, mas não devolve o detalhe dessas linhas');
 select pg_temp.como(:'diretor');
-select pg_temp.ok((select (x->>'base')::numeric = 5299509.09 and (x->>'valor')::numeric = 529950.91 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x
+select pg_temp.ok((select (x->>'base')::numeric = 7237690.91 and (x->>'valor')::numeric = 723769.09 from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x
                     where x->>'id' = (select id::text from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento')),
   'taxa de desenvolvimento: 10% do lucro líquido, já descontada ela mesma');
 select pg_temp.como(:'analista');
@@ -1631,22 +1631,22 @@ update app.viabilidade_linhas set tipo = 'verba_unidade', valor = 500 where viab
 select pg_temp.ok((select custos_comerciais from app.viabilidades where id = :'vb1') = 4767000, 'verba por unidade: 500 × 138 unidades líquidas (150 − 10 em permuta − 2 da comissão)');
 update app.viabilidade_linhas set tipo = 'verba', valor = null where viabilidade_id = :'vb1' and despesa = 'contratos_cef';
 select app.salvar_viabilidade(:'vb1', '{"minimo_garantido":3500000}');
-select pg_temp.ok((select permuta_financeira = 3500000 and custo_terreno = 4700000 and lucro_liquido = 4979887.27 from app.viabilidades where id = :'vb1')
+select pg_temp.ok((select permuta_financeira = 3500000 and custo_terreno = 4700000 and lucro_liquido = 6918069.09 from app.viabilidades where id = :'vb1')
   and (app.calcular_viabilidade(:'vb1')->>'minimo_aplicado')::boolean, 'permuta financeira abaixo do mínimo garantido usa o mínimo');
 select app.salvar_viabilidade(:'vb1', '{"minimo_garantido":3000000}');
 select app.salvar_viabilidade(:'vb1', '{"custo_m2":10000}');
-select pg_temp.ok((select lucro_liquido = -43857086 and taxas + despesas_financeiras = 3077990 from app.viabilidades where id = :'vb1'), 'sem lucro, os itens em % do lucro valem zero');
+select pg_temp.ok((select lucro_liquido = -41725086 and taxas + despesas_financeiras = 3077990 from app.viabilidades where id = :'vb1'), 'sem lucro, os itens em % do lucro valem zero');
 select app.salvar_viabilidade(:'vb1', '{"custo_m2":3000}');
 -- juros PJ: item de Despesas financeiras em % da obra total, com o padrão da empresa
 select pg_temp.como(:'diretor');
 update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and despesa = 'juros_pj';
-select pg_temp.ok((select despesas_financeiras = 2140508 and lucro_liquido = 4904138.18 from app.viabilidades where id = :'vb1'),
-  'juros PJ de 2% da obra total (21,7454 mi) = 434.908 nas despesas financeiras; lucro 4,904 mi (a taxa de 10% do lucro cai junto)');
+select pg_temp.ok((select despesas_financeiras = 2140508 and lucro_liquido = 6842320 from app.viabilidades where id = :'vb1'),
+  'juros PJ de 2% da obra total (21,7454 mi) = 434.908 nas despesas financeiras; lucro 6,842 mi (a taxa de 10% do lucro cai junto)');
 update app.viabilidade_linhas set valor = null where viabilidade_id = :'vb1' and despesa = 'juros_pj';
 -- custo de capital (28/out/2026): % sobre o Aporte, que é a permuta financeira em dinheiro ou o pagamento em dinheiro do terreno
 update app.viabilidade_linhas set valor = 2 where viabilidade_id = :'vb1' and despesa = 'capital_permuta';
 update app.viabilidade_linhas set valor = 1 where viabilidade_id = :'vb1' and despesa = 'capital_pagamento';
-select pg_temp.ok((select despesas_financeiras = 1778568.32 and lucro_sem_taxas = 6191399.68 from app.viabilidades where id = :'vb1')
+select pg_temp.ok((select despesas_financeiras = 1778568.32 and lucro_sem_taxas = 8323399.68 from app.viabilidades where id = :'vb1')
   and (select bool_and((x->>'base')::numeric = case l.despesa when 'capital_permuta' then 3148416 else 1000000 end and x->>'secao' = 'financeiro')
          from jsonb_array_elements(app.calcular_viabilidade(:'vb1')->'linhas') x join app.viabilidade_linhas l on l.id::text = x->>'id'
         where l.despesa in ('capital_permuta','capital_pagamento')),
@@ -1678,30 +1678,31 @@ select app.apagar_viabilidade(:'vbc');
 select pg_temp.falha(format($$update app.viabilidade_linhas set tipo = 'pct_lucro' where viabilidade_id = %L and despesa = 'comissao'$$, :'vb1'), 'base que o grupo não aceita é recusada (comercial em % do lucro)');
 select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, valor) values (%L, %L, 'comissao', 'pct_vgv', 1)$$, :'emp', :'vb1'), 'item fixo não entra duas vezes');
 select pg_temp.falha(format($$select app.salvar_viabilidade(%L, '{"deduz_vgv":["comissao"]}')$$, :'vb1'), 'só despesa comercial dedutível sai do VGV líquido');
+select pg_temp.falha(format($$select app.salvar_viabilidade(%L, '{"deduz_vgv":["produto_caixa"]}')$$, :'vb1'), 'Produto Caixa não sai da base da permuta (decisão do Moises, 11/nov/2026)');
 select pg_temp.falha(format($$insert into app.viabilidade_linhas (empresa_id, viabilidade_id, despesa, tipo, valor) values (%L, %L, 'inexistente', 'verba', 1)$$, :'emp', :'vb1'), 'item fora da lista da empresa é recusado');
 select pg_temp.falha(format($$select app.salvar_despesa_viabilidade(%L, 'outros_comercial', '{"ativo":false}')$$, :'emp'), 'analista não mexe na lista de itens');
 select pg_temp.falha(format('select app.salvar_margem_minima(%L, 10)', :'emp'), 'analista não muda a rentabilidade mínima');
 select app.vincular_viabilidade(:'neg', 'Estudo do BKM', 1, 1) as vbx \gset
 select pg_temp.falha(format($$insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, nome, quantidade) values (%L, %L, 'X', 1)$$, :'emp', :'vbx'), 'estudo externo (BKM) não recebe tipologias');
 select app.vincular_estudo(:'neg', :'vb1');
-select pg_temp.ok((select vgv = 46000000 and margem_pct = 13.47 from app.v_terrenos where id = :'t1'), 'a negociação vincula o estudo: VGV e margem aparecem no terreno');
+select pg_temp.ok((select vgv = 46000000 and margem_pct = 16.97 from app.v_terrenos where id = :'t1'), 'a negociação vincula o estudo: VGV e margem aparecem no terreno');
 select pg_temp.falha(format('select app.apagar_viabilidade(%L)', :'vb1'), 'estudo vinculado à negociação não se apaga');
 select app.criar_viabilidade(:'t1', 'Cópia', :'vb1') as vb2 \gset
-select pg_temp.ok((select count(*) from app.viabilidade_tipologias where viabilidade_id = :'vb2') = 2 and (select lucro_liquido from app.viabilidades where id = :'vb2') = 5299509.09
+select pg_temp.ok((select count(*) from app.viabilidade_tipologias where viabilidade_id = :'vb2') = 2 and (select lucro_liquido from app.viabilidades where id = :'vb2') = 7237690.91
   and (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb2') = (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1'),
   'duplicar copia dados, tipologias e linhas, com o mesmo resultado');
 select app.apagar_viabilidade(:'vb2');
 select pg_temp.ok(not exists (select 1 from app.viabilidade_linhas where viabilidade_id = :'vb2'), 'estudo solto se apaga, com as linhas');
 select pg_temp.como(:'leitor');
 update app.viabilidade_linhas set valor = 1 where viabilidade_id = :'vb1';
-select pg_temp.ok((select lucro_liquido from app.viabilidades where id = :'vb1') = 5299509.09, 'leitura vê o estudo mas não altera as linhas');
+select pg_temp.ok((select lucro_liquido from app.viabilidades where id = :'vb1') = 7237690.91, 'leitura vê o estudo mas não altera as linhas');
 select pg_temp.falha(format($$select app.criar_viabilidade(%L, 'X')$$, :'t1'), 'leitura não cria estudo');
 select pg_temp.falha(format($$select app.salvar_viabilidade(%L, '{"custo_m2":1}')$$, :'vb1'), 'leitura não muda os dados do estudo');
 select pg_temp.como(:'intruso');
 select pg_temp.ok(not exists (select 1 from app.viabilidade_tipologias where viabilidade_id = :'vb1') and not exists (select 1 from app.viabilidade_despesas where empresa_id = :'emp'), 'outra empresa não vê estudo nem lista');
 select pg_temp.como(:'diretor');
 select app.salvar_despesa_viabilidade(:'emp', 'registro_vendas', '{"deduz_vgv":false}');
-select pg_temp.ok((select vgv_liquido = 39655200 and permuta_financeira = 3172416 and lucro_liquido = 5277690.91 and margem_pct = 13.31 from app.viabilidades where id = :'vb1'),
+select pg_temp.ok((select vgv_liquido = 39655200 and permuta_financeira = 3172416 and lucro_liquido = 7215872.73 and margem_pct = 16.92 from app.viabilidades where id = :'vb1'),
   'registro das vendas deixa de ser dedutível: VGV líquido sobe 0,3 mi, a permuta financeira acompanha e o estudo se refaz');
 select pg_temp.falha(format($$select app.salvar_despesa_viabilidade(%L, 'infra_externa', '{"grupo":"projetos"}')$$, :'emp'), 'item usado em estudo não muda de grupo');
 select pg_temp.falha(format($$select app.apagar_despesa_viabilidade(%L, 'comissao')$$, :'emp'), 'item usado não se apaga (desativa)');

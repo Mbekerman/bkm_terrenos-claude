@@ -1,7 +1,8 @@
 import CFG from '../../../../tools/viabilidade/despesas.json';
 
 // Estudo de viabilidade estática: o mesmo cálculo de app.calcular_viabilidade (migration 20261015001000_viabilidade.sql)
-// e do protótipo (tools/prototipo/proto_viab.js › vbCalc), para o resultado se refazer enquanto se digita. O banco
+// e, até 11/nov/2026, do protótipo (tools/prototipo/proto_viab.js › vbCalc, congelado com a conta antiga, em que o VGV
+// líquido era também a receita), para o resultado se refazer enquanto se digita. O banco
 // recalcula e guarda os totais a cada gravação; aqui é só a conta da tela. Grupos, seções e bases vêm de
 // tools/viabilidade/despesas.json, o mesmo arquivo que o protótipo e o teste do banco leem; os itens são os da empresa
 // (app.viabilidade_despesas).
@@ -60,10 +61,12 @@ export interface Calc {
 
 /** cálculo, na ordem (vbCalc do protótipo):
     VGV vendido = VGV − permuta física − unidades da comissão (é o "VGV" das bases % do VGV);
-    VGV líquido = vendido − % de dedução − despesas comerciais marcadas para deduzir;
+    VGV líquido = vendido − % de dedução − despesas comerciais marcadas para deduzir: só a base da permuta financeira, nunca
+    a receita (decisão do Moises, 11/nov/2026; a receita é o VGV vendido e as despesas marcadas continuam nas comerciais);
     obra: típico = R$/m² × área (privativa ou construída); incidente (raso) = típico + atípicos; total = raso + não incidente;
     + projetos e pós-obra; terreno: permuta financeira = % × VGV líquido, nunca abaixo do mínimo garantido; + dinheiro +
-    comissão em dinheiro; % do lucro líquido: lucro = L0 ÷ (1 + Σ%), zero quando L0 ≤ 0; custo de capital: % sobre o Aporte.
+    comissão em dinheiro; % do lucro líquido: lucro = L0 ÷ (1 + Σ%), zero quando L0 ≤ 0; custo de capital: % sobre o Aporte;
+    margem líquida = lucro ÷ VGV vendido.
     `restritoGuardado`: fora da diretoria as linhas de Taxas e Despesas financeiras não chegam (RLS); entram os totais
     que o banco guardou na última gravação. */
 export function calcular(v: Viab, desp: Desp[], restritoGuardado: boolean): Calc {
@@ -106,7 +109,7 @@ export function calcular(v: Viab, desp: Desp[], restritoGuardado: boolean): Calc
   /* fora da diretoria, Taxas e Financeiras entram pelo total guardado, como verba */
   const guard = restritoGuardado ? r2((v.taxas || 0) + (v.despesas_financeiras || 0)) : 0;
   const pl = v.linhas.filter((l) => l.tipo === 'pct_lucro' && DT.includes(grupoLn(l))).reduce((s, l) => s + (l.valor || 0), 0);
-  const l0 = r2(liq - terr - obras - (com - dedc) - soma(DT, true) - guard), lb = l0 > 0 ? r2(l0 / (1 + pl / 100)) : 0;
+  const l0 = r2(vv - terr - obras - com - soma(DT, true) - guard), lb = l0 > 0 ? r2(l0 / (1 + pl / 100)) : 0;
   b.pct_lucro = lb;
   const L: Calc['L'] = {}, GR: Record<string, number> = {};
   let lu = 0;
@@ -124,7 +127,7 @@ export function calcular(v: Viab, desp: Desp[], restritoGuardado: boolean): Calc
   const lucro = r2(l0 - lu);
   return {
     A, Ab, un, unp, unc, unl, ap, ac, vgv, vp, vc, vv, dedp, dedc, liq, oi, raso, ot, obras, pfc, pf, minimo: pf > pfc, terr, SEC, GR, lb,
-    semTaxas: r2(lucro + SEC.taxas), ebitda: r2(lucro + SEC.taxas + SEC.financeiro), lucro, margem: liq > 0 ? r2(lucro / liq * 100) : null, L,
+    semTaxas: r2(lucro + SEC.taxas), ebitda: r2(lucro + SEC.taxas + SEC.financeiro), lucro, margem: vv > 0 ? r2(lucro / vv * 100) : null, L,
   };
 }
 
@@ -133,4 +136,5 @@ export const brl = (v: number | null | undefined) => (v == null ? '—' : Number
 export const mi = (v: number | null | undefined) => (v == null ? '—' : 'R$\u00a0' + (v / 1e6).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '\u00a0mi');
 export const nf = (v: number | null | undefined, d = 0) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d }));
 export const vin = (v: number | null | undefined, d = 2) => (v == null ? '' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: d }));
-export const pctVgv = (x: number, c: Calc) => (c.vgv > 0 ? nf(x / c.vgv * 100, 1) + '% do VGV' : '');
+/** % do VGV vendido, a mesma base dos itens em % do VGV e da margem */
+export const pctVgv = (x: number, c: Calc) => (c.vv > 0 ? nf(x / c.vv * 100, 1) + '% do VGV' : '');
