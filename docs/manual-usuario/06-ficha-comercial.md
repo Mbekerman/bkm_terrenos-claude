@@ -42,7 +42,6 @@ Embaixo, uma linha por parte (ver [05](05-ficha-terreno.md#partes)), com:
 - o **dinheiro** e o **dinheiro por m²**, que se calculam um pelo outro (digite um e o outro muda). Aceita "12 mi" e precisa ser maior que zero;
 - a **permuta financeira**, em % do VGV líquido (de 0 a 100);
 - a **permuta física**, em **%** ou em **unidades**: o botão **% | Unid.** ao lado do campo escolhe. É uma ou outra, nunca as duas; trocar o botão leva o número junto.
-- o **mínimo garantido**, opcional: preenchida a permuta financeira, aparece embaixo dela o campo **mín.** para o valor mínimo garantido em R$; preenchida a permuta física em %, aparece embaixo dela o **mín.** para a quantidade mínima de unidades garantida. Sem a permuta, o mínimo dela sai junto.
 
 A forma de pagamento sai sozinha do que foi preenchido: só dinheiro, só uma permuta, **Permuta geral** (as duas permutas) ou **Permuta com torna** (dinheiro com alguma permuta). É ela que os filtros e as condições das tarefas usam.
 - **Informações gerais**, no fim de cada parte: um texto livre para o que aquele vendedor pediu (permuta, entrada, prazos). Vale para a parte naquela oferta: outra oferta tem o seu próprio texto, porque as partes podem mudar de uma oferta para outra. Não é o texto da oferta (as impressões sobre o corretor e a firmeza ficam no card da oferta). Grava ao sair do campo.

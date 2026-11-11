@@ -45,7 +45,7 @@ export function useComercial(f: Ficha) {
     queryFn: async (): Promise<Com> => {
       const neg = f.negId, nada = Promise.resolve({ data: null, error: null });
       const [of, ng, pr, tc, co, pp, ru, pt] = await Promise.all([
-        supabase.from('ofertas').select('id,numero,vigente,criado_por,data_oferta,valor_pedido,permuta_fin_pct,permuta_fis_pct,permuta_fis_unidades,permuta_fin_minimo,permuta_fis_min_unidades,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,validade,status,corretor_id,observacoes,criado_em,oferta_partes(parte_id,valor_pedido,permuta_fin_pct,permuta_fis_pct,permuta_fis_unidades,permuta_fin_minimo,permuta_fis_min_unidades,forma_pagamento,observacoes),oferta_corretores(id,corretor_id,criado_em)')
+        supabase.from('ofertas').select('id,numero,vigente,criado_por,data_oferta,valor_pedido,permuta_fin_pct,permuta_fis_pct,permuta_fis_unidades,forma_pagamento_pedida,observacao_pagamento,aceita_permuta,validade,status,corretor_id,observacoes,criado_em,oferta_partes(parte_id,valor_pedido,permuta_fin_pct,permuta_fis_pct,permuta_fis_unidades,forma_pagamento,observacoes),oferta_corretores(id,corretor_id,criado_em)')
           .eq('terreno_id', f.id).order('data_oferta').order('criado_em'),
         neg ? supabase.from('negociacoes').select('oferta_referencia_id').eq('processo_id', neg).maybeSingle() : nada,
         neg ? supabase.from('processos').select('id,status,etapa_atual,subetapa_atual,subetapa_desde,motivo_encerramento,detalhe_encerramento').eq('id', neg).maybeSingle() : nada,
@@ -207,11 +207,10 @@ function JanelaMat({ L, x, c, rot, fechar }: { L: Lotes; x: R; c: R; rot: string
 }
 
 /** as colunas do pedido gravadas na oferta (uma parte) ou na linha da parte (várias) */
-type Patch = Partial<Record<'valor_pedido' | 'permuta_fin_pct' | 'permuta_fis_pct' | 'permuta_fis_unidades' | 'permuta_fin_minimo' | 'permuta_fis_min_unidades', number | null>>;
-const MODS = ['valor_pedido', 'permuta_fin_pct', 'permuta_fis_pct', 'permuta_fis_unidades', 'permuta_fin_minimo', 'permuta_fis_min_unidades'] as const;
+type Patch = Partial<Record<'valor_pedido' | 'permuta_fin_pct' | 'permuta_fis_pct' | 'permuta_fis_unidades', number | null>>;
+const MODS = ['valor_pedido', 'permuta_fin_pct', 'permuta_fis_pct', 'permuta_fis_unidades'] as const;
 const modProp = (p: R): Modalidades => modProposta(p);
-const modRow = (x: R | null | undefined): Modalidades => modDe({ valor: x?.valor_pedido, fin: x?.permuta_fin_pct, fisPct: x?.permuta_fis_pct, fisUn: x?.permuta_fis_unidades,
-  finMin: x?.permuta_fin_minimo, fisMinUn: x?.permuta_fis_min_unidades });
+const modRow = (x: R | null | undefined): Modalidades => modDe({ valor: x?.valor_pedido, fin: x?.permuta_fin_pct, fisPct: x?.permuta_fis_pct, fisUn: x?.permuta_fis_unidades });
 
 /** campo de número que grava ao sair (Enter passa ao próximo); vazio = não informado */
 function CampoNum({ valor, t, gravar, rot, id, ph }: { valor: number | null; t: 'pct' | 'un' | 'moeda'; gravar: (n: number | null) => void; rot: string; id?: string; ph?: string }) {
@@ -231,19 +230,16 @@ function CampoFisica({ m, gravar, rot }: { m: Modalidades; gravar: (p: Patch) =>
   const trocar = (u: boolean) => {
     setUn(u);
     if (atual == null) return;
-    gravar(u ? { permuta_fis_pct: null, permuta_fis_min_unidades: null, permuta_fis_unidades: Math.max(1, Math.round(atual)) } : { permuta_fis_unidades: null, permuta_fis_pct: Math.min(100, atual) });
+    gravar(u ? { permuta_fis_pct: null, permuta_fis_unidades: Math.max(1, Math.round(atual)) } : { permuta_fis_unidades: null, permuta_fis_pct: Math.min(100, atual) });
   };
   return (
     <div className="pfis">
       <CampoNum valor={atual} t={un ? 'un' : 'pct'} rot={`${rot} ${un ? 'em unidades' : 'em %'}`}
-        gravar={(n) => gravar(un ? { permuta_fis_unidades: n, permuta_fis_pct: null, permuta_fis_min_unidades: null } : { permuta_fis_pct: n, permuta_fis_unidades: null })} />
+        gravar={(n) => gravar(un ? { permuta_fis_unidades: n, permuta_fis_pct: null } : { permuta_fis_pct: n, permuta_fis_unidades: null })} />
       <span className="seg pfis-seg" role="group" aria-label="Permuta física em">
         <button type="button" aria-pressed={!un} onClick={() => trocar(false)}>%</button>
         <button type="button" aria-pressed={un} onClick={() => trocar(true)}>Unid.</button>
       </span>
-      {/* mínimo de unidades garantido, só com a física em % (pedido do Moises, 11/nov/2026) */}
-      {!un && m.fisPct != null && <div className="pmin"><span className="pmin-l">mín.</span>
-        <CampoNum valor={m.fisMinUn ?? null} t="un" ph="unidades" rot={`${rot}: mínimo de unidades garantido`} gravar={(n) => gravar({ permuta_fis_min_unidades: n })} /></div>}
     </div>
   );
 }
@@ -278,10 +274,7 @@ function LinhaParte({ o, pa, um, primeiro, area, zonas, nomeDet, mudar, gravarOb
           onChange={(e) => { setVm(e.target.value); const n = lerNum(e.target.value); setVv(n != null && area ? numTxt(Math.round(n * area)) : ''); }}
           onBlur={() => { const n = lerNum(vm); gravarValor(n != null && area ? Math.round(n * area) : null); }} /></Adorno>}</div>
       <div className="ptcom-c field ptcom-fin">{L('Permuta financeira (% VGVL)')}{ro ? <span>{finTxt(md) ?? '—'}</span>
-        : <div className="pfin"><CampoNum valor={md.fin} t="pct" rot={`Permuta financeira pedida por ${pa.nome}, em % do VGV líquido`} gravar={(n) => mudar(pa, { permuta_fin_pct: n })} />
-          {/* mínimo garantido em R$, só com a permuta financeira (pedido do Moises, 11/nov/2026) */}
-          {md.fin != null && <div className="pmin"><span className="pmin-l">mín.</span>
-            <CampoNum valor={md.finMin ?? null} t="moeda" ph="garantido" rot={`Mínimo garantido da permuta financeira de ${pa.nome}`} gravar={(n) => mudar(pa, { permuta_fin_minimo: n })} /></div>}</div>}</div>
+        : <CampoNum valor={md.fin} t="pct" rot={`Permuta financeira pedida por ${pa.nome}, em % do VGV líquido`} gravar={(n) => mudar(pa, { permuta_fin_pct: n })} />}</div>
       <div className="ptcom-c field ptcom-fis">{L('Permuta física')}{ro ? <span>{fisTxt(md) ?? '—'}</span>
         : <CampoFisica m={md} rot={`Permuta física pedida por ${pa.nome}`} gravar={(p) => mudar(pa, p)} />}</div>
       {/* informações gerais da parte nesta oferta: a composição das partes pode mudar de uma oferta para outra (pedido do Moises, 10/nov/2026) */}
@@ -341,11 +334,7 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
     if ((p.permuta_fin_pct != null && (p.permuta_fin_pct <= 0 || p.permuta_fin_pct > 100)) || (p.permuta_fis_pct != null && (p.permuta_fis_pct <= 0 || p.permuta_fis_pct > 100))) {
       toast('O percentual vai de 0 a 100.', true); return;
     }
-    if ((p.permuta_fis_unidades != null && p.permuta_fis_unidades <= 0) || (p.permuta_fis_min_unidades != null && p.permuta_fis_min_unidades <= 0)) { toast('Informe ao menos uma unidade.', true); return; }
-    if (p.permuta_fin_minimo != null && p.permuta_fin_minimo <= 0) { toast('O mínimo garantido precisa ser maior que zero.', true); return; }
-    // sem a modalidade, o mínimo dela sai junto (o banco não aceita o mínimo sozinho)
-    if ('permuta_fin_pct' in p && p.permuta_fin_pct == null) p = { ...p, permuta_fin_minimo: null };
-    if ('permuta_fis_pct' in p && p.permuta_fis_pct == null) p = { ...p, permuta_fis_min_unidades: null };
+    if (p.permuta_fis_unidades != null && p.permuta_fis_unidades <= 0) { toast('Informe ao menos uma unidade.', true); return; }
     let error;
     if (um) ({ error } = await supabase.from('ofertas').update(p).eq('id', o.id));
     else {
@@ -387,7 +376,7 @@ function SecCondicoes({ f, c, registrar, primeiro }: { f: Ficha; c: Com; registr
   const comPed = mds.map((x) => x.din != null || x.fin != null || x.fisPct != null || x.fisUn != null);
   const nCom = comPed.filter(Boolean).length;
   const soma = (k: keyof Modalidades) => { const xs = mds.map((x) => x[k]).filter((v): v is number => v != null); return xs.length ? xs.reduce((a, b) => a + b, 0) : null; };
-  const mT: Modalidades = { din: vT, fin: soma('fin'), fisPct: soma('fisPct'), fisUn: soma('fisUn'), finMin: soma('finMin'), fisMinUn: soma('fisMinUn') };
+  const mT: Modalidades = { din: vT, fin: soma('fin'), fisPct: soma('fisPct'), fisUn: soma('fisUn') };
   const permT = [finTxt(mT), fisTxt(mT)].filter(Boolean).join(' · ');
   const aT = P.reduce((s, pa) => s + (areaDe(pa.id) || 0), 0);
   // valor antigo, gravado para o terreno inteiro antes de existir o valor por parte

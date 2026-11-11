@@ -23,7 +23,8 @@ create table app.ofertas (
   permuta_fin_pct        numeric(7,4) check (permuta_fin_pct > 0 and permuta_fin_pct <= 100),
   permuta_fis_pct        numeric(7,4) check (permuta_fis_pct > 0 and permuta_fis_pct <= 100),
   permuta_fis_unidades   int check (permuta_fis_unidades > 0),
-  -- mínimos garantidos (pedido do Moises, 11/nov/2026): em R$ na permuta financeira e em unidades na física em %
+  -- mínimos garantidos (pedido do Moises, 11/nov/2026): em R$ na permuta financeira e em unidades na física em %;
+  -- na pedida a tela não os usa (o Moises escolheu só na proposta, 11/nov/2026), mas as colunas ficam, já aplicadas no banco
   permuta_fin_minimo       numeric(16,2) check (permuta_fin_minimo > 0),
   permuta_fis_min_unidades int check (permuta_fis_min_unidades > 0),
   check (permuta_fin_minimo is null or permuta_fin_pct is not null),
@@ -69,7 +70,8 @@ create table app.oferta_partes (
   permuta_fis_pct      numeric(7,4) check (permuta_fis_pct > 0 and permuta_fis_pct <= 100),
   permuta_fis_unidades int check (permuta_fis_unidades > 0),
   check (permuta_fis_pct is null or permuta_fis_unidades is null),
-  -- mínimos garantidos (pedido do Moises, 11/nov/2026): em R$ na permuta financeira e em unidades na física em %
+  -- mínimos garantidos (pedido do Moises, 11/nov/2026): em R$ na permuta financeira e em unidades na física em %;
+  -- na pedida a tela não os usa (o Moises escolheu só na proposta, 11/nov/2026), mas as colunas ficam, já aplicadas no banco
   permuta_fin_minimo       numeric(16,2) check (permuta_fin_minimo > 0),
   permuta_fis_min_unidades int check (permuta_fis_min_unidades > 0),
   check (permuta_fin_minimo is null or permuta_fin_pct is not null),

@@ -37,7 +37,7 @@ interface Linha {
 
 async function carregar(emp: string): Promise<Linha[]> {
   const [v, t, pr, cor, mat, ins, em] = await Promise.all([
-    supabase.from('v_terrenos').select('id,codigo,nome,logradouro,numero,bairro,zona,municipio,area_adotada_m2,zonas_siglas,vgv,margem_pct,valor_pedido,pedido_fin_pct,pedido_fis_pct,pedido_fis_unidades,proposta_ativa_valor,proposta_ativa_fin_pct,proposta_ativa_fis_pct,proposta_ativa_fis_unidades,pedido_fin_minimo,pedido_fis_min_unidades,proposta_ativa_fin_minimo,proposta_ativa_fis_min_unidades,corretor_ids,temperatura,responsavel_id,negociacao_id').eq('empresa_id', emp),
+    supabase.from('v_terrenos').select('id,codigo,nome,logradouro,numero,bairro,zona,municipio,area_adotada_m2,zonas_siglas,vgv,margem_pct,valor_pedido,pedido_fin_pct,pedido_fis_pct,pedido_fis_unidades,proposta_ativa_valor,proposta_ativa_fin_pct,proposta_ativa_fis_pct,proposta_ativa_fis_unidades,proposta_ativa_fin_minimo,proposta_ativa_fis_min_unidades,corretor_ids,temperatura,responsavel_id,negociacao_id').eq('empresa_id', emp),
     supabase.from('terrenos').select('id,topo_perfil,topo_declividade_pct').eq('empresa_id', emp),
     supabase.from('processos').select('id,viabilidade_id').eq('empresa_id', emp).not('viabilidade_id', 'is', null),
     supabase.from('corretores').select('id,imobiliaria,pessoas(nome_razao_social)').eq('empresa_id', emp),
@@ -79,7 +79,7 @@ async function carregar(emp: string): Promise<Linha[]> {
       area: x.area_adotada_m2 == null ? null : +x.area_adotada_m2, zonas: zs(x.zonas_siglas), topo,
       vgv: x.vgv == null ? null : +x.vgv, un: vid ? unDe[vid] ?? null : null, temEstudo: !!vid, mUn: ms?.unidades == null ? null : +ms.unidades, mArea: ms?.area_privativa_m2 == null ? null : +ms.area_privativa_m2, temMassa: !!ms, vid: vid ?? null, ll: x.margem_pct == null ? null : +x.margem_pct,
       pedido: x.valor_pedido == null ? null : +x.valor_pedido, proposta: x.proposta_ativa_valor == null ? null : +x.proposta_ativa_valor,
-      ped: modDe({ valor: x.valor_pedido, fin: x.pedido_fin_pct, fisPct: x.pedido_fis_pct, fisUn: x.pedido_fis_unidades, finMin: x.pedido_fin_minimo, fisMinUn: x.pedido_fis_min_unidades }),
+      ped: modDe({ valor: x.valor_pedido, fin: x.pedido_fin_pct, fisPct: x.pedido_fis_pct, fisUn: x.pedido_fis_unidades }),
       prop: modDe({ valor: x.proposta_ativa_valor, fin: x.proposta_ativa_fin_pct, fisPct: x.proposta_ativa_fis_pct, fisUn: x.proposta_ativa_fis_unidades, finMin: x.proposta_ativa_fin_minimo, fisMinUn: x.proposta_ativa_fis_min_unidades }),
       corretores, temp: x.temperatura ?? null, resp: uN[x.responsavel_id] ?? null,
       busca: { codigo: x.codigo, nome: x.nome, bairro: x.bairro, zona: x.zona, municipio: x.municipio, corretor: corretores.map((c) => c.nome).join(' '),
