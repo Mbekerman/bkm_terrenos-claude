@@ -17,6 +17,7 @@ import { apagarRasc, comRasc, LimparRasc, useGuardarRasc } from '../components/R
 import { lerNum, numStr, Quadro, useListas, Vivo } from './edicao';
 import type { Ficha, R } from './dados';
 import { abrirEstudo } from '../viab/Viabilidade';
+import { SeloValido } from '../components/SeloValido';
 
 const SIT: Record<string, [string, string]> = { solicitado: ['Solicitado', 'warn'], em_elaboracao: ['Em elaboração', 'blue'], entregue: ['Entregue', 'good'] };
 const AREAS: [string, string][] = [['lazer_coberto_torre_m2', 'Lazer coberto na torre'], ['lazer_descoberto_torre_m2', 'Lazer descoberto na torre'],
@@ -56,103 +57,117 @@ function useMassa(f: Ficha) {
   });
 }
 
-export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void }) {
-  const { edita } = useSessao();
-  const toast = useToast(), qc = useQueryClient();
-  const q = useMassa(f), L = useListas();
-  const membros = L.data?.membros ?? [];
-  const nome = (id: string | null | undefined) => (id ? membros.find((x) => x.user_id === id)?.nome ?? '—' : '—');
-  const [sel, setSel] = useState<string | null>(null);
-  const [form, setForm] = useState<false | 'pedir' | 'lancar'>(false);
-  const [janela, setJanela] = useState<null | { t: 'pedido' | 'viab' | 'apagar'; id: string }>(null);
-  const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-massa', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); };
-  if (q.isLoading) return <section className="sec"><div className="empty">Carregando…</div></section>;
-  if (q.error) return <section className="sec"><div className="empty">Não foi possível ler os estudos de massa: {(q.error as any).message}</div></section>;
-  const { ms, viabs } = q.data!;
-  const atual = ms.find((m) => m.id === sel) ?? ms.find((m) => m.valido) ?? ms[ms.length - 1] ?? null;
-  async function marcarValido(m: R) {
-    const { error } = await supabase.rpc('marcar_massa_valido', { p_id: m.id, p_valido: true });
+/** marca ou tira a marca de válido (um por terreno, só entregue); o que era o válido deixa de ser */
+function useMarcarValido(viabs: () => R[], recarregar: () => void) {
+  const toast = useToast();
+  return async (m: R, valido: boolean) => {
+    const { error } = await supabase.rpc('marcar_massa_valido', { p_id: m.id, p_valido: valido });
     if (error) { toast(error.message, true); return; }
-    const n = viabs.filter((v) => v.segue_massa_valido).length;
+    if (!valido) { toast(`${m.nome} deixou de ser o válido. O terreno fica sem estudo de massa válido.`); recarregar(); return; }
+    const n = viabs().filter((v) => v.segue_massa_valido).length;
     toast(`${m.nome} é o válido.${n ? ` ${n > 1 ? `${n} estudos de viabilidade que seguem o válido foram atualizados` : 'O estudo de viabilidade que segue o válido foi atualizado'}.` : ''}`);
     recarregar();
-  }
-  const ped = janela && ms.find((m) => m.id === janela.id);
+  };
+}
+
+/* ---------- a aba: a lista dos estudos, como a de viabilidade (pedido do Moises, 11/nov/2026); inserir, ver e editar
+   cada estudo é na janela (PopMassa) ---------- */
+export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void }) {
+  const { edita } = useSessao();
+  const qc = useQueryClient();
+  const q = useMassa(f), L = useListas();
+  const membros = L.data?.membros ?? [];
+  const [form, setForm] = useState<false | 'pedir' | 'lancar'>(false);
+  const [aberto, setAberto] = useState<string | null>(null);
+  const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-massa', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); qc.invalidateQueries({ queryKey: ['mapa'] }); };
+  const marcar = useMarcarValido(() => q.data?.viabs ?? [], recarregar);
+  if (q.isLoading) return <section className="sec"><div className="empty">Carregando…</div></section>;
+  if (q.error) return <section className="sec"><div className="empty">Não foi possível ler os estudos de massa: {(q.error as any).message}</div></section>;
+  const { ms } = q.data!;
   return (
     <div className="stack">
       <Quadro aba="massa" id="massa-lista" primeiro chip="Estudos de massa" titulo={<>Estudos de massa <span className="h-n">{ms.length}</span></>}
-        acoes={edita && !form ? <span style={{ display: 'flex', gap: 4, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button className="btn sm" onClick={() => setForm('lancar')} title="Para o estudo que já está pronto: cria o estudo e abre a ficha para lançar as tipologias, as áreas e os índices"><Ic n="upload" s={16} />Lançar estudo</button>
+        acoes={edita ? <span style={{ display: 'flex', gap: 4, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button className="btn sm" onClick={() => setForm('lancar')} title="Para o estudo que já está pronto: cria o estudo e abre a janela para lançar as tipologias, as áreas e os índices"><Ic n="upload" s={16} />Lançar estudo</button>
           <button className="btn sm" onClick={() => setForm('pedir')}><Ic n="add" s={16} />Solicitar estudo</button></span> : null}>
         <div className="sec-b">
-          {form && edita ? <FormSolicitar key={form} modo={form} f={f} membros={membros} fechar={() => setForm(false)} criado={(id) => {
-            setSel(id); setForm(false); recarregar();
-            if (form === 'lancar') setTimeout(() => document.getElementById('sec-massa')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
-          }} /> : null}
           {ms.length ? (
-            <div className="dt-wrap"><table className="dt compacta ems-lista"><thead><tr><th className="esq">Estudo</th><th className="esq">Arquiteto</th><th className="esq">Situação</th><th>Unidades</th><th>Área privativa</th><th>Área construída</th><th>Eficiência</th><th>Válido</th></tr></thead>
+            <div className="dt-wrap vb-lista"><table className="dt compacta ems-lista"><thead><tr><th className="esq">Estudo</th><th>Unidades</th><th>Tipologias</th><th>Área privativa total</th><th>Área privativa média</th><th>Atualizado</th><th>Válido</th></tr></thead>
               <tbody>{ms.map((m) => {
                 const [st, cor] = SIT[m.situacao] ?? [m.situacao, ''];
-                const pode = !m.valido && edita && m.situacao === 'entregue';
+                const un = Number(m.unidades) || 0;
+                const media = un && m.area_privativa_m2 != null ? r2(Number(m.area_privativa_m2) / un) : null;
+                const entregue = m.situacao === 'entregue';
                 return (
-                  <tr key={m.id} className={m === atual ? 'ems-sel' : undefined}>
-                    <td className="esq"><button className="linkbtn" onClick={() => { setSel(m.id); setTimeout(() => document.getElementById('sec-massa')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30); }}>{m.nome}</button></td>
-                    <td className="esq">{nome(m.arquiteto_id)}</td>
-                    <td className="esq"><span className={`chip ${cor}`}>{st}</span></td>
-                    <td className="num">{m.unidades ? num(m.unidades) : '—'}</td>
+                  <tr key={m.id}>
+                    <td className="esq"><button className="linkbtn" onClick={() => setAberto(m.id)}>{m.nome}</button>
+                      {entregue ? null : <span className={`chip ${cor} ems-sit`}>{st}</span>}</td>
+                    <td className="num">{un ? num(un) : '—'}</td>
+                    <td className="num">{(m.tips as R[]).length || '—'}</td>
                     <td className="num">{m.area_privativa_m2 != null ? m2(m.area_privativa_m2) : '—'}</td>
-                    <td className="num">{m.area_construida_m2 != null ? m2(m.area_construida_m2) : '—'}</td>
-                    <td className="num">{m.eficiencia_pct != null ? num(m.eficiencia_pct, 1) + '%' : '—'}</td>
-                    <td><label className="vb-radio" title={m.situacao === 'entregue' ? '' : 'Só o estudo entregue pode ser o válido'}>
-                      <input type="radio" name={`ems-valido-${f.id}`} checked={!!m.valido} disabled={!pode} onChange={() => pode && marcarValido(m)} aria-label={`${m.nome} é o estudo válido`} /></label></td>
+                    <td className="num">{media != null ? m2(media) : '—'}</td>
+                    <td>{fd(m.atualizado_em)}</td>
+                    <td><SeloValido valido={!!m.valido} pode={edita && (entregue || !!m.valido)} nome={m.nome}
+                      porque={edita ? 'Só o estudo entregue pode ser o válido' : ''} clicar={() => marcar(m, !m.valido)} /></td>
                   </tr>
                 );
               })}</tbody></table></div>
-          ) : form ? null : (
+          ) : (
             <div className="banner blue"><Ic n="layers" /><div style={{ flex: 1 }}><div className="bt">Nenhum estudo de massa</div>
               <div>Peça o estudo ao arquiteto em Solicitar estudo, ou, com o estudo já pronto em mãos, use Lançar estudo para digitar as tipologias, as áreas e os índices.</div></div></div>
           )}
         </div>
       </Quadro>
-      {atual ? <FichaEstudo key={atual.id} m={atual} viabs={viabs} edita={edita} recarregar={recarregar}
-        abrir={(t) => setJanela({ t, id: atual.id })} marcarValido={() => marcarValido(atual)} /> : null}
-      {janela?.t === 'pedido' && ped ? <JanelaPedido m={ped} membros={membros} nome={nome} edita={edita} fechar={() => setJanela(null)} recarregar={recarregar} /> : null}
-      {janela?.t === 'viab' && ped ? <JanelaViab m={ped} fechar={() => setJanela(null)} criado={() => { setJanela(null); recarregar(); }} /> : null}
-      {janela?.t === 'apagar' && ped ? (
-        <Dialogo titulo={`Apagar ${ped.nome}?`} onFechar={() => setJanela(null)}
-          rodape={<><button className="btn text" onClick={() => setJanela(null)}>Cancelar</button><button className="btn primary danger" onClick={async () => {
-            const { error } = await supabase.rpc('apagar_estudo_massa', { p_id: ped.id });
-            if (error) { toast(error.message, true); return; }
-            setJanela(null); if (sel === ped.id) setSel(null); recarregar(); toast('Estudo de massa apagado.');
-          }}>Apagar</button></>}>
-          <div className="db">O estudo e as tipologias dele saem do terreno.</div>
+      {form && edita ? (
+        <Dialogo titulo={form === 'lancar' ? 'Lançar estudo de massa' : 'Solicitar estudo de massa'} sub={`${f.codigo} · ${f.nome}`} onFechar={() => setForm(false)}>
+          <FormSolicitar key={form} modo={form} f={f} membros={membros} fechar={() => setForm(false)} criado={(id) => {
+            const lancou = form === 'lancar';
+            setForm(false); recarregar();
+            if (lancou) setAberto(id);
+          }} />
         </Dialogo>
       ) : null}
+      {aberto ? <PopMassa f={f} id={aberto} fechar={() => setAberto(null)} /> : null}
     </div>
   );
 }
 
-/** o estudo de massa válido do terreno numa janela, aberto pelo olho da tabela do Pipeline (pedido do Moises, 11/nov/2026):
-    a mesma ficha do estudo da aba, editável para quem edita, com Ver pedido e Criar estudo de viabilidade */
-export function PopMassa({ f, fechar }: { f: Ficha; fechar: () => void }) {
+/** o estudo de massa numa janela: inserir, ver e editar (pedido do Moises, 11/nov/2026). Sem id, o válido do terreno
+    (o olho da tabela do Pipeline); com id, aquele estudo (a lista da aba). Editável para quem edita, com Ver pedido,
+    Marcar como válido, Criar estudo de viabilidade e Apagar. */
+export function PopMassa({ f, fechar, id }: { f: Ficha; fechar: () => void; id?: string }) {
   const { edita } = useSessao();
+  const toast = useToast();
   const qc = useQueryClient(), q = useMassa(f), L = useListas();
   const membros = L.data?.membros ?? [];
-  const nome = (id: string | null | undefined) => (id ? membros.find((x) => x.user_id === id)?.nome ?? '—' : '—');
-  const [janela, setJanela] = useState<null | 'pedido' | 'viab'>(null);
+  const nome = (x: string | null | undefined) => (x ? membros.find((y) => y.user_id === x)?.nome ?? '—' : '—');
+  const [janela, setJanela] = useState<null | 'pedido' | 'viab' | 'apagar'>(null);
   const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-massa', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); qc.invalidateQueries({ queryKey: ['mapa'] }); };
-  const m = q.data?.ms.find((x) => x.valido) ?? null;
+  const marcar = useMarcarValido(() => q.data?.viabs ?? [], recarregar);
+  const m = (id ? q.data?.ms.find((x) => x.id === id) : q.data?.ms.find((x) => x.valido)) ?? null;
+  /* abre sem cursor num campo (o Dialogo foca o primeiro; aqui seria o título da primeira tipologia) */
+  useEffect(() => { const t = setTimeout(() => { const a = document.activeElement as HTMLElement | null; if (a?.closest('.ems-pop')) a.blur(); }, 0); return () => clearTimeout(t); }, [m?.id]);
   return (
-    <Dialogo titulo={`${f.codigo} · ${f.nome}`} sub="Estudo de massa válido" cls="ems-pop" onFechar={() => { if (!janela) fechar(); }}>
+    <Dialogo titulo={`${f.codigo} · ${f.nome}`} sub={id ? 'Estudo de massa' : 'Estudo de massa válido'} cls="ems-pop" onFechar={() => { if (!janela) fechar(); }}>
       <div className="ems-pop-b">
         {q.isLoading ? <div className="empty">Carregando…</div>
           : q.error ? <div className="banner warn">Não foi possível ler o estudo de massa: {(q.error as Error).message}</div>
           : m ? <FichaEstudo key={m.id} m={m} viabs={q.data!.viabs} edita={edita} recarregar={recarregar}
-            abrir={(t) => { if (t !== 'apagar') setJanela(t); }} marcarValido={() => {}} />
-          : <div className="empty">Este terreno não tem estudo de massa válido.</div>}
+            abrir={(t) => setJanela(t)} marcarValido={() => marcar(m, true)} />
+          : <div className="empty">{id ? 'Este estudo de massa não existe mais.' : 'Este terreno não tem estudo de massa válido.'}</div>}
       </div>
       {janela === 'pedido' && m ? <JanelaPedido m={m} membros={membros} nome={nome} edita={edita} fechar={() => setJanela(null)} recarregar={recarregar} /> : null}
       {janela === 'viab' && m ? <JanelaViab m={m} fechar={() => setJanela(null)} criado={() => { setJanela(null); recarregar(); }} /> : null}
+      {janela === 'apagar' && m ? (
+        <Dialogo titulo={`Apagar ${m.nome}?`} onFechar={() => setJanela(null)}
+          rodape={<><button className="btn text" onClick={() => setJanela(null)}>Cancelar</button><button className="btn primary danger" onClick={async () => {
+            const { error } = await supabase.rpc('apagar_estudo_massa', { p_id: m.id });
+            if (error) { toast(error.message, true); return; }
+            setJanela(null); recarregar(); toast('Estudo de massa apagado.'); fechar();
+          }}>Apagar</button></>}>
+          <div className="db">O estudo e as tipologias dele saem do terreno.</div>
+        </Dialogo>
+      ) : null}
     </Dialogo>
   );
 }
