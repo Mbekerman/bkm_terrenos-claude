@@ -60,4 +60,4 @@ A linha do título do Funil tem **Filtros** e **Visões**, iguais aos do Mapa, m
 
 - Arrastar no nível das fases (cada fase só abre quando as dependências se cumprem).
 - Concluir como Comprado, Perdido ou Descartado arrastando: use o quadro de avanço da ficha ([09](09-avanco-e-logs.md)).
-- **Ainda não disponível:** a vista Funil da página Tarefas e a tabela Pipeline de terrenos.
+- **Ainda não disponível:** a vista Funil da página Tarefas.

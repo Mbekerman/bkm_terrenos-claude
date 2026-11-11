@@ -11,7 +11,6 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 | Recurso | Situação | Como fazer hoje |
 |---|---|---|
 | **Início** (página com os 4 indicadores e a lista do dia) | Só no protótipo | Use o Funil e o sino. |
-| **Terrenos** (tabela **Pipeline** com colunas ordenáveis e a ficha em gaveta) | Só no protótipo | Use a lista do Mapa com filtros. |
 | **Dashboard** | Só no protótipo; será refeito mais para a frente | — |
 | **Configurações** (fases, etapas, Jornada, campos, parâmetros urbanísticos, topografia, viabilidade, tarefas, notificações, equipe) | Só no protótipo | Ajustes urgentes são feitos direto no banco, a pedido do Moises. |
 | **Tarefas** (quadros no estilo Trello, cartões, checklists, cronograma, calendário, automações, aprovações, recorrência) | Só no protótipo; vai virar um sistema próprio (BKM Tarefas) | Combine por fora; o painel da ficha só lista tarefas abertas, se houver. |

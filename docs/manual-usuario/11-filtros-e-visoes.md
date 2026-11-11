@@ -44,13 +44,13 @@ Os botões no cabeçalho da gaveta trocam a seção e mostram quantos filtros ca
 
 ## Cada página tem a sua seleção
 
-O filtro do Mapa não muda o Funil, e vice-versa. A seleção fica guardada durante a sessão do navegador, por página, e também no **endereço** (depois de `#f=`): copiar o link manda o recorte junto para um colega.
+O filtro do Mapa não muda o Funil nem o Pipeline, e vice-versa. A seleção fica guardada durante a sessão do navegador, por página, e também no **endereço** (depois de `#f=`): copiar o link manda o recorte junto para um colega.
 
 No **Funil**, não há filtro de fase, etapa e subetapa: "No quadro, a fase e a etapa vêm da navegação (Funil › fase › etapa)."
 
 No **Mapa**, a legenda continua ligando e desligando camadas e conta só os terrenos que passaram pelo filtro.
 
-## Ordenação (só no Mapa)
+## Ordenação (Mapa e Pipeline)
 
 **Para que serve:** mudar a ordem da lista de terrenos do Mapa, por um ou mais campos.
 
@@ -63,6 +63,7 @@ No **Mapa**, a legenda continua ligando e desligando camadas e conta só os terr
 - Quem não tem o dado (sem área, sem VGV...) fica sempre no fim, nos dois sentidos.
 - Com uma ordenação ligada, a lista vira uma só, na ordem pedida, sem agrupar pela legenda (a bolinha continua com a cor da etapa). Sem ordenação, volta a ordem da legenda e do nome.
 - Na barra aparece o chip **"Ordem: Imóvel ↓, Negociação ↑"**; o X dele, ou **"Tirar ordenação"** na gaveta, volta à ordem padrão.
+- No **Pipeline**, a mesma ordenação também se faz clicando no título das colunas, e o chip da barra não aparece (a tabela já mostra a ordem nos títulos). Cada página guarda a sua.
 - A ordenação fica guardada **no seu navegador**: o Mapa sempre abre com a última ordenação escolhida, mesmo depois de fechar o navegador (em outro computador ou navegador, começa sem). Ela também vai no endereço (depois de `#o=`), e o link recebido vale primeiro. Ela **não entra** nas visões salvas.
 
 ## Visões salvas
@@ -85,4 +86,4 @@ No **Mapa**, a legenda continua ligando e desligando camadas e conta só os terr
 
 - Filtrar por situação (Stand By, Perdido), prazo estourado, aguardando aprovação, dias na etapa, rentabilidade, eixo, vários donos, prioridade, pendências ou arquivados: esses filtros **saíram** por decisão. Um filtro antigo guardado é descartado sozinho.
 - Filtrar por testada, topografia, posição, ocupação, demolição, CA ou restrições do lote: **ficaram de fora** por decisão.
-- **Ainda não disponível:** filtros na tabela Pipeline e no Dashboard (essas telas ainda não estão no sistema real).
+- **Ainda não disponível:** filtros no Dashboard (a tela ainda não está no sistema real).

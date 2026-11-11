@@ -13,9 +13,11 @@ import { guardarPos, lerPos } from './lembrar';
 // Moisés, 5/nov/2026): guardada no navegador, nunca cobre a lista nem fica abaixo de 640 px; dois cliques voltam ao padrão.
 const GAV_KEY = 'bkm-terrenos-ficha-gaveta', GAV_MIN = 640;
 const lerW = () => { try { return Number(localStorage.getItem(GAV_KEY)) || null; } catch { return null; } };
-export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMapa }: {
+// No Pipeline (/terrenos/A123/gaveta; proto_tabela.js › tgavPos), `naTabela`: a gaveta cobre a tabela a partir do fim da
+// coluna 1 (`lado` é o título dela) e, com a tabela em tela cheia, começa no alto da tela.
+export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMapa, naTabela, cheia, aoSair }: {
   codigo: string; lado: HTMLElement | null; fechar: () => void; abrirPagina: (aba: string) => void;
-  abrirMapa: (lat: number, lng: number, z: number) => void;
+  abrirMapa: (lat: number, lng: number, z: number) => void; naTabela?: boolean; cheia?: boolean; aoSair?: () => void;
 }) {
   const q = useFicha(codigo);
   /* onde a pessoa parou neste terreno (pedido do Moises, 9/nov/2026; lembrar.ts): a aba, a rolagem e os quadros
@@ -70,9 +72,9 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
   const pos = () => {
     const g = el.current;
     if (!g) return;
-    const top = innerWidth < 900 ? 0 : (document.querySelector('.top')?.getBoundingClientRect().bottom || 0), l = lado?.getBoundingClientRect().right || 0;
+    const top = innerWidth < 900 || cheia ? 0 : (document.querySelector('.top')?.getBoundingClientRect().bottom || 0), l = lado?.getBoundingClientRect().right || 0;
     const w = Math.min(900, Math.max(600, Math.round(innerWidth * 0.5)));
-    const left = innerWidth < 900 ? 0 : wG ? innerWidth - limitar(wG) : Math.max(Math.round(l) + 240, innerWidth - w);
+    const left = innerWidth < 900 ? 0 : wG ? innerWidth - limitar(wG) : naTabela ? Math.round(l) : Math.max(Math.round(l) + 240, innerWidth - w);
     g.style.left = Math.max(0, Math.min(left, innerWidth - GAV_MIN)) + 'px';
     g.style.top = top + 'px';
     g.style.setProperty('--gav-h', innerHeight - top + 'px');
@@ -81,8 +83,8 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
   useEffect(() => {
     addEventListener('resize', pos);
     document.body.classList.add('tgav-on');
-    document.body.dataset.rota = 'mapa';
-    return () => { removeEventListener('resize', pos); document.body.classList.remove('tgav-on'); delete document.body.dataset.rota; };
+    if (!naTabela) document.body.dataset.rota = 'mapa';
+    return () => { removeEventListener('resize', pos); document.body.classList.remove('tgav-on'); if (!naTabela) delete document.body.dataset.rota; };
   });
   function arrastar(ev: React.PointerEvent<HTMLDivElement>) {
     if (ev.button > 0) return;
@@ -116,12 +118,12 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
   }, []);
   const f = q.data;
   return (
-    <aside className="tgav tgav-mapa" id="tgav" role="dialog" aria-label={`Ficha de ${f?.nome ?? codigo}`} ref={el}>
+    <aside className={naTabela ? 'tgav' : 'tgav tgav-mapa'} id="tgav" role="dialog" aria-label={`Ficha de ${f?.nome ?? codigo}`} ref={el}>
       <div className="tgav-redim" role="separator" aria-orientation="vertical" aria-label="Largura da ficha" tabIndex={0}
         title="Arraste para mudar a largura da ficha (dois cliques voltam ao padrão)" onPointerDown={arrastar} onDoubleClick={() => guardar(null)} onKeyDown={tecla} />
       <div className="tgav-h"><span className="num">{codigo}</span><span className="tgav-n">{f?.nome ?? ''}</span>
         {f && <span className="fi-temp tgav-temp"><TempTopo f={f} /></span>}
-        {f && <MenuTerreno t={f} aoSair={() => navegar('/mapa', { replace: true })} />}
+        {f && <MenuTerreno t={f} aoSair={aoSair ?? (() => navegar('/mapa', { replace: true }))} />}
         <button className="iconbtn" aria-label="Abrir página" title="Abrir página" onClick={() => abrirPagina(aba)}><Ic n="tela" s={20} /></button>
         <button className="iconbtn" aria-label="Fechar a ficha" title="Fechar (Esc)" onClick={fechar}><Ic n="close" s={22} /></button>
       </div>
