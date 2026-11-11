@@ -105,8 +105,10 @@ export function ChipDoc({ s }: { s: SituacaoDoc }) {
 // ---------------------------------------------------------------------
 // Diálogo (bottom sheet no celular)
 // ---------------------------------------------------------------------
-export function Dialogo({ titulo, sub, onFechar, children, rodape, acao }: {
+export function Dialogo({ titulo, sub, onFechar, children, rodape, acao, cls }: {
   titulo: string; sub?: string; onFechar: () => void; children: ReactNode; rodape?: ReactNode;
+  /** classe a mais na janela (ex.: a larga do estudo de massa no Pipeline) */
+  cls?: string;
   /** botão pequeno logo depois do título, na mesma linha (ex.: "Limpar dados") */
   acao?: ReactNode;
 }) {
@@ -123,7 +125,7 @@ export function Dialogo({ titulo, sub, onFechar, children, rodape, acao }: {
   }, []);
   return (
     <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && onFechar()}>
-      <div className="dialog" role="dialog" aria-modal="true" aria-label={titulo} ref={ref}>
+      <div className={`dialog${cls ? ' ' + cls : ''}`} role="dialog" aria-modal="true" aria-label={titulo} ref={ref}>
         <div className="dh">
           <div>
             {acao ? <div className="dh-t"><h2>{titulo}</h2>{acao}</div> : <h2>{titulo}</h2>}

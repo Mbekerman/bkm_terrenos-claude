@@ -498,3 +498,20 @@ html[data-tema="escuro"] .fi-fim .iconbtn.atual { background: #004a77; color: #c
 .mt-mais .adv-menu button.atual { background: var(--m-sec-cont, #c2e7ff); color: var(--m-on-sec-cont, #001d35); font-weight: 500 }
 .mt-mais .adv-menu .mt-sep { height: 1px; margin: 4px 0; background: var(--m-outline-var, #c4c7c5) }
 html[data-tema="escuro"] .mt-mais > .iconbtn.atual, html[data-tema="escuro"] .mt-mais .adv-menu button.atual { background: #004a77; color: #c2e7ff }
+/* selo Válido / Inválido das listas de estudos de massa e de viabilidade, clicável (pedido do Moises, 11/nov/2026) */
+.chip.selo-val { font: inherit; font-size: 12px; font-weight: 500; line-height: 16px; color: var(--m-on-var, #444746) }
+.chip.selo-val.clic { cursor: pointer }
+.chip.selo-val.clic:not(.good):hover { background: rgba(31, 31, 31, .06) !important }
+.chip.selo-val.clic.good:hover { filter: brightness(.96) }
+.chip.selo-val:disabled { opacity: .6; cursor: default }
+html[data-tema="escuro"] .chip.selo-val:not(.good) { color: #c4c7c5 }
+/* lista dos estudos de massa (como a de viabilidade): o nome abre o estudo na janela */
+.ems-lista td.esq .ems-sit { margin-left: 8px; vertical-align: 1px }
+/* janela do estudo de massa (as mesmas regras do PR #339 no styles.css, para valer também da aba) */
+.dialog.ems-pop { width: min(1100px, 100%); padding: 24px 0 }
+.dialog.ems-pop > .dh { padding: 0 24px }
+.ems-pop-b .sec { border: 0 !important; box-shadow: none !important; margin: 0 !important }
+.dialog .ems-form { padding: 0; border: 0 !important; margin: 0 }
+.dialog .ems-form .field { flex: 1 1 100% !important }
+/* aberta da aba da ficha, a janela fica dentro da aba: o título do estudo não se prende como os quadros da ficha */
+.fi-aba .ems-pop-b .sec > .sec-h { position: static !important }

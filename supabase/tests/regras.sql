@@ -1687,6 +1687,9 @@ select pg_temp.falha(format($$insert into app.viabilidade_tipologias (empresa_id
 select app.vincular_estudo(:'neg', :'vb1');
 select pg_temp.ok((select vgv = 46000000 and margem_pct = 16.80 from app.v_terrenos where id = :'t1'), 'a negociação vincula o estudo: VGV e margem aparecem no terreno');
 select pg_temp.falha(format('select app.apagar_viabilidade(%L)', :'vb1'), 'estudo vinculado à negociação não se apaga');
+select app.vincular_estudo(:'neg', null);
+select pg_temp.ok((select viabilidade_id is null from app.processos where id = :'neg') and (select vgv is null from app.v_terrenos where id = :'t1'), 'clicar no selo do válido tira a marca: a negociação fica sem estudo válido');
+select app.vincular_estudo(:'neg', :'vb1');
 select app.criar_viabilidade(:'t1', 'Cópia', :'vb1') as vb2 \gset
 select pg_temp.ok((select count(*) from app.viabilidade_tipologias where viabilidade_id = :'vb2') = 2 and (select lucro_liquido from app.viabilidades where id = :'vb2') = 7165314
   and (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb2') = (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1'),
