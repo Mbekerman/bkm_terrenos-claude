@@ -89,7 +89,7 @@ type D = NonNullable<ReturnType<typeof useParam>['data']>;
 export default function SecParametros({ f }: { f: Ficha }) {
   const q = useParam(f);
   if (q.isLoading || q.error || !q.data) return (
-    <Quadro aba="terreno" id="indices" primeiro chip="Índices" titulo="Índices">
+    <Quadro aba="terreno" id="indices" primeiro chip="Índices" titulo="Índices Urbanísticos">
       <div className="sec-b"><div className="muted">{q.isLoading ? 'Carregando…' : `Não foi possível carregar os parâmetros: ${String((q.error as any)?.message ?? q.error)}`}</div></div>
     </Quadro>
   );
@@ -131,7 +131,7 @@ function SecAnalise({ f, d }: { f: Ficha; d: D }) {
   const fontes = [...new Map(d.lz.filter((r) => r.parametro_id && (!um || r.tipo === 'mercado')).map((r) => [r.parametro_id, d.cat.get(r.parametro_id)] as [unknown, R | undefined]).filter((x) => x[1])).values()] as R[];
   const sig = new Map(d.lz.map((r) => [r.zoneamento_id, r.sigla]));
   return (
-    <Quadro aba="terreno" id="indices" primeiro chip="Índices" titulo={<>Índices<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} aberto={reg || undefined}
+    <Quadro aba="terreno" id="indices" primeiro chip="Índices" titulo={<>Índices Urbanísticos<Busca terreno={f.id} fontes={['geosampa', 'geosanja']} /></>} aberto={reg || undefined}
       acoes={edita && !reg ? <button className="btn sm zn-reg" aria-label="Registrar zonas" title="Registrar zonas" onClick={() => setReg(true)}><Ic n="add" s={16} /><span className="oc-m">Registrar zonas</span></button> : null}>
       <div className="sec-b">
         {reg ? <FormZonas f={f} d={d} sjc={sjc} fechar={() => setReg(false)} /> : null}

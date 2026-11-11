@@ -9,6 +9,7 @@ import { data as fd, m2 } from '../lib/format';
 import { ehSP, type Ficha, type R } from './dados';
 import { Quadro } from './edicao';
 import { FormIptu, useLotes } from './Partes';
+import { Cabe } from './Comercial';
 import { filaIptu, pedirIptu as pedir, situacaoIptu } from '../lib/iptu';
 
 // Seção IPTU da aba Terreno, logo depois de Áreas e dimensões (pedido do Moises, 9/nov/2026): o valor venal e o IPTU do
@@ -57,6 +58,27 @@ function Detalhe({ n }: { n: R }) {
 /** Panorama do terreno (pedido do Moises, 9/nov/2026): a soma de todos os SQLs. Os três valores venais em caixas como as
  * de Áreas e dimensões, três por linha mesmo na gaveta mais estreita; embaixo, em dupla, as áreas da Prefeitura e, por último
  * e em destaque, IPTU anual e mensal (impostos, valor do m², padrão, uso e vencimento saíram, pedido do Moises; ficam no Detalhe). SQL por SQL fica no "Ver SQL por SQL". */
+/** rótulo numa linha só: sem caber, troca pela forma curta (pedido do Moises, 11/nov/2026: "Valor venal const.", nunca quebrar) */
+function Rot({ l, c }: { l: string; c?: string }) {
+  const el = useRef<HTMLDivElement>(null), [curto, setCurto] = useState(false);
+  useEffect(() => {
+    const d = el.current;
+    if (!d || !c) return;
+    const medir = () => { const s = d.firstElementChild as HTMLElement | null; if (s) setCurto(s.getBoundingClientRect().width > d.clientWidth + 0.5); };
+    medir();
+    const ro = window.ResizeObserver ? new ResizeObserver(medir) : null;
+    ro?.observe(d);
+    return () => ro?.disconnect();
+  }, [c]);
+  return (
+    <div className="al" ref={el} title={curto ? l : undefined}>
+      {/* a forma longa fica medida, escondida, para voltar quando couber */}
+      <span className="al-m" aria-hidden={curto || undefined}>{l}</span>
+      {curto && <span>{c}</span>}
+    </div>
+  );
+}
+
 function Panorama({ linhas, rot }: { linhas: { x: R; v: R | undefined }[]; rot: string }) {
   const nome = (n: number) => (rot === 'SQL' ? `SQL${n > 1 ? 's' : ''}` : n > 1 ? 'inscrições' : 'inscrição');
   const vs = linhas.map((l) => l.v).filter((v): v is R => !!v);
@@ -68,18 +90,20 @@ function Panorama({ linhas, rot }: { linhas: { x: R; v: R | undefined }[]; rot: 
   const mensal = somar(vs.map((v) => (v.situacao_iptu === 'isento' ? 0 : v.iptu_mensal_informado ?? (v.iptu_valor_anual == null ? null : v.iptu_valor_anual / 10))));
   const parcial = (xs: unknown[]) => (xs.length && xs.length < linhas.length ? `${xs.length} de ${linhas.length} ${nome(linhas.length)}` : '');
   const area = (a: number | null) => (a == null ? '—' : m2(a));
-  const venais: [string, string][] = [
-    ['Valor venal do terreno', brl(somar(vs.map((v) => v.valor_venal_terreno)))],
-    ['Valor venal da construção', brl(somar(vs.map((v) => v.valor_venal_construcao)))],
+  /* [rótulo, valor, forma curta] */
+  type C = [string, string, string?];
+  const venais: C[] = [
+    ['Valor venal do terreno', brl(somar(vs.map((v) => v.valor_venal_terreno))), 'Valor venal terr.'],
+    ['Valor venal da construção', brl(somar(vs.map((v) => v.valor_venal_construcao))), 'Valor venal const.'],
     ['Valor venal total', brl(somar(vs.map(venalDe)))],
   ];
-  const pares: [string, string][][] = [];
+  const pares: C[][] = [];
   if (ns.length) pares.push(
-    [['Área total do terreno', area(somar(ns.map((n) => n.terreno?.area_total_m2)))], ['Área construída', area(somar(ns.map((n) => n.construcao?.area_construida_m2)))]],
+    [['Área total do terreno', area(somar(ns.map((n) => n.terreno?.area_total_m2))), 'Área do terreno'], ['Área construída', area(somar(ns.map((n) => n.construcao?.area_construida_m2))), 'Área constr.']],
   );
   const ex = juntos(vs.map((v) => String(v.exercicio)));
-  const cel = ([k, v]: [string, string], cls = '') => (
-    <div className={`area${cls}`} key={k}><div className="al">{k}</div><div className="av">{v === '—' ? <span className="faint" style={{ fontSize: 14, fontStyle: 'italic' }}>Não informado</span> : v}</div></div>
+  const cel = ([k, v, c]: C, cls = '') => (
+    <div className={`area${cls}`} key={k}><Rot l={k} c={c} /><Cabe className="av">{v === '—' ? <span className="faint" style={{ fontSize: 14, fontStyle: 'italic' }}>Não informado</span> : v}</Cabe></div>
   );
   const pv = parcial(vs), pn = parcial(ns);
   return (
@@ -88,7 +112,7 @@ function Panorama({ linhas, rot }: { linhas: { x: R; v: R | undefined }[]; rot: 
       <div className="areas iptu-venal">{venais.map((c, i) => cel(c, i === 2 ? ' iptu-tot' : ''))}</div>
       {pares.length > 0 && <div className="iptu-pares">{pares.flatMap((p) => p.map((c) => cel(c, ' iptu-k')))}</div>}
       {pn && pn !== pv ? <div className="hint">Áreas da Prefeitura de {pn}.</div> : null}
-      <div className="iptu-pares iptu-dest">{cel(['IPTU anual', brl(anual, 2)], ' iptu-k')}{cel(['IPTU mensal (anual ÷ 10)', brl(mensal, 2)], ' iptu-k')}</div>
+      <div className="iptu-pares iptu-dest">{cel(['IPTU anual', brl(anual, 2)], ' iptu-k')}{cel(['IPTU Mensal', brl(mensal, 2)], ' iptu-k')}</div>
     </div>
   );
 }
@@ -167,7 +191,7 @@ export default function SecIptu({ f }: { f: Ficha }) {
   const carregando = pend.length > 0 || (sp && !!ids && (!qs.isFetched || !qn.isFetched));
   return (
     <Quadro aba="terreno" id="iptu" titulo="IPTU"
-      acoes={podeBuscar ? <div className="qd-acoes"><button className="btn sm text" disabled={ocupado} onClick={() => buscar(insc)}><Ic n="search" s={16} />{busc ? 'Consultando a Prefeitura...' : insc.length > 1 ? 'Buscar todos de novo' : 'Buscar de novo'}</button></div> : undefined}>
+      acoes={podeBuscar ? <div className="qd-acoes"><button className="btn sm text" disabled={ocupado} onClick={() => buscar(insc)}><Ic n="search" s={16} />{busc ? 'Consultando a Prefeitura...' : 'Atualizar dados'}</button></div> : undefined}>
       <div className="sec-b">
         {!q.data ? <div className="muted">{q.error ? 'Não foi possível carregar os SQLs.' : 'Carregando...'}</div>
           : !insc.length ? <div className="muted">{sp ? 'Sem SQL no terreno. Inclua os SQLs em Matrículas e Lotes.' : 'Sem inscrição no terreno. Inclua as inscrições em Matrículas e Lotes.'}</div> : (

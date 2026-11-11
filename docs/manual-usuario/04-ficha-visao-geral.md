@@ -87,7 +87,7 @@ Cada aba tem seu endereço (`/terrenos/A123/comercial`; nas partes de Estudos T�
 
 <a id="quadros-que-abrem-e-fecham"></a>
 
-Em todas as abas menos a Visão geral, cada **seção** (Identificação, Localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra.
+Em todas as abas menos a Visão geral, cada **seção** (Identificação, Localização, Partes, Ofertas...) é um **botão** numa barra logo abaixo das abas, no mesmo jeito dos botões de Estudos Técnicos. Aparece **uma seção de cada vez**: a do botão em azul-claro. Da primeira vez abre a primeira seção da aba; depois, o sistema lembra a última que você viu em cada aba durante a sessão. Chegar a um item pelo log, pelo aviso ou pela lista do que falta abre a seção dele sozinho. Aba com uma seção só não mostra a barra. A barra dos botões fica **presa logo abaixo das abas** quando você rola a página, e trocar de seção **não mexe na rolagem**: a página fica onde estava (se a seção nova for mais curta, para no fim dela).
 
 Em Estudos Técnicos a barra é uma só, com as cinco partes; dentro de cada parte, os quadros (Relevo, Visita técnica, Viabilidades técnicas, Resumo da viabilidade...) continuam abrindo e fechando pela seta. Em Estudos de massa, o estudo aberto aparece embaixo da lista, também como quadro que abre e fecha.
 
