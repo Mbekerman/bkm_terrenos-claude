@@ -4,7 +4,7 @@ Toda mudança que entra na `develop` ganha uma linha aqui, no mesmo PR (ver [com
 
 ## 2026-11-11
 
-- #NNN Barra de chips presa e rolagem mantida (pedidos do Moises, 11/nov/2026): `.fi-chips-w` com `position: sticky` e `top: var(--chips-top)`, medido em `BarraChips` (`ficha/Chips.tsx`) pelo `top` + altura de `.fi-abas-w` (vale na página e nas gavetas); `SecoesChips.ir` não rola mais a página (o navegador limita ao fim do conteúdo); `rolarAteOlhos` (`ficha/edicao.tsx`) desconta a barra de chips. Quadro `indices` com o título "Índices Urbanísticos" (chip "Índices"). IPTU (`ficha/Iptu.tsx`): `Rot` troca o rótulo pela forma curta quando não cabe numa linha (ResizeObserver), cards do Panorama com o mesmo respiro (`app.css`, `.iptu-pan`), botão "Atualizar dados". Sem banco.
+- #325 Barra de chips presa e rolagem mantida (pedidos do Moises, 11/nov/2026): `.fi-chips-w` com `position: sticky` e `top: var(--chips-top)`, medido em `BarraChips` (`ficha/Chips.tsx`) pelo `top` + altura de `.fi-abas-w` (vale na página e nas gavetas); `SecoesChips.ir` não rola mais a página (o navegador limita ao fim do conteúdo); `rolarAteOlhos` (`ficha/edicao.tsx`) desconta a barra de chips. Quadro `indices` com o título "Índices Urbanísticos" (chip "Índices"). IPTU (`ficha/Iptu.tsx`): `Rot` troca o rótulo pela forma curta quando não cabe numa linha (ResizeObserver), cards do Panorama com o mesmo respiro (`app.css`, `.iptu-pan`), botão "Atualizar dados". Sem banco.
 
 ## 2026-11-10
 
