@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
@@ -139,11 +139,11 @@ const COLS: Col[] = [
   { k: 'area', l: 'Imóvel', w: 200, v: (t) => <>
     <div>{t.area != null ? m2(t.area) : <Nada s="Sem área" />}</div>
     <div className="t2 tb-zt" title={[t.zonas, t.topo].filter(Boolean).join(' · ') || undefined}>{[t.zonas, t.topo].filter(Boolean).join(' · ') || <Nada s="Sem zoneamento" />}</div></> },
-  { k: 'massa', l: 'Estudo de massa', w: 208, info: [
+  { k: 'massa', l: 'Estudo de massa', w: 176, info: [
     { t: 'Unidades', d: 'quantidade de unidades', forte: true }, { t: 'Área privativa total', d: 'soma das áreas privativas das tipologias' }], v: (t, ver) => (t.temMassa ? <ComOlho olhos={[olhoMassa(t, ver)]}>
     <Kv l="Unidades" v={t.mUn != null ? num(t.mUn) : '—'} />
     <Kv fraco l="Área privativa total" v={t.mArea != null ? m2(Math.round(t.mArea)) : '—'} /></ComOlho> : <Vazio s="Sem estudo de massa válido" />) },
-  { k: 'viab', l: 'Viabilidade', w: 212, info: [
+  { k: 'viab', l: 'Viabilidade', w: 160, info: [
     { t: 'VGV', d: 'valor geral de vendas', forte: true }, { t: 'L.L.', d: 'margem líquida: lucro líquido ÷ VGV líquido' }], v: (t, ver) => (t.temEstudo ? <ComOlho olhos={[olhoViab(t, ver)]}>
     <Kv l="VGV" v={t.vgv != null ? mi(t.vgv) : <Nada s="—" />} />
     <Kv fraco l="L.L., margem líquida" v={t.ll != null ? pct2(t.ll) : '—'} /></ComOlho> : <Vazio s="Sem estudo de viabilidade válido" />) },
@@ -180,6 +180,31 @@ const visiveis = (nivel: number) => {
 const TER_MIN = 340;
 /* com folga, o Terreno para em 560 px e o resto se reparte pelas outras colunas (revisão de design de 11/nov/2026) */
 const TER_MAX = 560;
+/* Estudo de massa e Viabilidade não ganham a folga: ficam na medida do título com o ⓘ ou dos valores com o olho, e o olho
+   fica no eixo do ⓘ (pedido do Moises, 11/nov/2026; `useOlhoX`) */
+const JUSTAS = ['massa', 'viab'];
+/** distância do título ao ⓘ e dos valores ao olho */
+const GAP_I = 6, GAP_O = 6;
+/** onde fica o eixo do ⓘ e do olho de cada coluna justa, em px da borda esquerda da coluna: o maior entre o fim do título
+    (com a seta da ordem) e o fim do valor mais largo, mais o respiro; a coluna termina meio olho depois, mais o recuo */
+function useOlhoX(dep: unknown[], ativo: boolean) {
+  const [ox, setOx] = useState<Record<string, { x: number; w: number }>>({});
+  useLayoutEffect(() => {
+    const t = document.querySelector('.lista-ter');
+    const n: Record<string, { x: number; w: number }> = {};
+    if (t && ativo) for (const k of JUSTAS) {
+      const th = t.querySelector<HTMLElement>(`thead th.col-${k}`), s = th?.querySelector('.dt-sort');
+      if (!th || !s) continue;
+      const l = th.getBoundingClientRect().left;
+      let v = 0;
+      t.querySelectorAll(`td.col-${k} .tb-kvv`).forEach((e) => { v = Math.max(v, e.getBoundingClientRect().right - l); });
+      const x = Math.ceil(Math.max(s.getBoundingClientRect().right - l + GAP_I + 12, v + GAP_O + 16));
+      n[k] = { x, w: x + 16 + (parseFloat(getComputedStyle(th).paddingRight) || 0) + 2 };
+    }
+    if (JSON.stringify(n) !== JSON.stringify(ox)) setOx(n);
+  }, dep); // eslint-disable-line react-hooks/exhaustive-deps
+  return ox;
+}
 /* no celular o Imóvel fica estreito, alinhado à direita */
 const larg = (c: Col, estreito: boolean) => (estreito && c.k === 'area' ? 96 : c.w);
 const largura = (nivel: number, estreito: boolean) => {
@@ -199,7 +224,7 @@ function useNivel() {
   let nivel = 0;
   if (w > 0) while (nivel < SAI.length && largura(nivel, estreito) > w) nivel++;
   /* folga: o que passa de TER_MAX no Terreno vai, por igual, para as outras colunas */
-  const outras = visiveis(nivel).filter((c) => c.w);
+  const outras = visiveis(nivel).filter((c) => c.w && !JUSTAS.includes(c.k));
   const folga = w > 0 && !estreito ? Math.max(0, w - largura(nivel, false) - (TER_MAX - TER_MIN)) : 0;
   const extra = outras.length ? Math.floor(folga / outras.length) : 0;
   return { ref: setEl, nivel, estreito, extra };
@@ -293,6 +318,7 @@ export default function Pipeline() {
      último; dentro de cada uma, a ordem da tabela */
   const [ordem, setOrdem] = useState<string[]>(() => ler(K_ORDEM));
   const [fechadas, setFechadas] = useState<Set<string>>(() => new Set(ler(K_FECHADAS)));
+  const ox = useOlhoX([linhas, nv.nivel, nv.estreito, fx.o, fechadas], !nv.estreito);
   const grupos = useMemo(() => {
     const m = new Map<string, Linha[]>();
     for (const t of linhas) { const c = t.cidade || SEM_CIDADE; if (!m.has(c)) m.set(c, []); m.get(c)!.push(t); }
@@ -359,8 +385,9 @@ export default function Pipeline() {
         {q.isLoading ? <Carregando /> : q.error ? <Erro erro={q.error} /> : !linhas.length
           ? <div className="empty">Nenhum terreno{busca.trim() ? ` para “${busca.trim()}”` : ''}.<br /><button className="btn sm" style={{ marginTop: 12 }} onClick={() => abrirNovo()}><Ic n="add" s={16} />Novo terreno</button></div>
           : <div ref={nv.ref} className={`dt-wrap rola tb-wrap${nv.estreito ? ' estreito' : ''}${arr ? ' arrastando' : ''}`}
-            style={{ '--tb-top': alt.top + 'px', '--tb-th': alt.th + 'px' } as React.CSSProperties}><table className="dt lista-ter">
-            <colgroup>{cols.map((c) => <col key={c.k} className={`cg-${c.k}`} style={c.w ? { width: larg(c, nv.estreito)! + nv.extra } : undefined} />)}</colgroup>
+            style={{ '--tb-top': alt.top + 'px', '--tb-th': alt.th + 'px' } as React.CSSProperties}><table className="dt lista-ter"
+            style={Object.fromEntries(Object.entries(ox).map(([k, o]) => [`--ox-${k}`, o.x + 'px'])) as React.CSSProperties}>
+            <colgroup>{cols.map((c) => <col key={c.k} className={`cg-${c.k}`} style={c.w ? { width: ox[c.k]?.w ?? larg(c, nv.estreito)! + (JUSTAS.includes(c.k) ? 0 : nv.extra) } : undefined} />)}</colgroup>
             <thead ref={thead}><tr>{cols.map(cab)}</tr></thead>
             {grupos.map(([cid, ts], gi) => {
               const fechada = fechadas.has(cid);
@@ -408,9 +435,11 @@ export default function Pipeline() {
 
 /** o popup do estudo válido aberto pela tabela: carrega a ficha do terreno (o popup precisa dela) e fecha junto com ele */
 function ViabPop({ cod, vid, fechar }: { cod: string; vid: string; fechar: () => void }) {
-  const q = useFicha(cod), aberto = useAberto(), abriu = useRef(false);
+  const q = useFicha(cod), aberto = useAberto(), abriu = useRef(false), visto = useRef(false);
   useEffect(() => { if (q.data && !abriu.current) { abriu.current = true; abrirEstudo(vid); } }, [q.data]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (abriu.current && aberto == null) fechar(); }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* fecha só depois de ver o estudo aberto: com a ficha já carregada (o mouse parado na linha a pré-carrega), o efeito de
+     cima abre e este roda no mesmo instante ainda com o valor antigo, vazio, e fechava na hora (o popup só piscava) */
+  useEffect(() => { if (aberto) visto.current = true; else if (visto.current) fechar(); }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (q.isFetched && !q.data) fechar(); }, [q.isFetched, q.data]); // eslint-disable-line react-hooks/exhaustive-deps
   return q.data ? <PopEstudo f={q.data} /> : null;
 }

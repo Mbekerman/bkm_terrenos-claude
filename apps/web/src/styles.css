@@ -4980,7 +4980,7 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .tb-viab { flex: none; width: 24px; height: 24px; margin: -4px 0 -4px 0; color: var(--m-on-var, #444746) }
 .tb-viab:hover { color: #0b57d0 }
 /* ⓘ dos títulos (pedido do Moises, 11/nov/2026): as células só mostram os valores; o balão diz o que é cada linha */
-.tb-info { position: relative; display: inline-flex; vertical-align: middle; margin-left: 2px }
+.tb-info { position: relative; display: inline-flex; vertical-align: middle; margin-left: 6px }
 .tb-info-b { display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -4px 0; padding: 0; border: 0; border-radius: 12px; background: none; color: var(--m-on-var, #444746); cursor: pointer }
 .tb-info-b:hover, .tb-info-b[aria-expanded="true"] { background: rgba(11, 87, 208, .08); color: #0b57d0 }
 .tb-info-b:focus-visible { outline: 2px solid #0b57d0; outline-offset: 1px }
@@ -5434,8 +5434,20 @@ html[data-tema="escuro"] .btn.mt-perigo-t { color: #ffb4ab !important }
 #sec-ofertas .of-obs-p .of-obs-t { margin-top: 0 }
 .of-obs-pn { font-size: 13px; font-weight: 500; color: var(--m-on-surface-var, #444746) }
 /* colunas com olho: o ⓘ fica na borda direita, na mesma reta do olho (pedido do Moises, 11/nov/2026) */
-.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info { position: absolute; right: 18px; bottom: 6px; margin: 0 }
-.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-b { margin: 0 }
-.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-pop { left: auto; right: -8px }
-.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo) .tb-info-pop::before { left: auto; right: 14px }
-.lista-ter :is(th.col-massa, th.col-viab, th.col-estudo):last-child .tb-info { right: 30px }
+.lista-ter th.col-estudo .tb-info { position: absolute; right: 18px; bottom: 6px; margin: 0 }
+.lista-ter th.col-estudo .tb-info-b { margin: 0 }
+.lista-ter th.col-estudo .tb-info-pop { left: auto; right: -8px }
+.lista-ter th.col-estudo .tb-info-pop::before { left: auto; right: 14px }
+.lista-ter th.col-estudo:last-child .tb-info { right: 30px }
+/* Estudo de massa e Viabilidade: a coluna na medida, com o ⓘ logo depois do título (6 px, como em Negociação) e o olho no
+   eixo dele; --ox-<coluna> é o eixo medido em `useOlhoX` (pedido do Moises, 11/nov/2026) */
+.tb-wrap:not(.estreito) .lista-ter th.col-massa .tb-info { position: absolute; left: calc(var(--ox-massa, 0px) - 12px); bottom: 6px; margin: 0 }
+.tb-wrap:not(.estreito) .lista-ter th.col-viab .tb-info { position: absolute; left: calc(var(--ox-viab, 0px) - 12px); bottom: 6px; margin: 0 }
+.tb-wrap:not(.estreito) .lista-ter :is(th.col-massa, th.col-viab) .tb-info-b { margin: 0 }
+.tb-wrap:not(.estreito) .lista-ter :is(td.col-massa, td.col-viab) .tb-olhos { position: relative; display: block }
+.tb-wrap:not(.estreito) .lista-ter :is(td.col-massa, td.col-viab) .tb-olhos-b { position: absolute; top: -6px; margin: 0 }
+.tb-wrap:not(.estreito) .lista-ter td.col-massa .tb-olhos-b { left: calc(var(--ox-massa, 0px) - 28px) }
+.tb-wrap:not(.estreito) .lista-ter td.col-viab .tb-olhos-b { left: calc(var(--ox-viab, 0px) - 28px) }
+/* a faixa de cada cidade com a linha cinza também em cima (a da primeira é o fio do cabeçalho; pedido do Moises, 11/nov/2026) */
+.lista-ter tbody.tb-cid ~ tbody.tb-cid > tr.tb-grp > th { box-shadow: inset 0 1px 0 var(--m-outline-var, #c4c7c5) }
+html[data-tema="escuro"] .lista-ter tbody.tb-cid ~ tbody.tb-cid > tr.tb-grp > th { box-shadow: inset 0 1px 0 #444746 }
