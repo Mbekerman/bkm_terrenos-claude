@@ -33,8 +33,8 @@
 --     permuta financeira e do pagamento do terreno (decisão do Moisés,
 --     28/out/2026): um grupo cada, dentro de Despesas financeiras, com uma base
 --     só, o Aporte, em %: a permuta financeira em dinheiro (com o mínimo
---     garantido, quando ele vale) e o pagamento em dinheiro do terreno. O % do lucro é circular: lucro = L0 ÷ (1 + Σ%), onde L0 é o
---     lucro antes desses itens; sem lucro (L0 ≤ 0), eles valem zero.
+--     garantido, quando ele vale) e o pagamento em dinheiro do terreno. O % do lucro é % × L0, onde L0 é o
+--     lucro antes desses itens (decisão do Moises, 11/nov/2026; antes, L0 ÷ (1 + Σ%)); sem lucro (L0 ≤ 0), eles valem zero.
 --   Despesas comerciais: % do VGV, verba total, verba por unidade (× unidades
 --     líquidas: total − permuta − comissão; decisão do Moisés, 26/out/2026)
 --     ou verba mensal (× meses).
@@ -342,7 +342,7 @@ declare
   v_vgv numeric; v_vp numeric; v_vc numeric; v_vv numeric;
   v_com numeric; v_dedc numeric; v_dedp numeric; v_liq numeric;
   v_oi numeric; v_raso numeric; v_ot numeric; v_obras numeric;
-  v_pfc numeric; v_pf numeric; v_terr numeric; v_pl numeric; v_l0 numeric; v_lb numeric;
+  v_pfc numeric; v_pf numeric; v_terr numeric; v_l0 numeric; v_lb numeric;
   v_linhas jsonb; v_sec jsonb; v_lucro numeric;
   DT constant text[] := array['terreno','incorporacao','cef','adm_financeiro','taxas','financeiro','capital_permuta','capital_pagamento'];
 begin
@@ -379,12 +379,9 @@ begin
   v_terr := v_pf + coalesce(v.pagamento_dinheiro, 0) + coalesce(v.comissao_dinheiro, 0);
   -- Aporte do custo de capital: a permuta financeira em dinheiro e o pagamento em dinheiro do terreno
   b := b || jsonb_build_object('pct_aporte_permuta', v_pf, 'pct_aporte_pagamento', coalesce(v.pagamento_dinheiro, 0));
-  -- % do lucro líquido (circular): lucro antes desses itens ÷ (1 + Σ%)
-  select coalesce(sum(l.valor), 0) into v_pl
-    from app.viabilidade_linhas l join app.viabilidade_despesas d on d.empresa_id = l.empresa_id and d.codigo = l.despesa
-   where l.viabilidade_id = p_id and l.tipo = 'pct_lucro' and d.grupo = any (DT);
+  -- % do lucro líquido: % × o lucro antes desses itens (decisão do Moises, 11/nov/2026)
   v_l0 := v_vv - v_terr - v_obras - v_com - app._viab_soma(p_id, DT, b, true);
-  v_lb := case when v_l0 > 0 then round(v_l0 / (1 + v_pl / 100), 2) else 0 end;
+  v_lb := case when v_l0 > 0 then round(v_l0, 2) else 0 end;
   b := b || jsonb_build_object('pct_lucro', v_lb);
   select coalesce(jsonb_agg(jsonb_build_object('id', y.id, 'grupo', y.grupo, 'secao', y.secao, 'base', y.base, 'valor', y.valor) order by y.ordem, y.criado_em)
                     filter (where auth.uid() is null or not app.viab_restrito(y.grupo) or app.eh_diretoria(v.empresa_id)), '[]'::jsonb),

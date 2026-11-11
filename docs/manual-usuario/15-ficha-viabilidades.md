@@ -103,7 +103,7 @@ Despesas gerais em quatro quadros, como em Obras: **Terreno**, **Incorporação*
 
 ### Taxas (só diretoria e administrador)
 
-Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascidos com o valor padrão da empresa. Saem por último, depois do resultado sem as taxas.
+Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascidos com o valor padrão da empresa. Saem por último, depois do resultado sem as taxas. Os itens em **% do lucro líquido** (como o custo de alavancagem e a taxa de desenvolvimento) incidem sobre o lucro do projeto antes deles: 30% de alavancagem custa 30% do lucro calculado sem contar a própria alavancagem.
 
 ### DRE
 

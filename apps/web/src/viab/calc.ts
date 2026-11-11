@@ -65,7 +65,7 @@ export interface Calc {
     a receita (decisão do Moises, 11/nov/2026; a receita é o VGV líquido e as despesas marcadas continuam nas comerciais);
     obra: típico = R$/m² × área (privativa ou construída); incidente (raso) = típico + atípicos; total = raso + não incidente;
     + projetos e pós-obra; terreno: permuta financeira = % × base da permuta, nunca abaixo do mínimo garantido; + dinheiro +
-    comissão em dinheiro; % do lucro líquido: lucro = L0 ÷ (1 + Σ%), zero quando L0 ≤ 0; custo de capital: % sobre o Aporte;
+    comissão em dinheiro; % do lucro líquido: % × L0, o lucro antes desses itens (decisão do Moises, 11/nov/2026), zero quando L0 ≤ 0; custo de capital: % sobre o Aporte;
     margem líquida = lucro ÷ VGV líquido.
     `restritoGuardado`: fora da diretoria as linhas de Taxas e Despesas financeiras não chegam (RLS); entram os totais
     que o banco guardou na última gravação. */
@@ -108,8 +108,7 @@ export function calcular(v: Viab, desp: Desp[], restritoGuardado: boolean): Calc
   const DT = [...VB_DG, 'taxas', ...VB_FIN];
   /* fora da diretoria, Taxas e Financeiras entram pelo total guardado, como verba */
   const guard = restritoGuardado ? r2((v.taxas || 0) + (v.despesas_financeiras || 0)) : 0;
-  const pl = v.linhas.filter((l) => l.tipo === 'pct_lucro' && DT.includes(grupoLn(l))).reduce((s, l) => s + (l.valor || 0), 0);
-  const l0 = r2(vv - terr - obras - com - soma(DT, true) - guard), lb = l0 > 0 ? r2(l0 / (1 + pl / 100)) : 0;
+  const l0 = r2(vv - terr - obras - com - soma(DT, true) - guard), lb = l0 > 0 ? l0 : 0;
   b.pct_lucro = lb;
   const L: Calc['L'] = {}, GR: Record<string, number> = {};
   let lu = 0;

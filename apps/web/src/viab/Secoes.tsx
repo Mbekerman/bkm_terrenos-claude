@@ -125,7 +125,7 @@ function baseTxt(l: Linha, c: Calc) {
     case 'pct_obra_tipica': return `sobre a obra raso (${mi(b)})`;
     case 'pct_obra_raso': return `sobre a obra incidente (${mi(b)})`;
     case 'pct_obra_total': return `sobre a obra total (${mi(b)})`;
-    case 'pct_lucro': return `sobre o lucro líquido (${mi(b)})`;
+    case 'pct_lucro': return `sobre o lucro antes dos itens em % do lucro (${mi(b)})`;
     case 'pct_aporte_permuta': return `sobre a permuta financeira em dinheiro (${mi(b)})`;
     case 'pct_aporte_pagamento': return `sobre o pagamento em dinheiro (${mi(b)})`;
     case 'area': return `× ${m2(b)}`;
