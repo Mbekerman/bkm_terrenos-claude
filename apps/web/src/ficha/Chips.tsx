@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRoleta } from '../components/Roleta';
-import { abrirQuadro, chipEscolhido, ChipsCtx, LojaQdCtx, QD } from './edicao';
+import { abrirQuadro, chipEscolhido, ChipsCtx, LojaQdCtx, QD, segurarRolagem } from './edicao';
 
 // Seções da ficha em chips (pedido do Moises, 10/nov/2026): os quadros que abriam e fechavam viram chips numa barra logo
 // abaixo das abas, como as subabas de Estudos Técnicos; um quadro de cada vez, o do chip escolhido. A barra é uma roleta
@@ -97,9 +97,9 @@ export function SecoesChips({ aba, rotulo, sub, children }: { aba: string; rotul
   const esc = chipEscolhido(L, aba);
   const ativo = esc && lista.some((x) => x[0] === esc) ? esc : lista[0]?.[0] ?? null;
   const ctx = useMemo(() => ({ reg, ativo }), [reg, ativo]);
-  /* trocar de chip não mexe na rolagem: a página fica onde estava; se a seção nova for mais curta, o navegador para no
-     fim do conteúdo (pedido do Moises, 11/nov/2026) */
-  const ir = (k: string) => abrirQuadro(aba, k);
+  /* trocar de chip não mexe na rolagem: a página fica onde estava e, com a seção nova mais curta, sobra espaço vazio
+     embaixo (segurarRolagem; pedidos do Moises, 11/nov/2026) */
+  const ir = (k: string) => { segurarRolagem(); abrirQuadro(aba, k); };
   return (
     <ChipsCtx.Provider value={ctx}>
       {lista.length > 1 && <BarraChips itens={lista} ativo={ativo} ir={ir} rotulo={rotulo} sub={sub} />}
