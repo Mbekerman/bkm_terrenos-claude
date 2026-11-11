@@ -22,7 +22,7 @@ import AbaMassa from './Massa';
 import AbaJornada from './Jornada';
 import { Busca } from '../lib/buscando';
 import AbaTerreno, { dadosArea, fonteSel, valoresArea } from './Terreno';
-import { abrirQuadroJa, focar, OPT, pedirCampo, useSalvar, Vivo } from './edicao';
+import { abrirQuadroJa, focar, OPT, pedirCampo, segurarRolagem, useSalvar, Vivo } from './edicao';
 import { useToast } from '../components/ui';
 import MenuTerreno from '../components/MenuTerreno';
 import { useNavigate } from 'react-router-dom';
@@ -43,6 +43,8 @@ export const ESTUDOS: [string, string][] = [['massa', 'Estudos de massa'], ['via
     10/nov/2026), e o link antigo `/entorno` cai aqui */
 export const BARRA: [string, string, [string, string][]?][] = [['geral', 'Visão geral'], ['terreno', 'Terreno'], ['comercial', 'Comercial'],
   ['estudos', 'Estudos Técnicos', ESTUDOS], ['mercado', 'Mercado'], ['jornada', 'Jornada'], ['documentos', 'Documentos'], ['historico', 'Histórico']];
+/** fora da roleta (pedido do Moises, 11/nov/2026): Jornada só no ⋮ e Documentos no ícone da pastinha, ao lado do alerta */
+const SO_MENU = new Set(['jornada', 'documentos']);
 /** Histórico só sem o painel (a classe o esconde onde o painel aparece) */
 const HIST = (k: string) => (k === 'historico' ? 'tab-hist' : undefined);
 /** as abas de conteúdo, na ordem (cada subaba é uma aba própria no endereço) */
@@ -181,6 +183,7 @@ function Resp({ r }: { r: F['resp'] }) {
 }
 
 const SVG_DOTS = <svg className="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" d="M12 5.5h.01M12 12h.01M12 18.5h.01" /></svg>;
+const SVG_PASTA = <svg className="ic" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" d="M3.5 6.5a1.5 1.5 0 0 1 1.5-1.5h4.4l2 2.2H19a1.5 1.5 0 0 1 1.5 1.5v9.3a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z" /></svg>;
 
 /** barra das abas contínua, como uma roleta (pedido do Moisés, 6/nov/2026): todas as abas numa faixa que rola de lado, com as
     das pontas cortadas pela borda; o dedo, o mouse arrastado (mãozinha), Shift + roda (ou Ctrl + Shift + roda) e o deslize de
@@ -200,7 +203,9 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
   }, [menu]);
   const g = grupo(aba);
   useEffect(() => { if (ESTUDOS.some((x) => x[0] === aba)) try { sessionStorage.setItem(SUB_LEMBRA, aba); } catch { /* sem sessão */ } }, [aba]);
-  const irG = (k: string) => { if (k === 'estudos') { if (g !== 'estudos') irAba(subVista()); } else if (k !== aba) irAba(k); };
+  /* trocar de aba não mexe na rolagem (segurarRolagem; pedido do Moises, 11/nov/2026); o "o que falta" segue rolando ao campo */
+  const irT = (k: string) => { segurarRolagem(); irAba(k); };
+  const irG = (k: string) => { if (k === 'estudos') { if (g !== 'estudos') irT(subVista()); } else if (k !== aba) irT(k); };
   /* sem número nas abas: rolado o topo para fora da vista, o que falta aparece num botão de alerta na barra das abas,
      sempre visível (pedido do Moisés, 6/nov/2026) */
   const c = completude(f);
@@ -223,18 +228,20 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
   return (
     <div className="fi-abas-w">
       <div className={`fi-abas roleta${sobra ? ' desliza' : ''}`} role="tablist" aria-label="Seções do terreno" ref={barra}>
-        {BARRA.map(([k, l]) => (
+        {BARRA.filter(([k]) => !SO_MENU.has(k)).map(([k, l]) => (
           <button key={k} role="tab" data-t={k} className={HIST(k)} aria-selected={k === g} aria-controls={`bl-${k === g ? aba : k}`} onClick={() => irG(k)}>{l}</button>
         ))}
       </div>
       <div className="fi-fim">
         {topoFora && c.faltam.length > 0 && <Faltam f={f} c={c} irAba={irAba} alerta />}
-        <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`} hidden={!sobra}>
-          <button className="iconbtn adv-mb" aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações" title="Mais ações" onClick={() => setMenu(!menu)}>{SVG_DOTS}</button>
+        <button type="button" className={`iconbtn fi-docs${aba === 'documentos' ? ' atual' : ''}`} aria-pressed={aba === 'documentos'} aria-label="Documentos" title="Documentos"
+          onClick={() => { if (aba !== 'documentos') irT('documentos'); }}>{SVG_PASTA}</button>
+        <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`}>
+          <button className={`iconbtn adv-mb${aba === 'jornada' ? ' atual' : ''}`} aria-haspopup="menu" aria-expanded={menu} aria-label="Mais ações" title="Mais ações" onClick={() => setMenu(!menu)}>{SVG_DOTS}</button>
           <div className="adv-menu" role="menu">
             {BARRA.map(([k, l, s]) => s
-              ? [<div key={k} className="fi-mais-g">{l}</div>, ...s.map(([sk, sl]) => <button key={sk} role="menuitemradio" aria-checked={sk === aba} className={`fi-mais-sub${sk === aba ? ' atual' : ''}`} onClick={() => { setMenu(false); if (sk !== aba) irAba(sk); }}>{sl}</button>)]
-              : <button key={k} role="menuitemradio" aria-checked={k === aba} className={[k === aba ? 'atual' : '', HIST(k) ?? ''].join(' ').trim() || undefined} onClick={() => { setMenu(false); if (k !== aba) irAba(k); }}>{l}</button>)}
+              ? [<div key={k} className="fi-mais-g">{l}</div>, ...s.map(([sk, sl]) => <button key={sk} role="menuitemradio" aria-checked={sk === aba} className={`fi-mais-sub${sk === aba ? ' atual' : ''}`} onClick={() => { setMenu(false); if (sk !== aba) irT(sk); }}>{sl}</button>)]
+              : <button key={k} role="menuitemradio" aria-checked={k === aba} className={[k === aba ? 'atual' : '', HIST(k) ?? ''].join(' ').trim() || undefined} onClick={() => { setMenu(false); if (k !== aba) irT(k); }}>{l}</button>)}
           </div>
         </div>
       </div>
@@ -412,6 +419,8 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   const navegar = useNavigate();
   /* relevo medido sozinho ao abrir a ficha, em qualquer aba (topo/relevo.ts) */
   useRelevoAuto(f);
+  /* trocar de aba pela barra (ou pela subaba de Estudos Técnicos) não mexe na rolagem (pedido do Moises, 11/nov/2026) */
+  const irAbaFixo = (k: string) => { segurarRolagem(); irAba(k); };
   const c = completude(f);
   const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
   const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;
@@ -460,7 +469,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
         <div className="adv-main"><Avancos f={f} irAba={irAba} /></div>
       </div>
       <Abas f={f} aba={aba} irAba={irAba} />
-      {grupo(aba) === 'estudos' && <BarraChips itens={ESTUDOS} ativo={aba} ir={irAba} rotulo="Estudos Técnicos" />}
+      {grupo(aba) === 'estudos' && <BarraChips itens={ESTUDOS} ativo={aba} ir={irAbaFixo} rotulo="Estudos Técnicos" />}
       {/* em Estudos Técnicos, uma fileira só (as subabas); dentro de cada subaba os quadros continuam abrindo e fechando pela
           seta (pedido do Moises, 10/nov/2026) */}
       {grupo(aba) === 'estudos'

@@ -879,11 +879,12 @@ h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.01em}
 .pn-badge { position: absolute; top: 2px; right: 0; min-width: 18px; height: 16px; padding: 0 4px; border-radius: 8px; font-size: 10px; line-height: 16px; font-weight: 600; background: var(--m-sc, var(--superficie-elevada)); color: var(--m-on-sc, var(--texto)) }
 
 /* O painel ocupa uma coluna própria e nunca cobre a página: encolhe com a largura disponível
-   (280 a 360 px) e some quando não sobra espaço para ele com largura mínima e a página com ao menos 520 px.
+   (280 a 360 px) e some quando não sobra espaço para ele com largura mínima e a página com ao menos 656 px, a largura em
+   que a barra das abas da ficha cabe inteira, com o alerta, a pastinha e o ⋮ (pedido do Moises, 11/nov/2026; antes 520).
    A conta é feita sobre a largura real da área de conteúdo (container query), não da janela,
    porque o menu lateral aberto ou recolhido muda o espaço disponível. */
 body[data-rota="terreno"] .main { container: pagina / inline-size }
-@container pagina (min-width: 824px) {
+@container pagina (min-width: 960px) {
   .pn { --pn-bg: var(--m-card, #fff); display: flex; flex-direction: column; background: var(--pn-bg); border: 1px solid var(--m-outline-var, var(--linha)); border-radius: 12px; overflow: hidden; position: sticky; top: 96px; height: calc(100vh - 120px) }
   .pn-min { height: auto }
   .ficha-wrap.pn-on { grid-template-columns: minmax(0, 1fr) clamp(280px, 30cqi, 360px) }
@@ -4511,7 +4512,7 @@ body.fab-min .fab .fab-t { max-width: 0; opacity: 0 }
 .fi-abas { flex: 1 1 auto; min-width: 0; display: flex; gap: 2px; padding: 0; overflow: hidden }
 .fi-abas button[hidden] { display: none }
 /* Histórico só sem o painel (a regra .tab-hist do topo perdia para .fi-abas button) */
-@container pagina (min-width: 824px) { .fi-abas button.tab-hist, .fi-mais .adv-menu button.tab-hist { display: none } }
+@container pagina (min-width: 960px) { .fi-abas button.tab-hist, .fi-mais .adv-menu button.tab-hist { display: none } }
 .fi-hist { padding: 0 var(--q-px) 16px }
 .fi-fim { flex: none; display: flex; align-items: center; gap: 0; padding-left: 4px }
 .fi-fim .adv-mais[hidden] { display: none }
@@ -4960,9 +4961,13 @@ html[data-tema="escuro"] .etq-vazio { color: #c4c7c5 }
 .lista-ter td.col-ter { min-width: 240px; max-width: 340px }
 .lista-ter td.col-cid, .lista-ter td.col-zona { white-space: nowrap }
 .tb-c1 { display: flex; gap: 8px; align-items: flex-start }
+.tb-vgv { display: flex; align-items: center; justify-content: flex-end; gap: 2px }
+.tb-viab { flex: none; width: 28px; height: 28px; margin: -4px 0 -4px -6px; color: var(--m-on-var, #444746) }
+.tb-viab:hover { color: #0b57d0 }
 .tb-c1t { min-width: 0 }
 .tb-c1t .t1 { font-weight: 500; overflow-wrap: anywhere }
 .tb-ord { display: inline-grid; place-items: center; min-width: 16px; height: 16px; margin-left: 2px; padding: 0 4px; border-radius: 8px; background: #c2e7ff; color: #001d35; font-size: 11px; font-weight: 500; line-height: 16px }
+.lista-ter tbody tr { cursor: pointer }
 .lista-ter tr.tb-sel > td { background: #d3e3fd !important }
 /* tela cheia: a tabela cobre a página, acima do menu e abaixo das janelas */
 .ter-pg.on { position: fixed; inset: 0; z-index: 31; overflow: auto; background: var(--m-surface, #f8fafd); padding: 16px 24px 24px }

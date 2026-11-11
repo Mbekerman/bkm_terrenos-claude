@@ -293,6 +293,57 @@ export function usePedido(secs: string[], fn: (p: PedidoCampo) => void) {
   }, [chave]);
 }
 /** abre o quadro da aba e avisa os quadros na tela */
+/** trocar de aba ou de chip não mexe na rolagem (pedido do Moises, 11/nov/2026): a .ficha-main guarda a altura que tinha
+ *  (min-height), para a seção nova mais curta não puxar a página para cima, e o que sobra fica vazio embaixo. Com o
+ *  min-height o próprio navegador segura a altura em toda troca, inclusive enquanto a aba nova carrega. O espaço vazio
+ *  encolhe só quando a pessoa rola para cima (nunca mexe no que está à vista) e sai quando o conteúdo volta a ocupar a
+ *  altura */
+type MainF = HTMLElement & { _folga?: (troca?: boolean) => void };
+export function segurarRolagem(de?: Element | null) {
+  const main = ((de?.closest('.ficha-main') ?? document.querySelector('.ficha-main')) as MainF | null);
+  if (!main) return;
+  let sc: HTMLElement | null = main.parentElement;
+  while (sc && sc !== document.body && !/auto|scroll/.test(getComputedStyle(sc).overflowY)) sc = sc.parentElement;
+  const pag = !sc || sc === document.body;
+  const rol = pag ? (document.scrollingElement as HTMLElement) : sc!;
+  const ouve: HTMLElement | Window = pag ? window : rol;
+  const s = rol.scrollTop;
+  /* a altura de agora antes de soltar o min-height anterior: soltar e medir faria o navegador cortar a rolagem */
+  let alvo = main.offsetHeight, t = 0;
+  const ant = main._folga;
+  if (ant) { main._folga = undefined; ant(true); }
+  /* min-height vale na caixa do conteúdo ou na borda, conforme o box-sizing */
+  const cs = getComputedStyle(main);
+  const caixa = cs.boxSizing === 'border-box' ? 0
+    : (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+  const por = (h: number) => { main.style.minHeight = `${Math.max(0, Math.ceil(h - caixa))}px`; };
+  por(alvo);
+  /* altura do conteúdo sem o min-height, sem soltá-lo (o fundo do último filho) */
+  const natural = () => {
+    const r = main.getBoundingClientRect(), u = main.lastElementChild;
+    const fim = u ? u.getBoundingClientRect().bottom - r.top : 0;
+    return fim + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+  };
+  /* ao rolar para cima, a altura guardada encolhe até o necessário para a vista atual; sem folga, solta */
+  const encolher = () => {
+    const topo = main.getBoundingClientRect().top - (pag ? 0 : rol.getBoundingClientRect().top) + rol.scrollTop;
+    const depois = rol.scrollHeight - (topo + main.offsetHeight);
+    const precisa = rol.scrollTop + rol.clientHeight - topo - depois;
+    if (precisa >= alvo) return;
+    alvo = precisa;
+    if (natural() >= alvo) solta(); else por(alvo);
+  };
+  const solta = (troca?: boolean) => {
+    clearTimeout(t); ouve.removeEventListener('scroll', encolher);
+    if (main._folga === solta) main._folga = undefined;
+    if (!troca) main.style.minHeight = '';
+  };
+  main._folga = solta;
+  const fixa = () => { if (Math.abs(rol.scrollTop - s) > 1) rol.scrollTop = s; };
+  requestAnimationFrame(() => { fixa(); requestAnimationFrame(fixa); });
+  /* o primeiro scroll vem do próprio ajuste: espera a troca assentar */
+  t = window.setTimeout(() => { if (main._folga === solta) ouve.addEventListener('scroll', encolher, { passive: true }); }, 400);
+}
 export function abrirQuadroJa(aba: string, id: string) { abrirQuadro(aba, id); }
 /** abre o quadro da seção: com as seções em chips (pedido do Moises, 10/nov/2026) é o chip escolhido da aba, guardado
     como "@id" no mesmo conjunto da aba; avisa a barra e os quadros na tela */
