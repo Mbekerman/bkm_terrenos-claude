@@ -132,8 +132,8 @@ const Kv = ({ l, v, fraco }: { l: string; v: React.ReactNode; fraco?: boolean })
   <div className={`tb-kv${fraco ? ' fraco' : ''}`} title={l}><span className="tb-kvv">{v}</span></div>
 );
 const pct2 = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
-const INFO_MOD = (de: string) => [{ t: 'Dinheiro', d: `valor em dinheiro da ${de}`, forte: true }, { t: '% VGVL', d: 'permuta financeira, em % do VGV líquido, com o mínimo garantido quando houver' },
-  { t: 'Unid. ou % física', d: 'permuta física, em unidades ou em percentual (com o mínimo de unidades quando houver)' }];
+const INFO_MOD = (de: string) => [{ t: 'Dinheiro', d: `valor em dinheiro da ${de}`, forte: true }, { t: '% VGVL', d: de === 'proposta ativa' ? 'permuta financeira, em % do VGV líquido, com o mínimo garantido quando houver' : 'permuta financeira, em % do VGV líquido' },
+  { t: 'Unid. ou % física', d: de === 'proposta ativa' ? 'permuta física, em unidades ou em percentual (com o mínimo de unidades quando houver)' : 'permuta física, em unidades ou em percentual' }];
 /** as três linhas das modalidades; a que não foi pedida fica com o traço discreto */
 const Mods = ({ m, vazio }: { m: Modalidades; vazio: string }) => (!temMod(m) ? <Vazio s={vazio} /> : <>
   <Kv l="Dinheiro" v={m.din != null ? mi(m.din) : <Nada s="—" />} />
@@ -166,8 +166,8 @@ const COLS: Col[] = [
     {t.temEstudo && <><Kv fraco l="L.L., margem líquida" v={t.ll != null ? pct2(t.ll) : '—'} /><span /></>}</div> : <Vazio s="Sem estudo de massa nem de viabilidade válido" />) },
   /* Pedida e Proposta (pedido do Moises, 11/nov/2026, no lugar de Negociação): três linhas, na mesma ordem nas duas,
      dinheiro, permuta financeira em % do VGV líquido e permuta física em unidades ou em % */
-  { k: 'preco', l: 'Pedida', w: 176, info: INFO_MOD('oferta de referência'), v: (t) => <Mods m={t.ped} vazio="Sem pedido" /> },
-  { k: 'prop', l: 'Proposta', w: 176, info: INFO_MOD('proposta ativa'), v: (t) => <Mods m={t.prop} vazio="Sem proposta ativa" /> },
+  { k: 'preco', l: 'Pedida', w: 136, info: INFO_MOD('oferta de referência'), v: (t) => <Mods m={t.ped} vazio="Sem pedido" /> },
+  { k: 'prop', l: 'Proposta', w: 210, info: INFO_MOD('proposta ativa'), v: (t) => <Mods m={t.prop} vazio="Sem proposta ativa" /> },
   { k: 'corretor', l: 'Corretor', w: 168, v: (t) => {
     const c = t.corretores;
     if (!c.length) return <Vazio s="Sem corretor" />;
