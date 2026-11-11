@@ -293,12 +293,28 @@ export function usePedido(secs: string[], fn: (p: PedidoCampo) => void) {
   }, [chave]);
 }
 /** abre o quadro da aba e avisa os quadros na tela */
-/** trocar de aba ou de chip não mexe na rolagem (pedido do Moises, 11/nov/2026): a .ficha-main guarda a altura que tinha
- *  (min-height), para a seção nova mais curta não puxar a página para cima, e o que sobra fica vazio embaixo. Com o
- *  min-height o próprio navegador segura a altura em toda troca, inclusive enquanto a aba nova carrega. O espaço vazio
- *  encolhe só quando a pessoa rola para cima (nunca mexe no que está à vista) e sai quando o conteúdo volta a ocupar a
- *  altura */
+/** trocar de aba ou de chip (pedido do Moises, 11/nov/2026, refeito no mesmo dia): a rolagem tem duas partes. A de cima,
+ *  que esconde o cabeçalho até as barras das abas e dos chips ficarem presas, fica onde está. A de baixo, a dos dados, volta
+ *  à última posição em que a seção nova estava (guardada por terreno, aba e chip enquanto a página está aberta) e, sem
+ *  posição guardada, mostra o começo da seção logo abaixo das barras. Com as barras ainda soltas, nada rola. A .ficha-main
+ *  guarda a altura que tinha (min-height), para a seção nova mais curta não puxar a página para cima, e o que sobra fica
+ *  vazio embaixo; o espaço encolhe só quando a pessoa rola para cima e sai quando o conteúdo volta a ocupar a altura */
 type MainF = HTMLElement & { _folga?: (troca?: boolean) => void };
+const POS_SECAO = new Map<string, number>();
+/** a seção na tela: terreno, aba e o chip escolhido de cada barra */
+function chaveSecao(main: HTMLElement) {
+  const aba = main.querySelector(':scope > .fi-aba')?.id ?? '';
+  const chips = [...main.querySelectorAll<HTMLElement>(':scope > .fi-chips-w')].map((x) => x.dataset.ativo ?? '').join('/');
+  return `${main.dataset.terreno ?? ''}:${aba}:${chips}`;
+}
+/** quanto dos dados está escondido sob as barras (0 ou menos com os dados logo abaixo delas) e o fundo das barras na tela */
+function sobBarras(main: HTMLElement) {
+  const sec = main.querySelector<HTMLElement>('.fi-aba');
+  const barras = [...main.querySelectorAll<HTMLElement>(':scope > .fi-abas-w, :scope > .fi-chips-w')];
+  if (!sec || !barras.length) return null;
+  const fundo = Math.max(...barras.map((x) => x.getBoundingClientRect().bottom));
+  return { fundo, d: fundo - sec.getBoundingClientRect().top };
+}
 export function segurarRolagem(de?: Element | null) {
   const main = ((de?.closest('.ficha-main') ?? document.querySelector('.ficha-main')) as MainF | null);
   if (!main) return;
@@ -308,6 +324,15 @@ export function segurarRolagem(de?: Element | null) {
   const rol = pag ? (document.scrollingElement as HTMLElement) : sc!;
   const ouve: HTMLElement | Window = pag ? window : rol;
   const s = rol.scrollTop;
+  /* a posição dos dados da seção que sai */
+  const chDe = chaveSecao(main), m0 = sobBarras(main);
+  /* as barras das abas estão presas quando a de cima está no próprio "top" do sticky (contado de dentro do padding de
+     quem rola, como o navegador conta) */
+  const abas = main.querySelector<HTMLElement>(':scope > .fi-abas-w');
+  const presas = !!m0 && !!abas && abas.getBoundingClientRect().top
+    <= (parseFloat(getComputedStyle(abas).top) || 0) + (pag ? 0 : rol.getBoundingClientRect().top + rol.clientTop
+      + (parseFloat(getComputedStyle(rol).paddingTop) || 0)) + 1;
+  POS_SECAO.set(chDe, presas ? Math.max(0, m0!.d) : 0);
   /* a altura de agora antes de soltar o min-height anterior: soltar e medir faria o navegador cortar a rolagem */
   let alvo = main.offsetHeight, t = 0;
   const ant = main._folga;
@@ -324,11 +349,12 @@ export function segurarRolagem(de?: Element | null) {
     const fim = u ? u.getBoundingClientRect().bottom - r.top : 0;
     return fim + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
   };
+  const topoMain = () => main.getBoundingClientRect().top - (pag ? 0 : rol.getBoundingClientRect().top) + rol.scrollTop;
+  /* altura da .ficha-main para a vista em y caber */
+  const precisaEm = (y: number) => { const topo = topoMain(); return y + rol.clientHeight - topo - (rol.scrollHeight - (topo + main.offsetHeight)); };
   /* ao rolar para cima, a altura guardada encolhe até o necessário para a vista atual; sem folga, solta */
   const encolher = () => {
-    const topo = main.getBoundingClientRect().top - (pag ? 0 : rol.getBoundingClientRect().top) + rol.scrollTop;
-    const depois = rol.scrollHeight - (topo + main.offsetHeight);
-    const precisa = rol.scrollTop + rol.clientHeight - topo - depois;
+    const precisa = precisaEm(rol.scrollTop);
     if (precisa >= alvo) return;
     alvo = precisa;
     if (natural() >= alvo) solta(); else por(alvo);
@@ -339,8 +365,19 @@ export function segurarRolagem(de?: Element | null) {
     if (!troca) main.style.minHeight = '';
   };
   main._folga = solta;
-  const fixa = () => { if (Math.abs(rol.scrollTop - s) > 1) rol.scrollTop = s; };
-  requestAnimationFrame(() => { fixa(); requestAnimationFrame(fixa); });
+  /* com as barras presas, a seção nova abre na posição guardada dela (ou no começo, logo abaixo das barras) */
+  let y = s;
+  const decide = () => {
+    if (!presas) return;
+    if (Math.abs(rol.scrollTop - s) > 1) rol.scrollTop = s;
+    const m = sobBarras(main);
+    if (!m) return;
+    y = Math.max(0, s - m.d + (POS_SECAO.get(chaveSecao(main)) ?? 0));
+    const p = precisaEm(y);
+    if (p > alvo) { alvo = p; por(alvo); }
+  };
+  const fixa = () => { if (Math.abs(rol.scrollTop - y) > 1) rol.scrollTop = y; };
+  requestAnimationFrame(() => { decide(); fixa(); requestAnimationFrame(fixa); });
   /* o primeiro scroll vem do próprio ajuste: espera a troca assentar */
   t = window.setTimeout(() => { if (main._folga === solta) ouve.addEventListener('scroll', encolher, { passive: true }); }, 400);
 }

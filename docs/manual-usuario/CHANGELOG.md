@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 11/nov/2026
 
+- **Ficha: ao trocar de seção, cada uma volta onde você a deixou.** O topo da ficha e as barras ficam na mesma altura; com as barras presas no alto, a seção nova aparece na última posição em que você a viu e, se ainda não tinha sido aberta, do começo, logo abaixo das barras. Ver [4. Visão geral](04-ficha-visao-geral.md). (#337)
 - **Ficha: Jornada e Histórico no ⋮ do topo da ficha**, à direita do responsável (na gaveta, ao lado de Abrir página), antes de Excluir terreno, para todos os papéis. Saíram da barra das abas e do ⋮ dela, que volta a aparecer só quando a barra não cabe. (#336)
 - **Estudo de viabilidade: a receita é o VGV vendido.** A dedução do VGV e o ITBI e o registro marcados servem só para calcular a permuta financeira e não saem mais da receita nem do lucro. A margem líquida passa a ser lucro ÷ VGV vendido (também no L.L. do Pipeline). O indicador VGV líquido virou VGV vendido, e Produto Caixa saiu das deduções. Ver [15. Viabilidades](15-ficha-viabilidades.md). (#335)
 - **Terrenos (Pipeline): olho na coluna Projeto** abre o estudo de viabilidade válido no popup, por cima da tabela, sem abrir a ficha. Só aparece em terreno com estudo válido. O cursor vira mãozinha sobre as linhas, que abrem a ficha. Ver [18. Pipeline](18-pipeline.md). (#334)
