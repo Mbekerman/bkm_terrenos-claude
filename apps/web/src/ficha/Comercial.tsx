@@ -10,7 +10,7 @@ import { Dialogo, useToast } from '../components/ui';
 import { Adorno } from '../lib/mascara';
 import { finTxt, fisTxt, modDe, modProposta, resumoMod, type Modalidades } from '../lib/modalidades';
 import { Ic } from '../components/Moldura';
-import { data as fd, hojeISO, milhoes, m2, somarDias } from '../lib/format';
+import { data as fd, diasEntre, hojeISO, milhoes, m2, somarDias } from '../lib/format';
 import type { Ficha, R } from './dados';
 import Temperatura from './Temperatura';
 import { lerNum, num, Quadro, abrirQuadro, abrirQuadroJa, focar, usePedido, Vivo } from './edicao';
@@ -568,7 +568,7 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const ativas = c.partes.filter((x) => x.ativa), nomeParte = (id: string) => c.partes.find((x) => x.id === id)?.nome ?? 'Parte';
   const [errPt, setErrPt] = useState(false);
   const abrir = () => {
-    const o = { origem: 'bkm', valor: '', fin: '', fis: '', fisModo: 'pct', finMin: '', fisMin: '', status: 'apresentada', data: hoje, validade: somarDias(hoje, 15), cond: '', partes: ativas.length === 1 ? ativas[0].id : '' };
+    const o = { origem: 'bkm', valor: '', fin: '', fis: '', fisModo: 'pct', finMin: '', fisMin: '', status: 'apresentada', data: hoje, dias: '15', validade: somarDias(hoje, 15), cond: '', partes: ativas.length === 1 ? ativas[0].id : '' };
     const r = comRasc(kPr, o);
     r.partes = (r.partes ?? '').split(',').filter((id: string) => ativas.some((x) => x.id === id)).join(',') || o.partes; // rascunho com parte que saiu
     setV(r); setIni(o); setErrPt(false); abrirQuadro('comercial', 'propostas'); setForm(true);
@@ -586,6 +586,9 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
   const sujoPr = form && mudou(v, ini);
   useGuardarRasc(kPr, v, sujoPr);
   const m = (k: string) => (ev: { target: { value: string } }) => setV((x) => ({ ...x, [k]: ev.target.value }));
+  /* dias de validade: o digitado ou, sem ele (rascunho antigo), a diferença entre as datas */
+  const diasVal = (x: R): number | null => x.dias != null && x.dias !== '' ? +x.dias
+    : x.dias === '' ? null : x.data && x.validade ? Math.max(0, diasEntre(x.data, x.validade)) : null;
   const n = c.props.length;
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -647,11 +650,15 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
         {form && (
           <form ref={fref} onSubmit={enviar} className="prop-form">
             <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 500 }}>Nova proposta · v{n + 1}</h3>
-            <div className="editgrid">
+            <div className="pp-grid">
               <div className="field"><label htmlFor="pp-o">Origem</label><select id="pp-o" value={v.origem} onChange={m('origem')}><option value="bkm">BKM</option><option value="vendedor">Vendedor</option></select></div>
               <div className="field"><label htmlFor="pp-v">Dinheiro</label><Adorno t="moeda"><input id="pp-v" inputMode="decimal" data-fmt="moeda" value={v.valor} onChange={m('valor')} /></Adorno></div>
               <div className="field"><label htmlFor="pp-fin">Permuta financeira (% VGVL)</label><Adorno t="pct"><input id="pp-fin" inputMode="decimal" data-fmt="pct" value={v.fin ?? ''} onChange={m('fin')} /></Adorno></div>
-              {lerNum(v.fin ?? '') != null && <div className="field"><label htmlFor="pp-fmin">Mínimo garantido (opcional)</label><Adorno t="moeda"><input id="pp-fmin" inputMode="decimal" data-fmt="moeda" value={v.finMin ?? ''} onChange={m('finMin')} /></Adorno></div>}
+              {lerNum(v.fin ?? '') != null
+                ? <div className="field"><label htmlFor="pp-fmin">Mínimo garantido (opcional)</label><Adorno t="moeda"><input id="pp-fmin" inputMode="decimal" data-fmt="moeda" value={v.finMin ?? ''} onChange={m('finMin')} /></Adorno></div>
+                : <div className="pp-vazio" />}
+              <div className="field"><label htmlFor="pp-s">Status</label><select id="pp-s" value={v.status} onChange={m('status')}><option value="apresentada">Apresentada</option><option value="em_analise">Em análise</option><option value="rascunho">Rascunho</option></select></div>
+              <div className="pp-vazio" />
               <div className="field"><label htmlFor="pp-fis">Permuta física</label><div className="pfis">
                 <Adorno t={v.fisModo === 'un' ? 'un' : 'pct'}><input id="pp-fis" inputMode={v.fisModo === 'un' ? 'numeric' : 'decimal'} data-fmt={v.fisModo === 'un' ? undefined : 'pct'} value={v.fis ?? ''}
                   onChange={(e) => setV((x) => ({ ...x, fis: x.fisModo === 'un' ? e.target.value.replace(/\D/g, '') : e.target.value }))} /></Adorno>
@@ -659,11 +666,19 @@ function SecPropostas({ f, c }: { f: Ficha; c: Com }) {
                   <button type="button" aria-pressed={v.fisModo !== 'un'} onClick={() => setV((x) => ({ ...x, fisModo: 'pct' }))}>%</button>
                   <button type="button" aria-pressed={v.fisModo === 'un'} onClick={() => setV((x) => ({ ...x, fisModo: 'un', fis: (x.fis ?? '').replace(/\D.*$/, '') }))}>Unid.</button>
                 </span></div></div>
-              {v.fisModo !== 'un' && lerNum(v.fis ?? '') != null && <div className="field"><label htmlFor="pp-umin">Mínimo de unidades (opcional)</label><Adorno t="un"><input id="pp-umin" inputMode="numeric" value={v.fisMin ?? ''}
-                onChange={(e) => setV((x) => ({ ...x, fisMin: e.target.value.replace(/\D/g, '') }))} /></Adorno></div>}
-              <div className="field"><label htmlFor="pp-s">Status</label><select id="pp-s" value={v.status} onChange={m('status')}><option value="apresentada">Apresentada</option><option value="em_analise">Em análise</option><option value="rascunho">Rascunho</option></select></div>
-              <div className="field"><label htmlFor="pp-d">Apresentada em</label><input id="pp-d" type="date" value={v.data} onChange={m('data')} /></div>
-              <div className="field"><label htmlFor="pp-val">Validade</label><input id="pp-val" type="date" value={v.validade} onChange={m('validade')} /></div>
+              {v.fisModo !== 'un' && lerNum(v.fis ?? '') != null
+                ? <div className="field"><label htmlFor="pp-umin">Mínimo de unidades (opcional)</label><Adorno t="un"><input id="pp-umin" inputMode="numeric" value={v.fisMin ?? ''}
+                  onChange={(e) => setV((x) => ({ ...x, fisMin: e.target.value.replace(/\D/g, '') }))} /></Adorno></div>
+                : <div className="pp-vazio" />}
+              {/* validade em dias ou na data: um preenche o outro, contando de Apresentada em (pedido do Moises, 11/nov/2026) */}
+              <div className="field"><label htmlFor="pp-d">Apresentada em</label><input id="pp-d" type="date" value={v.data}
+                onChange={(e) => { const d = e.target.value; setV((x) => { const n = diasVal(x); return { ...x, data: d, validade: d && n != null ? somarDias(d, n) : x.validade }; }); }} /></div>
+              <div className="field"><label htmlFor="pp-vd">Validade</label><Adorno t="dias"><input id="pp-vd" inputMode="numeric" value={diasVal(v) ?? ''}
+                onChange={(e) => { const t = e.target.value.replace(/\D/g, '').slice(0, 4); setV((x) => ({ ...x, dias: t, validade: t && x.data ? somarDias(x.data, +t) : t ? x.validade : '' })); }} /></Adorno></div>
+              <div className="field"><label htmlFor="pp-val">Válida até</label><input id="pp-val" type="date" value={v.validade}
+                onChange={(e) => { const d = e.target.value; setV((x) => ({ ...x, validade: d, dias: d && x.data ? String(Math.max(0, diasEntre(x.data, d))) : '' })); }} /></div>
+            </div>
+            <div className="editgrid" style={{ marginTop: 'var(--e4)' }}>
               <div className={`field full${errPt ? ' campo-erro' : ''}`} id="pp-pt" role="group" aria-labelledby="pp-pt-l">
                 <label id="pp-pt-l">{ativas.length > 1 ? 'Partes da proposta' : 'Parte da proposta'}</label>
                 {ativas.length ? (
