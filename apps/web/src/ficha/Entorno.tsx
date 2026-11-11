@@ -193,10 +193,10 @@ function useSetores(demo: boolean) {
   }, [demo]);
   return st;
 }
-/* seletor de raio: 500 m, 1, 2, 3 km e Personalizado com lápis, em que a pessoa digita o raio em metros,
-   de 100 m a 20 km (pedidos do Moises, 11/nov/2026; a Poligonal saiu por ora). O raio escolhido e o personalizado
+/* seletor de raio: 500 m, 1, 2, 3 km e Personalizado com lápis, em que a pessoa digita o raio em km,
+   de 0,1 a 20 km (pedidos do Moises, 11/nov/2026; a Poligonal saiu por ora). O raio escolhido e o personalizado
    de cada quadro ficam guardados no navegador e valem para todos os terrenos. */
-const raioTxt = (m: number) => (m < 1000 ? num(m) + ' m' : num(m / 1000, 2) + ' km');
+const raioTxt = (m: number) => num(m / 1000, 2) + ' km'; // sempre em km (pedido do Moises, 11/nov/2026)
 const RAIO_LKEY = 'bkm-terrenos-mercado-raio';
 interface RaioSalvo { raio: Raio; cust: number | null; mudar: (raio: Raio, cust?: number | null) => void }
 const raioOk = (n: unknown): n is number => typeof n === 'number' && n >= RAIO_MIN && n <= RAIO_MAX;
@@ -225,7 +225,7 @@ function Raios({ r: { raio, cust, mudar } }: { r: RaioSalvo }) {
     fim.current = true; setEd(false);
     const s = v.replace(/\./g, '').replace(',', '.').trim();
     if (!s) return;
-    const n = Math.round(Number(s));
+    const n = Math.round(Number(s) * 1000); // digitado em km, guardado em metros
     if (!raioOk(n)) { toast(`O raio vai de ${raioTxt(RAIO_MIN)} a ${raioTxt(RAIO_MAX)}.`, true); return; }
     mudar(n, n);
   };
@@ -234,10 +234,10 @@ function Raios({ r: { raio, cust, mudar } }: { r: RaioSalvo }) {
       {RD_RAIOS.map(([k, l]) => <button key={k} type="button" aria-pressed={raio === k} onClick={() => mudar(k)}>{l}</button>)}
       {ed
         ? <form className="rd-cust" onSubmit={(e) => { e.preventDefault(); aplicar((e.currentTarget.elements.namedItem('r') as HTMLInputElement).value); }}>
-            <input name="r" inputMode="numeric" data-fmt="int" aria-label="Raio personalizado, em metros" placeholder="ex.: 1.500"
-              defaultValue={cust != null ? num(cust) : ''} autoFocus onFocus={(e) => e.currentTarget.select()}
+            <input name="r" inputMode="decimal" data-fmt="num" data-dec={2} aria-label="Raio personalizado, em km" placeholder="ex.: 1,5"
+              defaultValue={cust != null ? num(cust / 1000, 2) : ''} autoFocus onFocus={(e) => e.currentTarget.select()}
               onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fim.current = true; setEd(false); } }}
-              onBlur={(e) => aplicar(e.currentTarget.value)} /><span className="rd-cust-u">m</span>
+              onBlur={(e) => aplicar(e.currentTarget.value)} /><span className="rd-cust-u">km</span>
           </form>
         : <button type="button" className="rd-cust-b" aria-pressed={ativo} title={cust == null ? `Digitar o raio, de ${raioTxt(RAIO_MIN)} a ${raioTxt(RAIO_MAX)}` : ativo ? 'Alterar o raio' : `Usar ${raioTxt(cust)} (clique de novo para alterar)`}
             onClick={() => { if (cust != null && !ativo) mudar(cust); else { fim.current = false; setEd(true); } }}>
