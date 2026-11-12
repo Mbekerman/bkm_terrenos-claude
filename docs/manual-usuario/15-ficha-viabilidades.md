@@ -46,7 +46,7 @@ A lista dos estudos do terreno, com VGV líquido, lucro líquido, margem, a data
 
 **Indicadores** (ficam presos no topo ao rolar): **VGV**, **VGV líquido**, **Lucro líquido** e **Margem líquida**. Eles se refazem enquanto você digita. A receita do estudo é o **VGV líquido** (o VGV sem as unidades de permuta e de comissão), e a margem líquida é o lucro líquido ÷ VGV líquido.
 
-**Botões das seções** (logo abaixo, também presos): Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE, cada um com o total e o % do VGV. Financeiras e Taxas só aparecem para a diretoria e o administrador. No fim de cada seção, os botões levam à anterior e à próxima.
+**Botões das seções** (logo abaixo, também presos): Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas, DRE e **Observações e Premissas**, cada um com o total e o % do VGV (Observações e Premissas não tem número: o nome ocupa as duas linhas). Financeiras e Taxas só aparecem para a diretoria e o administrador. No fim de cada seção, os botões levam à anterior e à próxima.
 
 ### Tipologias
 
@@ -110,6 +110,29 @@ Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascido
 ### DRE
 
 O resultado do estudo, do VGV ao lucro, com o valor e o % da receita de cada linha: receita bruta, permuta e comissão em unidades, receita (VGV líquido), terreno, obras, lucro bruto, comerciais, gerais, EBITDA, despesas financeiras, resultado e margem sem as taxas, taxas e lucro líquido. Cada grupo mostra o detalhe embaixo. Fora da diretoria, Financeiras e Taxas aparecem só pelo total. Só leitura: muda conforme as outras seções.
+
+### Observações e Premissas
+
+Texto livre do estudo, um por estudo: as premissas usadas (de onde vieram os preços, o que ficou de fora do custo, o que falta confirmar) e as observações. A barra de cima segue a do Google Docs:
+
+- **Desfazer** e **Refazer**.
+- **Estilo**: Texto normal, Título 1, Título 2 ou Título 3.
+- **Tamanho da fonte**: o **−** e o **+** andam pelos tamanhos usuais (8 a 96); clique no número para escolher na lista ou digite e tecle Enter.
+- **Negrito**, **Itálico**, **Sublinhado** e **Tachado**.
+- **Cor do texto** (o A) e **Cor de destaque** (o marca-texto): a paleta do Docs e, embaixo, as cores da BKM; **Redefinir** e **Nenhuma** tiram a cor.
+- **Link**: selecione o texto, clique no ícone (ou Ctrl+K), cole o endereço e tecle Enter. Só endereços da web (https) e de e-mail. Na leitura, o link abre em outra aba.
+- **Alinhar** (esquerda, centro, direita, justificado), **lista com marcadores**, **lista numerada**, **diminuir** e **aumentar recuo**.
+- **Limpar formatação**: volta o trecho selecionado ao texto simples.
+
+Atalhos: Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+K (link), Ctrl+Shift+7 (lista numerada), Ctrl+Shift+8 (marcadores), Ctrl+Shift+X (tachado), Ctrl+Shift+. e Ctrl+Shift+, (tamanho), Ctrl+Alt+1 a 3 (títulos) e Ctrl+Alt+0 (texto normal), Ctrl+\ (limpar formatação), Ctrl+[ e Ctrl+] (recuo). No Mac, ⌘ no lugar do Ctrl. **Esc** sai do texto; um segundo Esc fecha o estudo.
+
+**Grava sozinho**: um segundo depois de você parar de digitar e ao sair do texto. No fim da barra aparece "Salvando…" e depois "Salvo". Não há botão de salvar.
+
+**Colar**: texto vindo do Word, do Docs ou de uma página mantém negrito, itálico, sublinhado, cores, tamanhos, títulos, listas e links; imagens, tabelas e o resto ficam de fora (as tabelas viram parágrafos).
+
+**Duplicar** leva as Observações e Premissas para a cópia. **Salvar como modelo** não leva (o texto é do estudo, não do modelo).
+
+Quem só consulta (Leitura) vê o texto formatado, sem a barra.
 
 ### Vínculo com o estudo de massa
 
