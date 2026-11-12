@@ -36,6 +36,15 @@ async function rest(token, caminho, init = {}) {
   return corpo;
 }
 
+/** confere o login no Supabase antes de qualquer coisa (o banco confere de novo em cada função) */
+async function conferirLogin(token) {
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15_000) })
+    .catch(() => { throw new ErroPedido(503, 'BANCO_FORA', 'O serviço do Drive não conseguiu falar com o banco.'); });
+  if (!r.ok) throw new ErroPedido(401, 'SEM_LOGIN', 'Entre no sistema.');
+  const u = await r.json().catch(() => null);
+  if (!u?.id) throw new ErroPedido(401, 'SEM_LOGIN', 'Entre no sistema.');
+}
+
 const ehId = (x) => /^[0-9a-f-]{36}$/i.test(String(x ?? ''));
 
 // pastas-modelo guardadas por 1 minuto (uma listagem a cada sincronização seria à toa)
@@ -118,6 +127,7 @@ const servidor = http.createServer(async (req, res) => {
     if (!SUPABASE_URL || !SUPABASE_KEY || !RAIZ) throw new ErroPedido(503, 'CONFIG', 'Serviço sem SUPABASE_URL, SUPABASE_KEY ou DRIVE_PASTA_RAIZ.');
     const token = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1];
     if (!token) throw new ErroPedido(401, 'SEM_LOGIN', 'Entre no sistema.');
+    await conferirLogin(token);
     const corpo = await lerCorpo(req);
     if (!ehId(corpo?.terreno_id)) throw new ErroPedido(400, 'PEDIDO', 'Terreno inválido.');
     const r = await sincronizar(token, corpo.terreno_id);

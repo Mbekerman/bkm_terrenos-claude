@@ -18,6 +18,7 @@ globalThis.fetch = async (url, init = {}) => {
   const u = new URL(url);
   const resp = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { 'Content-Type': 'application/json' } });
   if (u.hostname === 'banco.teste') {
+    if (u.pathname === '/auth/v1/user') return init.headers?.Authorization === 'Bearer x' ? resp({ id: 'u1' }) : resp({ msg: 'invalid' }, 401);
     if (u.pathname.endsWith('/rpc/drive_terreno')) return resp({ ...terreno, pastas: [...banco].map(([m, p]) => ({ pasta_mae_id: m, ...p })) });
     if (u.pathname.endsWith('/rpc/registrar_pasta_drive')) { const b = JSON.parse(init.body); banco.set(b.p_pasta_mae, { pasta_id: b.p_pasta, nome: b.p_nome }); return new Response(null, { status: 204 }); }
     if (u.pathname.endsWith('/terrenos')) return resp([{ id: TID }]);
@@ -68,4 +69,13 @@ test('o banco perdeu o id: acha pela marca, não cria outra', async () => {
   assert.equal(r.criadas, 0);
   assert.equal(banco.size, 7);
   assert.equal(criadas, 7);
+});
+
+test('sem login válido, recusa antes de tocar no Drive', async () => {
+  const antes = criadas;
+  const r = await real(`http://127.0.0.1:${PORTA}/drive/sincronizar`, { method: 'POST', headers: { Authorization: 'Bearer falso', 'Content-Type': 'application/json' }, body: JSON.stringify({ terreno_id: TID }) });
+  assert.equal(r.status, 401);
+  const r2 = await real(`http://127.0.0.1:${PORTA}/drive/sincronizar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ terreno_id: TID }) });
+  assert.equal(r2.status, 401);
+  assert.equal(criadas, antes);
 });
