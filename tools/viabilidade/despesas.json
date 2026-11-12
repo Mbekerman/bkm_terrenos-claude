@@ -1,5 +1,5 @@
 {
-  "_nota": "Lista padrão de itens do estudo de viabilidade estática (decisão do Moisés, 26/out/2026). Cada empresa recebe uma cópia e o administrador edita em Configurações › Viabilidade. O protótipo (build.py) e o teste do banco (supabase/tests/regras.sql) leem este arquivo; a migration 20261015001000_viabilidade.sql traz os mesmos itens, grupos e bases (app.viab_tipos, app.viab_secao). O grupo define a seção, as bases de cálculo aceitas e se o item é fixo (Despesas gerais, Taxas, Despesas financeiras e Despesas comerciais: aparece sempre no estudo, sem incluir nem tirar). Despesas gerais: um item fixo por grupo, \"Despesas gerais com …\", em % do VGV (pedido do Moises, 11/nov/2026, no lugar da lista de itens que se incluíam por busca). Os dois custos de capital (decisão do Moisés, 28/out/2026) têm um grupo cada, dentro de Despesas financeiras, com uma base só, o Aporte: o valor em dinheiro da permuta financeira e o pagamento em dinheiro do terreno.",
+  "_nota": "Lista padrão de itens do estudo de viabilidade estática (decisão do Moisés, 26/out/2026). Cada empresa recebe uma cópia e o administrador edita em Configurações › Viabilidade. O protótipo (build.py) e o teste do banco (supabase/tests/regras.sql) leem este arquivo; a migration 20261015001000_viabilidade.sql traz os mesmos itens, grupos e bases (app.viab_tipos, app.viab_secao). O grupo define a seção, as bases de cálculo aceitas e se o item é fixo (Despesas gerais, Taxas, Despesas financeiras e Despesas comerciais: aparece sempre no estudo, sem incluir nem tirar). Despesas gerais: um item fixo por grupo, \"Despesas gerais com …\", em % do VGV (pedido do Moises, 11/nov/2026, no lugar da lista de itens que se incluíam por busca). Os dois custos de capital (decisão do Moisés, 28/out/2026) têm um grupo cada, dentro de Despesas financeiras, com uma base só, o Aporte: o valor em dinheiro da permuta financeira e o pagamento em dinheiro do terreno. Valores padrão de Taxas e Despesas financeiras fixos desde 12/nov/2026 (pedido do Moises, enquanto Configurações › Viabilidade não existe no sistema real; migration 20261015002300_viabilidade_padroes.sql).",
   "secoes": {
     "obra": "Custo de obras",
     "terreno": "Custo do terreno",
@@ -291,7 +291,7 @@
       "nome": "Taxa de desenvolvimento",
       "grupo": "taxas",
       "tipo": "pct_vgv",
-      "valor": null,
+      "valor": 4,
       "deduz": false
     },
     {
@@ -299,7 +299,7 @@
       "nome": "Taxa de gestão de obra",
       "grupo": "taxas",
       "tipo": "pct_obra_total",
-      "valor": null,
+      "valor": 10,
       "deduz": false
     },
     {
@@ -314,8 +314,8 @@
       "codigo": "custo_alavancagem",
       "nome": "Custo de alavancagem",
       "grupo": "financeiro",
-      "tipo": "verba",
-      "valor": null,
+      "tipo": "pct_lucro",
+      "valor": 20,
       "deduz": false
     },
     {
@@ -323,7 +323,7 @@
       "nome": "Custo de juros PJ",
       "grupo": "financeiro",
       "tipo": "pct_obra_total",
-      "valor": null,
+      "valor": 0.2,
       "deduz": false
     },
     {
@@ -339,7 +339,7 @@
       "nome": "Impostos",
       "grupo": "financeiro",
       "tipo": "pct_vgv",
-      "valor": null,
+      "valor": 4,
       "deduz": false
     },
     {
@@ -347,7 +347,7 @@
       "nome": "Custo de capital permuta financeira",
       "grupo": "capital_permuta",
       "tipo": "pct_aporte_permuta",
-      "valor": null,
+      "valor": 10,
       "deduz": false
     },
     {
@@ -355,7 +355,7 @@
       "nome": "Custo de capital pagamento terreno",
       "grupo": "capital_pagamento",
       "tipo": "pct_aporte_pagamento",
-      "valor": null,
+      "valor": 20,
       "deduz": false
     },
     {
