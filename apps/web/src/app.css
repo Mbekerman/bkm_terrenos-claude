@@ -640,3 +640,9 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
    12/nov/2026; antes a janela acompanhava o conteúdo e mudava de altura a cada aba) */
 .vb-pop-d { height: 100% !important; min-height: 0 !important; max-height: 100% }
 .dialog.ems-pop { height: calc(100dvh - 32px); max-height: calc(100dvh - 32px) }
+
+/* ⓘ dos títulos da tabela de Terrenos: o balão vai para o fim da página com posição fixa (Pipeline.tsx, InfoCol),
+   para passar por cima da borda da tabela em vez de ser cortado por ela (pedido do Moises, 12/nov/2026) */
+.tb-info-pop.solto { position: fixed; right: auto; z-index: 45 }
+.tb-info-pop.solto::before { left: var(--seta, 14px); right: auto }
+.tb-info-pop.solto.cima::before { top: auto; bottom: -6px; box-shadow: 2px 2px 3px rgba(0,0,0,.05) }

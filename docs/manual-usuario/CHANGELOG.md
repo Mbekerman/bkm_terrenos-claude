@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 2026-11-12
 
+- **Balão do ⓘ não é mais cortado** no Pipeline: o texto que explica cada coluna passa por cima da borda da tabela e segue pela página. Ver [18. Pipeline](18-pipeline.md). (#376)
 - **Foto do Responsável maior** no Pipeline, e um pouco mais baixa: acompanha as duas primeiras linhas de texto, sem ficar acima delas. Ver [18. Pipeline](18-pipeline.md). (#371)
 - **Tab minimiza a gaveta em vez de fechar**: com a gaveta aberta, o Tab a encolhe e deixa só a seta; o Tab de novo a abre. Com a gaveta fechada no X ou no Esc, o Tab continua abrindo o último terreno. Ver [2. Mapa](02-mapa.md) e [18. Pipeline](18-pipeline.md). (#369)
 - **Tab abre e fecha a gaveta da ficha** no Mapa e no Pipeline: fechada, abre o último terreno que esteve na gaveta naquela página; encolhida, abre de novo; aberta, fecha. Nessas páginas, para passar de um campo ao próximo, use o Enter. Ver [2. Mapa](02-mapa.md) e [18. Pipeline](18-pipeline.md). (#367)
