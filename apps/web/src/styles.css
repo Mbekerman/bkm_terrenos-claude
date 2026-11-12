@@ -5047,10 +5047,9 @@ html[data-tema="escuro"] .tb-info-n { background: #004a77; color: #c2e7ff }
 .lista-ter .tb-kv .tb-kl { margin-right: auto; min-width: 0 }
 .lista-ter .tb-kv:not(.fraco) .tb-kvv { font-weight: 500 }
 .lista-ter .tb-vazio { color: #747775 }
-/* a foto do Responsável fica no meio da altura da linha (pedido do Moises, 12/nov/2026) */
-.lista-ter td.col-resp { vertical-align: middle }
-.lista-ter td.col-resp .tb-resp { vertical-align: middle }
-.lista-ter td.col-resp .avatar.sm { width: 28px; height: 28px; font-size: 12px }
+/* a foto do Responsável, com 32 px, vai do alto da primeira linha de texto ao pé da segunda: nem colada no topo
+   nem no meio da linha (pedido do Moises, 12/nov/2026); cabe nos 40 px da coluna sem encostar na Temperatura */
+.lista-ter td.col-resp .avatar.sm { width: 32px; height: 32px; font-size: 13px; margin-top: 4px }
 .lista-ter .tb-end { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 .tb-wrap.estreito .lista-ter .tb-zt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 /* celular: o Imóvel fica com 42% em toda linha, para os valores começarem na mesma reta (tudo à esquerda), e o Terreno com o resto */
