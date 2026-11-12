@@ -12,6 +12,8 @@ Terreno sem oferta mostra "Terreno sem negociação. Registre uma oferta para ab
 
 ## Quadro de avanço
 
+**Terreno em Backlog:** quando o terreno ainda não tem negociação (o cadastro registra a primeira oferta, mas não abre a negociação), o lugar do quadro mostra a faixa **"Backlog · Sem negociação aberta"** com o botão **"Iniciar negociação"** (só para quem edita). Ele abre a negociação com a oferta ativa, na primeira etapa de Novos Negócios, e o quadro de avanço aparece. Nada é pedido para iniciar.
+
 **Para que serve:** mover a negociação pelas etapas e subetapas, pedir e dar aprovações e encerrar a negociação (Comprado, Perdido, Descartado) ou pausá-la (Stand By).
 
 **O que mostra:**
