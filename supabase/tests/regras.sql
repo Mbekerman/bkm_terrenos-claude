@@ -1783,6 +1783,20 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select custo_m2 is null from app.viabilidades where id = :'vbs')
   and (select valor = 4 from app.viabilidade_linhas where viabilidade_id = :'vbs' and despesa = 'impostos'),
   'sem modelo, o estudo nasce só com a lista da empresa');
+-- Observações e Premissas (12/nov/2026): texto livre formatado, por estudo
+select pg_temp.como(:'analista');
+select app.salvar_observacoes_viabilidade(:'vbs', '<p><b>Premissa:</b> data: 12/11, preço <span style="color: #ff0000">online</span> = <a href="https://bkm.com.br">site</a></p>');
+select pg_temp.ok((select observacoes like '<p><b>Premissa:</b>%' from app.viabilidades where id = :'vbs'),
+  'quem edita grava as observações do estudo (texto com "data:" e " online =" fora das etiquetas passa)');
+select pg_temp.falha($$select app.salvar_observacoes_viabilidade('$$ || :'vbs' || $$', '<p>oi<script>alert(1)</script></p>')$$, 'observações com script são recusadas');
+select pg_temp.falha($$select app.salvar_observacoes_viabilidade('$$ || :'vbs' || $$', '<p onclick="x()">oi</p>')$$, 'observações com atributo on… são recusadas');
+select pg_temp.falha($$select app.salvar_observacoes_viabilidade('$$ || :'vbs' || $$', '<a href=" javascript:alert(1)">x</a>')$$, 'observações com link javascript: são recusadas');
+select pg_temp.falha($$select app.salvar_observacoes_viabilidade('$$ || :'vbs' || $$', repeat('a', 200001))$$, 'observações acima do tamanho máximo são recusadas');
+select pg_temp.como(:'leitor');
+select pg_temp.falha($$select app.salvar_observacoes_viabilidade('$$ || :'vbs' || $$', '<p>x</p>')$$, 'Leitura não grava observações');
+select pg_temp.como(:'analista');
+select app.salvar_observacoes_viabilidade(:'vbs', '<p><br></p>');
+select pg_temp.ok((select observacoes is null from app.viabilidades where id = :'vbs'), 'observações só com etiquetas vazias ficam em branco');
 select pg_temp.como(:'analista');
 select app.apagar_viabilidade(:'vbp');
 select app.apagar_viabilidade(:'vbs');

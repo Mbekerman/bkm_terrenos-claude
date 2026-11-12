@@ -571,3 +571,67 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
      a aba ficava por cima da janela, no meio da tela (pedido do Moises, 12/nov/2026) */
   .tgav:has(.scrim, .vb-pop-fundo, .dialog, [aria-modal="true"]) > .tgav-aba, .tgav:has(.scrim, .vb-pop-fundo, .dialog, [aria-modal="true"]) > .tgav-redim { display: none }
 }
+
+/* ---------- Viabilidade › Observações e Premissas (pedido do Moises, 12/nov/2026) ----------
+   aba sem indicador: o nome em duas linhas, na mesma altura das outras */
+.vb-aba.vb-aba-2l b { line-height: 18px !important; white-space: nowrap; text-align: center }
+/* barra de edição no jeito do Google Docs (Material 3): cápsula tonal, ícones cheios 20 px em botões de 28 px */
+.obs { display: flex; flex-direction: column; gap: 12px }
+.obs-barra { position: sticky; top: var(--obs-top, 0px); z-index: 4; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-height: 40px; padding: 4px 8px; border-radius: 24px; background: #edf2fa; color: #444746 }
+.obs-bt { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; padding: 0 2px; border: 0; border-radius: 4px; background: transparent; color: inherit; cursor: pointer }
+.obs-bt:hover { background: rgba(68,71,70,.08) }
+.obs-bt.on { background: #d3e3fd; color: #041e49 }
+.obs-bt:focus-visible, .obs-dd:focus-visible, .obs-tam:focus-visible { outline: 2px solid #0b57d0; outline-offset: 0 }
+.obs-bt-dd { padding: 0 0 0 2px }
+.obs-sep { width: 1px; height: 20px; margin: 0 6px; background: #c7c7c7 }
+.obs-tamgrp { display: inline-flex; align-items: center }
+.obs-grp { position: relative; display: inline-flex; align-items: center }
+.obs-dd { display: inline-flex; align-items: center; gap: 2px; height: 28px; padding: 0 2px 0 8px; border: 0; border-radius: 4px; background: transparent; color: #1f1f1f; font: inherit; font-size: 14px; cursor: pointer }
+.obs-dd:hover { background: rgba(68,71,70,.08) }
+.obs-dd-estilo { min-width: 120px; justify-content: space-between }
+.obs-tam { width: 34px; height: 24px; margin: 0 2px; padding: 0; border: 1px solid #747775; border-radius: 4px; background: transparent; color: #1f1f1f; font: inherit; font-size: 14px; text-align: center }
+.obs-tam:focus { border-color: #0b57d0; outline: 1px solid #0b57d0 }
+.obs-situ { margin-left: auto; padding: 0 8px; font-size: 12px; color: #5f6368; white-space: nowrap }
+.obs-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 10; padding: 8px 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 6px 2px rgba(60,64,67,.15), 0 1px 2px rgba(60,64,67,.3) }
+.obs-menu { display: flex; flex-direction: column; min-width: 160px }
+.obs-mi { display: flex; align-items: center; min-height: 32px; padding: 4px 16px; border: 0; background: transparent; color: #1f1f1f; font: inherit; font-size: 14px; text-align: left; cursor: pointer; white-space: nowrap }
+.obs-mi:hover { background: rgba(31,31,31,.08) }
+.obs-mi[aria-checked="true"] { background: #d3e3fd; color: #041e49 }
+.obs-mi-h1 { font-size: 20px; line-height: 28px }
+.obs-mi-h2 { font-size: 17px; line-height: 24px }
+.obs-mi-h3 { font-size: 15px; font-weight: 500 }
+.obs-tams { min-width: 56px; max-height: 300px; overflow-y: auto }
+.obs-tams .obs-mi { justify-content: center; padding: 4px 12px }
+.obs-alin { flex-direction: row; min-width: 0; gap: 2px; padding: 4px }
+.obs-paleta { width: 232px; padding: 8px 12px 12px }
+.obs-redef { display: flex; align-items: center; gap: 8px; width: 100%; height: 32px; margin: 0 0 6px; padding: 0 4px; border: 0; border-radius: 4px; background: transparent; color: #1f1f1f; font: inherit; font-size: 14px; cursor: pointer }
+.obs-redef:hover { background: rgba(31,31,31,.08) }
+.obs-grade { display: grid; grid-template-columns: repeat(10, 18px); gap: 4px; justify-content: space-between }
+.obs-cor { width: 18px; height: 18px; padding: 0; border: 1px solid rgba(0,0,0,.12); border-radius: 50%; cursor: pointer }
+.obs-cor:hover { box-shadow: 0 0 0 2px #fff, 0 0 0 3px #747775 }
+.obs-pal-t { margin: 10px 0 6px; font-size: 12px; color: #5f6368 }
+.obs-link { display: flex; align-items: center; gap: 8px; width: 340px; padding: 12px }
+.obs-link input { flex: 1; height: 36px; padding: 0 12px; border: 1px solid #747775; border-radius: 4px; background: #fff; color: #1f1f1f; font: inherit; font-size: 14px }
+.obs-link input:focus { border-color: #0b57d0; outline: 1px solid #0b57d0 }
+/* a folha: branca, contornada, com o texto em 11 pt como no Docs */
+.obs-doc { font-size: 11pt; line-height: 1.5; color: #1f1f1f; overflow-wrap: anywhere }
+.obs-ed { min-height: 420px; padding: 24px 32px; border: 1px solid #c4c7c5; border-radius: 12px; background: #fff; outline: none; cursor: text }
+.obs-ed:focus { border-color: #0b57d0; box-shadow: 0 0 0 1px #0b57d0 }
+.obs-ed:empty::before, .obs-ed:has(> p:only-child:empty)::before { content: attr(data-ph); color: #747775; pointer-events: none }
+.obs-ler { padding: 4px 0 }
+.obs-doc > :first-child { margin-top: 0 }
+.obs-doc p, .obs-doc div { margin: 0 }
+.obs-doc h1 { margin: 20px 0 6px; font-size: 20pt; line-height: 1.25; font-weight: 400 }
+.obs-doc h2 { margin: 18px 0 6px; font-size: 16pt; line-height: 1.3; font-weight: 400 }
+.obs-doc h3 { margin: 16px 0 4px; font-size: 14pt; line-height: 1.35; font-weight: 400; color: #434343 }
+.obs-doc ul, .obs-doc ol { margin: 4px 0; padding-left: 28px }
+.obs-doc blockquote { margin: 0 0 0 40px }
+.obs-doc a { color: #0b57d0; text-decoration: underline }
+.obs-vazio { padding: 8px 0 }
+@media (max-width: 720px) {
+  .obs-barra { border-radius: 16px }
+  .obs-ed { min-height: 300px; padding: 16px }
+  .obs-situ { display: none }
+  .obs-sep { display: none }
+  .obs-barra { gap: 4px 6px }
+}

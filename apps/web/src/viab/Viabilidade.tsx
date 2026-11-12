@@ -14,6 +14,7 @@ import type { Ficha } from '../ficha/dados';
 import { brl, calcular, mi, nf, normTip, VB_RESTRITO, VB_SECAO, vin, type Calc, type Tip, type Viab } from './calc';
 import { SecDre, SecLinhas, SecObra, SecTerreno, vbQPadrao, type Ctx } from './Secoes';
 import { NovoEstudo, SalvarModelo, useModelos } from './Modelos';
+import { Observacoes } from './Observacoes';
 import { carregarEstudo, erroTxt, useDespesas, useEstudos, useRecarregar, type ResumoViab } from './dados';
 
 // Aba Viabilidades da ficha e o popup do estudo de viabilidade estática (porte de tools/prototipo/proto_viab.js ›
@@ -21,9 +22,9 @@ import { carregarEstudo, erroTxt, useDespesas, useEstudos, useRecarregar, type R
 // protótipo (estilos em styles.css). Primeira entrega: a lista, o Resumo, o popup com os indicadores, os botões das
 // seções e a seção Tipologias; as outras seções entram nas próximas.
 
-type Sec = 'tip' | 'terreno' | 'comercial' | 'obra' | 'despesas' | 'financeiro' | 'taxas' | 'res';
-const VB_ORDEM: Sec[] = ['tip', 'terreno', 'comercial', 'obra', 'despesas', 'financeiro', 'taxas', 'res'];
-const VB_ROT: Record<Sec, string> = { tip: 'Tipologias', terreno: 'Terreno', comercial: 'Comercial', obra: 'Obras', despesas: 'Gerais', taxas: 'Taxas', financeiro: 'Financeiras', res: 'DRE' };
+type Sec = 'tip' | 'terreno' | 'comercial' | 'obra' | 'despesas' | 'financeiro' | 'taxas' | 'res' | 'obs';
+const VB_ORDEM: Sec[] = ['tip', 'terreno', 'comercial', 'obra', 'despesas', 'financeiro', 'taxas', 'res', 'obs'];
+const VB_ROT: Record<Sec, string> = { tip: 'Tipologias', terreno: 'Terreno', comercial: 'Comercial', obra: 'Obras', despesas: 'Gerais', taxas: 'Taxas', financeiro: 'Financeiras', res: 'DRE', obs: 'Observações e Premissas' };
 
 /* ---------- o estudo aberto no popup (um por vez, de qualquer lugar da ficha) ---------- */
 let aberto: string | null = null;
@@ -65,6 +66,10 @@ function useAcoes(f: Ficha) {
   const duplicar = async (id: string, nome: string) => {
     const { data, error } = await supabase.rpc('criar_viabilidade', { p_terreno: f.id, p_nome: 'Cópia de ' + nome, p_copiar_de: id });
     if (error) { toast(erroTxt(error), true); return; }
+    /* a cópia leva as Observações e Premissas */
+    const o = await supabase.from('viabilidades').select('observacoes').eq('id', id).maybeSingle();
+    const obs = (o.data as { observacoes: string | null } | null)?.observacoes;
+    if (obs) await supabase.rpc('salvar_observacoes_viabilidade', { p_id: data, p_html: obs });
     recarregar(); abrirEstudo(data as string); toast('Estudo duplicado.');
   };
   const vincular = async (id: string, nome: string) => {
@@ -368,7 +373,10 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
           ))}
         </div>
         <nav className="vb-nav" aria-label="Seções do estudo">
-          {ordem.map((k) => <button key={k} className="vb-aba" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>{VB_ROT[k]}</b><small>{navTxt(k, c)}</small></button>)}
+          {ordem.map((k) => k === 'obs'
+            /* sem indicador embaixo: o nome ocupa as duas linhas (pedido do Moises, 12/nov/2026) */
+            ? <button key={k} className="vb-aba vb-aba-2l" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>Observações e<br />Premissas</b></button>
+            : <button key={k} className="vb-aba" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>{VB_ROT[k]}</b><small>{navTxt(k, c)}</small></button>)}
         </nav>
       </div>
       <Secao k={ab} ordem={ordem} c={c} irSec={irSec}
@@ -385,6 +393,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
           : ab === 'terreno' ? <SecTerreno x={ctx!} />
           : ab === 'obra' ? <SecObra x={ctx!} />
           : ab === 'res' ? <SecDre x={ctx!} />
+          : ab === 'obs' ? <Observacoes id={id} ro={ro} gravar={gravar} aoSalvar={(em) => setV((o) => o && { ...o, atualizado_em: em })} />
           : <SecLinhas x={ctx!} sec={ab} />}
       </Secao>
     </>
@@ -435,13 +444,14 @@ function navTxt(k: Sec, c: Calc) {
 function shTxt(k: Sec, c: Calc) {
   if (k === 'tip') return `${brl(c.vgv)} · ${nf(c.un)} unidades`;
   if (k === 'res') return `Lucro ${brl(c.lucro)} · margem ${pct1(c.margem)}`;
+  if (k === 'obs') return '';
   const x = c.SEC[k];
   return `${brl(x)} · ${c.vv > 0 ? nf(x / c.vv * 100, 1) + '%' : '—'} do VGV`;
 }
 
 function Secao({ k, ordem, c, irSec, acao, children }: { k: Sec; ordem: Sec[]; c: Calc; irSec: (k: Sec) => void; acao: ReactNode; children: ReactNode }) {
   const i = ordem.indexOf(k), ant = ordem[i - 1], prox = ordem[i + 1];
-  const titulo = k === 'tip' ? 'Tipologias' : k === 'res' ? 'DRE' : VB_SECAO[k];
+  const titulo = k === 'tip' ? 'Tipologias' : k === 'res' ? 'DRE' : k === 'obs' ? 'Observações e Premissas' : VB_SECAO[k];
   const passo = (x: Sec | undefined, seta: number) => x
     ? <button className="btn text sm" onClick={() => irSec(x)}>{seta < 0 ? '‹ ' : ''}{VB_ROT[x]}{seta > 0 ? ' ›' : ''}</button> : <span />;
   return (

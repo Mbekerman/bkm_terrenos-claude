@@ -1325,6 +1325,8 @@ erDiagram
 
 Decisões do Moisés, 25 e 26/out/2026. Avaliação prévia do terreno, **sem fluxo de caixa**. Migration `20261015001000_viabilidade.sql`; protótipo em `tools/prototipo/proto_viab.js`.
 
+**Observações e Premissas** (pedido do Moises, 12/nov/2026; `20261015002400_viabilidade_observacoes.sql`): `viabilidades.observacoes` guarda o texto livre formatado do estudo, em HTML limpo por lista branca, gravado só por `app.salvar_observacoes_viabilidade`. Vai na cópia (Duplicar), não no modelo.
+
 ```mermaid
 erDiagram
   terrenos ||--o{ viabilidades : "estudos"
