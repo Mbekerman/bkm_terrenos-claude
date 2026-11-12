@@ -4476,6 +4476,32 @@ select pg_temp.ok((select not automatico from app.auditoria where tabela = 'etap
   'considerar concluída é ação da pessoa nos Logs');
 reset role;
 
+-- Pastas do terreno no Drive (12/nov/2026): siglas das cidades e as pastas gravadas pelo serviço
+select pg_temp.como(:'analista');
+select pg_temp.ok((select app.drive_terreno(:'tpe')->>'sigla') = 'SP' and (select app.drive_terreno(:'tpe')->>'codigo') is not null
+                  and jsonb_array_length(app.drive_terreno(:'tpe')->'pastas') = 0,
+  'o serviço lê o terreno com a sigla padrão de São Paulo e sem pastas');
+select app.registrar_pasta_drive(:'tpe', '1dGg6otWpHozw0KXNI9TRpvFSBIio-Pj4', '01) Documentos de Terrenos', 'pastaTerreno0000000001', 'SP_NA_X_26 11_A001_Rua Y');
+select app.registrar_pasta_drive(:'tpe', '1dGg6otWpHozw0KXNI9TRpvFSBIio-Pj4', '01) Documentos de Terrenos', 'pastaTerreno0000000001', 'SP_ZS_X_26 11_A001_Rua Y');
+select pg_temp.ok((select count(*) = 1 and bool_and(nome = 'SP_ZS_X_26 11_A001_Rua Y') from app.terreno_pastas_drive where terreno_id = :'tpe'),
+  'renomear grava por cima, uma linha por pasta-modelo');
+select pg_temp.falha(format($$select app.registrar_pasta_drive(%L, 'x', null, 'pastaTerreno0000000001', 'n')$$, :'tpe'), 'id de pasta inválido é recusado');
+select pg_temp.falha(format($$insert into app.terreno_pastas_drive (empresa_id, terreno_id, pasta_mae_id, pasta_id, nome) values (%L, %L, 'a', 'b', 'c')$$, :'emp', :'tpe'),
+  'ninguém grava a pasta direto');
+select pg_temp.falha(format($$select app.salvar_sigla_cidade(%L, %L, 'SAO')$$, :'emp', :'sp'), 'analista não muda a sigla da cidade');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.drive_terreno(%L)$$, :'tpe'), 'leitura não chama o serviço do Drive');
+select pg_temp.falha(format($$select app.registrar_pasta_drive(%L, '1dGg6otWpHozw0KXNI9TRpvFSBIio-Pj4', null, 'pastaTerreno0000000002', 'n')$$, :'tpe'),
+  'leitura não grava pasta');
+select pg_temp.ok((select count(*) = 1 from app.terreno_pastas_drive where terreno_id = :'tpe'), 'leitura vê a pasta do terreno');
+select pg_temp.como(:'diretor');
+select app.salvar_sigla_cidade(:'emp', :'sp', 'sao');
+select pg_temp.ok((select app.drive_terreno(:'tpe')->>'sigla') = 'SAO', 'a sigla da empresa vale no lugar da padrão');
+select app.salvar_sigla_cidade(:'emp', :'sp', '');
+select pg_temp.ok((select app.drive_terreno(:'tpe')->>'sigla') = 'SP', 'apagar a sigla da empresa volta à padrão');
+select pg_temp.falha(format($$select app.salvar_sigla_cidade(%L, %L, 'S P')$$, :'emp', :'sp'), 'sigla com espaço é recusada');
+reset role;
+
 -- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
 -- e os catálogos sem empresa continuam legíveis por quem está logado.
 reset role;

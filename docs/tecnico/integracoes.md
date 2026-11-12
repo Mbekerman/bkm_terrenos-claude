@@ -358,9 +358,9 @@ O banco, o login, o Realtime e as funções. Tudo está em [banco.md](banco.md) 
 
 ---
 
-## 17. Google Agenda, Meet, Gmail e Drive (planejados)
+## 17. Google Agenda, Meet, Gmail e Drive
 
-Nada disso fala com o Google hoje. O que existe:
+Só as pastas do Drive falam com o Google hoje. O que existe:
 
 | Peça | Situação |
 | --- | --- |
@@ -368,7 +368,7 @@ Nada disso fala com o Google hoje. O que existe:
 | Função do servidor que lê a fila e grava no Google | **A fazer** (só `service_role`). |
 | "Conectar Agenda e Gmail" depois do login (escopos `calendar.events` e `gmail.send`), com o refresh token no **Vault** do Supabase | **A fazer**; falta o Moisés dizer o que o sistema faz na agenda e no e-mail. |
 | E-mail das notificações pela conta bkm@bkm.com.br (preferência por tipo e por pessoa, `preferencias_notificacao`, `email_status`) | Banco pronto; **falta a função que envia**. |
-| Drive | A bkm@ é "a conta do sistema (e-mails e Drive)" (CLAUDE.md, Saída do protótipo); documentos em pastas estão no plano. Nada implementado. |
+| Drive | **Pastas por terreno feitas** (12/nov/2026): o serviço `terrenos-drive` (`services/drive`, ver o README de lá) cria e renomeia, com a conta de serviço `terrenos-drive@bkm-terrenos.iam.gserviceaccount.com`, uma pasta do terreno em cada pasta de DI › 01) Novos Negócios (`DRIVE_PASTA_RAIZ`). Ids em `app.terreno_pastas_drive`. Envio e lista de arquivos na ficha ainda não. |
 | WhatsApp (uazapi) | Depois. |
 
 Confirmado pelo Moisés (4/nov/2026): o plano do Workspace grava e transcreve no Meet e a sincronização vai e volta. **A conferir** na integração: se a API da Agenda liga as Anotações do Gemini sozinha ao criar o evento.

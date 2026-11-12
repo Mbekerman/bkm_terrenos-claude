@@ -36,7 +36,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "web=true" >> "$GITHUB_OUTPUT"; echo "banco=true" >> "$GITHUB_OUTPUT"; echo "prototipo=true" >> "$GITHUB_OUTPUT"; echo "iptu=true" >> "$GITHUB_OUTPUT"; echo "varredura=true" >> "$GITHUB_OUTPUT"
+            echo "web=true" >> "$GITHUB_OUTPUT"; echo "banco=true" >> "$GITHUB_OUTPUT"; echo "prototipo=true" >> "$GITHUB_OUTPUT"; echo "iptu=true" >> "$GITHUB_OUTPUT"; echo "drive=true" >> "$GITHUB_OUTPUT"; echo "varredura=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[].filename' > mudou.txt
@@ -45,11 +45,12 @@ jobs:
           echo "web=$(tem '^(apps/web/|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
           echo "banco=$(tem '^(supabase/|tools/(parametros|setores|viabilidade)/.*\.json$|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
           echo "iptu=$(tem '^(services/iptu/|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
+          echo "drive=$(tem '^(services/drive/|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
           echo "varredura=$(tem '^(tools/geosanja/varredura/|apps/web/src/novo/lotesSjcPuro\\.ts$|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
           echo "prototipo=$(tem '^(docs/prototipo\.html|tools/prototipo/|\.github/workflows/)')" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
-        if: steps.mudou.outputs.web == 'true' || steps.mudou.outputs.prototipo == 'true' || steps.mudou.outputs.iptu == 'true' || steps.mudou.outputs.varredura == 'true'
+        if: steps.mudou.outputs.web == 'true' || steps.mudou.outputs.prototipo == 'true' || steps.mudou.outputs.iptu == 'true' || steps.mudou.outputs.drive == 'true' || steps.mudou.outputs.varredura == 'true'
         with:
           node-version: 22
           cache: npm
@@ -82,6 +83,11 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm test
+
+      - name: Serviço do Drive (nome e pastas, com o Drive simulado)
+        if: steps.mudou.outputs.drive == 'true'
+        working-directory: services/drive
+        run: npm test
 
       - name: Banco (migrations + regras)
         if: steps.mudou.outputs.banco == 'true'
