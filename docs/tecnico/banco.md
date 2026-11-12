@@ -248,6 +248,10 @@ Migration `20261015002000_tratativas.sql` (idempotente; é também o SQL avulso 
 
 `app.oferta_corretores` (`20261015002100_oferta_corretores.sql`, #322) guarda os corretores de cada oferta (único por oferta e corretor). `ofertas.corretor_id` continua sendo o **principal**, lido pelo resto do sistema (Resumo, filtros, funil, completude): o corretor posto na oferta entra na lista (`tg_oferta_corretor_principal`); o primeiro posto numa oferta sem corretor vira o principal; tirado o principal, o mais antigo que sobrou passa a ser (`tg_oferta_corretor_sync`), e todo corretor da oferta entra em `terreno_corretores`. O que os gatilhos gravam por consequência vai como automático na auditoria. Escrita direta (oferta é tabela sem regra): leitura pela empresa, inserir e apagar por quem edita. A observação livre da oferta é `ofertas.observacoes`.
 
+## Observações e Premissas da viabilidade (12/nov/2026)
+
+`20261015002400_viabilidade_observacoes.sql` (#PR) acrescenta `app.viabilidades.observacoes` (HTML do texto livre do estudo, nulo quando em branco, até 200 mil caracteres) e `app.salvar_observacoes_viabilidade(p_id, p_html) returns timestamptz`, a única escrita da coluna (a tabela não tem `update` para o usuário): confere `exigir_editor`, recusa conteúdo perigoso (ver `seguranca.md`), grava nulo quando só sobram etiquetas vazias e atualiza `atualizado_em`. `criar_viabilidade` com `p_copiar_de` não copia a coluna: o front copia depois pela mesma RPC. Sem auditoria linha a linha (a tabela não tem `t_aud`), como os outros campos do estudo.
+
 ## Auditoria e histórico
 
 ### `app.auditoria`: o log de tudo
