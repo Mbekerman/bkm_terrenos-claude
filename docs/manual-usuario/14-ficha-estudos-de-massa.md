@@ -49,7 +49,7 @@ A janela do estudo tem sempre o mesmo tamanho, a altura da tela inteira, com o e
 
 A janela fecha no **X** ou com **Esc**. No título: o nome, a situação, o selo **Válido** e **"Ver pedido"**, que abre a janela com a data do pedido, quem pediu, o nome do estudo, o arquiteto, o prazo e o briefing. Quem edita muda ali o nome, o arquiteto (o novo arquiteto é avisado), o prazo e o briefing e clica em **"Salvar"**.
 
-Logo abaixo do título, duas abas: **Estudo** (os dados abaixo) e **Observações e Premissas** (o nome em duas linhas), que ficam presas no alto ao rolar.
+Logo abaixo do título, três abas: **Estudo** (os dados abaixo), **Observações e Premissas** (o nome em duas linhas) e **Chat**, que ficam presas no alto ao rolar.
 
 Os campos se editam no lugar, sem botão de salvar: cada um grava ao sair dele.
 
@@ -60,6 +60,8 @@ Os campos se editam no lugar, sem botão de salvar: cada um grava ao sair dele.
 - **Análise:** os **estudos de viabilidade** feitos com este estudo de massa (o clique abre o estudo).
 
 **Observações e Premissas:** texto livre do estudo, com a mesma barra de formatação no jeito do Google Docs da viabilidade (estilos de título, tamanho, negrito, itálico, sublinhado, tachado, cor do texto e de destaque, link, alinhamento, listas e recuo), que grava sozinho. Os atalhos, a colagem e o que fica de fora são os mesmos (ver [Viabilidades › Observações e Premissas](15-ficha-viabilidades.md#observações-e-premissas)). Substitui o antigo campo Observações da Análise; o que estava escrito nele passou para cá. Quem só consulta vê o texto sem a barra.
+
+**Chat:** a conversa da equipe sobre o estudo, com @ para marcar colegas, /m e /v para citar estudos do terreno e Responder no clique direito. Funciona igual ao da viabilidade (ver [Viabilidades › Chat](15-ficha-viabilidades.md#chat)).
 
 **Regra:** o primeiro dado lançado passa o estudo de **Solicitado** para **Em elaboração**.
 

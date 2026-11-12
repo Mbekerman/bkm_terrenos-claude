@@ -1327,6 +1327,8 @@ Decisões do Moisés, 25 e 26/out/2026. Avaliação prévia do terreno, **sem fl
 
 **Observações e Premissas** (pedido do Moises, 12/nov/2026; `20261015002400_viabilidade_observacoes.sql`): `viabilidades.observacoes` guarda o texto livre formatado do estudo, em HTML limpo por lista branca, gravado só por `app.salvar_observacoes_viabilidade`. Vai na cópia (Duplicar), não no modelo. O estudo de massa tem o mesmo texto em `estudos_massa.observacoes_html` (`app.salvar_observacoes_massa`, `20261015002500_massa_observacoes.sql`), no lugar do `observacoes` em texto simples.
 
+**Chat dos estudos** (pedido do Moises, 12/nov/2026; `20261015002600_estudo_chat.sql`): `estudo_mensagens` guarda a conversa de cada estudo de massa ou de viabilidade (`estudo_massa_id` ou `viabilidade_id`, um dos dois; `terreno_id` copiado do estudo), com o autor, o texto, `resposta_a` (a mensagem citada, do mesmo estudo) e `editada_em`/`apagada_em` (apagada fica sem texto). @ marca colegas que veem o terreno (aviso `mencao`, linha em `mencoes`); `[[m:<id>]]` e `[[v:<id>]]` citam estudos do mesmo terreno; quem tem a mensagem respondida recebe `mensagem_resposta`. Lê quem vê o terreno; escreve quem edita, só por `app.enviar_mensagem_estudo`, `app.editar_mensagem_estudo` e `app.apagar_mensagem_estudo` (as duas últimas, só o autor).
+
 ```mermaid
 erDiagram
   terrenos ||--o{ viabilidades : "estudos"

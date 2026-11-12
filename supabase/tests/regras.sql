@@ -3775,6 +3775,41 @@ select app.salvar_observacoes_massa(:'em2', '<p><br></p>');
 select pg_temp.ok((select observacoes_html is null from app.estudos_massa where id = :'em2'), 'observações do estudo de massa só com etiquetas vazias ficam em branco');
 select pg_temp.como(:'leitor');
 select pg_temp.falha(format('select app.salvar_observacoes_massa(%L, %L)', :'em2', '<p>x</p>'), 'Leitura não grava observações do estudo de massa');
+-- Chat dos estudos (12/nov/2026)
+\echo '# chat dos estudos'
+select pg_temp.como(:'analista');
+select app.enviar_mensagem_estudo('massa', :'em2', format('Olhem a torre, @gestor e @leitura; compara com [[v:%s]]', :'vbm')) as cm1 \gset
+select pg_temp.ok((select estudo_massa_id = :'em2' and terreno_id = :'t1' and autor_id = :'analista' from app.estudo_mensagens where id = :'cm1'),
+  'quem edita escreve no chat do estudo de massa');
+select pg_temp.ok((select count(*) from app.mencoes where origem_tabela = 'estudo_mensagens' and origem_id = :'cm1') = 2,
+  'os @ da mensagem viram menção');
+select pg_temp.falha(format($$select app.enviar_mensagem_estudo('massa', %L, '   ')$$, :'em2'), 'mensagem em branco é recusada');
+select pg_temp.falha(format($$select app.enviar_mensagem_estudo('massa', %L, %L)$$, :'em2', '[[m:' || gen_random_uuid() || ']]'), 'citar estudo de outro terreno é recusado');
+select pg_temp.falha(format($$select app.enviar_mensagem_estudo('viabilidade', %L, 'oi', %L)$$, :'vbm', :'cm1'), 'resposta a mensagem de outro estudo é recusada');
+select pg_temp.como(:'gestor');
+select pg_temp.ok((select texto from app.notificacoes where tipo = 'mencao' and origem_id = :'cm1' and destinatario_id = :'gestor')
+  like '% mencionou você no estudo de massa "%" do terreno A%', 'o mencionado é avisado com o estudo e o terreno');
+select pg_temp.ok((select count(*) from app.estudo_mensagens where estudo_massa_id = :'em2') = 1, 'quem vê o terreno lê o chat');
+select app.enviar_mensagem_estudo('massa', :'em2', 'Vi, está ok', :'cm1') as cm2 \gset
+select pg_temp.falha(format($$select app.editar_mensagem_estudo(%L, 'mudei')$$, :'cm1'), 'só quem escreveu edita');
+select pg_temp.falha(format($$select app.apagar_mensagem_estudo(%L)$$, :'cm1'), 'só quem escreveu apaga');
+select pg_temp.como(:'analista');
+select pg_temp.ok((select texto from app.notificacoes where tipo = 'mensagem_resposta' and origem_id = :'cm2' and destinatario_id = :'analista')
+  like '% respondeu sua mensagem no estudo de massa %', 'quem recebe a resposta é avisado');
+select app.editar_mensagem_estudo(:'cm1', 'Olhem a torre, @gestor, @leitura e @diretor');
+select pg_temp.ok((select count(*) from app.mencoes where origem_id = :'cm1') = 3 and (select editada_em is not null from app.estudo_mensagens where id = :'cm1')
+  and (select count(*) from app.mencoes where origem_id = :'cm1' and user_id = :'diretor') = 1,
+  'editar a mensagem só avisa quem entrou agora');
+select app.apagar_mensagem_estudo(:'cm1');
+select pg_temp.ok((select texto is null and apagada_em is not null from app.estudo_mensagens where id = :'cm1')
+  and (select resposta_a = :'cm1' from app.estudo_mensagens where id = :'cm2'), 'apagada, a mensagem fica sem o texto e a resposta continua apontando para ela');
+select pg_temp.falha(format($$select app.editar_mensagem_estudo(%L, 'volta')$$, :'cm1'), 'mensagem apagada não se edita');
+select pg_temp.falha($$insert into app.estudo_mensagens (empresa_id, terreno_id, autor_id, texto) values (gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), 'x')$$,
+  'escrita direta na tabela do chat é recusada');
+select app.enviar_mensagem_estudo('viabilidade', :'vbm', 'Viabilidade com @gestor') as cm3 \gset
+select pg_temp.ok((select viabilidade_id = :'vbm' from app.estudo_mensagens where id = :'cm3'), 'o chat da viabilidade também');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.enviar_mensagem_estudo('massa', %L, 'oi')$$, :'em2'), 'Leitura não escreve no chat');
 select pg_temp.como(:'analista');
 select app.criar_viabilidade_da_massa(:'em1', 'Presa ao 1') as vbm1 \gset
 select pg_temp.falha(format('select app.apagar_estudo_massa(%L)', :'em1'), 'estudo com viabilidade presa não se apaga');

@@ -49,6 +49,9 @@ Funções que respondem "quem é você nesta empresa". São usadas dentro das po
 | --- | --- | --- | --- | --- | --- |
 | `app.mudar_arroba(p_user uuid, p_arroba text)` → `text` | O administrador muda o @ de quem é da equipe dele. | administrador da empresa do domínio da pessoa | grava `auditoria`, `usuarios` |  | `20261015001100_usuarios.sql:194` |
 | `app.salvar_minha_foto(p_url text)` → `void` | Foto do Google buscada pelo front na API People quando o login não a traz (contas do Workspace com a foto restrita à organização não mandam "picture" no login; caso do Moises, 5/nov/2026). Cada um grava só a própria, e só endereço de foto do Google. | logado; só a própria foto | grava `usuarios` | ✓ | `20261015001100_usuarios.sql:222` |
+| `app.enviar_mensagem_estudo(p_tipo text, p_estudo uuid, p_texto text, p_resposta uuid)` → `uuid` | Mensagem no chat do estudo (`massa` ou `viabilidade`), opcionalmente respondendo a outra do mesmo estudo; avisa os @ (só quem vê o terreno) e o autor da respondida. | editor que vê o terreno | grava `estudo_mensagens`, `mencoes`, `notificacoes` | ✓ | `20261015002600_estudo_chat.sql` |
+| `app.editar_mensagem_estudo(p_id uuid, p_texto text)` → `void` | Edita a própria mensagem; avisa só os @ novos. | o autor, editor | grava `estudo_mensagens`, `mencoes`, `notificacoes` | ✓ | `20261015002600_estudo_chat.sql` |
+| `app.apagar_mensagem_estudo(p_id uuid)` → `void` | Apaga a própria mensagem (fica "Mensagem apagada"). | o autor, editor | grava `estudo_mensagens` | ✓ | `20261015002600_estudo_chat.sql` |
 | `app.arrobas_no_texto(p_texto text)` → `text[]` | Os @ de um texto, em minúsculas, sem o ponto final colado ("@ana." = ana). | qualquer logado; a RLS filtra | só lê |  | `20261015001100_usuarios.sql:255` |
 
 ### Ficha do terreno: gravar, desfazer, arquivar, ler
