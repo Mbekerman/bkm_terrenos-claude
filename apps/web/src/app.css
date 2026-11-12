@@ -559,7 +559,7 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
   .tgav.encolhida { transform: translateX(100%); box-shadow: none }
   .tgav > .tgav-h, .tgav > .tgav-b { transition: visibility 0s }
   .tgav.encolhida > .tgav-h, .tgav.encolhida > .tgav-b, .tgav.encolhida > .tgav-redim { visibility: hidden; transition: visibility 0s .2s }
-  .tgav-aba { display: flex; align-items: center; justify-content: center; position: absolute; z-index: 41; left: -23px; top: 50%;
+  .tgav-aba { display: flex; align-items: center; justify-content: center; position: absolute; z-index: 2; left: -23px; top: 50%;
     width: 23px; height: 48px; margin-top: -24px; padding: 0 0 0 1px; border: 0; border-radius: 8px 0 0 8px; cursor: pointer;
     background: #fff; color: #444746; box-shadow: -1px 1px 3px rgba(0,0,0,.25), -2px 2px 6px rgba(0,0,0,.10) }
   .tgav-aba:hover { background: #f1f3f4; color: #1f1f1f }
@@ -567,4 +567,7 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
   .tgav.encolhida .tgav-aba svg { transform: rotate(180deg) }
   :root[data-tema="escuro"] .tgav-aba { background: #1e1f20; color: #c4c7c5; box-shadow: -1px 1px 3px rgba(0,0,0,.6) }
   :root[data-tema="escuro"] .tgav-aba:hover { background: #282a2c; color: #e3e3e3 }
+  /* popup aberto de dentro da ficha (estudo de massa, viabilidade, propostas...) nunca mostra a aba nem a pega de largura:
+     a aba ficava por cima da janela, no meio da tela (pedido do Moises, 12/nov/2026) */
+  .tgav:has(.scrim, .vb-pop-fundo, .dialog, [aria-modal="true"]) > .tgav-aba, .tgav:has(.scrim, .vb-pop-fundo, .dialog, [aria-modal="true"]) > .tgav-redim { display: none }
 }

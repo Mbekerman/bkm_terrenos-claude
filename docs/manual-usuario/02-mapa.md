@@ -49,7 +49,7 @@ No computador, clicar no **pino**, na **poligonal** ou na **lupa** da linha abre
 
 - clicar noutro terreno troca o terreno da gaveta;
 - **X** ou **Esc** fecham;
-- **a aba com a seta**, no meio da borda esquerda, **encolhe** a gaveta para a direita sem fechar, como o painel do Google Maps: só a aba fica na tela e o mapa aparece inteiro; clicar na aba de novo, no mesmo pino ou noutro terreno abre a gaveta outra vez (a gaveta sempre abre aberta);
+- **a aba com a seta**, no meio da borda esquerda, **encolhe** a gaveta para a direita sem fechar, como o painel do Google Maps: só a aba fica na tela e o mapa aparece inteiro; clicar na aba de novo, no mesmo pino ou noutro terreno abre a gaveta outra vez (a gaveta sempre abre aberta); com uma janela aberta por cima da ficha (estudo de massa, viabilidade...), a aba some até a janela fechar;
 - **"Abrir página"** leva à ficha em tela própria;
 - a largura da gaveta se arrasta pela borda esquerda (a pega aparece quando o mouse passa pela borda) (no mínimo, a largura em que a barra das abas da ficha cabe inteira); dois cliques na borda voltam ao padrão; o sistema lembra a largura;
 - **a gaveta lembra onde você parou em cada terreno**: a aba, a posição da rolagem e quais quadros estavam abertos ou fechados em cada aba. Ao reabrir a gaveta daquele terreno (depois de fechar, trocar de terreno ou até fechar o navegador), tudo volta como estava. Terreno que nunca foi aberto começa na Visão geral, do topo. Fica guardado neste navegador, para os 50 terrenos abertos mais recentemente; em outro computador ou navegador, a gaveta começa do zero.
