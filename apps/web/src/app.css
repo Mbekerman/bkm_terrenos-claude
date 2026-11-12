@@ -574,7 +574,7 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
 
 /* ---------- Viabilidade › Observações e Premissas (pedido do Moises, 12/nov/2026) ----------
    aba sem indicador: o nome em duas linhas, na mesma altura das outras */
-.vb-aba.vb-aba-2l b { line-height: 18px !important; white-space: nowrap; text-align: center }
+.vb-aba.vb-aba-1l { justify-content: center }  /* aba sem indicador embaixo (Observações): o nome no meio da altura */
 /* barra de edição no jeito do Google Docs (Material 3): cápsula tonal, ícones cheios 20 px em botões de 28 px */
 .obs { display: flex; flex-direction: column; gap: 12px }
 .obs-barra { position: sticky; top: var(--obs-top, 0px); z-index: 4; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-height: 40px; padding: 4px 8px; border-radius: 24px; background: #edf2fa; color: #444746 }
@@ -641,6 +641,11 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
 .vb-pop-d { height: 100% !important; min-height: 0 !important; max-height: 100% }
 .dialog.ems-pop { height: calc(100dvh - 32px); max-height: calc(100dvh - 32px) }
 
+/* estudo de massa: as duas abas (Estudo e Observações e Premissas) presas no alto da janela ao rolar */
+.ems-nav { position: sticky; top: 0; z-index: 5; margin: 0 0 8px; padding: 0 24px !important; background: var(--m-surface, #f8fafd); border-bottom: 1px solid var(--linha) }
+.ems-nav .vb-aba { min-height: 56px; justify-content: center }
+.ems-obs { padding: 0 24px }
+.ems-obs > .sec-h { padding-left: 0; padding-right: 0 }
 /* ⓘ dos títulos da tabela de Terrenos: o balão vai para o fim da página com posição fixa (Pipeline.tsx, InfoCol),
    para passar por cima da borda da tabela em vez de ser cortado por ela (pedido do Moises, 12/nov/2026) */
 .tb-info-pop.solto { position: fixed; right: auto; z-index: 45 }
