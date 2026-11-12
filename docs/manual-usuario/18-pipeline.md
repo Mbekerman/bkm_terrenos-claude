@@ -24,7 +24,7 @@ Os terrenos ficam sempre **agrupados por cidade**, com um título para cada cida
 | **Corretor** | O corretor principal e a imobiliária; com mais de um, "+N corretores" (o mouse em cima mostra os nomes) | primeiro corretor |
 | **Temperatura** | As barrinhas de 1 a 5 e o número | temperatura |
 | **Etapa** | A etapa do funil em cima e a subetapa embaixo, em cinza e menor, quebrando em até 3 linhas quando o nome é longo, da fase mais adiante do terreno (o mouse em cima mostra fase › etapa › subetapa). Em Stand By, "Stand By" embaixo da etapa; Perdido e Descartado em cima, com a etapa embaixo; sem negociação, **Backlog** | ordem do funil |
-| **Responsável** | A foto (ou as iniciais) de quem cuida do terreno; o mouse em cima mostra o nome. A coluna não tem título visível, para ficar estreita; o mouse no alto dela diz "Responsável" | nome |
+| **Responsável** | A foto (ou as iniciais) de quem cuida do terreno, no meio da altura da linha; o mouse em cima mostra o nome. A coluna não tem título visível, para ficar estreita; o mouse no alto dela diz "Responsável" | nome |
 
 As células de **Estudo de massa**, **Viabilidade**, **Empreendimento**, **Pedida** e **Proposta** mostram só os valores, um por linha, sem rótulo. O **ⓘ** depois do título dessas colunas abre um balão com o que é cada linha, de cima para baixo (fecha no clique fora, no Esc ou no ⓘ). O mouse parado sobre um valor também diz o que ele é. Em **Estudo de massa** e **Viabilidade**, a coluna tem a largura do que mostra, e o olho fica na mesma reta do ⓘ do título: logo depois do título ou, quando os valores são mais largos que ele, logo depois dos valores. Cada cidade tem uma linha cinza em cima e embaixo da sua faixa.
 
