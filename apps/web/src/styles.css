@@ -5510,10 +5510,13 @@ html[data-tema="escuro"] .lista-ter tbody.tb-cid ~ tbody.tb-cid > tr.tb-grp > th
 :root[data-tema="escuro"] .adv-menu .ep-ok { color: #a8c7fa }
 
 /* VSO histórico do Órulo no card da concorrência e janela por quartil de vendas (VsoHist.tsx; pedido do Moises, 12/nov/2026) */
-.mk-kv.vq-kv { grid-column: 1 / -1; text-align: left; background: none; border: 0; padding: 6px 8px; margin: 0 -8px; border-radius: 8px; font: inherit; color: inherit; cursor: pointer }
-.mk-kv.vq-kv:hover:not(:disabled) { background: rgba(11, 87, 208, .08) }
-.mk-kv.vq-kv:disabled { cursor: default }
-.vq-chip { display: inline-block; margin-left: 8px; padding: 0 8px; border-radius: 8px; font-size: 11px; line-height: 18px; font-weight: 500; vertical-align: 2px }
+.vq-kv { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; text-align: left; background: none; border: 0; padding: 8px; margin: 0 -8px; border-radius: 8px; font: inherit; color: inherit; cursor: pointer }
+.vq-kv:hover:not(:disabled) { background: rgba(11, 87, 208, .08) }
+.vq-kv:disabled { cursor: default }
+.vq-kv-q { grid-column: 1 / -1 }
+.vq-kv-ver { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 500; color: var(--primaria, #0b57d0) }
+.vq-chip .num, .vq-kv-q .num { line-height: 22px }
+.vq-chip { display: inline-block; padding: 0 8px; border-radius: 8px; font-size: 11px; line-height: 18px; font-weight: 500; vertical-align: 2px }
 .dialog.vq-dlg { width: min(640px, 100%) }
 .vq-dlg .dh { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px }
 .vq-res { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px }
@@ -5538,6 +5541,10 @@ html[data-tema="escuro"] .lista-ter tbody.tb-cid ~ tbody.tb-cid > tr.tb-grp > th
 :root[data-tema="escuro"] .vq-res b, :root[data-tema="escuro"] .vq-val { color: #e3e3e3; fill: #e3e3e3 }
 :root[data-tema="escuro"] .vq-grade, :root[data-tema="escuro"] .vq-tab :is(th, td) { stroke: #444746; border-color: #444746 }
 :root[data-tema="escuro"] .vq-eixo, :root[data-tema="escuro"] .vq-tab th { fill: #c4c7c5; color: #c4c7c5 }
-:root[data-tema="escuro"] .mk-kv.vq-kv:hover:not(:disabled) { background: rgba(168, 199, 250, .12) }
+:root[data-tema="escuro"] .vq-kv:hover:not(:disabled) { background: rgba(168, 199, 250, .12) }
 .vq-vazio { padding: 16px; border-radius: 12px; background: #f0f4f9; font-size: 13px; line-height: 20px }
 :root[data-tema="escuro"] .vq-vazio { background: #282a2c }
+.vq-q { font-weight: 500; fill: #1f1f1f }
+:root[data-tema="escuro"] .vq-q { fill: #e3e3e3 }
+:root[data-tema="escuro"] .vq-kv-ver { color: #a8c7fa }
+.vq-tab td:not(:last-child), .vq-tab th { white-space: nowrap }

@@ -232,8 +232,8 @@ export function CaixaEmp({ e, fechar, tabela, vso: abrirVso, pausado }: { e: Emp
         <div className="faint">{m2 != null ? 'preço médio por m² das unidades à venda' : e.estoque ? 'as unidades à venda estão sem preço na tabela' : 'nenhuma unidade à venda'}</div>
         <div className="mk-prog">Enquadramento social: <b>{e.prog === 'sim' ? 'Sim' : e.prog === 'nao' ? 'Não' : 'Não informado'}</b></div></div>
       <div className="mk-grid">{kv('Lançamento', mkData(e.lanc))}{kv('Entrega', mkData(e.ent))}{kv('Unidades', num(e.unidades))}{kv('Estoque', num(e.estoque), pct + '%')}
-        {kv('Vendas', num(e.vendas), mkPeriodo())}{kv('VSO', mkPct(vso), dias ? `em ${dias} dias` : '')}
-        <VsoKv id={e.id} abrir={() => abrirVso(e.id)} /></div>
+        {/* com o histórico do Órulo, VSO e vendas dos últimos 3 meses e o quartil de vendas (pedido do Moises, 12/nov/2026); sem ele, o que o monitor mediu */}
+        <VsoKv id={e.id} abrir={() => abrirVso(e.id)} semHist={<>{kv('Vendas', num(e.vendas), mkPeriodo())}{kv('VSO', mkPct(vso), dias ? `em ${dias} dias` : '')}</>} /></div>
       <Resumo e={e} />
       <div className="mk-tab"><button type="button" className="btn text" onClick={() => tabela(e.id)}><Ic n="doc" s={18} />Ver tabela completa</button></div>
       <div className="cc-meta faint mk-nota">Monitor de mercado (Órulo), retrato de {mkData(mercado()!.gerado)} · Tipologias agrupadas pelo resumo do empreendimento · R$/m² das unidades à venda (* pelo primeiro preço visto, sem unidade à venda) · VSO = vendas ÷ (vendas + à venda){mkPeriodo() ? ', ' + mkPeriodo() : ''}</div>
