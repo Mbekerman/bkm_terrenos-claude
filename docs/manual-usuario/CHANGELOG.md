@@ -8,7 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 2026-11-12
 
-- **Viabilidade: aba Observações e Premissas.** O estudo ganha a última aba, um texto livre com a barra de formatação no jeito do Google Docs (estilos de título, tamanho da fonte, negrito, itálico, sublinhado, tachado, cor do texto e de destaque, link, alinhamento, listas e recuo), que grava sozinho. Duplicar leva o texto para a cópia. Ver [15. Viabilidades](15-ficha-viabilidades.md#observações-e-premissas). (#PR)
+- **Viabilidade: aba Observações e Premissas.** O estudo ganha a última aba, um texto livre com a barra de formatação no jeito do Google Docs (estilos de título, tamanho da fonte, negrito, itálico, sublinhado, tachado, cor do texto e de destaque, link, alinhamento, listas e recuo), que grava sozinho. Duplicar leva o texto para a cópia. Ver [15. Viabilidades](15-ficha-viabilidades.md#observações-e-premissas). (#362)
 - **Janelas sem a seta da gaveta**: com a ficha aberta na gaveta (Mapa ou Pipeline), as janelas que abrem por cima dela (estudo de massa, viabilidade, propostas e as demais) não mostram mais a aba com a seta de encolher, que antes ficava no meio da janela. Fechada a janela, a aba volta na borda da gaveta. (#358)
 - **Iniciar negociação**: o terreno em Backlog mostra, no lugar do quadro de avanço, o botão "Iniciar negociação", que abre a negociação com a oferta ativa na primeira etapa. Antes não havia como sair do Backlog sem registrar outra oferta. (#356)
 

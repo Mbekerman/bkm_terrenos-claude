@@ -250,7 +250,7 @@ Migration `20261015002000_tratativas.sql` (idempotente; é também o SQL avulso 
 
 ## Observações e Premissas da viabilidade (12/nov/2026)
 
-`20261015002400_viabilidade_observacoes.sql` (#PR) acrescenta `app.viabilidades.observacoes` (HTML do texto livre do estudo, nulo quando em branco, até 200 mil caracteres) e `app.salvar_observacoes_viabilidade(p_id, p_html) returns timestamptz`, a única escrita da coluna (a tabela não tem `update` para o usuário): confere `exigir_editor`, recusa conteúdo perigoso (ver `seguranca.md`), grava nulo quando só sobram etiquetas vazias e atualiza `atualizado_em`. `criar_viabilidade` com `p_copiar_de` não copia a coluna: o front copia depois pela mesma RPC. Sem auditoria linha a linha (a tabela não tem `t_aud`), como os outros campos do estudo.
+`20261015002400_viabilidade_observacoes.sql` (#362) acrescenta `app.viabilidades.observacoes` (HTML do texto livre do estudo, nulo quando em branco, até 200 mil caracteres) e `app.salvar_observacoes_viabilidade(p_id, p_html) returns timestamptz`, a única escrita da coluna (a tabela não tem `update` para o usuário): confere `exigir_editor`, recusa conteúdo perigoso (ver `seguranca.md`), grava nulo quando só sobram etiquetas vazias e atualiza `atualizado_em`. `criar_viabilidade` com `p_copiar_de` não copia a coluna: o front copia depois pela mesma RPC. Sem auditoria linha a linha (a tabela não tem `t_aud`), como os outros campos do estudo.
 
 ## Auditoria e histórico
 
