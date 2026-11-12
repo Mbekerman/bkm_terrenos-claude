@@ -59,27 +59,32 @@ const PADRAO_PT = 11;
 const cmd = (c: string, v?: string) => document.execCommand(c, false, v);
 const estado = (c: string) => { try { return document.queryCommandState(c); } catch { return false; } };
 
-export function Observacoes({ id, ro, gravar, aoSalvar }: { id: string; ro: boolean; gravar: Gravar; aoSalvar: (em: string) => void }) {
+/** De onde vem e para onde vai o texto: o estudo de viabilidade (padrão) ou o estudo de massa. */
+export type OrigemObs = { tabela: 'viabilidades' | 'estudos_massa'; coluna: 'observacoes' | 'observacoes_html'; rpc: 'salvar_observacoes_viabilidade' | 'salvar_observacoes_massa' };
+const VIAB: OrigemObs = { tabela: 'viabilidades', coluna: 'observacoes', rpc: 'salvar_observacoes_viabilidade' };
+export const OBS_MASSA: OrigemObs = { tabela: 'estudos_massa', coluna: 'observacoes_html', rpc: 'salvar_observacoes_massa' };
+
+export function Observacoes({ id, ro, gravar, aoSalvar, origem = VIAB }: { id: string; ro: boolean; gravar: Gravar; aoSalvar: (em: string) => void; origem?: OrigemObs }) {
   const [html, setHtml] = useState<string | null>(null);
   const [erro, setErro] = useState('');
   useEffect(() => {
     let vivo = true;
-    supabase.from('viabilidades').select('observacoes').eq('id', id).maybeSingle().then(({ data, error }) => {
+    supabase.from(origem.tabela).select(origem.coluna).eq('id', id).maybeSingle().then(({ data, error }) => {
       if (!vivo) return;
       if (error) { setErro(erroTxt(error)); return; }
-      setHtml(limparHtml((data as { observacoes: string | null } | null)?.observacoes));
+      setHtml(limparHtml((data as Record<string, string | null> | null)?.[origem.coluna]));
     });
     return () => { vivo = false; };
-  }, [id]);
+  }, [id, origem.tabela]); // eslint-disable-line react-hooks/exhaustive-deps
   if (erro) return <div className="muted obs-vazio">Não foi possível abrir as observações: {erro}</div>;
   if (html == null) return <div className="muted obs-vazio">Carregando…</div>;
   if (ro) return html
     ? <div className="obs-doc obs-ler" dangerouslySetInnerHTML={{ __html: html }} />
     : <div className="muted obs-vazio">Sem observações.</div>;
-  return <Editor id={id} ini={html} gravar={gravar} aoSalvar={aoSalvar} />;
+  return <Editor id={id} ini={html} gravar={gravar} aoSalvar={aoSalvar} rpc={origem.rpc} />;
 }
 
-function Editor({ id, ini, gravar, aoSalvar }: { id: string; ini: string; gravar: Gravar; aoSalvar: (em: string) => void }) {
+function Editor({ id, ini, gravar, aoSalvar, rpc }: { id: string; ini: string; gravar: Gravar; aoSalvar: (em: string) => void; rpc: OrigemObs['rpc'] }) {
   const ed = useRef<HTMLDivElement>(null);
   const salvo = useRef(ini);
   const tempo = useRef<number>();
@@ -94,7 +99,7 @@ function Editor({ id, ini, gravar, aoSalvar }: { id: string; ini: string; gravar
   /* a barra fica presa logo abaixo dos indicadores e das abas do estudo ao rolar */
   const raiz = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    const fx = raiz.current?.closest('.vb-pop-sc')?.querySelector<HTMLElement>('.vb-fixo');
+    const fx = raiz.current?.closest('.vb-pop-sc, .ems-pop-b')?.querySelector<HTMLElement>('.vb-fixo, .ems-nav');
     if (!fx || !raiz.current) return;
     const r = raiz.current;
     const medir = () => r.style.setProperty('--obs-top', fx.offsetHeight + 8 + 'px');
@@ -116,7 +121,7 @@ function Editor({ id, ini, gravar, aoSalvar }: { id: string; ini: string; gravar
     if (h === salvo.current) return;
     salvo.current = h;
     setSituacao('salvando');
-    gravar(() => supabase.rpc('salvar_observacoes_viabilidade', { p_id: id, p_html: h || null }), (r) => {
+    gravar(() => supabase.rpc(rpc, { p_id: id, p_html: h || null }), (r) => {
       setSituacao('salvo');
       if (r?.data) aoSalvar(r.data as string);
     });
@@ -216,7 +221,7 @@ function Editor({ id, ini, gravar, aoSalvar }: { id: string; ini: string; gravar
   /* atalhos do Docs que o navegador não tem */
   const teclas = (e: React.KeyboardEvent) => {
     const m = e.ctrlKey || e.metaKey;
-    if (e.key === 'Escape') { e.preventDefault(); ed.current?.blur(); return; }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); ed.current?.blur(); return; }
     if (!m) return;
     const k = e.key.toLowerCase();
     if (k === 'k') { e.preventDefault(); pedirLink(); }
@@ -276,7 +281,7 @@ function Editor({ id, ini, gravar, aoSalvar }: { id: string; ini: string; gravar
   useEffect(() => {
     if (!menu) return;
     const f = (e: MouseEvent) => { if (!barra.current?.contains(e.target as Node)) setMenu(''); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); setMenu(''); restaurar(); } };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); setMenu(''); restaurar(); } };
     document.addEventListener('mousedown', f);
     document.addEventListener('keydown', esc, true);
     return () => { document.removeEventListener('mousedown', f); document.removeEventListener('keydown', esc, true); };

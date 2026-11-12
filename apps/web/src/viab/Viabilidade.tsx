@@ -375,7 +375,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
         <nav className="vb-nav" aria-label="Seções do estudo">
           {ordem.map((k) => k === 'obs'
             /* sem indicador embaixo: o nome ocupa as duas linhas (pedido do Moises, 12/nov/2026) */
-            ? <button key={k} className="vb-aba vb-aba-2l" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>Observações e<br />Premissas</b></button>
+            ? <button key={k} className="vb-aba vb-aba-2l" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>Observações<br />e Premissas</b></button>
             : <button key={k} className="vb-aba" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>{VB_ROT[k]}</b><small>{navTxt(k, c)}</small></button>)}
         </nav>
       </div>

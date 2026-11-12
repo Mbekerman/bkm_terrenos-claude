@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 2026-11-12
 
+- **Estudo de massa: aba Observações e Premissas.** A janela do estudo de massa ganha duas abas, **Estudo** e **Observações e Premissas**, com o mesmo texto formatado da viabilidade, no lugar do campo Observações da Análise (o texto que existia passou para a aba). Nas duas janelas, o nome da aba fica "Observações" na primeira linha e "e Premissas" na segunda. Ver [14. Estudos de massa](14-ficha-estudos-de-massa.md). (#PR)
 - **Foto do Responsável maior** no Pipeline, e um pouco mais baixa: acompanha as duas primeiras linhas de texto, sem ficar acima delas. Ver [18. Pipeline](18-pipeline.md). (#371)
 - **Tab minimiza a gaveta em vez de fechar**: com a gaveta aberta, o Tab a encolhe e deixa só a seta; o Tab de novo a abre. Com a gaveta fechada no X ou no Esc, o Tab continua abrindo o último terreno. Ver [2. Mapa](02-mapa.md) e [18. Pipeline](18-pipeline.md). (#369)
 - **Tab abre e fecha a gaveta da ficha** no Mapa e no Pipeline: fechada, abre o último terreno que esteve na gaveta naquela página; encolhida, abre de novo; aberta, fecha. Nessas páginas, para passar de um campo ao próximo, use o Enter. Ver [2. Mapa](02-mapa.md) e [18. Pipeline](18-pipeline.md). (#367)

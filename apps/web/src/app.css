@@ -640,3 +640,9 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
    12/nov/2026; antes a janela acompanhava o conteúdo e mudava de altura a cada aba) */
 .vb-pop-d { height: 100% !important; min-height: 0 !important; max-height: 100% }
 .dialog.ems-pop { height: calc(100dvh - 32px); max-height: calc(100dvh - 32px) }
+
+/* estudo de massa: as duas abas (Estudo e Observações e Premissas) presas no alto da janela ao rolar */
+.ems-nav { position: sticky; top: 0; z-index: 5; margin: 0 0 8px; padding: 0 24px !important; background: var(--m-surface, #f8fafd); border-bottom: 1px solid var(--linha) }
+.ems-nav .vb-aba { min-height: 56px; justify-content: center }
+.ems-obs { padding: 0 24px }
+.ems-obs > .sec-h { padding-left: 0; padding-right: 0 }
