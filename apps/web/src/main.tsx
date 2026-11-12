@@ -9,12 +9,14 @@ import App from './App';
 import { instalarMascaras } from './lib/mascara';
 import { instalarTabelas } from './lib/tabelas';
 import { instalarArraste } from './lib/arrastar';
+import { instalarVersaoNova } from './lib/versaoNova';
 import './styles.css';
 import './app.css';
 
 instalarMascaras();
 instalarTabelas();
 instalarArraste();
+instalarVersaoNova();
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: true } },

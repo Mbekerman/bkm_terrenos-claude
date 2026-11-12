@@ -98,3 +98,7 @@ No ambiente de desenvolvimento, embaixo do selo "Desenvolvimento" ao lado do log
 
 **Algo na tela está diferente do manual.**
 Vale a tela. Avise para o manual ser corrigido.
+
+### A página recarregou sozinha quando cliquei num botão
+
+Isso acontece quando saiu uma versão nova do sistema enquanto a página estava aberta: alguns recursos (o Topográfico, por exemplo) são carregados na hora do clique, e os da versão antiga não existem mais. O sistema recarrega a página uma vez para pegar a versão nova; depois é só clicar de novo. O que estava sendo digitado num formulário de inclusão volta preenchido. Se mesmo assim aparecer um erro como "Failed to fetch dynamically imported module", recarregue a página (F5) e tente de novo.
