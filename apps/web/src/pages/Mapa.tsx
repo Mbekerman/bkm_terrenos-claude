@@ -213,7 +213,7 @@ export default function Mapa() {
     const t = todosB.find((x) => x.codigo === cod);
     if (!t) return;
     if (todos.some((x) => x.id === t.id)) abrirGav(t.id); else navegar(`/mapa/${cod}/ficha`);
-  }, () => navegar(`/mapa/${codigoUrl!.toUpperCase()}`));
+  });
   const selecionar = useCallback((id: string | null) => {
     if (gav) { if (id) abrirGav(id); return; }
     setSelId(id);
