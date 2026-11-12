@@ -8,6 +8,7 @@ import { Dialogo, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
 import { Adorno } from '../lib/mascara';
 import { SeloValido } from '../components/SeloValido';
+import { NavRoleta } from '../components/NavRoleta';
 import { data as fd } from '../lib/format';
 import { lerNum, Quadro } from '../ficha/edicao';
 import type { Ficha } from '../ficha/dados';
@@ -372,12 +373,12 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
             <div key={l} className="kpi"><span className="v sm">{kpiV(x)}</span><span className="l">{l}</span></div>
           ))}
         </div>
-        <nav className="vb-nav" aria-label="Seções do estudo">
+        <NavRoleta cls="vb-nav" rotulo="Seções do estudo" ativo={ab} conta={ordem.length}>
           {ordem.map((k) => k === 'obs'
             /* sem indicador embaixo: o nome ocupa as duas linhas (pedido do Moises, 12/nov/2026) */
-            ? <button key={k} className="vb-aba vb-aba-1l" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>Observações</b></button>
-            : <button key={k} className="vb-aba" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>{VB_ROT[k]}</b><small>{navTxt(k, c)}</small></button>)}
-        </nav>
+            ? <button key={k} data-t={k} className="vb-aba vb-aba-1l" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>Observações</b></button>
+            : <button key={k} data-t={k} className="vb-aba" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>{VB_ROT[k]}</b><small>{navTxt(k, c)}</small></button>)}
+        </NavRoleta>
       </div>
       <Secao k={ab} ordem={ordem} c={c} irSec={irSec}
         acao={ab === 'tip' && !ro && !v.estudo_massa_id ? <button className="btn text sm" onClick={() => {

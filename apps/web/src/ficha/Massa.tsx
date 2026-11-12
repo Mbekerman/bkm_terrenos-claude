@@ -18,6 +18,7 @@ import { lerNum, numStr, Quadro, useListas, Vivo } from './edicao';
 import type { Ficha, R } from './dados';
 import { abrirEstudo } from '../viab/Viabilidade';
 import { SeloValido } from '../components/SeloValido';
+import { NavRoleta } from '../components/NavRoleta';
 import { OBS_MASSA, Observacoes } from '../viab/Observacoes';
 
 const SIT: Record<string, [string, string]> = { solicitado: ['Solicitado', 'warn'], em_elaboracao: ['Em elaboração', 'blue'], entregue: ['Entregue', 'good'] };
@@ -209,10 +210,10 @@ export function PopMassa({ f, fechar, id }: { f: Ficha; fechar: () => void; id?:
         {q.isLoading ? <div className="empty">Carregando…</div>
           : q.error ? <div className="banner warn">Não foi possível ler o estudo de massa: {(q.error as Error).message}</div>
           : m ? <>
-            <nav className="vb-nav ems-nav" aria-label="Partes do estudo de massa">
-              <button className="vb-aba" aria-current={aba === 'estudo' ? 'page' : undefined} onClick={() => setAba('estudo')}><b>Estudo</b></button>
-              <button className="vb-aba vb-aba-1l" aria-current={aba === 'obs' ? 'page' : undefined} onClick={() => setAba('obs')}><b>Observações</b></button>
-            </nav>
+            <NavRoleta cls="vb-nav ems-nav" rotulo="Partes do estudo de massa" ativo={aba} conta={2}>
+              <button className="vb-aba" data-t="estudo" aria-current={aba === 'estudo' ? 'page' : undefined} onClick={() => setAba('estudo')}><b>Estudo</b></button>
+              <button className="vb-aba vb-aba-1l" data-t="obs" aria-current={aba === 'obs' ? 'page' : undefined} onClick={() => setAba('obs')}><b>Observações</b></button>
+            </NavRoleta>
             {aba === 'estudo'
               ? <FichaEstudo key={m.id} m={m} viabs={q.data!.viabs} edita={edita} recarregar={recarregar}
                 abrir={(t) => setJanela(t)} marcarValido={() => marcar(m, true)} />
