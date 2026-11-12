@@ -11,7 +11,7 @@ import { mkData, mkPct, num } from './mercado';
 export interface Quartil { quartil: number; de: number; ate: number; situacao: 'concluido' | 'em_andamento' | 'futuro'; vendido_ate: number | null; meses: number | null; mesmo_mes: boolean; vso_mes: number | null }
 export interface VsoHist {
   primeiro_mes: string; ultimo_mes: string; lancamento: string | null; completo: boolean;
-  janelas: Record<'1m' | '3m' | '6m' | '12m' | 'todo', { vso_mes: number | null; vendas: number; liquidas: number; distratos: number; meses: number } | null>;
+  janelas: Record<'1m' | '3m' | '6m' | '12m' | 'todo', { vso_mes: number | null; vendas: number; liquidas: number; distratos: number; estoque: number; meses: number } | null>;
   geral: { unidades: number; estoque: number; vendido: number; vendido_pct: number | null; meses_desde_lancamento: number | null; vso_mes: number | null };
   vendas: { quartis: Quartil[]; quartil_atual: number | null; vendido_pct: number | null; marcos: Record<string, { mes: string | null; meses: number | null; vso_mes: number | null }> } | null;
 }
@@ -54,7 +54,14 @@ export function janela(d: VsoHist, n: 3 | 12): Jan | null {
   const g = d.geral, ml = g.meses_desde_lancamento;
   if (ml != null && ml > 0 && ml <= n) return { vso_mes: g.vso_mes, vendas: g.vendido, distratos: 0, liquidas: g.vendido, meses: ml, lanc: true };
   const j = d.janelas[n === 3 ? '3m' : '12m'];
-  return j ? { ...j, lanc: false } : null;
+  if (!j) return null;
+  /* mais distrato que venda: VSO negativo, pela mesma conta (pedido do Moises, 12/nov/2026); o banco devolve nulo nesse caso */
+  let v = j.vso_mes;
+  if (v == null && j.liquidas < 0 && j.liquidas + j.estoque > 0 && j.meses > 0) {
+    const p = j.liquidas / (j.liquidas + j.estoque);
+    v = Math.round((1 - Math.pow(1 - p, 1 / j.meses)) * 1e4) / 1e4;
+  }
+  return { ...j, vso_mes: v, lanc: false };
 }
 
 const per = (j: Jan | null | undefined, d: VsoHist) =>
@@ -69,7 +76,7 @@ export function VsoKv({ id, abrir, semHist }: { id: string; abrir: () => void; s
   return (
     <button type="button" className="vq-kv" onClick={abrir} disabled={!d} title="Histórico de vendas do Órulo. Clique para ver o VSO de cada quartil de vendas">
       <span className="mk-kv"><span className="muted">VSO mensal médio</span><span className="num">{d ? mkPct(j?.vso_mes ?? null) : '…'}</span>
-        {d && <span className="faint">{j && j.vso_mes == null && j.liquidas < 0 ? 'mais distratos que vendas' : per(j, d)}</span>}</span>
+        {d && <span className="faint">{j && j.liquidas < 0 ? 'mais distratos que vendas' : per(j, d)}</span>}</span>
       <span className="mk-kv"><span className="muted">Vendas</span><span className="num">{d && j ? num(j.vendas) : '…'}</span>
         {d && <span className="faint">{j?.lanc ? 'desde o lançamento' : j && j.distratos ? `e ${num(j.distratos)} distrato${j.distratos === 1 ? '' : 's'}` : per(j, d)}</span>}</span>
       <span className="mk-kv vq-kv-q"><span className="muted">Quartil de vendas</span>
@@ -81,7 +88,7 @@ export function VsoKv({ id, abrir, semHist }: { id: string; abrir: () => void; s
 }
 
 /* janela sem VSO por ter mais distrato que venda (ajuste de tabela ou devoluções): diz por quê, em vez de só o traço */
-const jSub = (j?: { vso_mes: number | null; liquidas: number } | null) => j && j.vso_mes == null && j.liquidas < 0 ? 'mais distratos que vendas' : 'ao mês';
+const jSub = (j?: { vso_mes: number | null; liquidas: number } | null) => j && j.liquidas < 0 ? 'ao mês, mais distratos que vendas' : 'ao mês';
 
 /** janela com o VSO mensal médio de cada quartil de vendas */
 export function PopVso({ id, nome, fechar }: { id: string; nome: string; fechar: () => void }) {
