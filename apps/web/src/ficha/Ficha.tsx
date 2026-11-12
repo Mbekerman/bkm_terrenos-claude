@@ -5,6 +5,7 @@ import { data as fd, milhoes, m2 } from '../lib/format';
 import { Bi, Ic } from '../components/Moldura';
 import { corSub, type Fase as FaseMapa, type TerrenoMapa } from '../mapa/dados';
 import FaixaTratativa from './Tratativa';
+import { DotPend, nomeEtapaPend, useConsiderarConcluida, useEtapasPend, type EtapaPend } from './EtapasPend';
 import { carregarFicha, completude, dispensados, type Falta, FONTE_AREA, TP_N, ZONA, type Ficha as F, type ProcF } from './dados';
 import { useEstRelevo, useRelevoAuto } from '../topo/relevo';
 import MiniMapa from './MiniMapa';
@@ -99,6 +100,7 @@ function useEncolher(dep: unknown) {
 /** linha do tempo do topo: na entrada, as etapas da negociação; depois, as fases */
 function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
   const ref = useEncolher(f);
+  const ep = useEtapasPend(f);
   const a = faseAtual(f), ent = f.fases.find((x) => x.entrada);
   const ck = <Ic n="check" s={14} />;
   if (!a || a.k === ent?.k) {
@@ -114,9 +116,11 @@ function LinhaTopo({ f, rotulo }: { f: F; rotulo?: boolean }) {
       <nav ref={ref} className="tl-topo" aria-label="Etapas da negociação">{rotulo && ent && <div className="tl-fase">{ent.nome}</div>}<ol className="stepper">
         {ets.map((s, i) => {
           const st = i < idx || fim ? 'done' : i === idx ? 'cur' : 'fut', em = i <= idx ? entrou(s.k) : null;
+          /* etapa deixada com pendências (12/nov/2026): o alerta laranja no lugar do check */
+          const pe = st === 'done' ? ep.filter((x) => x.fase === ent?.k && x.etapa === s.k) : [];
           return (
-            <li key={s.k} className={`step ${st}${i === idx + 1 && !fim ? ' prox' : ''}`} title={s.nome} aria-current={i === idx && !fim ? 'step' : undefined}>
-              <span className="dot">{st === 'done' ? ck : i + 1}</span>
+            <li key={s.k} className={`step ${st}${pe.length ? ' step-pend' : ''}${i === idx + 1 && !fim ? ' prox' : ''}`} title={s.nome} aria-current={i === idx && !fim ? 'step' : undefined}>
+              {pe.length ? <DotPend pend={pe} nome={s.nome} /> : <span className="dot">{st === 'done' ? ck : i + 1}</span>}
               <span className="sl-w"><span className="sl">{s.nome}</span>{em && <span className="sd">{st === 'cur' && sub ? sub + ' · ' : ''}{fd(em)}</span>}</span>
             </li>
           );
@@ -210,7 +214,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
   const irG = (k: string) => { if (k === 'estudos') { if (g !== 'estudos') irT(subVista()); } else if (k !== aba) irT(k); };
   /* sem número nas abas: rolado o topo para fora da vista, o que falta aparece num botão de alerta na barra das abas,
      sempre visível (pedido do Moisés, 6/nov/2026) */
-  const c = completude(f);
+  const c = completude(f), ep = useEtapasPend(f);
   const [topoFora, setTopoFora] = useState(false);
   useEffect(() => {
     const ver = () => {
@@ -226,7 +230,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
     document.addEventListener('scroll', ver, { capture: true, passive: true });
     window.addEventListener('resize', ver);
     return () => { document.removeEventListener('scroll', ver, { capture: true }); window.removeEventListener('resize', ver); };
-  }, [c.faltam.length]);
+  }, [c.faltam.length, ep.length]);
   return (
     <div className="fi-abas-w">
       <div className={`fi-abas roleta${sobra ? ' desliza' : ''}`} role="tablist" aria-label="Seções do terreno" ref={barra}>
@@ -235,7 +239,7 @@ function Abas({ f, aba, irAba }: { f: F; aba: string; irAba: (k: string) => void
         ))}
       </div>
       <div className="fi-fim">
-        {topoFora && c.faltam.length > 0 && <Faltam f={f} c={c} irAba={irAba} alerta />}
+        {topoFora && (c.faltam.length > 0 || ep.length > 0) && <Faltam f={f} c={c} ep={ep} irAba={irAba} alerta />}
         <button type="button" className={`iconbtn fi-docs${aba === 'documentos' ? ' atual' : ''}`} aria-pressed={aba === 'documentos'} aria-label="Documentos" title="Documentos"
           onClick={() => { if (aba !== 'documentos') irT('documentos'); }}>{SVG_PASTA}</button>
         <div className={`adv-mais fi-mais${menu ? ' aberto' : ''}`} hidden={!sobra}>
@@ -350,7 +354,8 @@ export function usePreCarregarFicha() {
 /** "Ficha N% completa" com a bolinha vermelha do que falta; o menu leva direto ao campo, já em edição, com o conteúdo
     selecionado e uma iluminada rápida (pedidos do Moisés, 5 e 6/nov/2026). Em "alerta", o mesmo menu num botão de alerta
     na barra das abas, para quando o topo saiu da vista */
-function Faltam({ f, c, irAba, alerta }: { f: F; c: ReturnType<typeof completude>; irAba: (k: string) => void; alerta?: boolean }) {
+function Faltam({ f, c, ep, irAba, alerta }: { f: F; c: ReturnType<typeof completude>; ep: EtapaPend[]; irAba: (k: string) => void; alerta?: boolean }) {
+  const considerar = useConsiderarConcluida();
   const [ab, setAb] = useState(false);
   const { edita } = useSessao();
   const salvarT = useSalvar(f);
@@ -372,14 +377,15 @@ function Faltam({ f, c, irAba, alerta }: { f: F; c: ReturnType<typeof completude
     document.addEventListener('pointerdown', fora); document.addEventListener('keydown', esc);
     return () => { document.removeEventListener('pointerdown', fora); document.removeEventListener('keydown', esc); };
   }, [ab]);
-  const n = c.faltam.length;
+  /* as pendências das etapas deixadas contam no total, não no percentual da ficha (12/nov/2026) */
+  const nEp = ep.reduce((s, x) => s + x.itens.length, 0), n = c.faltam.length + nEp;
   const ir = ([, aba, sec, campo]: Falta) => {
     setAb(false);
     if (sec === 'temp') { focar('temp-1'); return; }
     irAba(aba);
     if (sec) pedirCampo({ sec, campo });
   };
-  const rot = n ? `Ficha ${c.pct}% completa; faltam ${n} ${n > 1 ? 'itens' : 'item'}` : undefined;
+  const rot = n ? `Ficha ${c.pct}% completa; faltam ${n} ${n > 1 ? 'itens' : 'item'}${nEp ? `, ${nEp} de etapas deixadas com pendências` : ''}` : undefined;
   return (
     <span className={`fi-comp${alerta ? ' fi-alerta' : ''}`} ref={raiz}>
       {alerta
@@ -389,12 +395,18 @@ function Faltam({ f, c, irAba, alerta }: { f: F; c: ReturnType<typeof completude
             <b>Ficha {c.pct}% completa</b>{n > 0 && <span className="fi-comp-n" aria-hidden="true">{n}</span>}</button>}
       {ab && (
         <div className="adv-menu fi-comp-m" role="menu">
-          {n > 0 && <div className="fi-comp-t">Falta preencher</div>}
+          {c.faltam.length > 0 && <div className="fi-comp-t">Falta preencher</div>}
           {c.faltam.map((x, i) => (
             <div key={x[0]} className="fi-comp-l">
               <button type="button" role="menuitem" onClick={() => ir(x)}>{x[0]}</button>
               {edita && <button type="button" className="fi-comp-x" title="Descartar: não pedir este item neste terreno" aria-label={`Descartar ${x[0]}`}
                 onClick={() => trocar(c.chaves[i], true)}><Ic n="close" s={16} /></button>}
+            </div>))}
+          {ep.map((x) => (
+            <div key={x.id} className="ep-g">
+              <div className="fi-comp-t">Etapa {nomeEtapaPend(x)}, deixada com pendências</div>
+              {x.itens.map((i, k) => <div key={k} className="fi-comp-l ep-i"><Ic n="warn" s={16} /><span>{i.texto}</span></div>)}
+              {edita && <div className="fi-comp-l"><button type="button" className="fi-comp-v" onClick={() => { setAb(false); void considerar(x); }}>Considerar concluída</button></div>}
             </div>))}
           {c.descartados.length > 0 && <>
             <div className="fi-comp-t">Descartados ({c.descartados.length})</div>
@@ -426,7 +438,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
   /* a seção sempre deixa rolar até as barras travarem, mesmo vazia (pedido do Moises, 11/nov/2026) */
   const mainR = useRef<HTMLDivElement>(null);
   useSobraSecao(mainR, aba);
-  const c = completude(f);
+  const c = completude(f), ep = useEtapasPend(f);
   const ft = faseTxt(f), situ = ft.length === 2 && typeof ft[1] !== 'string';
   const cad = `Cadastrado em ${fd(f.dataIdent ?? f.criadoEm)}`;
   /* na gaveta, fase · etapa · subetapa só no celular (fi-so-cel); a situação fora de andamento (Stand By...) fica sempre */
@@ -466,9 +478,9 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
       </div>
       <div className="stack">
         <FaixaTratativa f={f} />
-        {c.pct < 100 && (
+        {(c.pct < 100 || ep.length > 0) && (
           <div className="complete">
-            <span className="progress"><span className="bar"><span style={{ width: `${c.pct}%` }} /></span><Faltam f={f} c={c} irAba={irAba} /></span>
+            <span className="progress"><span className="bar"><span style={{ width: `${c.pct}%` }} /></span><Faltam f={f} c={c} ep={ep} irAba={irAba} /></span>
           </div>
         )}
         <div className="adv-main"><Avancos f={f} irAba={irAba} /></div>

@@ -97,6 +97,26 @@ export function Backlog({ f }: { f: F }) {
   );
 }
 
+/* Avançar de etapa passando por cima do que ela pedia (pedido do Moises, 12/nov/2026): a janela pergunta como fica
+ * a etapa deixada. "Deixar com pendências" a marca (app.etapas_pendentes): a linha do tempo mostra o alerta e os
+ * itens continuam em "Falta preencher" até serem cumpridos. Banco ainda sem o SQL de 12/nov: avança como antes. */
+export type EscolhaPend = 'deixar' | 'concluida';
+export async function moverEtapa(processo: string, forcar: boolean, j: string, pend?: EscolhaPend) {
+  const a = { p_processo: processo, p_forcar: forcar, p_comentario: j || null };
+  if (!pend) return supabase.rpc('mover_etapa', a);
+  const r = await supabase.rpc('mover_etapa', { ...a, p_pendencias: pend });
+  return r.error?.code === 'PGRST202' ? supabase.rpc('mover_etapa', a) : r;
+}
+export function PerguntaPend({ etapa }: { etapa: string }) {
+  return (
+    <fieldset className="adv-pend-esc">
+      <legend>Como fica {etapa}?</legend>
+      <label><input type="radio" name="pend" value="deixar" defaultChecked /><span><b>Deixar com pendências</b><span className="faint">O que falta continua em aberto na ficha, com o alerta na linha do tempo.</span></span></label>
+      <label><input type="radio" name="pend" value="concluida" /><span><b>Considerar concluída</b><span className="faint">A etapa fica concluída, mesmo sem os itens acima.</span></span></label>
+    </fieldset>
+  );
+}
+
 /** lista dos requisitos (proto.js › advItens) */
 export function Itens({ itens, modal }: { itens: Item[]; modal?: boolean }) {
   return (
@@ -130,7 +150,7 @@ export function limpaHtml(h: string): string {
 const textoDe = (h: string) => { const d = document.createElement('div'); d.innerHTML = limpaHtml(h); return (d.textContent ?? '').trim(); };
 
 type Modal =
-  | { k: 'bloq' | 'forcar'; nome: string; itens: Item[]; exec: (forcar: boolean, j: string) => Promise<void> }
+  | { k: 'bloq' | 'forcar'; nome: string; itens: Item[]; deixa?: string; exec: (forcar: boolean, j: string, pend?: EscolhaPend) => Promise<void> }
   | { k: 'comprar'; itens: Item[]; forcar: boolean; ap: string[] }
   | { k: 'stand_by' | 'perdido' | 'descartado'; ap: string[]; modo: string | null }
   | { k: 'recusar' }
@@ -215,12 +235,13 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
   );
 
   /* tentar uma passagem: confere antes; com pendência, a justificativa (quem pode) ou a lista do que falta */
-  const tentar = async (tipo: string, dest: string, nome: string, exec: (forcar: boolean, j: string) => Promise<void>) => {
+  const tentar = async (tipo: string, dest: string, nome: string, exec: (forcar: boolean, j: string, pend?: EscolhaPend) => Promise<void>) => {
     const { data, error } = await supabase.rpc('checar_passagem', { p_processo: p.id, p_destino_tipo: tipo, p_destino: dest });
     if (error) { toast(error.message, true); return; }
     const c = data as Passagem, pend = (c.itens ?? []).filter((x) => !x.ok);
     if (!pend.length) { await exec(false, ''); return; }
-    setModal({ k: c.pode_forcar || c.pode_justificar ? 'forcar' : 'bloq', nome, itens: pend, exec });
+    const deixa = tipo === 'etapa' ? etN(p.etapa_atual) : undefined;
+    setModal({ k: c.pode_forcar || c.pode_justificar ? 'forcar' : 'bloq', nome, itens: pend, deixa, exec });
   };
   const subs0 = subs.filter((s) => s.etapa === p.etapa_atual && s.ativo !== false);
   const sub = subs.find((s) => s.etapa === p.etapa_atual && s.codigo === p.subetapa_atual);
@@ -281,8 +302,8 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
       return;
     }
     const nome = r.proxima_nome ?? r.proxima ?? '';
-    tentar('etapa', r.proxima!, nome, async (forcar, j) => {
-      await rodar(() => supabase.rpc('mover_etapa', { p_processo: p.id, p_forcar: forcar, p_comentario: j || null }), resMsg(nome));
+    tentar('etapa', r.proxima!, nome, async (forcar, j, pd) => {
+      await rodar(() => moverEtapa(p.id, forcar, j, pd), resMsg(nome));
     });
   };
   const eu = usuario?.user_id;
@@ -330,7 +351,8 @@ export function Avanco({ f, proc, irAba }: { f: F; proc: ProcF; irAba: (k: strin
     if (modal.k === 'forcar') { const exige = modal.itens.some((x) => x.justifica); return (
       <Dialogo titulo={`Ir para ${modal.nome} sem os requisitos?`} onFechar={fechar} rodape={rod('f-fc', 'Avançar')}>
         <ul className="pend">{modal.itens.map((x, i) => <li key={i}><Ic n="close" s={16} />{x.texto}</li>)}</ul>
-        <form id="f-fc" onSubmit={async (ev) => { ev.preventDefault(); const j = val(ev, 'j'); const m = modal; setModal(null); await m.exec(true, j); }}>
+        <form id="f-fc" onSubmit={async (ev) => { ev.preventDefault(); const j = val(ev, 'j'), pd = modal.deixa ? (val(ev, 'pend') as EscolhaPend) || 'deixar' : undefined; const m = modal; setModal(null); await m.exec(true, j, pd); }}>
+          {modal.deixa && <PerguntaPend etapa={modal.deixa} />}
           <div className="field"><label htmlFor="fc-j">Justificativa{exige ? '' : ' (opcional)'}, vai para o histórico</label><textarea id="fc-j" name="j" required={exige} /></div>
         </form>
       </Dialogo>

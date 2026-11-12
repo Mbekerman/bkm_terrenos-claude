@@ -7,7 +7,7 @@ import { useSessao } from '../lib/sessao';
 import { data as fd, diasEntre, hojeISO, somarDias } from '../lib/format';
 import { Carregando, Dialogo, Erro, useToast } from '../components/ui';
 import { Ic } from '../components/Moldura';
-import { Itens, type Item, type Passagem } from '../ficha/Avanco';
+import { Itens, moverEtapa, PerguntaPend, type EscolhaPend, type Item, type Passagem } from '../ficha/Avanco';
 import { TEMP } from '../ficha/dados';
 import { BarraFx, GavetaFx, useFiltros } from '../filtros/Filtros';
 
@@ -92,7 +92,7 @@ function Av({ r }: { r: Ter['resp'] }) {
 }
 
 type Modal =
-  | { k: 'bloq' | 'forcar'; nome: string; itens: Item[]; exec: (forcar: boolean, j: string) => Promise<void> }
+  | { k: 'bloq' | 'forcar'; nome: string; itens: Item[]; deixa?: string; exec: (forcar: boolean, j: string, pend?: EscolhaPend) => Promise<void> }
   | { k: 'voltar'; p: Proc; etapa: Etapa }
   | { k: 'stand_by'; p: Proc; ap: string[] };
 
@@ -131,24 +131,24 @@ export default function Funil() {
     return d;
   };
   /* uma passagem: confere antes; com pendência, a justificativa (quem pode) ou a lista do que falta */
-  const tentar = async (p: Proc, tipo: string, dest: string, nome: string, exec: (forcar: boolean, j: string) => Promise<void>) => {
+  const tentar = async (p: Proc, tipo: string, dest: string, nome: string, exec: (forcar: boolean, j: string, pend?: EscolhaPend) => Promise<void>, deixa?: string) => {
     const { data, error } = await supabase.rpc('checar_passagem', { p_processo: p.id, p_destino_tipo: tipo, p_destino: dest });
     if (error) { toast(error.message, true); return; }
     const c = data as Passagem;
     if (c.pedido) { toast('Há um pedido de aprovação em aberto: aguarde a decisão ou cancele o pedido.', true); return; }
     const pend = (c.itens ?? []).filter((x) => !x.ok && x.tipo !== 'aprovacao_pendente');
     if (!pend.length) { await exec(false, ''); return; }
-    setModal({ k: c.pode_forcar || c.pode_justificar ? 'forcar' : 'bloq', nome, itens: pend, exec });
+    setModal({ k: c.pode_forcar || c.pode_justificar ? 'forcar' : 'bloq', nome, itens: pend, deixa: tipo === 'etapa' ? deixa : undefined, exec });
   };
   /* avança etapa por etapa até o destino (proto_funil.js › levarAte); para no pedido de aprovação */
   const levar = async (p: Proc, f: Fase, alvo: number, nomeT: string) => {
     const i = f.etapas.findIndex((x) => x.k === p.etapa);
     if (i < 0 || i >= alvo) return;
     const prox = f.etapas[i + 1];
-    await tentar(p, 'etapa', prox.k, prox.nome, async (forcar, j) => {
-      const d = await rodar(() => supabase.rpc('mover_etapa', { p_processo: p.id, p_forcar: forcar, p_comentario: j || null }), i + 1 === alvo ? `${nomeT}: ${prox.nome}.` : '');
+    await tentar(p, 'etapa', prox.k, prox.nome, async (forcar, j, pd) => {
+      const d = await rodar(() => moverEtapa(p.id, forcar, j, pd), i + 1 === alvo ? `${nomeT}: ${prox.nome}.` : '');
       if (d && d.resultado !== 'aguardando_aprovacao' && i + 1 < alvo) await levar({ ...p, etapa: prox.k }, f, alvo, nomeT);
-    });
+    }, f.etapas[i].nome);
   };
   async function soltar(pid: string, col: string) {
     const p = D.procs.find((x) => x.id === pid), t = p && D.ters[p.t], f = p && D.fases.find((x) => x.k === p.fase);
@@ -309,7 +309,8 @@ export default function Funil() {
     if (modal.k === 'forcar') { const exige = modal.itens.some((x) => x.justifica); return (
       <Dialogo titulo={`Ir para ${modal.nome} sem os requisitos?`} onFechar={fechar} rodape={rod('f-fc', 'Avançar')}>
         <ul className="pend">{modal.itens.map((x, i) => <li key={i}><Ic n="close" s={16} />{x.texto}</li>)}</ul>
-        <form id="f-fc" onSubmit={async (ev) => { ev.preventDefault(); const j = val(ev, 'j'); const m = modal; setModal(null); await m.exec(true, j); }}>
+        <form id="f-fc" onSubmit={async (ev) => { ev.preventDefault(); const j = val(ev, 'j'), pd = modal.deixa ? (val(ev, 'pend') as EscolhaPend) || 'deixar' : undefined; const m = modal; setModal(null); await m.exec(true, j, pd); }}>
+          {modal.deixa && <PerguntaPend etapa={modal.deixa} />}
           <div className="field"><label htmlFor="fc-j">Justificativa{exige ? '' : ' (opcional)'}, vai para o histórico</label><textarea id="fc-j" name="j" required={exige} /></div>
         </form>
       </Dialogo>

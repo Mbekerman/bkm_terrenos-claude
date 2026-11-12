@@ -34,6 +34,13 @@ Pendência é algo que a etapa exige e ainda falta (um pré-requisito, um docume
 - **Analista**: o Avançar mostra **"Ainda não dá para…"** com a lista do que falta e o botão **"Entendi"**. Resolva o que falta. ("Resolva o que falta. Gestor e diretor podem passar sem os requisitos, com justificativa.")
 - **Gestor e diretor**: o Avançar pergunta **"Ir para X sem os requisitos?"** com a **Justificativa (opcional)**: dá para avançar com ela em branco, e o histórico marca a passagem como feita sem os requisitos. Só quando o administrador marcou um item da Jornada como **"Avança com justificativa"** ela é obrigatória. Na última etapa, o botão é **"Comprar sem os requisitos"**.
 
+**Como fica a etapa deixada (12/nov/2026):** a janela "Ir para X sem os requisitos?" pergunta **"Como fica [etapa atual]?"**, com duas opções:
+
+- **Deixar com pendências** (vem marcada): a etapa que ficou para trás não aparece como concluída. Na linha do tempo do topo da ficha, no lugar do ✓ azul, ela ganha uma **bolinha laranja com "!"** e uma **bolinha azul com o número** de itens que faltam; o clique abre a lista e, para quem edita, **Considerar concluída**. Os itens também continuam em **"Falta preencher"** (menu do "Ficha N% completa"), num grupo próprio da etapa, e contam no número da bolinha vermelha, mas não no percentual da ficha. Cada item sai sozinho quando é cumprido; sem nada faltando, a etapa volta a mostrar o ✓. Voltar o terreno para essa etapa (ou para antes dela) tira a marca.
+- **Considerar concluída**: como antes, a etapa fica concluída mesmo sem os itens.
+
+Vale no Avançar do quadro de avanço e ao arrastar o cartão no Funil. Ainda não vale para "Comprar sem os requisitos" nem para trocar de subetapa. Os Logs registram "Etapa X deixada com pendências" (junto do avanço) e "Etapa X considerada concluída".
+
 **Regra (10/nov/2026):** nenhum campo dos formulários do avanço é obrigatório (justificativa, Stand By, Perdido, Descartado, Comprado). O que ficar em branco se completa depois, na faixa do quadro de avanço (ver [Completar depois](#completar-depois-o-que-ficou-em-branco)).
 
 ### Pedido de aprovação
