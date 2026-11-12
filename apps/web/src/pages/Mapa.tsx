@@ -8,7 +8,7 @@ import { useSessao } from '../lib/sessao';
 import { useToast } from '../components/ui';
 import { Bi, Ic, type ContextoMoldura } from '../components/Moldura';
 import { carregarGoogle, googleRecusado } from '../mapa/google';
-import GavetaFicha, { expandirGaveta } from '../ficha/Gaveta';
+import GavetaFicha, { expandirGaveta, useTabGaveta } from '../ficha/Gaveta';
 import { usePreCarregarFicha } from '../ficha/Ficha';
 import { MenuPonto } from '../mapa/MenuPonto';
 import { QuadroRota, type DestinoRota, type PontoMapa } from '../mapa/Rota';
@@ -208,6 +208,12 @@ export default function Mapa() {
     expandirGaveta();
     navegar(`/mapa/${t.codigo}/ficha`, { replace: gav });
   }, [todos, navegar, gav]);
+  /* Tab abre o último terreno da gaveta nesta tela e fecha a aberta (pedido do Moises, 12/nov/2026) */
+  useTabGaveta('mapa', gav ? codigoUrl!.toUpperCase() : null, (cod) => {
+    const t = todosB.find((x) => x.codigo === cod);
+    if (!t) return;
+    if (todos.some((x) => x.id === t.id)) abrirGav(t.id); else navegar(`/mapa/${cod}/ficha`);
+  }, () => navegar(`/mapa/${codigoUrl!.toUpperCase()}`));
   const selecionar = useCallback((id: string | null) => {
     if (gav) { if (id) abrirGav(id); return; }
     setSelId(id);

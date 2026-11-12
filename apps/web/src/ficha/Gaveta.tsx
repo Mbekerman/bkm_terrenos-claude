@@ -34,6 +34,41 @@ const visivel = (e: HTMLElement) => (e.checkVisibility ? e.checkVisibility({ vis
 /** pede à gaveta encolhida que volte a abrir (o clique no mesmo pino ou na mesma linha) */
 export const expandirGaveta = () => dispatchEvent(new Event('bkm-gaveta-expandir'));
 export const gavetaEncolhida = () => document.body.classList.contains('tgav-encolhida');
+/* Tab abre e fecha a gaveta (pedido do Moises, 12/nov/2026), no Mapa e no Pipeline: fechada, abre o último terreno que
+   esteve na gaveta naquela tela (guardado no navegador, `bkm-terrenos-gaveta-ultimo`, por tela); encolhida, volta a abrir;
+   aberta, fecha. Nessas telas o Tab não passa mais de campo (o Enter faz isso): um campo em edição é gravado (blur) antes
+   de a gaveta fechar. Com janela, menu ou lista de sugestões aberta por cima, o Tab segue como era. */
+const ULT_KEY = 'bkm-terrenos-gaveta-ultimo';
+export function lerUltimo(tela: string): string | null {
+  try { return (JSON.parse(localStorage.getItem(ULT_KEY) || '{}') as Record<string, string>)[tela] || null; } catch { return null; }
+}
+function gravarUltimo(tela: string, cod: string) {
+  try { const o = JSON.parse(localStorage.getItem(ULT_KEY) || '{}'); o[tela] = cod; localStorage.setItem(ULT_KEY, JSON.stringify(o)); } catch { /* sem storage */ }
+}
+export function useTabGaveta(tela: string, aberto: string | null, abrir: (cod: string) => void, fechar: () => void) {
+  useEffect(() => { if (aberto) gravarUltimo(tela, aberto); }, [tela, aberto]);
+  const r = useRef({ aberto, abrir, fechar });
+  r.current = { aberto, abrir, fechar };
+  useEffect(() => {
+    const k = (ev: KeyboardEvent) => {
+      if (ev.key !== 'Tab' || ev.defaultPrevented || ev.ctrlKey || ev.altKey || ev.metaKey || ev.isComposing) return;
+      if ([...document.querySelectorAll<HTMLElement>(POR_CIMA + ',#fx-dr')].some(visivel)) return;
+      ev.preventDefault();
+      const { aberto, abrir, fechar } = r.current;
+      if (aberto) {
+        if (gavetaEncolhida()) { expandirGaveta(); return; }
+        const a = document.activeElement as HTMLElement | null;
+        if (a?.matches(CAMPO)) a.blur();
+        setTimeout(fechar, 0);
+        return;
+      }
+      const cod = lerUltimo(tela);
+      if (cod) abrir(cod);
+    };
+    document.addEventListener('keydown', k);
+    return () => document.removeEventListener('keydown', k);
+  }, [tela]);
+}
 const lerW = () => { try { return Number(localStorage.getItem(GAV_KEY)) || null; } catch { return null; } };
 // No Pipeline (/terrenos/A123/gaveta; proto_tabela.js › tgavPos), `naTabela`: a gaveta cobre a tabela a partir do fim da
 // coluna 1 (`lado` é o título dela) e, com a tabela em tela cheia, começa no alto da tela.
