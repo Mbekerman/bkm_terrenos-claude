@@ -635,3 +635,8 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
   .obs-sep { display: none }
   .obs-barra { gap: 4px 6px }
 }
+/* janelas da viabilidade e do estudo de massa com tamanho fixo, seja qual for a aba ou o conteúdo: a altura toda da
+   tela menos a margem e a largura fixa; o que não cabe rola dentro, com o cabeçalho e as abas presos (pedido do Moises,
+   12/nov/2026; antes a janela acompanhava o conteúdo e mudava de altura a cada aba) */
+.vb-pop-d { height: 100% !important; min-height: 0 !important; max-height: 100% }
+.dialog.ems-pop { height: calc(100dvh - 32px); max-height: calc(100dvh - 32px) }

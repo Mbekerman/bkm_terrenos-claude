@@ -35,6 +35,8 @@ A lista dos estudos do terreno, com VGV líquido, lucro líquido, margem, a data
 
 **Como fechar:** o **X** no canto, **Esc**, ou clique fora da janela.
 
+A janela tem sempre o mesmo tamanho, a altura da tela inteira, seja qual for a aba aberta: o que não cabe rola dentro dela, com o título, os indicadores e as abas parados em cima.
+
 **No topo:** o terreno, o selo **Válido** (quando é o válido), o **nome do estudo** (clique e digite para trocar; grava ao sair do campo) e a data da última alteração. À direita, para quem edita:
 
 - **Marcar como válido**: só com a negociação ativa e quando o estudo ainda não é o válido.
