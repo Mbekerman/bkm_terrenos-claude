@@ -11,7 +11,8 @@ import CompararLotes from './CompararLotes';
 import { EscolherCorretor } from '../components/Corretor';
 import { OPT } from '../ficha/edicao';
 import LotesGeo from './LotesGeo';
-import { consultarTerreno } from './consulta';
+import { consultarTerreno, zonaPelaArea } from './consulta';
+import { pastasDoCadastro } from '../lib/drive';
 import { atualizarFrentes } from './frentes';
 import { GEO_BASE, digitos, loteDoSql, sqlFmt, sqlMascara, type LoteSql } from './geosampa';
 import { GSJ_BASE, gsjPoligono, icFmt } from './geosanja';
@@ -142,6 +143,10 @@ export default function NovoTerreno() {
       }
       /* em São Paulo, frentes, esquina e testada medidas pela poligonal e pelos lotes da prefeitura, em segundo plano */
       atualizarFrentes(t.id).catch((e) => console.warn('frentes', e));
+      /* pastas do terreno no Drive (pedido do Moises, 12/nov/2026): depois que a zona chega do GeoSampa ou do GeoSanja (até 15 s),
+         para a pasta já nascer com ela; se demorar mais, nasce com NA e a ficha renomeia quando a zona chegar */
+      { const cid = l?.cidade || '', sjc = /^São José dos Campos$/i.test(cid), sp = /^São Paulo$/i.test(cid);
+        pastasDoCadastro(t.id, (sp && GEO_BASE) || (sjc && GSJ_BASE) ? zonaPelaArea(t.id, n.poly, +n.ponto[0], +n.ponto[1], sjc) : null); }
       await qc.invalidateQueries({ queryKey: ['mapa'] });
       fecharNovo(); limparRascNv(); setPend(null);
       if (dec.tipo === 'vinculo' && dec.modo === 'espera') {

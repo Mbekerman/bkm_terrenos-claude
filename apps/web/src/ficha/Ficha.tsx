@@ -16,6 +16,7 @@ import AbaComercial from './Comercial';
 import Painel, { Avancos, Historico, usePN } from './Painel';
 import AbaMercado, { EntornoAuto } from './Entorno';
 import CartorioAuto from './CartorioAuto';
+import DriveAuto from './DriveAuto';
 import AbaInfra from '../topo/Topografico';
 import { AbaRestricoes, AbaHistUso } from './Parametros';
 import AbaViabilidade, { PopEstudo } from '../viab/Viabilidade';
@@ -496,6 +497,7 @@ export default function Ficha({ f, aba, irAba, voltar, abrirMapa, naGaveta }: {
         </SecoesChips>}
       {aba !== 'mercado' && f.lat != null && <EntornoAuto f={f} />}
       <CartorioAuto f={f} />
+      <DriveAuto f={f} />
       <PopEstudo f={f} />
     </div><Painel f={f} irAba={irAba} /></div>
   );

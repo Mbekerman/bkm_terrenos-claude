@@ -82,12 +82,19 @@ Todas essas chaves são **públicas por natureza** (a chave publicável do Supab
 | `IPTU_CPF`, `IPTU_SENHA` (Senha Web da Prefeitura de SP, do Moises) | Secret Manager do `bkm-terrenos` (segredos `iptu-cpf`, com o CPF ou o CNPJ só em números, e `iptu-senha`; criados pela tela do Secret Manager, não pelo terminal), expostos só ao serviço `terrenos-iptu` | **não** | emitir a notificação de lançamento do IPTU |
 | `IPTU_URL` | variável dos serviços `terrenos-web` e `terrenos-web-dev` | sim | o Caddy repassar `/iptu` ao serviço do IPTU |
 | `SUPABASE_URL`, `SUPABASE_KEY` do `terrenos-iptu` | variáveis do serviço do IPTU | sim (chave publicável) | conferir o login e gravar com o token de quem pediu |
+| `DRIVE_URL` | variável dos serviços `terrenos-web` e `terrenos-web-dev` | sim | o Caddy repassar `/drive` ao serviço das pastas |
+| `DRIVE_PASTA_RAIZ`, `SUPABASE_URL`, `SUPABASE_KEY` do `terrenos-drive` | variáveis do serviço do Drive | sim (id de pasta e chave publicável) | achar a pasta-mãe e gravar com o token de quem pediu |
+| Credencial do Drive | nenhuma guardada: a conta de serviço `terrenos-drive@` do Cloud Run pega o token no servidor de metadados | não existe | criar e renomear as pastas |
 
 Nunca coloque segredo no repositório nem nas variáveis `SUPABASE_*`/`GOOGLE_*` do serviço web (elas vão para a página). Ver [seguranca.md](seguranca.md).
 
 ## Serviço do IPTU (`terrenos-iptu`)
 
 Serviço à parte no Cloud Run (`services/iptu/Dockerfile`, imagem do Playwright com Chromium), porque o Caddy não roda navegador. Um só para dev e produção (o banco é o mesmo). Configuração sugerida: região `southamerica-east1`, 1 GiB de memória, 1 CPU, 0 a 1 instância (a fila é em memória), concorrência 8, tempo limite 300 s, CPU sempre alocada (`--no-cpu-throttling`, para a fila em segundo plano andar depois da resposta), acesso público (a autenticação é o login do Supabase, conferido pelo próprio serviço). Os serviços web recebem `IPTU_URL=https://terrenos-iptu-....run.app`. Comandos em `services/iptu/README.md`.
+
+## Serviço das pastas do Drive (`terrenos-drive`)
+
+Serviço à parte no Cloud Run (`services/drive/Dockerfile`, `node:22-slim`, sem dependências), um só para dev e produção (o banco e o Drive são os mesmos). Roda com a conta de serviço `terrenos-drive@bkm-terrenos.iam.gserviceaccount.com`, que é Gerente de conteúdo de DI › 01) Novos Negócios no Drive; o token do Drive vem do servidor de metadados do Cloud Run (sem chave). Variáveis: `SUPABASE_URL`, `SUPABASE_KEY` (publicável) e `DRIVE_PASTA_RAIZ` (id da pasta-mãe). 256 MiB, 1 CPU, 0 a 1 instância (a trava contra pasta dobrada é em memória), CPU sempre alocada (a varredura continua depois da resposta), acesso público (o login do Supabase é conferido pelo banco). Os serviços web recebem `DRIVE_URL=https://terrenos-drive-....run.app`. Comandos em `services/drive/README.md`.
 
 ## Banco
 
