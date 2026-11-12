@@ -51,7 +51,7 @@ rm -rf ~/bkm_terrenos-claude && git clone -b develop https://github.com/Mbekerma
 ENVS=$(gcloud run services describe terrenos-web-dev --region southamerica-east1 --format=json | python3 -c "import json,sys;e={x['name']:x.get('value','') for x in json.load(sys.stdin)['spec']['template']['spec']['containers'][0].get('env',[])};print('SUPABASE_URL=%s,SUPABASE_KEY=%s'%(e['SUPABASE_URL'],e['SUPABASE_KEY']))")
 gcloud run deploy terrenos-drive --source services/drive --region southamerica-east1 \
   --service-account terrenos-drive@bkm-terrenos.iam.gserviceaccount.com \
-  --memory 256Mi --cpu 1 --no-cpu-throttling --min-instances 0 --max-instances 1 --concurrency 20 --timeout 120 \
+  --memory 512Mi --cpu 1 --no-cpu-throttling --min-instances 0 --max-instances 1 --concurrency 20 --timeout 120 \
   --allow-unauthenticated --set-env-vars "$ENVS,DRIVE_PASTA_RAIZ=11s0EVZZPq5smVJyIqzBy92PfWiFwbcSi"
 gcloud run services update terrenos-drive --region southamerica-east1 --no-invoker-iam-check
 ```

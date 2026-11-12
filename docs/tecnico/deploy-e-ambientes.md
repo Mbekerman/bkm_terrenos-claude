@@ -94,7 +94,7 @@ Serviço à parte no Cloud Run (`services/iptu/Dockerfile`, imagem do Playwright
 
 ## Serviço das pastas do Drive (`terrenos-drive`)
 
-Serviço à parte no Cloud Run (`services/drive/Dockerfile`, `node:22-slim`, sem dependências), um só para dev e produção (o banco e o Drive são os mesmos). Roda com a conta de serviço `terrenos-drive@bkm-terrenos.iam.gserviceaccount.com`, que é Gerente de conteúdo de DI › 01) Novos Negócios no Drive; o token do Drive vem do servidor de metadados do Cloud Run (sem chave). Variáveis: `SUPABASE_URL`, `SUPABASE_KEY` (publicável) e `DRIVE_PASTA_RAIZ` (id da pasta-mãe). 256 MiB, 1 CPU, 0 a 1 instância (a trava contra pasta dobrada é em memória), CPU sempre alocada (a varredura continua depois da resposta), acesso público (o login do Supabase é conferido pelo banco). Os serviços web recebem `DRIVE_URL=https://terrenos-drive-....run.app`. Comandos em `services/drive/README.md`.
+Serviço à parte no Cloud Run (`services/drive/Dockerfile`, `node:22-slim`, sem dependências), um só para dev e produção (o banco e o Drive são os mesmos). Roda com a conta de serviço `terrenos-drive@bkm-terrenos.iam.gserviceaccount.com`, que é Gerente de conteúdo de DI › 01) Novos Negócios no Drive; o token do Drive vem do servidor de metadados do Cloud Run (sem chave). Variáveis: `SUPABASE_URL`, `SUPABASE_KEY` (publicável) e `DRIVE_PASTA_RAIZ` (id da pasta-mãe). 512 MiB (o mínimo do Cloud Run com CPU sempre alocada), 1 CPU, 0 a 1 instância (a trava contra pasta dobrada é em memória), CPU sempre alocada (a varredura continua depois da resposta), acesso público (o login do Supabase é conferido pelo banco). Os serviços web recebem `DRIVE_URL=https://terrenos-drive-....run.app`. Comandos em `services/drive/README.md`.
 
 ## Banco
 
