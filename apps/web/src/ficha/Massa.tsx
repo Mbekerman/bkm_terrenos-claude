@@ -18,6 +18,7 @@ import { lerNum, numStr, Quadro, useListas, Vivo } from './edicao';
 import type { Ficha, R } from './dados';
 import { abrirEstudo } from '../viab/Viabilidade';
 import { SeloValido } from '../components/SeloValido';
+import { OBS_MASSA, Observacoes } from '../viab/Observacoes';
 
 const SIT: Record<string, [string, string]> = { solicitado: ['Solicitado', 'warn'], em_elaboracao: ['Em elaboração', 'blue'], entregue: ['Entregue', 'good'] };
 const AREAS: [string, string][] = [['lazer_coberto_torre_m2', 'Lazer coberto na torre'], ['lazer_descoberto_torre_m2', 'Lazer descoberto na torre'],
@@ -195,6 +196,11 @@ export function PopMassa({ f, fechar, id }: { f: Ficha; fechar: () => void; id?:
   const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-massa', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); qc.invalidateQueries({ queryKey: ['mapa'] }); };
   const marcar = useMarcarValido(() => q.data?.viabs ?? [], recarregar);
   const m = (id ? q.data?.ms.find((x) => x.id === id) : q.data?.ms.find((x) => x.valido)) ?? null;
+  /* duas abas: o estudo e as Observações e Premissas (texto formatado, o mesmo editor da viabilidade; pedido do Moises, 12/nov/2026) */
+  const [aba, setAba] = useState<'estudo' | 'obs'>('estudo');
+  const gravarObs = (fn: () => PromiseLike<{ error: unknown }>, depois?: (r: any) => void) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    void Promise.resolve(fn()).then((r) => { if (r.error) toast((r.error as Error).message, true); else depois?.(r); });
+  };
   /* abre sem cursor num campo (o Dialogo foca o primeiro; aqui seria o título da primeira tipologia) */
   useEffect(() => { const t = setTimeout(() => { const a = document.activeElement as HTMLElement | null; if (a?.closest('.ems-pop')) a.blur(); }, 0); return () => clearTimeout(t); }, [m?.id]);
   return (
@@ -202,8 +208,17 @@ export function PopMassa({ f, fechar, id }: { f: Ficha; fechar: () => void; id?:
       <div className="ems-pop-b">
         {q.isLoading ? <div className="empty">Carregando…</div>
           : q.error ? <div className="banner warn">Não foi possível ler o estudo de massa: {(q.error as Error).message}</div>
-          : m ? <FichaEstudo key={m.id} m={m} viabs={q.data!.viabs} edita={edita} recarregar={recarregar}
-            abrir={(t) => setJanela(t)} marcarValido={() => marcar(m, true)} />
+          : m ? <>
+            <nav className="vb-nav ems-nav" aria-label="Partes do estudo de massa">
+              <button className="vb-aba" aria-current={aba === 'estudo' ? 'page' : undefined} onClick={() => setAba('estudo')}><b>Estudo</b></button>
+              <button className="vb-aba vb-aba-1l" aria-current={aba === 'obs' ? 'page' : undefined} onClick={() => setAba('obs')}><b>Observações</b></button>
+            </nav>
+            {aba === 'estudo'
+              ? <FichaEstudo key={m.id} m={m} viabs={q.data!.viabs} edita={edita} recarregar={recarregar}
+                abrir={(t) => setJanela(t)} marcarValido={() => marcar(m, true)} />
+              : <section className="sec ems-obs"><div className="sec-h"><h2>Observações</h2></div>
+                <div className="sec-b"><Observacoes key={m.id} id={m.id} ro={!edita} gravar={gravarObs} aoSalvar={() => recarregar()} origem={OBS_MASSA} /></div></section>}
+          </>
           : <div className="empty">{id ? 'Este estudo de massa não existe mais.' : 'Este terreno não tem estudo de massa válido.'}</div>}
       </div>
       {janela === 'pedido' && m ? <JanelaPedido m={m} membros={membros} nome={nome} edita={edita} fechar={() => setJanela(null)} recarregar={recarregar} /> : null}
@@ -417,9 +432,6 @@ function FichaEstudo({ m, viabs, edita, recarregar, abrir, marcarValido }: {
           <div className="ems-arq" key={k}><span className="ems-arq-t"><b>{k.toUpperCase()}</b><span className="faint">O envio entra com a aba Documentos</span></span></div>
         ))}</div>
         <h3 className="ems-h3">Análise</h3>
-        <div className="ems-g"><label className="field ems-full"><span className="lbl-f">Observações</span>
-          <Vivo ini={m.observacoes ?? ''} gravar={(s) => ((m.observacoes ?? '') === s.trim() ? true : salvar({ observacoes: s.trim() || null }))}>
-            {(x) => <textarea rows={2} disabled={!edita} {...x} />}</Vivo></label></div>
         <div className="ems-vbs"><span className="lbl-f">Estudos de viabilidade com este estudo de massa</span>
           {vs.length ? vs.map((v, i) => <span key={v.id}>{i ? ' · ' : ''}<button className="linkbtn" onClick={() => abrirEstudo(v.id)}>{v.nome}</button>{v.segue_massa_valido ? <span className="faint"> (segue o válido)</span> : null}</span>)
             : <span className="faint">Nenhum.</span>}</div>
