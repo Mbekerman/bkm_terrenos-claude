@@ -6,6 +6,10 @@ Quem desenvolve: toda mudança que o usuário vê ganha uma linha aqui, na data 
 
 Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era testado no protótipo. Este registro começa no porte das telas para o sistema real.
 
+## 2026-11-12
+
+- **Iniciar negociação**: o terreno em Backlog mostra, no lugar do quadro de avanço, o botão "Iniciar negociação", que abre a negociação com a oferta ativa na primeira etapa. Antes não havia como sair do Backlog sem registrar outra oferta. (#356)
+
 ## 2026-11-11 (produção)
 
 - **Login guardado**: o navegador lembra quem entrou; o sistema só pede o Google de novo depois de 30 dias sem uso naquele navegador. (#354)

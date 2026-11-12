@@ -75,6 +75,28 @@ export function useRecarregar() {
   };
 }
 
+/** terreno sem negociação (Backlog): a oferta do cadastro não abre a negociação; aqui quem edita a inicia */
+export function Backlog({ f }: { f: F }) {
+  const { edita } = useSessao();
+  const toast = useToast(), recarregar = useRecarregar();
+  const [grav, setGrav] = useState(false);
+  const iniciar = async () => {
+    setGrav(true);
+    const o = await supabase.from('ofertas').select('id').eq('terreno_id', f.id).eq('vigente', true).maybeSingle();
+    const { error } = await supabase.rpc('abrir_negociacao', { p_terreno: f.id, p_oferta: o.data?.id ?? null });
+    setGrav(false);
+    if (error) { toast(error.message, true); return; }
+    toast('Negociação iniciada.');
+    recarregar();
+  };
+  return (
+    <section className="sec sec-adv"><div className="banner" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+      <span style={{ display: 'flex', gap: 12 }}><Ic n="clock" /><span><b>Backlog</b><br /><span>Sem negociação aberta.</span></span></span>
+      {edita && <button className="btn sm" disabled={grav} onClick={iniciar}>Iniciar negociação</button>}
+    </div></section>
+  );
+}
+
 /** lista dos requisitos (proto.js › advItens) */
 export function Itens({ itens, modal }: { itens: Item[]; modal?: boolean }) {
   return (

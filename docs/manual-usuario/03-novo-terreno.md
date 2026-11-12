@@ -115,7 +115,7 @@ O município, o logradouro, o número e o bairro achados pela localização entr
 ## Depois de cadastrar
 
 - O terreno recebe o **código** (A001, A002...).
-- Nasce com a parte **"Vendedor 1"** e com a **primeira oferta**, que aparece em Ofertas recebidas com a data e o número (A112-1). A negociação ainda não abre: o terreno fica em **Backlog** até alguém abrir a negociação (Registrar oferta na aba Comercial).
+- Nasce com a parte **"Vendedor 1"** e com a **primeira oferta**, que aparece em Ofertas recebidas com a data e o número (A112-1). A negociação ainda não abre: o terreno fica em **Backlog** até alguém clicar em **"Iniciar negociação"** no quadro de avanço (ou registrar outra oferta na aba Comercial).
 - A página vai para o **Mapa** com o terreno em foco.
 - Em São Paulo, com SQLs, a **consulta completa do GeoSampa** roda em segundo plano para cada SQL (zonas, parâmetros, restrições, cartório) e depois a consulta pela poligonal. O andamento aparece na linha do terreno na lista do mapa: **"Consultando o GeoSampa: N de M"**. Pode continuar trabalhando enquanto isso.
 - Em São José dos Campos, com inscrições, a **consulta do GeoSanja** roda do mesmo jeito em cada inscrição (zona, macrozona e restrições).

@@ -2,6 +2,10 @@
 
 Toda mudança que entra na `develop` ganha uma linha aqui, no mesmo PR (ver [como-manter.md](como-manter.md)). Do mais recente ao mais antigo. O que aconteceu antes de 8/nov/2026 está resumido em [historico.md](historico.md).
 
+## 2026-11-12
+
+- #356 Terreno em Backlog sem saída na tela (achado no A001, o primeiro terreno de produção): desde o #315 a oferta do cadastro não abre negociação, e o React não tinha controle para abrir. `ficha/Avanco.tsx` ganha `Backlog`, que `Avancos` (`ficha/Painel.tsx`) mostra quando `procsAvanco` vem vazio (o painel passa a mostrar o `.pn-adv` sempre): faixa com "Iniciar negociação" para quem edita, que chama `app.abrir_negociacao(terreno, oferta vigente)` (já existente e liberada para `authenticated`) e recarrega a ficha. Sem SQL. Sem impacto de segurança (nenhuma permissão nova; a RPC confere o editor).
+
 ## 2026-11-11
 
 - #354 Entrada em produção com dados reais, só documentação (o #353, com a conferência de 30 dias no navegador, foi fechado: a trava do servidor basta). Login guardado no navegador e vencido por 30 dias sem uso pela Supabase › Authentication › Sessions › Inactivity timeout = 720 h (plano Pro), ligada pelo Moises. Limpeza dos dados de teste por SQL avulso em `/mnt/project-files/producao/` (revisados por uma segunda revisão independente; `1-backup.sql` copia as 75 tabelas que dependem de `terrenos`, `pessoas`, `corretores` e `fluxo.quadros`, mais os logs e lembretes delas, para o esquema `backup_testes_20261111`, sem acesso de `anon` e `authenticated`; `2-apagar.sql`, numa transação, trava as 75 mais `auditoria` e `lembretes`, confere a cópia (contagens, e para se houver automação da empresa ou aviso sem terreno), faz `truncate ... restrict` nas 75, apaga os logs e lembretes delas e reinicia `app.terreno_seq` e `app.processo_seq`; o `1-backup.sql` se recusa a rodar depois da limpeza; `3-restaurar-se-precisar.sql` volta tudo). `CLAUDE.md`: o banco passa a ser de produção e acaba a regra de editar migrations no lugar. Sem código e sem migration.
