@@ -19,6 +19,7 @@ import type { Ficha, R } from './dados';
 import { abrirEstudo } from '../viab/Viabilidade';
 import { SeloValido } from '../components/SeloValido';
 import { OBS_MASSA, Observacoes } from '../viab/Observacoes';
+import Chat, { useIrEstudo, useLinkEstudo } from '../components/Chat';
 
 const SIT: Record<string, [string, string]> = { solicitado: ['Solicitado', 'warn'], em_elaboracao: ['Em elaboração', 'blue'], entregue: ['Entregue', 'good'] };
 const AREAS: [string, string][] = [['lazer_coberto_torre_m2', 'Lazer coberto na torre'], ['lazer_descoberto_torre_m2', 'Lazer descoberto na torre'],
@@ -80,6 +81,9 @@ export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void 
   const membros = L.data?.membros ?? [];
   const [form, setForm] = useState<false | 'pedir' | 'lancar'>(false);
   const [aberto, setAberto] = useState<string | null>(null);
+  /* ?estudo=<id> e ?chat=<mensagem>: o aviso do sino e o chip de estudo citado no chat abrem a janela (no Chat, a mensagem) */
+  const [noChat, setNoChat] = useState(0);
+  useLinkEstudo('massa', true, (x, chat) => { setAberto(x); if (chat) setNoChat((n) => n + 1); });
   const recarregar = () => { qc.invalidateQueries({ queryKey: ['ficha-massa', f.id] }); qc.invalidateQueries({ queryKey: ['ficha'] }); qc.invalidateQueries({ queryKey: ['mapa'] }); };
   const marcar = useMarcarValido(() => q.data?.viabs ?? [], recarregar);
   if (q.isLoading) return <section className="sec"><div className="empty">Carregando…</div></section>;
@@ -126,7 +130,7 @@ export default function AbaMassa({ f }: { f: Ficha; irAba?: (k: string) => void 
           }} />
         </Dialogo>
       ) : null}
-      {aberto ? <PopMassa f={f} id={aberto} fechar={() => setAberto(null)} /> : null}
+      {aberto ? <PopMassa f={f} id={aberto} chat={noChat} fechar={() => setAberto(null)} /> : null}
     </div>
   );
 }
@@ -186,7 +190,7 @@ function ResumoMassa({ ms, edita, abrir, novo, marcar }: {
 /** o estudo de massa numa janela: inserir, ver e editar (pedido do Moises, 11/nov/2026). Sem id, o válido do terreno
     (o olho da tabela do Pipeline); com id, aquele estudo (a lista da aba). Editável para quem edita, com Ver pedido,
     Marcar como válido, Criar estudo de viabilidade e Apagar. */
-export function PopMassa({ f, fechar, id }: { f: Ficha; fechar: () => void; id?: string }) {
+export function PopMassa({ f, fechar, id, chat }: { f: Ficha; fechar: () => void; id?: string; chat?: number }) {
   const { edita } = useSessao();
   const toast = useToast();
   const qc = useQueryClient(), q = useMassa(f), L = useListas();
@@ -197,7 +201,9 @@ export function PopMassa({ f, fechar, id }: { f: Ficha; fechar: () => void; id?:
   const marcar = useMarcarValido(() => q.data?.viabs ?? [], recarregar);
   const m = (id ? q.data?.ms.find((x) => x.id === id) : q.data?.ms.find((x) => x.valido)) ?? null;
   /* duas abas: o estudo e as Observações e Premissas (texto formatado, o mesmo editor da viabilidade; pedido do Moises, 12/nov/2026) */
-  const [aba, setAba] = useState<'estudo' | 'obs'>('estudo');
+  const [aba, setAba] = useState<'estudo' | 'obs' | 'chat'>(chat ? 'chat' : 'estudo');
+  useEffect(() => { if (chat) setAba('chat'); }, [chat]);
+  const irEstudo = useIrEstudo(f.codigo);
   const gravarObs = (fn: () => PromiseLike<{ error: unknown }>, depois?: (r: any) => void) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     void Promise.resolve(fn()).then((r) => { if (r.error) toast((r.error as Error).message, true); else depois?.(r); });
   };
@@ -212,8 +218,12 @@ export function PopMassa({ f, fechar, id }: { f: Ficha; fechar: () => void; id?:
             <nav className="vb-nav ems-nav" aria-label="Partes do estudo de massa">
               <button className="vb-aba" aria-current={aba === 'estudo' ? 'page' : undefined} onClick={() => setAba('estudo')}><b>Estudo</b></button>
               <button className="vb-aba vb-aba-1l" aria-current={aba === 'obs' ? 'page' : undefined} onClick={() => setAba('obs')}><b>Observações</b></button>
+              <button className="vb-aba vb-aba-1l" aria-current={aba === 'chat' ? 'page' : undefined} onClick={() => setAba('chat')}><b>Chat</b></button>
             </nav>
-            {aba === 'estudo'
+            {aba === 'chat'
+              ? <section className="sec ems-obs chat-sec" aria-label="Chat do estudo">
+                <div className="sec-b"><Chat key={m.id} tipo="massa" estudo={m.id} terreno={f.id} abrirEstudo={irEstudo} /></div></section>
+              : aba === 'estudo'
               ? <FichaEstudo key={m.id} m={m} viabs={q.data!.viabs} edita={edita} recarregar={recarregar}
                 abrir={(t) => setJanela(t)} marcarValido={() => marcar(m, true)} />
               : <section className="sec ems-obs"><div className="sec-h"><h2>Observações</h2></div>

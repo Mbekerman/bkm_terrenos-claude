@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { data as dataCurta } from '../lib/format';
 import { AMBIENTE, EH_DEV } from '../lib/config';
 import { BI, IC_SINO, P } from '../lib/icones-prototipo';
+import { estudoDaMensagem } from './Chat';
 import NovoTerreno from '../novo/NovoTerreno';
 import TrocarEndereco from '../novo/TrocarEndereco';
 import { abrirNovo } from '../novo/estado';
@@ -118,7 +119,7 @@ function Perfil() {
 /* Sino (proto_funil.js › renderSino): os avisos de quem está usando, ao vivo (Supabase Realtime) e a cada minuto; o clique marca
    como lido e abre a ficha do terreno na aba do item (reunião e proposta na Comercial, o resto na Visão geral). E-mail fica para
    depois; "Configurar notificações" entra com Configurações. */
-interface Aviso { id: string; texto: string; criada_em: string; lida_em: string | null; autor_id: string | null; origem_tabela: string;
+interface Aviso { id: string; texto: string; criada_em: string; lida_em: string | null; autor_id: string | null; origem_tabela: string; origem_id: string;
   email_status: string | null; terrenos: { codigo: string; nome: string | null } | null }
 const ABA_ORIGEM: Record<string, string> = { reunioes: 'comercial', propostas: 'comercial', ofertas: 'comercial', reuniao_agenda: 'comercial', estudos_massa: 'massa' };
 
@@ -133,7 +134,7 @@ function Sino() {
     enabled: !!uid && !!empresa,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from('notificacoes').select('id,texto,criada_em,lida_em,autor_id,origem_tabela,email_status,terrenos(codigo,nome)')
+      const { data, error } = await supabase.from('notificacoes').select('id,texto,criada_em,lida_em,autor_id,origem_tabela,origem_id,email_status,terrenos(codigo,nome)')
         .eq('destinatario_id', uid!).eq('empresa_id', empresa!.id).order('criada_em', { ascending: false }).limit(30);
       if (error) throw error;
       const L = (Array.isArray(data) ? data : []) as unknown as Aviso[];
@@ -159,7 +160,13 @@ function Sino() {
   async function abrir(x: Aviso) {
     setAberto(false);
     if (!x.lida_em) { await supabase.rpc('marcar_notificacao_lida', { p_id: x.id }); qc.invalidateQueries({ queryKey: ['avisos'] }); }
-    if (x.terrenos?.codigo) navegar(`/terrenos/${x.terrenos.codigo}/${ABA_ORIGEM[x.origem_tabela] ?? 'geral'}`);
+    if (!x.terrenos?.codigo) return;
+    /* mensagem do chat de um estudo: abre a janela do estudo na aba Chat, na mensagem (pedido do Moises, 12/nov/2026) */
+    if (x.origem_tabela === 'estudo_mensagens') {
+      const e = await estudoDaMensagem(x.origem_id);
+      if (e) { navegar(`/terrenos/${x.terrenos.codigo}/${e.tipo}?chat=${x.origem_id}`); return; }
+    }
+    navegar(`/terrenos/${x.terrenos.codigo}/${ABA_ORIGEM[x.origem_tabela] ?? 'geral'}`);
   }
   return (
     <div className="sino-wrap" id="sino" ref={ref}>
