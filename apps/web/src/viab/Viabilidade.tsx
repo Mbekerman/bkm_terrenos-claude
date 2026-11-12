@@ -16,7 +16,7 @@ import { brl, calcular, mi, nf, normTip, VB_RESTRITO, VB_SECAO, vin, type Calc, 
 import { SecDre, SecLinhas, SecObra, SecTerreno, vbQPadrao, type Ctx } from './Secoes';
 import { NovoEstudo, SalvarModelo, useModelos } from './Modelos';
 import { Observacoes } from './Observacoes';
-import Chat, { useIrEstudo, useLinkEstudo } from '../components/Chat';
+import Chat, { ehTopo, useLinkEstudo } from '../components/Chat';
 import { carregarEstudo, erroTxt, useDespesas, useEstudos, useRecarregar, type ResumoViab } from './dados';
 
 // Aba Viabilidades da ficha e o popup do estudo de viabilidade estática (porte de tools/prototipo/proto_viab.js ›
@@ -286,7 +286,18 @@ export function PopEstudo({ f }: { f: Ficha }) {
   return createPortal(<Pop key={id} id={id} f={f} valido={q.data!.valido === id} negAtiva={q.data!.negAtiva} />, document.body);
 }
 
-function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolean; negAtiva: boolean }) {
+/** um estudo aberto por cima de outro, pelo chip de estudo citado no chat: sem a aba Chat, fecha só ele (pedido do
+    Moises, 12/nov/2026) */
+export function PopViabSobre({ f, id, fechar }: { f: Ficha; id: string; fechar: () => void }) {
+  const { empresa } = useSessao();
+  const q = useEstudos(f.id, f.negId, empresa?.id);
+  if (!q.data) return null;
+  return createPortal(<Pop id={id} f={f} valido={q.data.valido === id} negAtiva={q.data.negAtiva} semChat fechar={fechar} />, document.body);
+}
+
+function Pop({ id, f, valido, negAtiva, semChat, fechar: fecharSobre }: { id: string; f: Ficha; valido: boolean; negAtiva: boolean; semChat?: boolean; fechar?: () => void }) {
+  const fechar = fecharSobre ?? (() => abrirEstudo(null));
+  const raiz = useRef<HTMLDivElement>(null);
   const { empresa, edita } = useSessao();
   const dir = useDiretoria(), ro = !edita;
   const toast = useToast(), recarregar = useRecarregar(), ac = useAcoes(f);
@@ -298,7 +309,6 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
     window.addEventListener(CHAT_EV, ir);
     return () => window.removeEventListener(CHAT_EV, ir);
   }, [id]);
-  const irEstudo = useIrEstudo(f.codigo);
   const [fechados, setFechados] = useState<Set<string>>(vbQPadrao);
   const [apagar, setApagar] = useState(false);
   const [modelo, setModelo] = useState(false);
@@ -307,17 +317,23 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
   atual.current = v;
   useEffect(() => {
     let vivo = true;
-    carregarEstudo(id).then((x) => { if (vivo) { if (x) setV(x); else abrirEstudo(null); } }, (e) => toast(erroTxt(e), true));
+    carregarEstudo(id).then((x) => { if (vivo) { if (x) setV(x); else fechar(); } }, (e) => toast(erroTxt(e), true));
     return () => { vivo = false; };
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    document.body.classList.add('vb-aberto');
+    /* com um estudo por cima do outro, a página só volta a rolar quando o último fecha; o Esc fecha só o de cima */
+    const b = document.body, n = () => Number(b.dataset.vbAbertos || 0);
+    b.dataset.vbAbertos = String(n() + 1); b.classList.add('vb-aberto');
     const esc = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('.scrim')) return;
-      e.preventDefault(); abrirEstudo(null);
+      if (e.key !== 'Escape' || e.defaultPrevented || !ehTopo(raiz.current)) return;
+      e.preventDefault(); fechar();
     };
     document.addEventListener('keydown', esc);
-    return () => { document.body.classList.remove('vb-aberto'); document.removeEventListener('keydown', esc); };
+    return () => {
+      b.dataset.vbAbertos = String(Math.max(0, n() - 1));
+      if (!n()) b.classList.remove('vb-aberto');
+      document.removeEventListener('keydown', esc);
+    };
   }, []);
 
   /* gravações em fila, uma depois da outra; depois de cada uma, os totais que o banco guarda (Taxas e Financeiras fora
@@ -340,9 +356,8 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
 
   const desp = D.data ?? [];
   const c = useMemo(() => (v ? calcular(v, desp, !dir) : null), [v, desp, dir]);
-  const ordem = dir ? VB_ORDEM : VB_ORDEM.filter((k) => !VB_RESTRITO.includes(k));
+  const ordem = (dir ? VB_ORDEM : VB_ORDEM.filter((k) => !VB_RESTRITO.includes(k))).filter((k) => !(semChat && k === 'chat'));
   const ab = ordem.includes(aba) ? aba : 'tip';
-  const fechar = () => abrirEstudo(null);
   const sobre = <><span>Viabilidade · {f.codigo} · {f.nome}</span>{valido && <span className="chip good"><span className="d" />Válido</span>}</>;
   const acoes = ro ? null : <>
     {!valido && negAtiva && <button className="btn sm" onClick={() => v && ac.vincular(v.id, v.nome)}>Marcar como válido</button>}
@@ -409,7 +424,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
           : ab === 'terreno' ? <SecTerreno x={ctx!} />
           : ab === 'obra' ? <SecObra x={ctx!} />
           : ab === 'res' ? <SecDre x={ctx!} />
-          : ab === 'chat' ? <Chat tipo="viabilidade" estudo={id} terreno={f.id} abrirEstudo={irEstudo} />
+          : ab === 'chat' ? <Chat tipo="viabilidade" estudo={id} f={f} />
           : ab === 'obs' ? <Observacoes id={id} ro={ro} gravar={gravar} aoSalvar={(em) => setV((o) => o && { ...o, atualizado_em: em })} />
           : <SecLinhas x={ctx!} sec={ab} />}
       </Secao>
@@ -417,7 +432,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
   );
 
   return (
-    <div id="vb-pop" className="vb-pop">
+    <div id={semChat ? undefined : 'vb-pop'} className={`vb-pop${semChat ? ' vb-pop-sobre' : ''}`} ref={raiz}>
       <div className="vb-pop-fundo" onClick={fechar} />
       <div className="vb-pop-d" role="dialog" aria-modal="true" aria-labelledby="vb-pop-t">
         <div className="vb-pop-h">
@@ -441,7 +456,7 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
             <button className="btn primary danger" onClick={async () => {
               const { error } = await supabase.rpc('apagar_viabilidade', { p_id: v.id });
               if (error) { toast(erroTxt(error), true); return; }
-              setApagar(false); abrirEstudo(null); recarregar(); toast('Estudo apagado.');
+              setApagar(false); fechar(); recarregar(); toast('Estudo apagado.');
             }}>Apagar</button></>}>
           <p style={{ margin: '0 0 8px' }}>{v.nome} sai do terreno, com as tipologias e os custos. Estudo vinculado à negociação não se apaga.</p>
         </Dialogo>

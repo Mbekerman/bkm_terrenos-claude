@@ -717,3 +717,6 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
   .chat { border-radius: 12px }
   .chat-b { max-width: 82% }
 }
+
+/* estudo aberto pelo chip do chat, por cima da janela de onde veio (que pode ser a do estudo de massa, um .scrim) */
+.vb-pop.vb-pop-sobre { z-index: 46 }

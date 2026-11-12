@@ -20,7 +20,7 @@ import { abrirEstudo } from '../viab/Viabilidade';
 import { SeloValido } from '../components/SeloValido';
 import { NavRoleta } from '../components/NavRoleta';
 import { OBS_MASSA, Observacoes } from '../viab/Observacoes';
-import Chat, { useIrEstudo, useLinkEstudo } from '../components/Chat';
+import Chat, { useLinkEstudo } from '../components/Chat';
 
 const SIT: Record<string, [string, string]> = { solicitado: ['Solicitado', 'warn'], em_elaboracao: ['Em elaboração', 'blue'], entregue: ['Entregue', 'good'] };
 const AREAS: [string, string][] = [['lazer_coberto_torre_m2', 'Lazer coberto na torre'], ['lazer_descoberto_torre_m2', 'Lazer descoberto na torre'],
@@ -191,7 +191,8 @@ function ResumoMassa({ ms, edita, abrir, novo, marcar }: {
 /** o estudo de massa numa janela: inserir, ver e editar (pedido do Moises, 11/nov/2026). Sem id, o válido do terreno
     (o olho da tabela do Pipeline); com id, aquele estudo (a lista da aba). Editável para quem edita, com Ver pedido,
     Marcar como válido, Criar estudo de viabilidade e Apagar. */
-export function PopMassa({ f, fechar, id, chat }: { f: Ficha; fechar: () => void; id?: string; chat?: number }) {
+export function PopMassa({ f, fechar, id, chat, semChat }: { f: Ficha; fechar: () => void; id?: string; chat?: number;
+  /** aberto por cima de outro estudo, pelo chip do chat: sem a aba Chat (pedido do Moises, 12/nov/2026) */ semChat?: boolean }) {
   const { edita } = useSessao();
   const toast = useToast();
   const qc = useQueryClient(), q = useMassa(f), L = useListas();
@@ -204,7 +205,6 @@ export function PopMassa({ f, fechar, id, chat }: { f: Ficha; fechar: () => void
   /* duas abas: o estudo e as Observações e Premissas (texto formatado, o mesmo editor da viabilidade; pedido do Moises, 12/nov/2026) */
   const [aba, setAba] = useState<'estudo' | 'obs' | 'chat'>(chat ? 'chat' : 'estudo');
   useEffect(() => { if (chat) setAba('chat'); }, [chat]);
-  const irEstudo = useIrEstudo(f.codigo);
   const gravarObs = (fn: () => PromiseLike<{ error: unknown }>, depois?: (r: any) => void) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     void Promise.resolve(fn()).then((r) => { if (r.error) toast((r.error as Error).message, true); else depois?.(r); });
   };
@@ -216,14 +216,14 @@ export function PopMassa({ f, fechar, id, chat }: { f: Ficha; fechar: () => void
         {q.isLoading ? <div className="empty">Carregando…</div>
           : q.error ? <div className="banner warn">Não foi possível ler o estudo de massa: {(q.error as Error).message}</div>
           : m ? <>
-            <NavRoleta cls="vb-nav ems-nav" rotulo="Partes do estudo de massa" ativo={aba} conta={3}>
+            <NavRoleta cls="vb-nav ems-nav" rotulo="Partes do estudo de massa" ativo={aba} conta={semChat ? 2 : 3}>
               <button className="vb-aba" data-t="estudo" aria-current={aba === 'estudo' ? 'page' : undefined} onClick={() => setAba('estudo')}><b>Estudo</b></button>
               <button className="vb-aba vb-aba-1l" data-t="obs" aria-current={aba === 'obs' ? 'page' : undefined} onClick={() => setAba('obs')}><b>Observações</b></button>
-              <button className="vb-aba vb-aba-1l" data-t="chat" aria-current={aba === 'chat' ? 'page' : undefined} onClick={() => setAba('chat')}><b>Chat</b></button>
+              {!semChat && <button className="vb-aba vb-aba-1l" data-t="chat" aria-current={aba === 'chat' ? 'page' : undefined} onClick={() => setAba('chat')}><b>Chat</b></button>}
             </NavRoleta>
             {aba === 'chat'
               ? <section className="sec ems-obs chat-sec" aria-label="Chat do estudo">
-                <div className="sec-b"><Chat key={m.id} tipo="massa" estudo={m.id} terreno={f.id} abrirEstudo={irEstudo} /></div></section>
+                <div className="sec-b"><Chat key={m.id} tipo="massa" estudo={m.id} f={f} /></div></section>
               : aba === 'estudo'
               ? <FichaEstudo key={m.id} m={m} viabs={q.data!.viabs} edita={edita} recarregar={recarregar}
                 abrir={(t) => setJanela(t)} marcarValido={() => marcar(m, true)} />
