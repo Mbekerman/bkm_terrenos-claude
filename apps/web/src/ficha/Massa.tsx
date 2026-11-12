@@ -18,6 +18,7 @@ import { lerNum, numStr, Quadro, useListas, Vivo } from './edicao';
 import type { Ficha, R } from './dados';
 import { abrirEstudo } from '../viab/Viabilidade';
 import { SeloValido } from '../components/SeloValido';
+import { NavRoleta } from '../components/NavRoleta';
 import { OBS_MASSA, Observacoes } from '../viab/Observacoes';
 import Chat, { useIrEstudo, useLinkEstudo } from '../components/Chat';
 
@@ -215,11 +216,11 @@ export function PopMassa({ f, fechar, id, chat }: { f: Ficha; fechar: () => void
         {q.isLoading ? <div className="empty">Carregando…</div>
           : q.error ? <div className="banner warn">Não foi possível ler o estudo de massa: {(q.error as Error).message}</div>
           : m ? <>
-            <nav className="vb-nav ems-nav" aria-label="Partes do estudo de massa">
-              <button className="vb-aba" aria-current={aba === 'estudo' ? 'page' : undefined} onClick={() => setAba('estudo')}><b>Estudo</b></button>
-              <button className="vb-aba vb-aba-1l" aria-current={aba === 'obs' ? 'page' : undefined} onClick={() => setAba('obs')}><b>Observações</b></button>
-              <button className="vb-aba vb-aba-1l" aria-current={aba === 'chat' ? 'page' : undefined} onClick={() => setAba('chat')}><b>Chat</b></button>
-            </nav>
+            <NavRoleta cls="vb-nav ems-nav" rotulo="Partes do estudo de massa" ativo={aba} conta={3}>
+              <button className="vb-aba" data-t="estudo" aria-current={aba === 'estudo' ? 'page' : undefined} onClick={() => setAba('estudo')}><b>Estudo</b></button>
+              <button className="vb-aba vb-aba-1l" data-t="obs" aria-current={aba === 'obs' ? 'page' : undefined} onClick={() => setAba('obs')}><b>Observações</b></button>
+              <button className="vb-aba vb-aba-1l" data-t="chat" aria-current={aba === 'chat' ? 'page' : undefined} onClick={() => setAba('chat')}><b>Chat</b></button>
+            </NavRoleta>
             {aba === 'chat'
               ? <section className="sec ems-obs chat-sec" aria-label="Chat do estudo">
                 <div className="sec-b"><Chat key={m.id} tipo="massa" estudo={m.id} terreno={f.id} abrirEstudo={irEstudo} /></div></section>

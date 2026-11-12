@@ -49,7 +49,7 @@ A janela do estudo tem sempre o mesmo tamanho, a altura da tela inteira, com o e
 
 A janela fecha no **X** ou com **Esc**. No título: o nome, a situação, o selo **Válido** e **"Ver pedido"**, que abre a janela com a data do pedido, quem pediu, o nome do estudo, o arquiteto, o prazo e o briefing. Quem edita muda ali o nome, o arquiteto (o novo arquiteto é avisado), o prazo e o briefing e clica em **"Salvar"**.
 
-Logo abaixo do título, três abas: **Estudo** (os dados abaixo), **Observações** e **Chat**, que ficam presas no alto ao rolar.
+Logo abaixo do título, três abas: **Estudo** (os dados abaixo), **Observações** e **Chat**, que ficam presas no alto ao rolar. A barra das abas gira como a roleta das abas da ficha: arraste com o mouse (solta com força, ela continua girando e freia aos poucos), use Shift + roda do mouse ou o deslize de lado do trackpad; arrastar não troca de aba, só o clique troca.
 
 Os campos se editam no lugar, sem botão de salvar: cada um grava ao sair dele.
 

@@ -48,7 +48,7 @@ A janela tem sempre o mesmo tamanho, a altura da tela inteira, seja qual for a a
 
 **Indicadores** (ficam presos no topo ao rolar): **VGV**, **VGV líquido**, **Lucro líquido** e **Margem líquida**. Eles se refazem enquanto você digita. A receita do estudo é o **VGV líquido** (o VGV sem as unidades de permuta e de comissão), e a margem líquida é o lucro líquido ÷ VGV líquido.
 
-**Botões das seções** (logo abaixo, também presos): Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas, DRE e **Observações**, cada um com o total e o % do VGV (Observações não tem número). Financeiras e Taxas só aparecem para a diretoria e o administrador. No fim de cada seção, os botões levam à anterior e à próxima.
+**Botões das seções** (logo abaixo, também presos): Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas, DRE e **Observações**, cada um com o total e o % do VGV (Observações não tem número). Financeiras e Taxas só aparecem para a diretoria e o administrador. No fim de cada seção, os botões levam à anterior e à próxima. Quando os botões não cabem, a barra gira como a roleta das abas da ficha: arraste com o mouse (com inércia), Shift + roda do mouse ou o deslize de lado do trackpad, sem trocar de seção; ao escolher uma seção, ela vem para a vista com boa parte das vizinhas aparecendo.
 
 ### Tipologias
 
