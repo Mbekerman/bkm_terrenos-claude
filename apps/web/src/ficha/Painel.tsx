@@ -276,6 +276,7 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       if (x.arquiteto_id !== d.arquiteto_id) return { txt: `${d.nome}: arquiteto ${c.nomes.get(d.arquiteto_id) ?? 'trocado'}`, aba: 'massa' };
       if (x.briefing !== d.briefing || x.prazo !== d.prazo) return { txt: `${d.nome}: pedido alterado`, aba: 'massa' };
       if (x.observacoes !== d.observacoes) return { txt: `${d.nome}: observações alteradas`, aba: 'massa' };
+      if (x.observacoes_html !== d.observacoes_html) return { txt: `${d.nome}: observações e premissas alteradas`, aba: 'massa' };
       return { txt: `${d.nome}: dados do arquiteto atualizados`, aba: 'massa' };
     }
     default: return null;

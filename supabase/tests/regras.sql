@@ -3766,6 +3766,16 @@ select pg_temp.ok((select not valido from app.estudos_massa where id = :'em1') a
       = '2 Dormitórios:120:280000.00,Studio:40:-',
   'trocou o válido, a viabilidade troca de estudo: a tipologia de mesmo nome guarda o preço, a nova entra e a que saiu do estudo sai');
 select pg_temp.falha(format('select app.apagar_estudo_massa(%L)', :'em2'), 'o estudo válido não se apaga');
+-- Observações e Premissas do estudo de massa (12/nov/2026)
+select app.salvar_observacoes_massa(:'em2', '<p><b>Premissa:</b> data: 12/11, <span style="color: #cc0000">online</span> = ok</p>');
+select pg_temp.ok((select observacoes_html like '<p><b>Premissa:</b>%' from app.estudos_massa where id = :'em2'), 'quem edita grava as observações e premissas do estudo de massa');
+select pg_temp.falha(format('select app.salvar_observacoes_massa(%L, %L)', :'em2', '<p>oi<script>x()</script></p>'), 'observações do estudo de massa com script são recusadas');
+select pg_temp.falha(format('select app.salvar_observacoes_massa(%L, %L)', :'em2', '<a href="javascript:x()">a</a>'), 'observações do estudo de massa com javascript: são recusadas');
+select app.salvar_observacoes_massa(:'em2', '<p><br></p>');
+select pg_temp.ok((select observacoes_html is null from app.estudos_massa where id = :'em2'), 'observações do estudo de massa só com etiquetas vazias ficam em branco');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format('select app.salvar_observacoes_massa(%L, %L)', :'em2', '<p>x</p>'), 'Leitura não grava observações do estudo de massa');
+select pg_temp.como(:'analista');
 select app.criar_viabilidade_da_massa(:'em1', 'Presa ao 1') as vbm1 \gset
 select pg_temp.falha(format('select app.apagar_estudo_massa(%L)', :'em1'), 'estudo com viabilidade presa não se apaga');
 select app.vincular_massa(:'vbm1', null, false);
