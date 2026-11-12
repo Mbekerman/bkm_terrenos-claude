@@ -111,7 +111,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
   return (
     <div className="stack">
       {ac.dlgNovo}
-      <Quadro aba="viabilidade" id="viab-res" primeiro titulo="Resumo da viabilidade">
+      <Quadro aba="viabilidade" id="viab-res" primeiro titulo="Resumo da Viabilidade Ativa">
         <div className="sec-b">
           {lista.length > 0 && (
             <div className="vb-escolha">
@@ -140,7 +140,7 @@ export default function AbaViabilidade({ f }: { f: Ficha }) {
           </> : <div className="muted">{lista.length ? 'Nenhum estudo marcado como válido.' : <>Sem estudo.{!ro && <> <button className="linkbtn ed" onClick={() => ac.novo(lista)}>Montar estudo</button></>}</>}</div>}
         </div>
       </Quadro>
-      <Quadro aba="viabilidade" id="viab" chip="Estudos" titulo="Viabilidade" acoes={novoBtn}>
+      <Quadro aba="viabilidade" id="viab" chip="Estudos" titulo="Estudos" acoes={novoBtn}>
         <div className="sec-b">
           {vi && <>
             <div className="metrics vb-met">

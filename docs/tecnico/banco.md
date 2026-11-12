@@ -248,6 +248,10 @@ Migration `20261015002000_tratativas.sql` (idempotente; é também o SQL avulso 
 
 `app.oferta_corretores` (`20261015002100_oferta_corretores.sql`, #322) guarda os corretores de cada oferta (único por oferta e corretor). `ofertas.corretor_id` continua sendo o **principal**, lido pelo resto do sistema (Resumo, filtros, funil, completude): o corretor posto na oferta entra na lista (`tg_oferta_corretor_principal`); o primeiro posto numa oferta sem corretor vira o principal; tirado o principal, o mais antigo que sobrou passa a ser (`tg_oferta_corretor_sync`), e todo corretor da oferta entra em `terreno_corretores`. O que os gatilhos gravam por consequência vai como automático na auditoria. Escrita direta (oferta é tabela sem regra): leitura pela empresa, inserir e apagar por quem edita. A observação livre da oferta é `ofertas.observacoes`.
 
+## Padrões fixos da viabilidade (12/nov/2026)
+
+`20261015002300_viabilidade_padroes.sql` (#360) grava `tipo_padrao` e `valor_padrao` dos itens de Taxas e Despesas financeiras em `app.viabilidade_despesas`, no modelo (empresa nula) e nas empresas onde o valor ainda era nulo, porque Configurações › Viabilidade não existe no React (pedido do Moises). `app.criar_viabilidade` copia esses valores para as linhas fixas do estudo novo (sem modelo, ou com modelo que não traga Taxas e Financeiras); estudos existentes não mudam. Quando a tela de configuração chegar, ela edita os mesmos campos por `app.salvar_despesa_viabilidade`. `tools/viabilidade/despesas.json` tem os mesmos valores.
+
 ## Auditoria e histórico
 
 ### `app.auditoria`: o log de tudo
