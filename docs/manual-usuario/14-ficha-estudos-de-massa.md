@@ -36,6 +36,8 @@ Uma tabela como a dos estudos de viabilidade, com cabeçalho e uma linha por est
 
 **Clique em qualquer lugar da linha** para abrir o estudo na janela (o cursor vira a mãozinha). O selo é a exceção: ele só liga e desliga o válido, sem abrir o estudo.
 
+A janela do estudo tem sempre o mesmo tamanho, a altura da tela inteira, com o estudo grande ou pequeno, aberto ou recolhido: o que não cabe rola dentro dela.
+
 **O selo é clicável** (para quem edita):
 
 - Clicar em **Inválido** torna aquele estudo o válido, e o que era o válido passa a inválido. Os estudos de viabilidade que seguem o válido passam a usar o novo.
