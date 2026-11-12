@@ -4,6 +4,7 @@ Toda mudança que entra na `develop` ganha uma linha aqui, no mesmo PR (ver [com
 
 ## 2026-11-12
 
+- #358 A aba `.tgav-aba` do #352 (z-index 41) ficava por cima das janelas abertas de dentro da gaveta (o `.scrim` do `Dialogo` tem z-index 40 e o `.vb-pop` 38, no mesmo contexto de empilhamento da `.tgav`), no meio da tela. Em `app.css`: a aba desce para z-index 2 (fica fora da caixa da gaveta, nada do conteúdo dela a cobre) e, com `.scrim`, `.vb-pop-fundo`, `.dialog` ou `[aria-modal="true"]` dentro da `.tgav`, a aba e a pega de largura `.tgav-redim` saem (`display: none` por `:has`). Pedido do Moises, 12/nov/2026. Só CSS, sem SQL. Sem impacto de segurança.
 - #356 Terreno em Backlog sem saída na tela (achado no A001, o primeiro terreno de produção): desde o #315 a oferta do cadastro não abre negociação, e o React não tinha controle para abrir. `ficha/Avanco.tsx` ganha `Backlog`, que `Avancos` (`ficha/Painel.tsx`) mostra quando `procsAvanco` vem vazio (o painel passa a mostrar o `.pn-adv` sempre): faixa com "Iniciar negociação" para quem edita, que chama `app.abrir_negociacao(terreno, oferta vigente)` (já existente e liberada para `authenticated`) e recarrega a ficha. Sem SQL. Sem impacto de segurança (nenhuma permissão nova; a RPC confere o editor).
 
 ## 2026-11-11
