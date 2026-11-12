@@ -48,7 +48,7 @@ A janela tem sempre o mesmo tamanho, a altura da tela inteira, seja qual for a a
 
 **Indicadores** (ficam presos no topo ao rolar): **VGV**, **VGV líquido**, **Lucro líquido** e **Margem líquida**. Eles se refazem enquanto você digita. A receita do estudo é o **VGV líquido** (o VGV sem as unidades de permuta e de comissão), e a margem líquida é o lucro líquido ÷ VGV líquido.
 
-**Botões das seções** (logo abaixo, também presos): Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas, DRE e **Observações e Premissas**, cada um com o total e o % do VGV (Observações e Premissas não tem número: o nome ocupa as duas linhas, "Observações" em cima e "e Premissas" embaixo). Financeiras e Taxas só aparecem para a diretoria e o administrador. No fim de cada seção, os botões levam à anterior e à próxima.
+**Botões das seções** (logo abaixo, também presos): Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas, DRE e **Observações**, cada um com o total e o % do VGV (Observações não tem número). Financeiras e Taxas só aparecem para a diretoria e o administrador. No fim de cada seção, os botões levam à anterior e à próxima.
 
 ### Tipologias
 
@@ -113,7 +113,7 @@ Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascido
 
 O resultado do estudo, do VGV ao lucro, com o valor e o % da receita de cada linha: receita bruta, permuta e comissão em unidades, receita (VGV líquido), terreno, obras, lucro bruto, comerciais, gerais, EBITDA, despesas financeiras, resultado e margem sem as taxas, taxas e lucro líquido. Cada grupo mostra o detalhe embaixo. Fora da diretoria, Financeiras e Taxas aparecem só pelo total. Só leitura: muda conforme as outras seções.
 
-### Observações e Premissas
+### Observações
 
 Texto livre do estudo, um por estudo: as premissas usadas (de onde vieram os preços, o que ficou de fora do custo, o que falta confirmar) e as observações. A barra de cima segue a do Google Docs:
 
@@ -132,7 +132,7 @@ Atalhos: Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+K (link), Ctrl+Shift+7 (lista numerada), C
 
 **Colar**: texto vindo do Word, do Docs ou de uma página mantém negrito, itálico, sublinhado, cores, tamanhos, títulos, listas e links; imagens, tabelas e o resto ficam de fora (as tabelas viram parágrafos).
 
-**Duplicar** leva as Observações e Premissas para a cópia. **Salvar como modelo** não leva (o texto é do estudo, não do modelo).
+**Duplicar** leva as Observações para a cópia. **Salvar como modelo** não leva (o texto é do estudo, não do modelo).
 
 Quem só consulta (Leitura) vê o texto formatado, sem a barra.
 

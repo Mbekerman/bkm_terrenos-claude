@@ -375,7 +375,7 @@ function Editor({ id, ini, gravar, aoSalvar, rpc }: { id: string; ini: string; g
         <span className="obs-situ" aria-live="polite">{situacao === 'salvando' ? 'Salvando…' : situacao === 'salvo' ? 'Salvo' : ''}</span>
       </div>
       <div ref={ed} className="obs-doc obs-ed" contentEditable suppressContentEditableWarning role="textbox" aria-multiline="true"
-        aria-label="Observações e Premissas" data-ph="Escreva as observações e as premissas deste estudo"
+        aria-label="Observações" data-ph="Escreva as observações e as premissas deste estudo"
         onInput={() => { trocarFont(); agendar(); }} onBlur={salvar} onKeyDown={teclas} onPaste={colar}
         onMouseUp={() => { pendentePt.current = null; ler(); }} onKeyDownCapture={(e) => {
           if ((e.ctrlKey || e.metaKey) && (e.key === '[' || e.key === ']')) { e.preventDefault(); fazer(e.key === '[' ? 'outdent' : 'indent'); }

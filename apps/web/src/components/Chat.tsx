@@ -14,7 +14,7 @@ import { acender } from '../ficha/edicao';
 // lista dos estudos de massa e de viabilidade do terreno, e o escolhido vira um chip que abre o estudo. Clique direito (no
 // celular, segurar) abre Responder, Copiar, Editar e Apagar (as duas últimas, só nas próprias). Enter envia,
 // Shift + Enter quebra a linha. O aviso de menção abre a janela aqui e acende a mensagem (`irParaMensagem`).
-// No banco: app.estudo_mensagens e app.enviar_mensagem_estudo (migration 20261015002600_estudo_chat.sql).
+// No banco: app.estudo_mensagens e app.enviar_mensagem_estudo (migration 20261015002700_estudo_chat.sql).
 
 export type TipoEstudo = 'massa' | 'viabilidade';
 interface Msg { id: string; autor_id: string; texto: string | null; resposta_a: string | null; criada_em: string; editada_em: string | null; apagada_em: string | null }

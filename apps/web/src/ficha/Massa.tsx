@@ -217,8 +217,8 @@ export function PopMassa({ f, fechar, id, chat }: { f: Ficha; fechar: () => void
           : m ? <>
             <nav className="vb-nav ems-nav" aria-label="Partes do estudo de massa">
               <button className="vb-aba" aria-current={aba === 'estudo' ? 'page' : undefined} onClick={() => setAba('estudo')}><b>Estudo</b></button>
-              <button className="vb-aba vb-aba-2l" aria-current={aba === 'obs' ? 'page' : undefined} onClick={() => setAba('obs')}><b>Observações<br />e Premissas</b></button>
-              <button className="vb-aba vb-aba-2l" aria-current={aba === 'chat' ? 'page' : undefined} onClick={() => setAba('chat')}><b>Chat</b></button>
+              <button className="vb-aba vb-aba-1l" aria-current={aba === 'obs' ? 'page' : undefined} onClick={() => setAba('obs')}><b>Observações</b></button>
+              <button className="vb-aba vb-aba-1l" aria-current={aba === 'chat' ? 'page' : undefined} onClick={() => setAba('chat')}><b>Chat</b></button>
             </nav>
             {aba === 'chat'
               ? <section className="sec ems-obs chat-sec" aria-label="Chat do estudo">
@@ -226,7 +226,7 @@ export function PopMassa({ f, fechar, id, chat }: { f: Ficha; fechar: () => void
               : aba === 'estudo'
               ? <FichaEstudo key={m.id} m={m} viabs={q.data!.viabs} edita={edita} recarregar={recarregar}
                 abrir={(t) => setJanela(t)} marcarValido={() => marcar(m, true)} />
-              : <section className="sec ems-obs"><div className="sec-h"><h2>Observações e Premissas</h2></div>
+              : <section className="sec ems-obs"><div className="sec-h"><h2>Observações</h2></div>
                 <div className="sec-b"><Observacoes key={m.id} id={m.id} ro={!edita} gravar={gravarObs} aoSalvar={() => recarregar()} origem={OBS_MASSA} /></div></section>}
           </>
           : <div className="empty">{id ? 'Este estudo de massa não existe mais.' : 'Este terreno não tem estudo de massa válido.'}</div>}

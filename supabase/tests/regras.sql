@@ -4424,6 +4424,58 @@ select pg_temp.falha(format($$insert into app.preferencias_usuario (user_id, cha
   'ninguém grava preferência em nome de outra pessoa');
 reset role;
 
+-- Etapa deixada com pendências (12/nov/2026): quem força o avanço escolhe deixar a etapa com
+-- pendências; elas continuam na ficha até serem cumpridas ou consideradas concluídas.
+\echo '# etapa deixada com pendências'
+select pg_temp.como(:'diretor');
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, latitude, longitude, poligono_geojson)
+  values (:'emp', 'Terreno das pendências', :'analista', 'corretor', :'sp', -23.73, -46.73, pg_temp.quadra(-46.73, -23.73)) returning id as tpe \gset
+select (app.registrar_oferta(:'tpe', 3000000, 'dinheiro')->>'processo_id') as ppe \gset
+select etapa_atual as ppe_e0 from app.processos where id = :'ppe' \gset
+select pg_temp.ok(exists (select 1 from jsonb_array_elements(app.checar_passagem(:'ppe')->'itens') i where (i->>'ok')::boolean is not true),
+  'o terreno novo tem o que falta para sair da primeira etapa');
+select pg_temp.como(:'gestor');
+select pg_temp.falha(format($$select app.mover_etapa(%L, true, null, 'talvez')$$, :'ppe'), 'escolha inválida para as pendências é recusada');
+select app.mover_etapa(:'ppe', true, 'teste', 'deixar') \gset
+select pg_temp.ok((select count(*) = 1 and bool_and(etapa = :'ppe_e0' and encerrada_em is null and jsonb_array_length(itens) > 0 and criado_por = :'gestor')
+                   from app.etapas_pendentes where processo_id = :'ppe'),
+  'deixar com pendências marca a etapa deixada, com os itens que faltavam e quem avançou');
+select pg_temp.ok((select bool_and(automatico) from app.auditoria where tabela = 'etapas_pendentes' and depois->>'processo_id' = :'ppe'),
+  'nos Logs, a marca é consequência do avanço');
+select pg_temp.como(:'analista');
+select pg_temp.ok((select jsonb_array_length(x) = 1 and x->0->>'etapa' = :'ppe_e0' and not (x->0->>'resolvida')::boolean and jsonb_array_length(x->0->'itens') > 0
+                   from app.pendencias_etapas(:'tpe') x),
+  'a ficha lê a etapa pendente com o que ainda falta');
+select pg_temp.falha(format($$insert into app.etapas_pendentes (empresa_id, terreno_id, processo_id, fase, etapa) select empresa_id, terreno_id, id, fase, 'x' from app.processos where id = %L$$, :'ppe'),
+  'ninguém grava a marca direto');
+select pg_temp.como(:'leitor');
+select pg_temp.falha(format($$select app.considerar_etapa_concluida((select id from app.etapas_pendentes where processo_id = %L limit 1))$$, :'ppe'),
+  'leitura não considera a etapa concluída');
+-- voltar para a etapa deixada encerra a marca
+select pg_temp.como(:'gestor');
+select app.mover_para_etapa(:'ppe', :'ppe_e0', false, 'voltar') \gset
+select pg_temp.ok((select bool_and(encerrada_motivo = 'retorno') from app.etapas_pendentes where processo_id = :'ppe'),
+  'voltar para a etapa deixada encerra a marca de pendências');
+-- "considerar concluída" no avanço não marca nada
+select app.mover_etapa(:'ppe', true, 'teste', 'concluida') \gset
+select pg_temp.ok(not exists (select 1 from app.etapas_pendentes where processo_id = :'ppe' and encerrada_em is null),
+  'considerar a etapa concluída no avanço não deixa pendência');
+select app.mover_para_etapa(:'ppe', :'ppe_e0', false, null) \gset
+select app.mover_etapa(:'ppe', true, 'teste') \gset
+select pg_temp.ok(not exists (select 1 from app.etapas_pendentes where processo_id = :'ppe' and encerrada_em is null),
+  'sem a escolha (como antes), a etapa conta como concluída');
+select app.mover_para_etapa(:'ppe', :'ppe_e0', false, null) \gset
+select app.mover_etapa(:'ppe', true, 'teste', 'deixar') \gset
+select pg_temp.como(:'analista');
+select app.considerar_etapa_concluida((select id from app.etapas_pendentes where processo_id = :'ppe' and encerrada_em is null));
+select pg_temp.ok((select count(*) = 0 from app.etapas_pendentes where processo_id = :'ppe' and encerrada_em is null)
+  and exists (select 1 from app.etapas_pendentes where processo_id = :'ppe' and encerrada_motivo = 'concluida' and encerrada_por = :'analista')
+  and jsonb_array_length(app.pendencias_etapas(:'tpe')) = 0,
+  'quem edita considera a etapa concluída depois, e ela sai da ficha');
+select pg_temp.ok((select not automatico from app.auditoria where tabela = 'etapas_pendentes' and acao = 'update' and depois->>'encerrada_motivo' = 'concluida' and depois->>'processo_id' = :'ppe'),
+  'considerar concluída é ação da pessoa nos Logs');
+reset role;
+
 -- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
 -- e os catálogos sem empresa continuam legíveis por quem está logado.
 reset role;

@@ -235,6 +235,14 @@ function txtAud(a: R, c: Ctx): Omit<Log, 'id' | 'em' | 'user'> | null {
       if (del) return { txt: `Participante tirado da reunião${dt ? ` de ${dt}` : ''}: ${quem}`, aba: 'comercial', q: 'reunioes' };
       return null;
     }
+    /* etapa deixada com pendências (12/nov/2026): a marca entra junto com o avanço (consequência) e sai por "Considerar concluída" ou ao voltar */
+    case 'etapas_pendentes': {
+      const nm = c.f.etapasPorFase[o.fase]?.find((e) => e.k === o.etapa)?.nome ?? o.etapa;
+      if (ins) return { txt: `Etapa ${nm} deixada com pendências`, det: ((o.itens ?? []) as R[]).map((i) => i.texto).filter(Boolean), topo: '.tl-topo' };
+      if (d?.encerrada_motivo === 'concluida' && !x?.encerrada_motivo) return { txt: `Etapa ${nm} considerada concluída`, topo: '.tl-topo' };
+      if (d?.encerrada_motivo === 'retorno' && !x?.encerrada_motivo) return { txt: `Etapa ${nm} sem pendências marcadas (voltou para ela)`, topo: '.tl-topo' };
+      return null;
+    }
     case 'documentos': return ins ? { txt: `Documento enviado: ${o.nome ?? o.tipo_documento}`, aba: 'documentos' } : null;
     case 'analises_urbanisticas': return ins ? { txt: `Análise urbanística registrada${o.fonte ? ` (${o.fonte})` : ''}`, aba: 'terreno', q: 'indices' } : null;
     case 'terreno_infraestrutura': {

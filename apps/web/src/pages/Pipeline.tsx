@@ -1,5 +1,6 @@
 import { finTxt, fisTxt, modDe, temMod, type Modalidades } from '../lib/modalidades';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
@@ -521,17 +522,42 @@ function MassaPop({ cod, fechar }: { cod: string; fechar: () => void }) {
   return q.data ? <PopMassa f={q.data} fechar={fechar} /> : null;
 }
 
-/** ⓘ antes do título: o clique abre o balão com o que cada linha da célula mostra; fecha no clique fora, no Esc ou no ⓘ */
+/** ⓘ antes do título: o clique abre o balão com o que cada linha da célula mostra; fecha no clique fora, no Esc ou no ⓘ.
+    O balão vai para o fim da página (portal) com posição fixa, para passar por cima da borda da tabela em vez de ser
+    cortado por ela (pedido do Moises, 12/nov/2026); acompanha o ⓘ ao rolar e ao mudar a largura da janela. */
 function InfoCol({ c }: { c: Col }) {
   const [aberto, setAberto] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; seta: number; cima: boolean } | null>(null);
+  const ref = useRef<HTMLSpanElement>(null), pop = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     if (!aberto) return;
-    const fora = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setAberto(false); };
+    const fora = (e: MouseEvent) => { const t = e.target as Node; if (!ref.current?.contains(t) && !pop.current?.contains(t)) setAberto(false); };
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); setAberto(false); } };
     document.addEventListener('mousedown', fora);
     document.addEventListener('keydown', esc, true);
     return () => { document.removeEventListener('mousedown', fora); document.removeEventListener('keydown', esc, true); };
+  }, [aberto]);
+  useLayoutEffect(() => {
+    if (!aberto) { setPos(null); return; }
+    const medir = () => {
+      const b = ref.current?.getBoundingClientRect(); if (!b) return;
+      const W = 260, M = 8, vw = document.documentElement.clientWidth, vh = window.innerHeight, h = pop.current?.offsetHeight ?? 0;
+      const cx = b.left + b.width / 2;
+      /* à direita do ⓘ quando cabe; senão alinhado pela direita dele; nunca fora da janela */
+      let left = b.left - 8;
+      if (left + W > vw - M) left = b.right + 8 - W;
+      left = Math.max(M, Math.min(left, vw - M - W));
+      /* embaixo do ⓘ; sem espaço embaixo e com mais espaço em cima, sobe */
+      const baixo = vh - b.bottom - 10 - M, alto = b.top - 10 - M;
+      const cima = h > baixo && alto > baixo;
+      const top = cima ? Math.max(M, b.top - 10 - h) : b.bottom + 10;
+      setPos({ top, left, seta: Math.max(10, Math.min(W - 22, cx - left - 6)), cima });
+    };
+    medir();
+    const r = requestAnimationFrame(medir); // de novo com a altura real do balão já desenhado
+    window.addEventListener('scroll', medir, true);
+    window.addEventListener('resize', medir);
+    return () => { cancelAnimationFrame(r); window.removeEventListener('scroll', medir, true); window.removeEventListener('resize', medir); };
   }, [aberto]);
   return (
     <span className="tb-info" ref={ref}>
@@ -539,12 +565,15 @@ function InfoCol({ c }: { c: Col }) {
         onClick={(e) => { e.stopPropagation(); setAberto((a) => !a); }}>
         <svg viewBox="0 0 24 24" width={16} height={16} aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.75" /><path d="M12 11v6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /><circle cx="12" cy="7.6" r="1.2" fill="currentColor" /></svg>
       </button>
-      {aberto && <span className="tb-info-pop" role="tooltip">
-        <span className="tb-info-t">{c.l}</span>
-        <span className="tb-info-s">De cima para baixo, em cada linha:</span>
-        {c.info!.filter((x) => x.t !== '*').map((x, i) => <span key={x.t} className="tb-info-l"><span className="tb-info-n">{i + 1}</span><span><b className={x.forte ? 'forte' : undefined}>{x.t}</b><span className="tb-info-d">{x.d}</span></span></span>)}
-        {c.info!.filter((x) => x.t === '*').map((x) => <span key="*" className="tb-info-s" style={{ marginTop: 8 }}><b>*</b> {x.d}</span>)}
-      </span>}
+      {aberto && createPortal(
+        <span ref={pop} className={'tb-info-pop solto' + (pos?.cima ? ' cima' : '')} role="tooltip"
+          style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, ['--seta' as string]: `${pos?.seta ?? 14}px` }}
+          onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+          <span className="tb-info-t">{c.l}</span>
+          <span className="tb-info-s">De cima para baixo, em cada linha:</span>
+          {c.info!.filter((x) => x.t !== '*').map((x, i) => <span key={x.t} className="tb-info-l"><span className="tb-info-n">{i + 1}</span><span><b className={x.forte ? 'forte' : undefined}>{x.t}</b><span className="tb-info-d">{x.d}</span></span></span>)}
+          {c.info!.filter((x) => x.t === '*').map((x) => <span key="*" className="tb-info-s" style={{ marginTop: 8 }}><b>*</b> {x.d}</span>)}
+        </span>, document.body)}
     </span>
   );
 }

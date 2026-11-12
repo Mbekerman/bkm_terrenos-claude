@@ -25,7 +25,7 @@ import { carregarEstudo, erroTxt, useDespesas, useEstudos, useRecarregar, type R
 
 type Sec = 'tip' | 'terreno' | 'comercial' | 'obra' | 'despesas' | 'financeiro' | 'taxas' | 'res' | 'obs' | 'chat';
 const VB_ORDEM: Sec[] = ['tip', 'terreno', 'comercial', 'obra', 'despesas', 'financeiro', 'taxas', 'res', 'obs', 'chat'];
-const VB_ROT: Record<Sec, string> = { tip: 'Tipologias', terreno: 'Terreno', comercial: 'Comercial', obra: 'Obras', despesas: 'Gerais', taxas: 'Taxas', financeiro: 'Financeiras', res: 'DRE', obs: 'Observações e Premissas', chat: 'Chat' };
+const VB_ROT: Record<Sec, string> = { tip: 'Tipologias', terreno: 'Terreno', comercial: 'Comercial', obra: 'Obras', despesas: 'Gerais', taxas: 'Taxas', financeiro: 'Financeiras', res: 'DRE', obs: 'Observações', chat: 'Chat' };
 
 /* ---------- o estudo aberto no popup (um por vez, de qualquer lugar da ficha) ---------- */
 let aberto: string | null = null;
@@ -387,10 +387,10 @@ function Pop({ id, f, valido, negAtiva }: { id: string; f: Ficha; valido: boolea
         </div>
         <nav className="vb-nav" aria-label="Seções do estudo">
           {ordem.map((k) => k === 'chat'
-            ? <button key={k} className="vb-aba vb-aba-2l" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>Chat</b></button>
+            ? <button key={k} className="vb-aba vb-aba-1l" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>Chat</b></button>
             : k === 'obs'
             /* sem indicador embaixo: o nome ocupa as duas linhas (pedido do Moises, 12/nov/2026) */
-            ? <button key={k} className="vb-aba vb-aba-2l" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>Observações<br />e Premissas</b></button>
+            ? <button key={k} className="vb-aba vb-aba-1l" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>Observações</b></button>
             : <button key={k} className="vb-aba" aria-current={k === ab ? 'page' : undefined} onClick={() => irSec(k)}><b>{VB_ROT[k]}</b><small>{navTxt(k, c)}</small></button>)}
         </nav>
       </div>
@@ -467,7 +467,7 @@ function shTxt(k: Sec, c: Calc) {
 
 function Secao({ k, ordem, c, irSec, acao, children }: { k: Sec; ordem: Sec[]; c: Calc; irSec: (k: Sec) => void; acao: ReactNode; children: ReactNode }) {
   const i = ordem.indexOf(k), ant = ordem[i - 1], prox = ordem[i + 1];
-  const titulo = k === 'tip' ? 'Tipologias' : k === 'res' ? 'DRE' : k === 'obs' ? 'Observações e Premissas' : k === 'chat' ? 'Chat' : VB_SECAO[k];
+  const titulo = k === 'tip' ? 'Tipologias' : k === 'res' ? 'DRE' : k === 'obs' ? 'Observações' : k === 'chat' ? 'Chat' : VB_SECAO[k];
   const passo = (x: Sec | undefined, seta: number) => x
     ? <button className="btn text sm" onClick={() => irSec(x)}>{seta < 0 ? '‹ ' : ''}{VB_ROT[x]}{seta > 0 ? ' ›' : ''}</button> : <span />;
   return (
