@@ -63,14 +63,13 @@ export function janela(d: VsoHist, n: 3 | 6 | 12): Jan | null {
   }
   return { ...j, vso_mes: v, lanc: false };
 }
-
-const per = (j: Jan | null | undefined, d: VsoHist) =>
   j?.lanc ? `desde o lançamento, ${j.meses} ${j.meses === 1 ? 'mês' : 'meses'}` : `${j ? j.meses : 3} ${j?.meses === 1 ? 'mês' : 'meses'} até ${mkData(d.ultimo_mes).slice(3)}`;
 
 /** bloco do card: VSO mensal médio dos últimos 3 meses, vendas nesses meses e o quartil de vendas em que o projeto está (Órulo);
     o clique abre o gráfico. Sem histórico do Órulo, fica o que o monitor mediu (`semHist`). */
 export function VsoKv({ id, abrir, semHist }: { id: string; abrir: () => void; semHist: ReactNode }) {
   const st = useVso(id), d = st.d, q = d?.vendas?.quartil_atual || null;
+  const [info, setInfo] = useState(false);
   if (st.erro || st.d === null || (d && !janela(d, 3))) return <>{semHist}</>;
   const j = d ? janela(d, 3) : null;
   return (
@@ -83,8 +82,14 @@ export function VsoKv({ id, abrir, semHist }: { id: string; abrir: () => void; s
         <span className="vq-cel"><span className="faint">Desde o lançamento</span><span className="num">{d ? mkPct(d.geral.vso_mes) : '…'}</span></span>
         {d && [3, 6, 12].some((n) => janela(d, n as 3 | 6 | 12)?.lanc) && <span className="faint vq-quadro-n">* lançado há {d.geral.meses_desde_lancamento} {d.geral.meses_desde_lancamento === 1 ? 'mês' : 'meses'}: vale o desde o lançamento</span>}
       </span>
-      <span className="mk-kv"><span className="muted">Vendas em 3 meses</span><span className="num">{d && j ? num(j.vendas) : '…'}</span>
-        {d && <span className="faint">{j?.lanc ? 'desde o lançamento' : j && j.liquidas < 0 ? `${num(j.distratos)} distratos, mais que as vendas` : j && j.distratos ? `e ${num(j.distratos)} distrato${j.distratos === 1 ? '' : 's'}` : per(j, d)}</span>}</span>
+      {/* vendas líquidas (pode ser negativa) e o ⓘ com vendas e distratos (pedido do Moises, 12/nov/2026) */}
+      <span className="mk-kv vq-liq"><span className="muted">Vendas líquidas{j?.lanc ? '' : ` em ${j ? j.meses : 3} ${j?.meses === 1 ? 'mês' : 'meses'}`}</span>
+        <span className="num">{d && j ? num(j.liquidas) : '…'}{d && j && <span role="button" tabIndex={0} className="vq-i" aria-label="Ver vendas e distratos" aria-expanded={info}
+          onClick={(ev) => { ev.stopPropagation(); setInfo(!info); }} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); setInfo(!info); } }}>i</span>}</span>
+        {d && <span className="faint">{j?.lanc ? 'desde o lançamento' : `até ${mkData(d.ultimo_mes).slice(3)}`}</span>}
+        {info && j && <span className="vq-info" onClick={(ev) => ev.stopPropagation()}>{j.lanc
+          ? <>Lançado há {j.meses} {j.meses === 1 ? 'mês' : 'meses'}: {num(j.vendas)} unidades vendidas desde o lançamento, com a pré-venda.</>
+          : <><b>{num(j.vendas)}</b> venda{j.vendas === 1 ? '' : 's'} e <b>{num(j.distratos)}</b> distrato{j.distratos === 1 ? '' : 's'} em {j.meses} {j.meses === 1 ? 'mês' : 'meses'} (até {mkData(d!.ultimo_mes).slice(3)}).</>}</span>}</span>
       <span className="mk-kv vq-kv-q"><span className="muted">Quartil de vendas</span>
         <span className="num">{q ? <span className="vq-chip" style={{ background: VQ_COR[q - 1], color: VQ_TXT[q - 1] }}>{q}º quartil</span> : d ? '—' : '…'}</span>
         {d && <span className="faint">{d.geral.vendido_pct != null ? num(d.geral.vendido_pct * 100, 0) + '% vendido' : ''}{d.geral.meses_desde_lancamento ? ` em ${d.geral.meses_desde_lancamento} meses` : ''}</span>}</span>
