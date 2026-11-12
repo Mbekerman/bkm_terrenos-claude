@@ -8,7 +8,7 @@ import { modProposta, resumoMod } from '../lib/modalidades';
 import { Ic } from '../components/Moldura';
 import { abrirQuadro, OPT, pedirCampo, Quadro, SECOES } from './edicao';
 import { completude, ITEM_COMPLETUDE, TEMP, TP_N, type Ficha as F, type R } from './dados';
-import { Avanco, procsAvanco, useAvanco } from './Avanco';
+import { Avanco, Backlog, procsAvanco, useAvanco } from './Avanco';
 import { useComercial } from './Comercial';
 import { useRentabilidade } from '../viab/Viabilidade';
 
@@ -700,7 +700,9 @@ const PN_IC = {
 
 /** os quadros de avanço (um por fase aberta), no painel ou na página */
 export function Avancos({ f, irAba }: { f: F; irAba: (k: string) => void }) {
-  return <>{procsAvanco(f).map((p) => <Avanco key={p.id} f={f} proc={p} irAba={irAba} />)}</>;
+  const ps = procsAvanco(f);
+  if (!ps.length) return <Backlog f={f} />;
+  return <>{ps.map((p) => <Avanco key={p.id} f={f} proc={p} irAba={irAba} />)}</>;
 }
 
 export default function Painel({ f, irAba }: { f: F; irAba: (k: string) => void }) {
@@ -720,7 +722,7 @@ export default function Painel({ f, irAba }: { f: F; irAba: (k: string) => void 
   );
   return (
     <aside className="pn" aria-label="Ações, tarefas e logs">
-      {procsAvanco(f).length > 0 && <div className="pn-adv"><Avancos f={f} irAba={irAba} /></div>}
+      <div className="pn-adv"><Avancos f={f} irAba={irAba} /></div>
       <div className="pn-h">
         <div className="seg" role="tablist" aria-label="Painel">
           {([['acoes', 'Ações', nA], ['tarefas', 'Tarefas', nT], ['logs', 'Logs', nL]] as const).map(([k, l, q]) => (
