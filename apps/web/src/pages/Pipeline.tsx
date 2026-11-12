@@ -11,7 +11,7 @@ import { abrirNovo } from '../novo/estado';
 import { TEMP, TP_N, ZONA } from '../ficha/dados';
 import { usePreCarregarFicha, useFicha } from '../ficha/Ficha';
 import { abrirEstudo, PopEstudo, useAberto } from '../viab/Viabilidade';
-import GavetaFicha, { expandirGaveta, gavetaEncolhida } from '../ficha/Gaveta';
+import GavetaFicha, { expandirGaveta, gavetaEncolhida, useTabGaveta } from '../ficha/Gaveta';
 import { PopMassa } from '../ficha/Massa';
 import { PropostasPop } from '../components/PropostasPop';
 import { bate, faseAtual } from '../mapa/dados';
@@ -377,6 +377,8 @@ export default function Pipeline() {
   const fecharViab = () => { setViab(null); void qc.invalidateQueries({ queryKey: ['mapa', 'pipeline'] }); };
   /* a mesma linha com a gaveta encolhida volta a abrir a gaveta em vez de fechar */
   const abrirGav = (t: Linha) => gav === t.codigo && gavetaEncolhida() ? expandirGaveta() : navegar(gav === t.codigo ? '/terrenos' + location.hash : `/terrenos/${t.codigo}/gaveta${location.hash}`, { replace: !!gav });
+  /* Tab abre o último terreno da gaveta nesta tela e fecha a aberta (pedido do Moises, 12/nov/2026) */
+  useTabGaveta('terrenos', gav, (cod) => { if (todos.some((t) => t.codigo === cod)) navegar(`/terrenos/${cod}/gaveta${location.hash}`); });
   const total = todos.length, n = passam.length;
   const L = fx.o;
   const nv = useNivel();
