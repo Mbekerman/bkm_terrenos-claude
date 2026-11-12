@@ -35,9 +35,9 @@ const visivel = (e: HTMLElement) => (e.checkVisibility ? e.checkVisibility({ vis
 export const expandirGaveta = () => dispatchEvent(new Event('bkm-gaveta-expandir'));
 export const gavetaEncolhida = () => document.body.classList.contains('tgav-encolhida');
 /* Tab abre e fecha a gaveta (pedido do Moises, 12/nov/2026), no Mapa e no Pipeline: fechada, abre o último terreno que
-   esteve na gaveta naquela tela (guardado no navegador, `bkm-terrenos-gaveta-ultimo`, por tela); encolhida, volta a abrir;
-   aberta, fecha. Nessas telas o Tab não passa mais de campo (o Enter faz isso): um campo em edição é gravado (blur) antes
-   de a gaveta fechar. Com janela, menu ou lista de sugestões aberta por cima, o Tab segue como era. */
+   esteve na gaveta naquela tela (guardado no navegador, `bkm-terrenos-gaveta-ultimo`, por tela); aberta, encolhe (fica a
+   seta, como a aba `.tgav-aba`; correção do Moises, 12/nov/2026: o Tab não fecha); encolhida, volta a abrir. Nessas telas
+   o Tab não passa mais de campo (o Enter faz isso): um campo em edição é gravado (blur) antes de a gaveta encolher. Com janela, menu ou lista de sugestões aberta por cima, o Tab segue como era. */
 const ULT_KEY = 'bkm-terrenos-gaveta-ultimo';
 export function lerUltimo(tela: string): string | null {
   try { return (JSON.parse(localStorage.getItem(ULT_KEY) || '{}') as Record<string, string>)[tela] || null; } catch { return null; }
@@ -45,21 +45,21 @@ export function lerUltimo(tela: string): string | null {
 function gravarUltimo(tela: string, cod: string) {
   try { const o = JSON.parse(localStorage.getItem(ULT_KEY) || '{}'); o[tela] = cod; localStorage.setItem(ULT_KEY, JSON.stringify(o)); } catch { /* sem storage */ }
 }
-export function useTabGaveta(tela: string, aberto: string | null, abrir: (cod: string) => void, fechar: () => void) {
+export function useTabGaveta(tela: string, aberto: string | null, abrir: (cod: string) => void) {
   useEffect(() => { if (aberto) gravarUltimo(tela, aberto); }, [tela, aberto]);
-  const r = useRef({ aberto, abrir, fechar });
-  r.current = { aberto, abrir, fechar };
+  const r = useRef({ aberto, abrir });
+  r.current = { aberto, abrir };
   useEffect(() => {
     const k = (ev: KeyboardEvent) => {
       if (ev.key !== 'Tab' || ev.defaultPrevented || ev.ctrlKey || ev.altKey || ev.metaKey || ev.isComposing) return;
       if ([...document.querySelectorAll<HTMLElement>(POR_CIMA + ',#fx-dr')].some(visivel)) return;
       ev.preventDefault();
-      const { aberto, abrir, fechar } = r.current;
+      const { aberto, abrir } = r.current;
       if (aberto) {
         if (gavetaEncolhida()) { expandirGaveta(); return; }
         const a = document.activeElement as HTMLElement | null;
         if (a?.matches(CAMPO)) a.blur();
-        setTimeout(fechar, 0);
+        dispatchEvent(new Event('bkm-gaveta-encolher'));
         return;
       }
       const cod = lerUltimo(tela);
@@ -128,9 +128,9 @@ export default function GavetaFicha({ codigo, lado, fechar, abrirPagina, abrirMa
   const [encolhida, setEncolhida] = useState(false);
   useEffect(() => { setEncolhida(false); }, [codigo]);
   useEffect(() => {
-    const ab = () => setEncolhida(false);
-    addEventListener('bkm-gaveta-expandir', ab);
-    return () => removeEventListener('bkm-gaveta-expandir', ab);
+    const ab = () => setEncolhida(false), en = () => setEncolhida(true);
+    addEventListener('bkm-gaveta-expandir', ab); addEventListener('bkm-gaveta-encolher', en);
+    return () => { removeEventListener('bkm-gaveta-expandir', ab); removeEventListener('bkm-gaveta-encolher', en); };
   }, []);
   useEffect(() => {
     document.body.classList.toggle('tgav-encolhida', encolhida);
