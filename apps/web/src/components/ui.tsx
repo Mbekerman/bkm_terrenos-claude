@@ -119,7 +119,13 @@ export function Dialogo({ titulo, sub, onFechar, children, rodape, acao, cls }: 
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
     ref.current?.querySelector<HTMLElement>('input,select,textarea')?.focus();
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && fechar.current();
+    /* com uma janela por cima da outra, o Esc fecha só a de cima */
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const L = document.querySelectorAll('.scrim, .vb-pop'), eu = ref.current?.closest('.scrim');
+      if (eu && L.length && L[L.length - 1] !== eu) return;
+      fechar.current();
+    };
     document.addEventListener('keydown', esc);
     return () => { document.removeEventListener('keydown', esc); prev?.focus?.(); };
   }, []);
