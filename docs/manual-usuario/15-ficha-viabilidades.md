@@ -136,6 +136,18 @@ Atalhos: Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+K (link), Ctrl+Shift+7 (lista numerada), C
 
 Quem só consulta (Leitura) vê o texto formatado, sem a barra.
 
+### Chat
+
+Conversa da equipe sobre o estudo, no jeito do WhatsApp, só que sem a lista de contatos: suas mensagens ficam à direita, em azul-claro; as dos colegas, à esquerda, com a foto e o nome. As mensagens são separadas por dia (Hoje, Ontem, data) e mostram a hora; mensagem editada mostra "editada". Mensagens novas aparecem sozinhas, sem recarregar.
+
+- **Escrever:** digite no campo de baixo e tecle **Enter** (ou o botão de enviar). **Shift + Enter** quebra a linha.
+- **@** abre a lista dos colegas da BKM que veem o terreno; escolha com as setas e Enter (ou o clique). Quem foi marcado recebe no sino "Fulano mencionou você no estudo de … do terreno A123"; o clique no aviso abre a janela do estudo direto no Chat, rola até a mensagem e a acende em verde-limão.
+- **/m** abre a lista dos estudos de massa do terreno e **/v**, a dos estudos de viabilidade (dá para continuar digitando para filtrar pelo nome). O estudo escolhido aparece na mensagem como um chip (verde para massa, amarelo para viabilidade); o clique no chip abre aquele estudo.
+- **Responder:** clique com o botão direito numa mensagem (no celular, segure o dedo sobre ela) e escolha **Responder**. A mensagem citada aparece em cima do campo (o X ou **Esc** desiste) e, enviada, em cima da resposta; o clique na citação leva à mensagem original e a acende. Quem escreveu a mensagem respondida é avisado no sino.
+- O mesmo menu tem **Copiar texto** e, nas suas mensagens, **Editar** e **Apagar**. Editar avisa só quem você marcou agora. A mensagem apagada fica no lugar como "Mensagem apagada".
+
+Quem só consulta (Leitura) lê o chat, mas não escreve. Quem não vê o terreno não vê o chat nem é avisado.
+
 ### Vínculo com o estudo de massa
 
 No alto da seção Tipologias, quando o terreno tem estudo de massa entregue:
