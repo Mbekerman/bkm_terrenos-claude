@@ -49,7 +49,7 @@ O Caddy faz quatro coisas:
 | `/prototipo*` | Serve o protótipo, também com `templates`, e cai no `index.html` para qualquer caminho (a navegação do protótipo usa o endereço). |
 | `/geosampa/*` | Repassa à Prefeitura de São Paulo **só** `GET` em `/geoserver/geoportal/ows`, `/geoserver/geoportal/wms` e `/Download/File/125` (folhas do laser 2020). Tira `Origin`, `Referer` e `Cookie`. Qualquer outro caminho: 404. |
 | `/geosanja/*` | Repassa à Prefeitura de São José dos Campos `GET /v1/autenticar`, `GET /v1/proxy` e `POST /v1/localizar`. O resto: 404. |
-| resto | Arquivos do React; `/assets/*` com cache de um ano (os nomes têm hash); páginas com `no-cache`. |
+| resto | Arquivos do React; `/assets/*` com cache de um ano (os nomes têm hash); páginas com `no-cache`. Arquivo de `/assets/*` que não existe responde 404 (antes caía no `index.html`): cada publicação só leva os arquivos da versão nova, e a página aberta antes dela pede pedaços com o hash antigo (ver "Versão nova com a página aberta" em `front.md`). |
 
 ### Como a configuração chega ao navegador
 
