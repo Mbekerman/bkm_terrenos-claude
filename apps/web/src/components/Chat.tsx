@@ -7,6 +7,9 @@ import { useSessao } from '../lib/sessao';
 import { useToast } from './ui';
 import { buscarGente, useGente, type Gente } from './Marcar';
 import { acender } from '../ficha/edicao';
+import type { Ficha } from '../ficha/dados';
+import { PopMassa } from '../ficha/Massa';
+import { PopViabSobre } from '../viab/Viabilidade';
 
 // Chat dos estudos (pedido do Moises, 12/nov/2026): aba Chat da janela do estudo de massa e da viabilidade.
 // Conversa no jeito do WhatsApp, sem a lista de contatos, com o visual Material 3: as minhas à direita, as dos outros à
@@ -86,10 +89,18 @@ function useFotos() {
   });
 }
 
-/** a aba Chat: `abrirEstudo` abre o estudo citado num chip */
-export default function Chat({ tipo, estudo, terreno, abrirEstudo }: {
-  tipo: TipoEstudo; estudo: string; terreno: string; abrirEstudo: (tipo: TipoEstudo, id: string) => void;
-}) {
+/** a janela de cima: o Esc e o clique fora só valem para ela (estudo aberto por cima de outro pelo chip do chat) */
+export function ehTopo(el: Element | null | undefined) {
+  const L = document.querySelectorAll('.scrim, .vb-pop');
+  return !!el && L.length > 0 && L[L.length - 1] === el;
+}
+
+/** a aba Chat. O chip de estudo citado abre aquele estudo numa janela por cima, sem a aba Chat e sem mexer em nada da
+    janela de baixo (pedido do Moises, 12/nov/2026) */
+export default function Chat({ tipo, estudo, f }: { tipo: TipoEstudo; estudo: string; f: Ficha }) {
+  const terreno = f.id;
+  const [sobre, setSobre] = useState<{ tipo: TipoEstudo; id: string } | null>(null);
+  const abrirEstudo = (t: TipoEstudo, id: string) => setSobre({ tipo: t, id });
   const { session, edita } = useSessao();
   const uid = session?.user.id ?? '';
   const toast = useToast(), qc = useQueryClient();
@@ -228,6 +239,8 @@ export default function Chat({ tipo, estudo, terreno, abrirEstudo }: {
           edit={edit} cancelarEdit={() => setEdit(null)}
           enviado={() => { embaixo.current = true; setResp(null); setEdit(null); qc.invalidateQueries({ queryKey: chave }); }} />
       ) : <div className="chat-ro faint">Seu acesso é somente leitura.</div>}
+      {sobre?.tipo === 'massa' && <PopMassa f={f} id={sobre.id} semChat fechar={() => setSobre(null)} />}
+      {sobre?.tipo === 'viabilidade' && <PopViabSobre f={f} id={sobre.id} fechar={() => setSobre(null)} />}
     </div>
   );
 }
@@ -416,9 +429,4 @@ export function useLinkEstudo(tipo: TipoEstudo, ativo: boolean, abrir: (id: stri
     })();
     return () => { vivo = false; };
   }, [est, msg, ativo]); // eslint-disable-line react-hooks/exhaustive-deps
-}
-/** abre um estudo citado num chip do chat */
-export function useIrEstudo(codigo: string) {
-  const navegar = useNavigate();
-  return (tipo: TipoEstudo, id: string) => navegar(`/terrenos/${codigo}/${tipo === 'massa' ? 'massa' : 'viabilidade'}?estudo=${id}`);
 }
