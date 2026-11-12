@@ -35,3 +35,9 @@ test('mês do cadastro no horário de São Paulo', () => {
   assert.equal(anoMes('2026-12-01T02:00:00Z'), '26 11');
   assert.equal(anoMes('2026-12-01T12:00:00Z'), '26 12');
 });
+
+test('segundo terreno da mesma rua: " 2" no fim da rua', () => {
+  assert.equal(nomePasta({ ...base, codigo: 'A002', numero_rua: 2 }), 'SP_ZL_VILA JACUÍ_26 11_A002_Av. São Miguel 2');
+  assert.equal(nomePasta({ ...base, numero_rua: null }), 'SP_ZL_VILA JACUÍ_26 11_A001_Av. São Miguel');
+  assert.equal(nomePasta({ ...base, logradouro: '', numero_rua: 2 }), 'SP_ZL_VILA JACUÍ_26 11_A001_NA');
+});

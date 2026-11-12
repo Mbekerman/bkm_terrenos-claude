@@ -4502,6 +4502,26 @@ select pg_temp.ok((select app.drive_terreno(:'tpe')->>'sigla') = 'SP', 'apagar a
 select pg_temp.falha(format($$select app.salvar_sigla_cidade(%L, %L, 'S P')$$, :'emp', :'sp'), 'sigla com espaço é recusada');
 reset role;
 
+-- Pastas do Drive: " 2", " 3" para terrenos da mesma rua (12/nov/2026)
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, logradouro, poligono_geojson)
+  values (:'emp', 'Rua A1', :'analista', 'corretor', :'sp', 'Avenida São Miguel, 100', pg_temp.quadra(-46.40, -23.40)) returning id as tr1 \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, logradouro, poligono_geojson)
+  values (:'emp', 'Rua A2', :'analista', 'corretor', :'sp', 'Av. Sao Miguel', pg_temp.quadra(-46.41, -23.41)) returning id as tr2 \gset
+insert into app.terrenos (empresa_id, nome, responsavel_id, origem_cadastro, municipio_id, logradouro, poligono_geojson)
+  values (:'emp', 'Rua A3', :'analista', 'corretor', :'sp', 'AV  SÃO MIGUEL', pg_temp.quadra(-46.42, -23.42)) returning id as tr3 \gset
+select pg_temp.como(:'analista');
+select pg_temp.ok((app.drive_terreno(:'tr1')->'numero_rua') = 'null'::jsonb and (app.drive_terreno(:'tr2')->>'numero_rua')::int = 2
+                  and (app.drive_terreno(:'tr3')->>'numero_rua')::int = 3,
+  'na mesma rua o primeiro fica sem número e os seguintes ganham 2 e 3, sem olhar tipo, acento ou número da porta');
+reset role;
+update app.terrenos set excluido_em = now() where id = :'tr1';
+select pg_temp.como(:'analista');
+select pg_temp.ok((app.drive_terreno(:'tr2')->'numero_rua') = 'null'::jsonb and (app.drive_terreno(:'tr3')->>'numero_rua')::int = 2,
+  'terreno excluído sai da conta e os números se refazem');
+reset role;
+select pg_temp.ok(app._rua_chave('Rua Rodrigues Alves') = 'rodrigues alves' and app._rua_chave('Rodrigues Alves') = 'rodrigues alves'
+                  and app._rua_chave(null) is null, 'só o tipo da rua sai, não o começo do nome');
+
 -- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
 -- e os catálogos sem empresa continuam legíveis por quem está logado.
 reset role;

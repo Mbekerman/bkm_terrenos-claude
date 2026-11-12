@@ -136,6 +136,8 @@ Cada terreno tem uma pasta com o mesmo nome em cada pasta de **DI › 01) Novos 
 | `A001` | o código do terreno |
 | `Av. São Miguel` | a rua do acesso principal, com o tipo abreviado (Rua, Av., Al., Tv., Pç., Estr., Rod.) |
 
+Quando já há terreno na mesma rua e cidade, a rua ganha um número no fim, com um espaço antes: o segundo terreno cadastrado na rua fica com `Av. São Miguel 2`, o terceiro com `Av. São Miguel 3`, e assim por diante. O primeiro fica sem número. Para o sistema, Avenida e Av., e São e Sao, são a mesma rua. Se um terreno da rua for excluído ou mudar de rua, os números dos outros se refazem quando a ficha deles for aberta.
+
 - A pasta nasce até 15 segundos depois de **Cadastrar**: o sistema espera a zona chegar do GeoSampa ou do GeoSanja. Se ela demorar mais, a pasta nasce com **NA** e muda de nome quando a zona chegar.
 - Mudou a cidade, a zona, o bairro ou a rua na ficha: as pastas **mudam de nome** sozinhas, com o que está dentro. O sistema confere também quando alguém que edita abre a ficha.
 - Uma pasta nova criada em **01) Novos Negócios** ganha as pastas de todos os terrenos em alguns minutos, depois que alguém abrir uma ficha.

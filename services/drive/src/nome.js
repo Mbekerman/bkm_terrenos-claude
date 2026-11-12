@@ -1,6 +1,8 @@
 // Nome da pasta do terreno no Drive (pedido do Moises, 12/nov/2026):
 //   CIDADE_ZONA_BAIRRO_AA MM_CÓDIGO_Rua
 //   SP_ZL_VILA JACUÍ_26 11_A001_Av. São Miguel
+// Terreno seguinte na mesma rua e cidade ganha " 2", " 3"... no fim da rua (numero_rua, que o
+// banco conta pela ordem de cadastro; o primeiro fica sem número).
 // A ordem segue a ordem alfabética que ele quer no Drive: cidade, zona, bairro e data de cadastro.
 // Sem zona (ou sem bairro, rua, cidade): NA. Cidade sem sigla cadastrada: o nome inteiro.
 // Acentos ficam. O "_" só separa as partes: dentro delas vira "-".
@@ -42,7 +44,7 @@ export function nomePasta(t) {
     limpar(t.bairro).toLocaleUpperCase('pt-BR'),
     anoMes(t.criado_em),
     limpar(t.codigo),
-    rua(t.logradouro),
+    [rua(t.logradouro), rua(t.logradouro) && t.numero_rua > 1 ? String(t.numero_rua) : ''].filter(Boolean).join(' '),
   ];
   return partes.map((x) => x || 'NA').join('_').slice(0, 250);
 }
