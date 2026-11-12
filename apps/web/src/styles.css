@@ -5513,13 +5513,13 @@ html[data-tema="escuro"] .lista-ter tbody.tb-cid ~ tbody.tb-cid > tr.tb-grp > th
 .vq-kv { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; text-align: left; background: none; border: 0; padding: 8px; margin: 0 -8px; border-radius: 8px; font: inherit; color: inherit; cursor: pointer }
 .vq-kv:hover:not(:disabled) { background: rgba(11, 87, 208, .08) }
 .vq-kv:disabled { cursor: default }
-.vq-kv-q { grid-column: 1 / -1 }
+.vq-kv-q { grid-column: auto }
 .vq-kv-ver { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 500; color: var(--primaria, #0b57d0) }
 .vq-chip .num, .vq-kv-q .num { line-height: 22px }
 .vq-chip { display: inline-block; padding: 0 8px; border-radius: 8px; font-size: 11px; line-height: 18px; font-weight: 500; vertical-align: 2px }
 .dialog.vq-dlg { width: min(640px, 100%) }
 .vq-dlg .dh { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px }
-.vq-res { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px }
+.vq-res { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 12px }
 .vq-res > div { display: flex; flex-direction: column; padding: 12px; border-radius: 16px; background: #f0f4f9; min-width: 0; font-size: 12px; line-height: 16px }
 .vq-res b { font-size: 22px; line-height: 30px; font-weight: 400; color: #1f1f1f; font-variant-numeric: tabular-nums }
 .vq-svg { width: 100%; height: auto; display: block }
@@ -5548,3 +5548,10 @@ html[data-tema="escuro"] .lista-ter tbody.tb-cid ~ tbody.tb-cid > tr.tb-grp > th
 :root[data-tema="escuro"] .vq-q { fill: #e3e3e3 }
 :root[data-tema="escuro"] .vq-kv-ver { color: #a8c7fa }
 .vq-tab td:not(:last-child), .vq-tab th { white-space: nowrap }
+.vq-quadro { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 8px; padding: 10px 12px; border-radius: 12px; background: #f0f4f9; font-size: 12px; line-height: 16px }
+.vq-quadro-t, .vq-quadro-n { grid-column: 1 / -1 }
+.vq-quadro-n { font-size: 11px }
+.vq-cel { display: flex; flex-direction: column; min-width: 0 }
+.vq-cel .num { font-size: 15px; line-height: 22px; color: #1f1f1f; font-variant-numeric: tabular-nums }
+:root[data-tema="escuro"] .vq-quadro { background: #282a2c }
+:root[data-tema="escuro"] .vq-cel .num { color: #e3e3e3 }
