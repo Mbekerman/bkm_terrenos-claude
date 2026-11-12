@@ -1549,6 +1549,16 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1')
                   = (select count(*) from app.viabilidade_despesas where empresa_id = :'emp' and app.viab_fixo(grupo)),
   'estudo novo já vem com os itens fixos de Taxas, Despesas financeiras (com os dois custos de capital) e Despesas comerciais');
+select pg_temp.ok((select count(*) = 7 from app.viabilidade_linhas l where l.viabilidade_id = :'vb1'
+                    and (l.despesa, l.tipo, l.valor) in (('taxa_desenvolvimento','pct_vgv',4), ('taxa_gestao_obra','pct_obra_total',10),
+                         ('custo_alavancagem','pct_lucro',20), ('juros_pj','pct_obra_total',0.2), ('impostos','pct_vgv',4),
+                         ('capital_permuta','pct_aporte_permuta',10), ('capital_pagamento','pct_aporte_pagamento',20)))
+  and (select count(*) = 2 from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa in ('taxa_contingencias','custo_financeiro') and valor is null),
+  'estudo novo nasce com os padrões fixos de Taxas e Despesas financeiras (12/nov/2026); contingências e custo financeiro em branco');
+-- as contas abaixo foram escritas com Taxas e Despesas financeiras em branco: tira os padrões deste estudo
+update app.viabilidade_linhas set valor = null where viabilidade_id = :'vb1'
+   and despesa in ('taxa_desenvolvimento','taxa_gestao_obra','custo_alavancagem','juros_pj','impostos','capital_permuta','capital_pagamento');
+update app.viabilidade_linhas set tipo = 'verba' where viabilidade_id = :'vb1' and despesa = 'custo_alavancagem';
 select pg_temp.como(:'analista');
 insert into app.viabilidade_tipologias (empresa_id, viabilidade_id, ordem, nome, area_privativa, quantidade, quantidade_permuta, quantidade_comissao, preco_unitario)
 values (:'emp', :'vb1', 1, '2 dormitórios', 40, 100, 10, 2, 280000) returning id as tp1 \gset
@@ -1576,14 +1586,14 @@ update app.viabilidade_linhas set tipo = 'verba', valor = 300000 where viabilida
 update app.viabilidade_linhas set valor = 50000, quantidade = 24 where viabilidade_id = :'vb1' and despesa = 'custo_fixo_comercial';
 -- taxas e despesas financeiras (fixas): só a diretoria ou o administrador mexe
 -- (fora da diretoria a linha nem aparece; o gatilho barra quem chegasse a ela)
-update app.viabilidade_linhas set valor = 4 where viabilidade_id = :'vb1' and despesa = 'impostos';
+update app.viabilidade_linhas set valor = 7 where viabilidade_id = :'vb1' and despesa = 'impostos';
 update app.viabilidade_linhas set tipo = 'verba' where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra';
 update app.viabilidade_linhas set despesa = 'marketing', valor = 0 where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra';
 delete from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento';
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) = 1 from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_desenvolvimento')
   and (select tipo <> 'verba' from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra')
-  and (select valor is distinct from 4 from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'impostos'),
+  and (select valor is distinct from 7 from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'impostos'),
   'analista não muda, não troca de item nem tira taxa ou despesa financeira do estudo');
 select id as vb1_taxa from app.viabilidade_linhas where viabilidade_id = :'vb1' and despesa = 'taxa_gestao_obra' \gset
 reset role;
@@ -1737,7 +1747,7 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select custo_m2 = 3000 and deduz_vgv = '{itbi_vendas}'
                      and not exists (select 1 from app.viabilidade_tipologias where viabilidade_id = :'vbm') from app.viabilidades where id = :'vbm')
   and (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vbm') = (select count(*) from app.viabilidade_linhas where viabilidade_id = :'vb1')
-  and (select valor is null from app.viabilidade_linhas where viabilidade_id = :'vbm' and despesa = 'impostos')
+  and (select valor = 4 from app.viabilidade_linhas where viabilidade_id = :'vbm' and despesa = 'impostos')
   and exists (select 1 from app.viabilidade_linhas a join app.viabilidade_linhas b on b.despesa = a.despesa and b.viabilidade_id = :'vb1'
                where a.viabilidade_id = :'vbm' and a.despesa = 'comissao' and a.tipo = b.tipo and a.valor is not distinct from b.valor),
   'estudo pelo modelo do usuário: valores e bases do modelo (sem o que deixou de ser dedutível), sem tipologias; Taxas e Despesas financeiras com o padrão da lista');
@@ -1771,7 +1781,7 @@ select pg_temp.como(:'analista');
 select app.criar_viabilidade(:'t1', 'Só a lista', null, null, true) as vbs \gset
 select pg_temp.como(:'diretor');
 select pg_temp.ok((select custo_m2 is null from app.viabilidades where id = :'vbs')
-  and (select valor is null from app.viabilidade_linhas where viabilidade_id = :'vbs' and despesa = 'impostos'),
+  and (select valor = 4 from app.viabilidade_linhas where viabilidade_id = :'vbs' and despesa = 'impostos'),
   'sem modelo, o estudo nasce só com a lista da empresa');
 select pg_temp.como(:'analista');
 select app.apagar_viabilidade(:'vbp');

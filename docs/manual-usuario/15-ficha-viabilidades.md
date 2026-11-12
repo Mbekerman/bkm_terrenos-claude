@@ -4,13 +4,13 @@
 
 Montar o **estudo de viabilidade estática** do terreno: quantas unidades cabem, por quanto se vendem, quanto custam o terreno, a obra e as despesas, e quanto sobra (lucro e margem). Um terreno pode ter vários estudos; um deles é o **válido**, o que vale para a negociação. É dele que saem as **Unidades** e o **VGV** do Resumo da Visão geral e o filtro "VGV estimado".
 
-O estudo tem a lista de estudos, o Resumo da viabilidade, os indicadores, as oito seções (Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE), os modelos de estudo e o vínculo com o estudo de massa. Configurações › Viabilidade ainda não está no sistema (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
+O estudo tem a lista de estudos, o Resumo da Viabilidade Ativa, os indicadores, as oito seções (Tipologias, Terreno, Comercial, Obras, Gerais, Financeiras, Taxas e DRE), os modelos de estudo e o vínculo com o estudo de massa. Configurações › Viabilidade ainda não está no sistema (ver [Ainda não disponível](12-ainda-nao-disponivel.md)).
 
 ## Onde fica
 
 Ficha do terreno › **Estudos Técnicos** › **Estudos de viabilidade** (`/terrenos/A123/viabilidade`). Um estudo aberto tem endereço próprio, pela ordem em que foi criado no terreno: `/terrenos/A123/viabilidade/2` abre o segundo estudo. O link enviado a um colega abre direto nele.
 
-## Resumo da viabilidade
+## Resumo da Viabilidade Ativa
 
 O primeiro quadro da parte.
 
@@ -25,7 +25,7 @@ O primeiro quadro da parte.
 
 Sem estudo, o quadro mostra "Sem estudo" e o link **Montar estudo**.
 
-## Quadro Viabilidade
+## Quadro Estudos
 
 A lista dos estudos do terreno, com VGV líquido, lucro líquido, margem, a data da última alteração e o selo **Válido** ou **Inválido**. O selo é clicável para quem edita, com a negociação ativa: clicar em **Inválido** torna aquele estudo o válido (o que era passa a inválido); clicar em **Válido** tira a marca, e o terreno fica **sem estudo válido** (Unidades, VGV e margem somem do Resumo, do Pipeline e do filtro até outro ser marcado). Clicar em qualquer lugar da linha abre o estudo (o cursor vira a mãozinha); o selo só liga e desliga o válido. **Novo estudo** no título cria outro.
 
@@ -101,11 +101,11 @@ Uma tabela, como em Comercial, com quatro linhas fixas: **Despesas gerais com te
 
 ### Financeiras (só diretoria e administrador)
 
-**Despesas financeiras**, que entram depois do EBITDA: Custo de alavancagem, Custo de juros PJ (% do custo de obra total), Custo financeiro e Impostos, com as mesmas bases das outras seções, e Custo de capital da permuta financeira e do pagamento do terreno, em % sobre o **aporte** (o dinheiro da permuta financeira, com o mínimo garantido quando ele vale, e o pagamento em dinheiro do terreno). Os itens são fixos e nascem com o valor padrão da empresa.
+**Despesas financeiras**, que entram depois do EBITDA: Custo de alavancagem, Custo de juros PJ (% do custo de obra total), Custo financeiro e Impostos, com as mesmas bases das outras seções, e Custo de capital da permuta financeira e do pagamento do terreno, em % sobre o **aporte** (o dinheiro da permuta financeira, com o mínimo garantido quando ele vale, e o pagamento em dinheiro do terreno). Os itens são fixos e nascem com o valor padrão da empresa: **Custo de alavancagem** 20% do lucro líquido, **Custo de juros PJ** 0,20% do custo de obra total, **Custo financeiro** em verba total, em branco, **Impostos** 4% do VGV, **Custo de capital permuta financeira** 10% e **Custo de capital pagamento terreno** 20% do aporte.
 
 ### Taxas (só diretoria e administrador)
 
-Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascidos com o valor padrão da empresa. **Taxa de desenvolvimento** e **Taxa de contingências** nascem em % do VGV. Saem por último, depois do resultado sem as taxas. Os itens em **% do lucro líquido** (como o custo de alavancagem e a taxa de desenvolvimento) incidem sobre o lucro do projeto antes deles: 30% de alavancagem custa 30% do lucro calculado sem contar a própria alavancagem.
+Itens fixos com % do VGV, % da obra total, % do lucro líquido ou verba, nascidos com o valor padrão da empresa. Valores padrão: **Taxa de desenvolvimento** 4% do VGV, **Taxa de gestão de obra** 10% do custo de obra total e **Taxa de contingências** em % do VGV, em branco. Saem por último, depois do resultado sem as taxas. Os itens em **% do lucro líquido** (como o custo de alavancagem) incidem sobre o lucro do projeto antes deles: 20% de alavancagem custa 20% do lucro calculado sem contar a própria alavancagem.
 
 ### DRE
 
