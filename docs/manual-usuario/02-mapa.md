@@ -146,6 +146,7 @@ As cores são suaves (tons pastel, do lilás nos preços mais baixos ao rosa nos
 
 - R$/m² médio das unidades à venda, com o **Enquadramento social** (Sim, Não ou Não informado) logo abaixo;
 - lançamento, entrega, unidades, estoque, vendas e **VSO**;
+- **VSO mensal médio** desde o lançamento, pelo histórico de vendas do Órulo (dez/2023 em diante), com um selo colorido dizendo em que **quartil de vendas** o empreendimento está: **1º** (até 25% vendido), **2º** (25 a 50%), **3º** (50 a 75%) ou **4º** (75 a 100%), num azul que escurece quanto mais vendido. Embaixo, quanto já foi vendido e em quantos meses. O clique nessa linha abre a janela **VSO mensal médio por quartil de vendas**: o VSO desde o lançamento, dos últimos 3 e 12 meses, o gráfico com uma barra por quartil (parando o mouse na barra, o detalhe) e a tabela com o VSO e os meses de cada quartil;
 - o **resumo do empreendimento**: as unidades agrupadas em tipologias parecidas (mesmos dormitórios, vagas e programa social), cada uma com Total, Estoque, R$/m² e VSO;
 - **"Ver tabela completa"**: uma janela com a incorporadora, CNPJ, endereço, torres, link do Órulo e **todas as unidades** (torre, andar, número, dormitórios, vagas, área, situação, preço, R$/m², primeiro preço), com os filtros **Todas**, **À venda** e **Vendidas**.
 
@@ -156,6 +157,8 @@ O card fecha sozinho 1 s depois que o mouse sai dele, quando o mapa se move, no 
 ⋮ › **Filtro da concorrência** abre uma gaveta com: dormitórios, área, preço e R$/m² (mínimo e máximo, valendo para as unidades à venda: basta uma unidade dentro de todos os limites), data de lançamento e de entrega (com "Incluir sem informação"), programa social e incorporadora. O filtro fica guardado por 30 minutos fora do mapa, como as camadas.
 
 **O que não dá:** saber quais unidades são HIS ou HMP (o Órulo só marca o empreendimento todo como programa social). O VSO mede só o período que o monitor já coletou.
+
+**Como ler o VSO mensal médio.** É a taxa que, vendendo todo mês a mesma fração do que sobrou, chega ao mesmo vendido no mesmo tempo. Exemplo: 94% vendido em 14 meses dá 18% ao mês. No quartil, a conta é a mesma, só com o que sobrava ao entrar nele e os meses que o empreendimento levou para atravessá-lo. Os primeiros 25% costumam sair já no mês do lançamento, com a pré-venda, por isso o 1º quartil quase sempre tem o VSO mais alto. Quando o histórico do Órulo começa depois do lançamento, os quartis vencidos antes dele ficam sem VSO (traço), e quando, num período, há mais distratos que vendas (troca da tabela ou devoluções), o período aparece como "mais distratos que vendas". Empreendimento sem histórico no Órulo não mostra a linha.
 
 ## Régua
 
