@@ -1486,7 +1486,7 @@ erDiagram
 
 ### Pastas do terreno no Google Drive (12/nov/2026)
 
-Cada terreno tem uma pasta em cada pasta-modelo do Drive compartilhado (as pastas de DI › 01) Novos Negócios), criada e renomeada pelo serviço `terrenos-drive` (`services/drive`). O banco guarda o id e o nome de cada uma em `terreno_pastas_drive` (única por terreno e pasta-modelo), gravados só por `app.registrar_pasta_drive`, e a sigla da cidade usada no nome em `cidade_siglas` (padrão com `empresa_id` nulo, SP e SJC; a da empresa vale por cima; `app.salvar_sigla_cidade`). O nome, `CIDADE_ZONA_BAIRRO_AA MM_CÓDIGO_Rua` (NA no que falta), é montado no serviço a partir de `app.drive_terreno`.
+Cada terreno tem uma pasta em cada pasta-modelo do Drive compartilhado (as pastas de DI › 01) Novos Negócios), criada e renomeada pelo serviço `terrenos-drive` (`services/drive`). O banco guarda o id e o nome de cada uma em `terreno_pastas_drive` (única por terreno e pasta-modelo), gravados só por `app.registrar_pasta_drive`, e a sigla da cidade usada no nome em `cidade_siglas` (padrão com `empresa_id` nulo, SP e SJC; a da empresa vale por cima; `app.salvar_sigla_cidade`). O nome, `CIDADE_ZONA_BAIRRO_AA MM_CÓDIGO_Rua` (NA no que falta), é montado no serviço a partir de `app.drive_terreno`. O `app.drive_terreno` devolve também o `numero_rua` (posição pela ordem de cadastro entre os terrenos da mesma rua e cidade, pela `app._rua_chave`; nulo no primeiro), que o serviço põe no fim da rua.
 
 ```mermaid
 erDiagram

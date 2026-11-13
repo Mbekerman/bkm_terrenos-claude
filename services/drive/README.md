@@ -8,7 +8,8 @@ Nome (`src/nome.js`): `CIDADE_ZONA_BAIRRO_AA MM_CÓDIGO_Rua`, por exemplo
 `SP_ZL_VILA JACUÍ_26 11_A001_Av. São Miguel`. Cidade pela sigla de `app.cidade_siglas` (SP e SJC
 de fábrica), senão o nome inteiro; zona ZN, ZS, ZL, ZO, ZC, ZSE, ZSO, ZNE, ZNO, ou NA; bairro em
 caixa alta com acento; ano e mês do cadastro no horário de São Paulo; tipo da rua abreviado (Av.,
-Al., Tv., Pç., Estr., Rod., Lg., Vd.; Rua fica Rua). O `_` só separa: dentro das partes vira `-`.
+Al., Tv., Pç., Estr., Rod., Lg., Vd.; Rua fica Rua), com " 2", " 3"... no fim quando já há terreno
+na mesma rua e cidade (`numero_rua`, pela ordem de cadastro; o primeiro fica sem número). O `_` só separa: dentro das partes vira `-`.
 
 - `GET /drive/saude` → `{ ok, raiz, banco }`
 - `POST /drive/sincronizar` `{ terreno_id }` com `Authorization: Bearer <token do Supabase>` →
