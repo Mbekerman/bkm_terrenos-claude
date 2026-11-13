@@ -63,7 +63,7 @@ export function janela(d: VsoHist, n: 3 | 6 | 12): Jan | null {
   }
   return { ...j, vso_mes: v, lanc: false };
 }
-  j?.lanc ? `desde o lançamento, ${j.meses} ${j.meses === 1 ? 'mês' : 'meses'}` : `${j ? j.meses : 3} ${j?.meses === 1 ? 'mês' : 'meses'} até ${mkData(d.ultimo_mes).slice(3)}`;
+
 
 /** bloco do card: VSO mensal médio dos últimos 3 meses, vendas nesses meses e o quartil de vendas em que o projeto está (Órulo);
     o clique abre o gráfico. Sem histórico do Órulo, fica o que o monitor mediu (`semHist`). */
