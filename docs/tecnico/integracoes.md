@@ -279,6 +279,7 @@ Qualquer outro caminho ou método recebe 404. Isso evita que o repasse vire um p
 2. **Ao vivo**, só a tabela completa de um empreendimento: a função só de leitura `public.im_tabela_empreendimento(p_id)`, aberta à chave publicável.
    - React: `supabase.schema('public').rpc('im_tabela_empreendimento', { p_id })` (`mapa/Concorrencia.tsx:247`), pelo cliente normal (o esquema `public` precisa estar exposto na API).
    - Protótipo: `fetch` direto em `https://mghqcsycuurjezoiiyfp.supabase.co/rest/v1/rpc/im_tabela_empreendimento` com a chave publicável escrita no código (`proto_mercado.js:307`). Ver [seguranca.md](seguranca.md).
+3. **Ao vivo**, o histórico de vendas de um empreendimento: `public.im_vso_historico(p_emp)`, também só leitura e aberta à chave publicável, sobre a tabela `public.im_historico_orulo` (carga única do relatório de 36 meses do Órulo, dez/2023 a out/2026, 12/nov/2026). Devolve a série mensal, janelas de 1, 3, 6 e 12 meses, trimestres, semestres, anos, o geral (com `vso_mes`) e `vendas` (marcos de 25, 50, 75 e 99% e os quatro quartis). React: `mapa/VsoHist.tsx`.
 
 **Credencial.** Do Órulo: só o coletor do monitor tem (fora deste repositório). Do Supabase: a chave publicável.
 
@@ -353,7 +354,7 @@ O banco, o login, o Realtime e as funções. Tudo está em [banco.md](banco.md) 
 
 - **Credenciais no navegador:** `SUPABASE_URL` e `SUPABASE_KEY` (a chave **publicável**, `sb_publishable_…`), injetadas pelo Caddy. A segurança é a RLS.
 - **Credencial de servidor:** `SUPABASE_DB_URL` (a cadeia de conexão com a senha do banco), só como segredo do GitHub Actions, para o workflow "Banco no Supabase" (`.github/workflows/banco.yml`).
-- **Esquemas expostos na API:** `app`, `fluxo` e `public` (este por causa do `im_tabela_empreendimento`).
+- **Esquemas expostos na API:** `app`, `fluxo` e `public` (este por causa do `im_tabela_empreendimento` e do `im_vso_historico`).
 - **Extensões:** `postgis` (no esquema `extensions`) e `pg_cron` (para `app.rotina_diaria()`); a publicação `supabase_realtime` precisa ter `app.notificacoes` para o sino ao vivo.
 
 ---

@@ -269,7 +269,7 @@ Regra 2 do CLAUDE.md: **mudança com regra só por RPC**. O front nunca faz `upd
 | Entorno | `salvar_entorno`, `salvar_distancias_pontos`, `excluir_lugar_entorno`, `restaurar_lugar_entorno`, `excluir_ponto_terreno`, `restaurar_ponto_terreno` |
 | Cadastro | `terrenos_sobrepostos`, `municipio_por_nome` |
 | Sessão e sino | `salvar_minha_foto`, `marcar_notificacao_lida` |
-| Monitor (esquema `public`) | `im_tabela_empreendimento` (só leitura) |
+| Monitor (esquema `public`) | `im_tabela_empreendimento` e `im_vso_historico` (só leitura) |
 
 Escrita direta (`insert`/`update`/`delete`) acontece só nas tabelas "sem regra" da regra 2: `terrenos` (só o `insert` do Novo terreno; a edição vai por `salvar_terreno`), `matriculas`, `inscricoes_municipais`, `inscricao_valores`, `inscricao_partes`, `matricula_partes`, `terreno_pessoas`, `pessoas`, `terreno_corretores`, `ofertas` (condições pedidas), `oferta_partes`, `reunioes`, `reuniao_participantes`, `confrontacoes`, `analise_zoneamentos`, `consultas_lote` e `filtros_salvos`. Mesmo nelas, os gatilhos do banco auditam e conferem (índice único de matrícula e SQL por empresa, município da inscrição etc.).
 
@@ -402,6 +402,7 @@ A consulta do GeoSampa depois do cadastro (`novo/consulta.ts`, `consultarTerreno
 - O retrato vem de `/prototipo/dados/mercado.json` (`mercado.ts:47`), gerado em `tools/mercado/` (ver [integracoes.md](integracoes.md)).
 - No React, a **cor do quadrado é a faixa de R$/m²** (10 faixas, `MK_FX`) e o **desenho dentro é a situação** (estrela, guindaste, prédio; `MK_GLIFO`), desde o PR "concorrência pelo R$/m²" de 5/nov. O CLAUDE.md ainda descreve as cores pela situação (ver incoerências no fim).
 - **Tabela completa** do empreendimento: ao vivo, pela RPC `public.im_tabela_empreendimento` do mesmo projeto Supabase (`Concorrencia.tsx:247`). Essa função mora no repositório do monitor (`Mbekerman/bkm-monitor-mercado`), não neste.
+- **VSO mensal médio e quartis de vendas** no card: ao vivo, pela RPC `public.im_vso_historico(p_emp)` (histórico mensal do relatório de 36 meses do Órulo, `public.im_historico_orulo`), em `mapa/VsoHist.tsx` (`VsoKv` no card, `PopVso` com o gráfico por quartil, aberto pelo `Mapa.tsx`). Também mora no repositório do monitor.
 - O card fecha 1 s depois de o mouse sair; o olhinho o fixa (`bkm-terrenos-concorrencia-fixa`).
 - O empreendimento aberto fica destacado (`mkDest`, marcador próprio `motor.destaque`) depois que o card fecha, até um clique fora do quadrado e do card (no ouvinte de clique fora do `Mapa.tsx`); com o card fixado e aberto, fica.
 
