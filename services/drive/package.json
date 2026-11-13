@@ -1,0 +1,12 @@
+{
+  "name": "bkm-terrenos-drive",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cria e renomeia as pastas de cada terreno do BKM Terrenos no Drive compartilhado da BKM",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/servidor.js",
+    "test": "node --test test/*.test.js"
+  }
+}

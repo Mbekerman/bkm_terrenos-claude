@@ -20,7 +20,7 @@ Quando um item chegar ao sistema real, ele sai daqui e entra na seção correspo
 | Aba | Situação |
 |---|---|
 | **Estudos de massa: PDF e DWG** | Entram com a aba Documentos; o resto de Estudos Técnicos › Estudos de massa já está no sistema ([14](14-ficha-estudos-de-massa.md)). |
-| **Documentos** (envio com versão, pastas no Google Drive, planta e desenho do GeoSampa) | Só no protótipo; pastas no Drive no plano |
+| **Documentos** (envio com versão, pastas no Google Drive, planta e desenho do GeoSampa) | Só no protótipo. As pastas de cada terreno já são criadas no Drive ([03](03-novo-terreno.md#pastas-do-terreno-no-drive)), mas a ficha ainda não envia nem mostra arquivos |
 
 ## Recursos dentro das telas já disponíveis
 

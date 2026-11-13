@@ -24,6 +24,7 @@ import type { LoteSql } from '../novo/geosampa';
 import { LegendaSetor, Metodologia, QuadroSetor } from '../mapa/CamadasSetor';
 import { carregarSetores, setorEm, setores, type Camada } from '../mapa/setores';
 import { mkFixa, BotaoMais, CaixaEmp, FiltroConc, ItensConc, TabelaEmp } from '../mapa/Concorrencia';
+import { PopVso } from '../mapa/VsoHist';
 import { carregarMercado, mercado, mfPassa, mkVisivel, type Filtro } from '../mapa/mercado';
 import { apagado, areaDe, bate, carregar, classe, corSub, info, itens, subNome, type Apag, type Fase, type Item, type TerrenoMapa } from '../mapa/dados';
 
@@ -176,6 +177,7 @@ export default function Mapa() {
   const [mkBox, setMkBox] = useState<string | null>(null);
   const [mkDest, setMkDest] = useState<string | null>(null);
   const [mkTab, setMkTab] = useState<string | null>(null);
+  const [mkVso, setMkVso] = useState<string | null>(null);
   const mkAbertoEm = useRef(0);
   Object.assign(memo, { f, e, arv, apag, leg, camada, rdLeg, mf, merc, mkOff, mkArv });
   useEffect(() => { try { localStorage.setItem(MP_MFKEY, JSON.stringify(mf)); } catch { /* sem armazenamento */ } }, [mf]);
@@ -996,7 +998,7 @@ export default function Mapa() {
         <div className="mp-aviso">Fundo do mapa indisponível nesta visualização.</div>
         {camada && <LegendaSetor camada={camada} aberta={rdLeg} alternar={setRdLeg} carregado={setOk} erro={setErro} metodologia={setMet} />}
         {camada && setor != null && setores() && <QuadroSetor d={setores()!} i={setor} camada={camada} fechar={() => setSetor(null)} metodologia={setMet} />}
-        {mkBox && mkEmp(mkBox) && <CaixaEmp e={mkEmp(mkBox)!} fechar={() => setMkBox(null)} tabela={setMkTab} pausado={!!mkTab} />}
+        {mkBox && mkEmp(mkBox) && <CaixaEmp e={mkEmp(mkBox)!} fechar={() => setMkBox(null)} tabela={setMkTab} vso={setMkVso} pausado={!!mkTab || !!mkVso} />}
         {rg && rgMenu && rg.pts[rgMenu.i] && (() => {
           const ar = areaEl.current?.getBoundingClientRect();
           const x = rgMenu.x - (ar?.left ?? 0), y = rgMenu.y - (ar?.top ?? 0);
@@ -1027,6 +1029,7 @@ export default function Mapa() {
       {met && <Metodologia camada={met} fechar={() => setMet(null)} />}
       {mfAberto && mkOk && <FiltroConc f={mf} mudar={setMf} fechar={() => setMfAberto(false)} aviso={(m) => toast(m)} />}
       {mkTab && <TabelaEmp id={mkTab} fechar={() => setMkTab(null)} />}
+      {mkVso && <PopVso id={mkVso} nome={mkEmp(mkVso)?.nome || ''} fechar={() => setMkVso(null)} />}
       <GavetaFx fx={fx} />
       {gav && <GavetaFicha codigo={codigoUrl!.toUpperCase()} lado={ladoEl.current} fechar={() => navegar(`/mapa/${codigoUrl!.toUpperCase()}`)}
         abrirPagina={(aba) => navegar(`/terrenos/${codigoUrl!.toUpperCase()}${aba === 'geral' ? '' : '/' + aba}`, { state: { de: 'mapa' } })}

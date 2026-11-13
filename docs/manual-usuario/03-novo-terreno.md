@@ -119,6 +119,30 @@ O município, o logradouro, o número e o bairro achados pela localização entr
 - A página vai para o **Mapa** com o terreno em foco.
 - Em São Paulo, com SQLs, a **consulta completa do GeoSampa** roda em segundo plano para cada SQL (zonas, parâmetros, restrições, cartório) e depois a consulta pela poligonal. O andamento aparece na linha do terreno na lista do mapa: **"Consultando o GeoSampa: N de M"**. Pode continuar trabalhando enquanto isso.
 - Em São José dos Campos, com inscrições, a **consulta do GeoSanja** roda do mesmo jeito em cada inscrição (zona, macrozona e restrições).
+- O sistema cria a **pasta do terreno no Google Drive**, dentro de cada pasta de **DI › 01) Novos Negócios** (01) Documentos de Terrenos, 02) Documentos de Vendedores ... 07) Comunicações Oficiais). Ver [Pastas do terreno no Drive](#pastas-do-terreno-no-drive).
+
+## Pastas do terreno no Drive
+
+Cada terreno tem uma pasta com o mesmo nome em cada pasta de **DI › 01) Novos Negócios**. O nome segue a ordem em que o Drive deixa as pastas, por cidade, zona, bairro e data de cadastro:
+
+`SP_ZL_VILA JACUÍ_26 11_A001_Av. São Miguel`
+
+| Parte | O que é |
+| --- | --- |
+| `SP` | a cidade: SP para São Paulo, SJC para São José dos Campos; outra cidade aparece com o nome inteiro |
+| `ZL` | a zona: ZN, ZS, ZL, ZO, ZC (Centro), ZSE, ZSO, ZNE, ZNO; sem zona, **NA** |
+| `VILA JACUÍ` | o bairro, em letras maiúsculas |
+| `26 11` | ano e mês do cadastro (novembro de 2026) |
+| `A001` | o código do terreno |
+| `Av. São Miguel` | a rua do acesso principal, com o tipo abreviado (Rua, Av., Al., Tv., Pç., Estr., Rod.) |
+
+Quando já há terreno na mesma rua e cidade, a rua ganha um número no fim, com um espaço antes: o segundo terreno cadastrado na rua fica com `Av. São Miguel 2`, o terceiro com `Av. São Miguel 3`, e assim por diante. O primeiro fica sem número. Para o sistema, Avenida e Av., e São e Sao, são a mesma rua. Se um terreno da rua for excluído ou mudar de rua, os números dos outros se refazem quando a ficha deles for aberta.
+
+- A pasta nasce até 15 segundos depois de **Cadastrar**: o sistema espera a zona chegar do GeoSampa ou do GeoSanja. Se ela demorar mais, a pasta nasce com **NA** e muda de nome quando a zona chegar.
+- Mudou a cidade, a zona, o bairro ou a rua na ficha: as pastas **mudam de nome** sozinhas, com o que está dentro. O sistema confere também quando alguém que edita abre a ficha.
+- Uma pasta nova criada em **01) Novos Negócios** ganha as pastas de todos os terrenos em alguns minutos, depois que alguém abrir uma ficha.
+- O sistema nunca apaga nem move as pastas. Terreno excluído fica com as pastas como estavam.
+- Quem vê o DI é decidido no próprio Drive, não no sistema. Por enquanto a ficha não mostra as pastas nem envia arquivos para elas.
 
 ## Próximos passos (na ficha)
 

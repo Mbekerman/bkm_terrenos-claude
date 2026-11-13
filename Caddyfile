@@ -107,6 +107,28 @@
 		respond 404
 	}
 
+	# Pastas do terreno no Google Drive (12/nov/2026): o serviço terrenos-drive do Cloud Run
+	# (services/drive) cria e renomeia as pastas de cada terreno no Drive compartilhado, com a
+	# conta de serviço dele, a pedido de quem edita (login do Supabase). Sem DRIVE_URL no
+	# serviço, responde 502 e a ficha segue sem as pastas.
+	handle /drive/* {
+		@drive {
+			method POST GET
+			path /drive/sincronizar /drive/saude
+		}
+		handle @drive {
+			reverse_proxy {$DRIVE_URL:http://127.0.0.1:9} {
+				header_up Host {upstream_hostport}
+				header_up -Cookie
+				header_down -Set-Cookie
+				transport http {
+					response_header_timeout 120s
+				}
+			}
+		}
+		respond 404
+	}
+
 	# Sem banco configurado no serviço (SUPABASE_URL vazia, como na produção até o primeiro
 	# uso), a raiz leva ao protótipo. Com o banco, a raiz abre o sistema real.
 	@sem_banco expression `{env.SUPABASE_URL} == ""`
