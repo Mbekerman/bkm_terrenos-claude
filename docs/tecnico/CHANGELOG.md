@@ -2,6 +2,10 @@
 
 Toda mudança que entra na `develop` ganha uma linha aqui, no mesmo PR (ver [como-manter.md](como-manter.md)). Do mais recente ao mais antigo. O que aconteceu antes de 8/nov/2026 está resumido em [historico.md](historico.md).
 
+## 2026-11-13
+
+- #389 `docs/dados/mercado.json` refeito (13/nov/2026) depois de juntar as unidades que o Órulo mandava duas vezes, com e sem torre (Mbekerman/bkm-monitor-mercado#12): 192 empreendimentos tinham 47,7 mil unidades a mais (o 011 Brooklin Residence Riva com 951 em vez de 724). Exportado com `tools/mercado/exportar.sql` e `grupos.sql` em partes e `montar.py`. Só dados.
+
 ## 2026-11-12
 
 - #389 Quadro de VSO mensal médio no card da concorrência (pedido do Moises, 12/nov/2026): `VsoKv` (`mapa/VsoHist.tsx`) mostra `janela(d, 3 | 6 | 12)` e `geral.vso_mes` em `.vq-quadro`, com * quando a janela usa o desde o lançamento; `janela` aceita 6 meses (`janelas['6m']` do banco); vendas líquidas da janela de 3 meses com o ⓘ (`.vq-i`, `.vq-info`, um `span` com `role=button` porque o bloco já é um `button`); a janela `PopVso` ganha o bloco de 6 meses. Só front.
