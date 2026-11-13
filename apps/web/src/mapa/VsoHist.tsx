@@ -79,7 +79,7 @@ export function VsoKv({ id, abrir, semHist }: { id: string; abrir: () => void; s
         {([3, 6, 12] as const).map((n) => { const w = d ? janela(d, n) : null; return (
           <span key={n} className="vq-cel" title={w?.liquidas != null && w.liquidas < 0 ? 'Mais distratos que vendas' : w?.lanc ? `Lançado há ${w.meses} ${w.meses === 1 ? 'mês' : 'meses'}: vale o desde o lançamento` : undefined}>
             <span className="faint">{n} meses</span><span className="num">{d ? mkPct(w?.vso_mes ?? null) : '…'}{w?.lanc ? '*' : ''}</span></span>); })}
-        <span className="vq-cel"><span className="faint">Desde o lançamento</span><span className="num">{d ? mkPct(d.geral.vso_mes) : '…'}</span></span>
+        <span className="vq-cel"><span className="faint" title="Desde o lançamento">Lifetime</span><span className="num">{d ? mkPct(d.geral.vso_mes) : '…'}</span></span>
         {d && [3, 6, 12].some((n) => janela(d, n as 3 | 6 | 12)?.lanc) && <span className="faint vq-quadro-n">* lançado há {d.geral.meses_desde_lancamento} {d.geral.meses_desde_lancamento === 1 ? 'mês' : 'meses'}: vale o desde o lançamento</span>}
       </span>
       {/* vendas líquidas (pode ser negativa) e o ⓘ com vendas e distratos (pedido do Moises, 12/nov/2026) */}
@@ -137,7 +137,7 @@ export function PopVso({ id, nome, fechar }: { id: string; nome: string; fechar:
             <div><span className="muted">Últimos 3 meses</span><b className="num">{mkPct(j3?.vso_mes ?? null)}</b><span className="faint">{jSub(j3)}{j3 ? ` · ${num(j3.vendas)} vendas${j3.distratos ? `, ${num(j3.distratos)} distratos` : ''}` : ''}{j3?.lanc ? ` · lançado há ${j3.meses} ${j3.meses === 1 ? 'mês' : 'meses'}` : ''}</span></div>
             <div><span className="muted">Últimos 6 meses</span><b className="num">{mkPct(j6?.vso_mes ?? null)}</b><span className="faint">{jSub(j6)}{j6?.lanc ? ` · lançado há ${j6.meses} ${j6.meses === 1 ? 'mês' : 'meses'}` : ''}</span></div>
             <div><span className="muted">Últimos 12 meses</span><b className="num">{mkPct(j12?.vso_mes ?? null)}</b><span className="faint">{jSub(j12)}{j12?.lanc ? ` · lançado há ${j12.meses} ${j12.meses === 1 ? 'mês' : 'meses'}` : ''}</span></div>
-            <div><span className="muted">Desde o lançamento</span><b className="num">{mkPct(d.geral.vso_mes)}</b><span className="faint">ao mês</span></div>
+            <div><span className="muted">Lifetime</span><b className="num">{mkPct(d.geral.vso_mes)}</b><span className="faint">ao mês</span></div>
             <div><span className="muted">Vendido</span><b className="num">{d.geral.vendido_pct == null ? '—' : num(d.geral.vendido_pct * 100, 0) + '%'}</b>
               <span className="faint">{atual ? `${atual}º quartil` : ''}</span></div>
           </div>
