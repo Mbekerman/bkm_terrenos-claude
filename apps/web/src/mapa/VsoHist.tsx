@@ -50,10 +50,10 @@ export function useVso(id: string) {
    o relatório do Órulo só conta como venda a unidade que sai da tabela, e a pré-venda (unidades que já entram vendidas) ficaria de fora,
    achatando o VSO de quem lançou há pouco. */
 type Jan = { vso_mes: number | null; vendas: number; distratos: number; liquidas: number; meses: number; lanc: boolean };
-export function janela(d: VsoHist, n: 3 | 12): Jan | null {
+export function janela(d: VsoHist, n: 3 | 6 | 12): Jan | null {
   const g = d.geral, ml = g.meses_desde_lancamento;
   if (ml != null && ml > 0 && ml <= n) return { vso_mes: g.vso_mes, vendas: g.vendido, distratos: 0, liquidas: g.vendido, meses: ml, lanc: true };
-  const j = d.janelas[n === 3 ? '3m' : '12m'];
+  const j = d.janelas[`${n}m` as '3m' | '6m' | '12m'];
   if (!j) return null;
   /* mais distrato que venda: VSO negativo, pela mesma conta (pedido do Moises, 12/nov/2026); o banco devolve nulo nesse caso */
   let v = j.vso_mes;
@@ -64,21 +64,32 @@ export function janela(d: VsoHist, n: 3 | 12): Jan | null {
   return { ...j, vso_mes: v, lanc: false };
 }
 
-const per = (j: Jan | null | undefined, d: VsoHist) =>
-  j?.lanc ? `desde o lançamento, ${j.meses} ${j.meses === 1 ? 'mês' : 'meses'}` : `${j ? j.meses : 3} ${j?.meses === 1 ? 'mês' : 'meses'} até ${mkData(d.ultimo_mes).slice(3)}`;
 
 /** bloco do card: VSO mensal médio dos últimos 3 meses, vendas nesses meses e o quartil de vendas em que o projeto está (Órulo);
     o clique abre o gráfico. Sem histórico do Órulo, fica o que o monitor mediu (`semHist`). */
 export function VsoKv({ id, abrir, semHist }: { id: string; abrir: () => void; semHist: ReactNode }) {
   const st = useVso(id), d = st.d, q = d?.vendas?.quartil_atual || null;
+  const [info, setInfo] = useState(false);
   if (st.erro || st.d === null || (d && !janela(d, 3))) return <>{semHist}</>;
   const j = d ? janela(d, 3) : null;
   return (
     <button type="button" className="vq-kv" onClick={abrir} disabled={!d} title="Histórico de vendas do Órulo. Clique para ver o VSO de cada quartil de vendas">
-      <span className="mk-kv"><span className="muted">VSO mensal médio</span><span className="num">{d ? mkPct(j?.vso_mes ?? null) : '…'}</span>
-        {d && <span className="faint">{j && j.liquidas < 0 ? 'mais distratos que vendas' : per(j, d)}</span>}</span>
-      <span className="mk-kv"><span className="muted">Vendas</span><span className="num">{d && j ? num(j.vendas) : '…'}</span>
-        {d && <span className="faint">{j?.lanc ? 'desde o lançamento' : j && j.distratos ? `e ${num(j.distratos)} distrato${j.distratos === 1 ? '' : 's'}` : per(j, d)}</span>}</span>
+      {/* quadro com os VSOs médios mensais de 3, 6 e 12 meses e do empreendimento inteiro (pedido do Moises, 12/nov/2026) */}
+      <span className="vq-quadro"><span className="muted vq-quadro-t">VSO mensal médio{d ? ` · até ${mkData(d.ultimo_mes).slice(3)}` : ''}</span>
+        {([3, 6, 12] as const).map((n) => { const w = d ? janela(d, n) : null; return (
+          <span key={n} className="vq-cel" title={w?.liquidas != null && w.liquidas < 0 ? 'Mais distratos que vendas' : w?.lanc ? `Lançado há ${w.meses} ${w.meses === 1 ? 'mês' : 'meses'}: vale o desde o lançamento` : undefined}>
+            <span className="faint">{n} meses</span><span className="num">{d ? mkPct(w?.vso_mes ?? null) : '…'}{w?.lanc ? '*' : ''}</span></span>); })}
+        <span className="vq-cel"><span className="faint" title="Desde o lançamento">Lifetime</span><span className="num">{d ? mkPct(d.geral.vso_mes) : '…'}</span></span>
+        {d && [3, 6, 12].some((n) => janela(d, n as 3 | 6 | 12)?.lanc) && <span className="faint vq-quadro-n">* lançado há {d.geral.meses_desde_lancamento} {d.geral.meses_desde_lancamento === 1 ? 'mês' : 'meses'}: vale o desde o lançamento</span>}
+      </span>
+      {/* vendas líquidas (pode ser negativa) e o ⓘ com vendas e distratos (pedido do Moises, 12/nov/2026) */}
+      <span className="mk-kv vq-liq"><span className="muted">Vendas líquidas{j?.lanc ? '' : ` em ${j ? j.meses : 3} ${j?.meses === 1 ? 'mês' : 'meses'}`}</span>
+        <span className="num">{d && j ? num(j.liquidas) : '…'}{d && j && <span role="button" tabIndex={0} className="vq-i" aria-label="Ver vendas e distratos" aria-expanded={info}
+          onClick={(ev) => { ev.stopPropagation(); setInfo(!info); }} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); setInfo(!info); } }}>i</span>}</span>
+        {d && <span className="faint">{j?.lanc ? 'desde o lançamento' : `até ${mkData(d.ultimo_mes).slice(3)}`}</span>}
+        {info && j && <span className="vq-info" onClick={(ev) => ev.stopPropagation()}>{j.lanc
+          ? <>Lançado há {j.meses} {j.meses === 1 ? 'mês' : 'meses'}: {num(j.vendas)} unidades vendidas desde o lançamento, com a pré-venda.</>
+          : <><b>{num(j.vendas)}</b> venda{j.vendas === 1 ? '' : 's'} e <b>{num(j.distratos)}</b> distrato{j.distratos === 1 ? '' : 's'} em {j.meses} {j.meses === 1 ? 'mês' : 'meses'} (até {mkData(d!.ultimo_mes).slice(3)}).</>}</span>}</span>
       <span className="mk-kv vq-kv-q"><span className="muted">Quartil de vendas</span>
         <span className="num">{q ? <span className="vq-chip" style={{ background: VQ_COR[q - 1], color: VQ_TXT[q - 1] }}>{q}º quartil</span> : d ? '—' : '…'}</span>
         {d && <span className="faint">{d.geral.vendido_pct != null ? num(d.geral.vendido_pct * 100, 0) + '% vendido' : ''}{d.geral.meses_desde_lancamento ? ` em ${d.geral.meses_desde_lancamento} meses` : ''}</span>}</span>
@@ -88,7 +99,7 @@ export function VsoKv({ id, abrir, semHist }: { id: string; abrir: () => void; s
 }
 
 /* janela sem VSO por ter mais distrato que venda (ajuste de tabela ou devoluções): diz por quê, em vez de só o traço */
-const jSub = (j?: { vso_mes: number | null; liquidas: number } | null) => j && j.liquidas < 0 ? 'ao mês, mais distratos que vendas' : 'ao mês';
+const jSub = (_j?: unknown) => 'ao mês';
 
 /** janela com o VSO mensal médio de cada quartil de vendas */
 export function PopVso({ id, nome, fechar }: { id: string; nome: string; fechar: () => void }) {
@@ -109,7 +120,7 @@ export function PopVso({ id, nome, fechar }: { id: string; nome: string; fechar:
   const desc = (q: Quartil) => q.situacao === 'futuro' ? 'Ainda não chegou'
     : q.vso_mes == null ? (q.situacao === 'em_andamento' && q.meses != null ? 'Entrou neste quartil agora' : `Começou antes do histórico (${ini})`)
     : `${mkPct(q.vso_mes)} ao mês${q.meses ? ` · ${q.meses} ${q.meses === 1 ? 'mês' : 'meses'}` : ''}${q.mesmo_mes ? ' (no mesmo mês do anterior)' : ''}${q.situacao === 'em_andamento' ? ' · em andamento' : ''}`;
-  const j3 = d ? janela(d, 3) : null, j12 = d ? janela(d, 12) : null;
+  const j3 = d ? janela(d, 3) : null, j6 = d ? janela(d, 6) : null, j12 = d ? janela(d, 12) : null;
   /* prazo para atingir o quartil: meses desde o lançamento até o mês em que chegou ao fim dele (marcos de 25, 50, 75 e 99%) */
   const MK = ['25', '50', '75', '99'];
   const ating = (q: Quartil) => d?.vendas?.marcos?.[MK[q.quartil - 1]] || null;
@@ -124,8 +135,9 @@ export function PopVso({ id, nome, fechar }: { id: string; nome: string; fechar:
         {!d ? <div className="muted">{st.erro ? 'Não foi possível trazer o histórico.' : 'Trazendo o histórico…'}</div> : <>
           <div className="vq-res">
             <div><span className="muted">Últimos 3 meses</span><b className="num">{mkPct(j3?.vso_mes ?? null)}</b><span className="faint">{jSub(j3)}{j3 ? ` · ${num(j3.vendas)} vendas${j3.distratos ? `, ${num(j3.distratos)} distratos` : ''}` : ''}{j3?.lanc ? ` · lançado há ${j3.meses} ${j3.meses === 1 ? 'mês' : 'meses'}` : ''}</span></div>
+            <div><span className="muted">Últimos 6 meses</span><b className="num">{mkPct(j6?.vso_mes ?? null)}</b><span className="faint">{jSub(j6)}{j6?.lanc ? ` · lançado há ${j6.meses} ${j6.meses === 1 ? 'mês' : 'meses'}` : ''}</span></div>
             <div><span className="muted">Últimos 12 meses</span><b className="num">{mkPct(j12?.vso_mes ?? null)}</b><span className="faint">{jSub(j12)}{j12?.lanc ? ` · lançado há ${j12.meses} ${j12.meses === 1 ? 'mês' : 'meses'}` : ''}</span></div>
-            <div><span className="muted">Desde o lançamento</span><b className="num">{mkPct(d.geral.vso_mes)}</b><span className="faint">ao mês</span></div>
+            <div><span className="muted">Lifetime</span><b className="num">{mkPct(d.geral.vso_mes)}</b><span className="faint">ao mês</span></div>
             <div><span className="muted">Vendido</span><b className="num">{d.geral.vendido_pct == null ? '—' : num(d.geral.vendido_pct * 100, 0) + '%'}</b>
               <span className="faint">{atual ? `${atual}º quartil` : ''}</span></div>
           </div>
@@ -156,7 +168,7 @@ export function PopVso({ id, nome, fechar }: { id: string; nome: string; fechar:
             <tbody>{Q.map((q, i) => <tr key={i}><td><span className="vq-pt" style={{ background: VQ_COR[i] }} />{q.quartil}º <span className="faint">({vqNome(q.quartil)})</span></td><td className="num">{mkPct(q.vso_mes)}</td>
               <td className="num">{q.meses ? `${q.meses} ${q.meses === 1 ? 'mês' : 'meses'}` : '—'}</td>
               <td>{ating(q)?.meses && q.situacao === 'concluido' ? `${ating(q)!.meses}º mês (${mkData(ating(q)!.mes).slice(3)})` : '—'}</td><td>{q.situacao === 'concluido' ? 'Concluído' : q.situacao === 'em_andamento' ? 'Em andamento' : 'Ainda não chegou'}{q.mesmo_mes ? ' (mesmo mês)' : ''}</td></tr>)}</tbody></table>
-          <div className="faint vq-nota">Relatório de vendas do Órulo, {mkData(d.primeiro_mes).slice(3)} a {mkData(d.ultimo_mes).slice(3)}. VSO mensal médio do quartil = a taxa mensal sobre o que sobrava ao entrar nele, contada pelos meses que o projeto levou para atravessá-lo (duração). Atingido em = meses desde o lançamento (o mês do lançamento é o 1º) até o mês em que o vendido chegou ao fim do quartil (99% no último). Os primeiros 25% costumam sair já no mês do lançamento, com a pré-venda. Nos últimos 3 e 12 meses, quem lançou dentro do período fica com o VSO desde o lançamento, porque o relatório não conta a pré-venda como venda do mês.{!d.completo && algum && ` O histórico deste empreendimento começa em ${ini}, depois do lançamento: quartil vencido antes disso fica sem VSO.`}</div>
+          <div className="faint vq-nota">Relatório de vendas do Órulo, {mkData(d.primeiro_mes).slice(3)} a {mkData(d.ultimo_mes).slice(3)}. VSO mensal médio do quartil = a taxa mensal sobre o que sobrava ao entrar nele, contada pelos meses que o projeto levou para atravessá-lo (duração). Atingido em = meses desde o lançamento (o mês do lançamento é o 1º) até o mês em que o vendido chegou ao fim do quartil (99% no último). Os primeiros 25% costumam sair já no mês do lançamento, com a pré-venda. Nos últimos 3, 6 e 12 meses, quem lançou dentro do período fica com o VSO desde o lançamento, porque o relatório não conta a pré-venda como venda do mês.{!d.completo && algum && ` O histórico deste empreendimento começa em ${ini}, depois do lançamento: quartil vencido antes disso fica sem VSO.`}</div>
         </>}
       </div>
     </div>, document.body);
