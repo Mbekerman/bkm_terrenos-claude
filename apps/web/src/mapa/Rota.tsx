@@ -59,7 +59,7 @@ async function ponto(a: Achado): Promise<Origem> {
 export type PontoMapa = PontoRota & { nome?: string; placeId?: string };
 
 /* nome do ponto clicado: o do lugar do Google, senão o endereço do Geocoding, senão "Ponto no mapa" */
-async function nomeDoPonto(p: PontoMapa): Promise<string> {
+export async function nomeDoPonto(p: PontoMapa): Promise<string> {
   if (p.nome) return p.nome;
   if (p.placeId) {
     try { const pl = new gLib.places.Place({ id: p.placeId }); await pl.fetchFields({ fields: ['displayName'] }); if (pl.displayName) return pl.displayName; }
