@@ -1,7 +1,7 @@
 // Tipos escritos à mão a partir das migrations. Quando o projeto Supabase
 // estiver ligado, trocar por `npm run gen:types` (ver README).
 
-export type Papel = 'diretor' | 'gestor' | 'analista' | 'leitura' | 'basico';
+export type Papel = 'diretor' | 'gestor' | 'analista' | 'leitura' | 'basico' | 'marketing';
 export type StatusProcesso = 'ativo' | 'ganha' | 'perdida' | 'stand_by';
 export type SituacaoDoc = 'pendente' | 'recebido' | 'validado' | 'vencido' | 'rejeitado';
 export type SituacaoProposta = 'em_analise' | 'contraproposta' | 'aceita' | 'recusada';

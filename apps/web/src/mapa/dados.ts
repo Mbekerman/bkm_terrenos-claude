@@ -144,7 +144,7 @@ export function bate(t: TerrenoMapa, q: string): boolean {
   });
 }
 
-function anel(g: unknown): [number, number][] | null {
+export function anel(g: unknown): [number, number][] | null {
   const o = g as { type?: string; coordinates?: unknown } | null;
   if (!o?.coordinates) return null;
   const r = (o.type === 'MultiPolygon' ? (o.coordinates as number[][][][])[0]?.[0] : (o.coordinates as number[][][])[0]) ?? [];

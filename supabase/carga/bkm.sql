@@ -20,8 +20,17 @@ begin
     (v_emp, 'moises@bkm.com.br',              'diretor',  true,  null,                            null),
     (v_emp, 'rafael.gava@bkm.com.br',         'diretor',  true,  null,                            null),
     (v_emp, 'cecilia.scheydegger@bkm.com.br', 'gestor',   false, 'moises@bkm.com.br',             null),
-    (v_emp, 'arnon.cugola@bkm.com.br',        'analista', false, 'cecilia.scheydegger@bkm.com.br', 'Arnon Cugola')
+    (v_emp, 'arnon.cugola@bkm.com.br',        'analista', false, 'cecilia.scheydegger@bkm.com.br', 'Arnon Cugola'),
+    -- Marketing (pedido do Moises, 16/nov/2026): só o mapa, com a concorrência, a renda, a densidade e os terrenos comprados
+    (v_emp, 'carla.baranauskas@bkm.com.br',   'marketing', false, null,                           null),
+    (v_emp, 'gessica.souza@bkm.com.br',       'marketing', false, null,                           null),
+    (v_emp, 'bruna.barbozano@bkm.com.br',     'marketing', false, null,                           null)
   on conflict (empresa_id, email) do update set
     papel = excluded.papel, administrador = excluded.administrador,
     superior_email = excluded.superior_email, nome = excluded.nome;
+
+  -- quem do marketing já entrou antes (como básico) passa a marketing agora
+  update app.membros m set papel = 'marketing', administrador = false, superior_id = null
+    from app.usuarios u join app.equipe_prevista q on q.email = u.email and q.papel = 'marketing'
+   where m.user_id = u.user_id and m.empresa_id = v_emp and q.empresa_id = v_emp and m.papel in ('basico', 'leitura');
 end $$;
