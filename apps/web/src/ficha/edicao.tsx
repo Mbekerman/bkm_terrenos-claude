@@ -66,7 +66,7 @@ export function useListas() {
     queryKey: ['ficha-listas', empresa?.id], enabled: !!empresa, staleTime: 5 * 60_000,
     queryFn: async () => {
       const [m, e] = await Promise.all([
-        supabase.from('membros').select('user_id,nome').eq('empresa_id', empresa!.id).order('nome'),
+        supabase.from('membros').select('user_id,nome').eq('empresa_id', empresa!.id).neq('papel', 'marketing').order('nome'),
         supabase.from('eixos_comerciais').select('id,nome,municipio_id,ativo').eq('empresa_id', empresa!.id).order('nome'),
       ]);
       if (m.error) throw m.error;
