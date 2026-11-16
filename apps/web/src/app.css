@@ -727,3 +727,44 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
 .pin.et.so-ver { cursor: default }
 .gr.so-ver .gr-i { cursor: default }
 .gr.so-ver .gr-i:hover, .gr.so-ver .gr-i:focus-visible { background: none }
+
+/* ---------- Anotações do Marketing no mapa (pedido do Moises, 16/nov/2026; mapa/Anotacoes.tsx) ---------- */
+.an-pin { cursor: pointer }
+.an-p .an-b { display: block; width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg) translate(4px, -4px); background: #00796b; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); transition: transform .12s }
+.an-p .an-b b { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #fff }
+.an-p:hover .an-b { transform: rotate(-45deg) translate(4px, -4px) scale(1.15) }
+.an-o, .an-d { transform: translateY(50%) }
+.an-r { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #00796b; color: #fff; font: 600 12px/1 var(--fonte, inherit); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); transition: transform .12s }
+.an-d .an-r { background: #004d40 }
+.an-pin:hover .an-r { transform: scale(1.18) }
+.pin-mini.an-mini { width: 12px; height: 12px; min-width: 0; padding: 0; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #00796b }
+.an-tip { position: absolute; z-index: 1100; width: 280px; max-width: calc(100% - 24px); transform: translate(-50%, calc(-100% - 22px)); padding: 12px 14px; border-radius: 12px;
+  background: #fff; color: #1f1f1f; border: 1px solid #dde3ea; border-top: 4px solid #00796b; box-shadow: 0 2px 6px rgba(0,0,0,.14), 0 10px 28px rgba(0,0,0,.18); font-size: 13px; line-height: 18px;
+  animation: an-entra .14s ease-out }
+.an-tip.emb { transform: translate(-50%, 22px) }
+.an-tip::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 12px; height: 12px; margin-left: -6px; background: #fff; border-right: 1px solid #dde3ea; border-bottom: 1px solid #dde3ea; transform: rotate(45deg) }
+.an-tip.emb::after { bottom: auto; top: -8px; border: 0; border-left: 1px solid #dde3ea; border-top: 1px solid #dde3ea; background: #00796b }
+.an-tip.ed { width: 320px }
+@keyframes an-entra { from { opacity: 0; margin-top: 4px } to { opacity: 1; margin-top: 0 } }
+.an-tip-k { font-size: 11px; font-weight: 500; letter-spacing: .02em; color: #00796b; margin-bottom: 2px }
+.an-tip-n { font-size: 15px; font-weight: 500; line-height: 20px; word-break: break-word }
+input.an-tip-n { width: 100%; box-sizing: border-box; border: 1px solid #c4c7c5; border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 15px; margin: 2px 0 6px }
+.an-tip-e { color: #444746; margin-top: 2px }
+.an-tip-o { color: #5f6368; font-size: 12px; margin-top: 2px }
+.an-tip-t { margin-top: 8px; padding-top: 8px; border-top: 1px solid #eef1f4; white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto }
+.an-tip-v { margin-top: 8px; color: #80868b; font-size: 12px; font-style: italic }
+.an-tip textarea { width: 100%; box-sizing: border-box; border: 1px solid #c4c7c5; border-radius: 8px; padding: 8px; font: inherit; resize: vertical; margin-top: 8px }
+.an-tip textarea:focus, input.an-tip-n:focus { outline: 2px solid #0b57d0; outline-offset: -1px; border-color: transparent }
+.an-tip-b { display: flex; align-items: center; gap: 4px; margin-top: 8px }
+.an-tip-b > span { flex: 1 }
+.an-tip-b .crit { color: #b3261e; padding-left: 4px }
+.an-tempos { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px }
+.an-tempos > span { display: inline-flex; align-items: center; gap: 4px; font-weight: 500 }
+.an-tempos svg { color: #00796b; flex: none }
+.an-tempos small { font-weight: 400; color: #5f6368; font-size: 12px }
+.mp-modo .an-rt { display: flex; flex-direction: column; gap: 2px }
+.mp-modo .an-tempos { margin-top: 0 }
+.mp-modo .an-tempos svg, .mp-modo .an-tempos small { color: inherit }
+.an-novo { display: flex; flex-direction: column; gap: 12px }
+.an-novo-r { padding: 10px 12px; border-radius: 12px; background: #e0f2f1; font-size: 13px; line-height: 18px }
+.an-novo-r b { font-weight: 500; color: #00796b; margin-right: 4px }

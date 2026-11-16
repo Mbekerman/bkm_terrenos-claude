@@ -271,8 +271,20 @@ Quem tem o papel **Marketing** entra direto nesta página e só nela: o menu lat
 - **Concorrência**: igual à dos outros usuários, com o card, a tabela completa, o VSO e o filtro da concorrência nos três pontinhos.
 - **Renda e densidade**: nos três pontinhos, em Camadas, como para todos.
 - **Também tem**: busca de endereço, tipo de mapa, régua, minha localização e tela cheia.
-- **Não tem**: a lista de terrenos, o filtro dos terrenos, a legenda por fase, o menu do clique direito (Novo terreno aqui, rota), o botão Novo terreno, a busca de terrenos da barra de cima e o sino.
+- **Não tem**: a lista de terrenos, o filtro dos terrenos, a legenda por fase, o botão Novo terreno, a busca de terrenos da barra de cima e o sino.
 
-A legenda tem só **Terrenos comprados** (liga e desliga) e **Concorrência**.
+A legenda tem **Terrenos comprados**, **Anotações do Marketing** (cada um liga e desliga) e **Concorrência**.
+
+### Anotações do Marketing
+
+Só quem é do Marketing vê e faz estas anotações; as três pessoas do Marketing veem e editam as mesmas. Elas ficam guardadas no sistema, separadas dos terrenos.
+
+- **Clique direito** no mapa abre o menu com **Marcar ponto aqui**, **Desenhar área a partir daqui** e **Rota a partir daqui**.
+- **Ponto**: abre a janela com **Nome** e **Observações**; Salvar põe o pino verde no mapa.
+- **Área** (um lote, uma praça, uma região): cada clique no mapa marca um ponto; a barra embaixo mostra os pontos e a área, com Desfazer, Cancelar e **Concluir** (ou Enter), que pede o nome e as observações. Backspace ou Ctrl+Z tiram o último ponto; Esc cancela.
+- **Rota**: clique direito na origem, **Rota a partir daqui**; clique direito no destino, **Rota até aqui**. A barra embaixo mostra os endereços da origem e do destino, a distância e o tempo **a pé**; quando a pé passa de **15 minutos**, também o tempo **de carro** (sem contar o trânsito) e **de transporte público**, com as linhas. Os dois pontos se arrastam para ajustar. **Salvar rota** pede o nome e as observações da origem e do destino. Salva, a rota fica pontilhada com **A** na origem e **B** no destino. Os tempos são os do dia em que a rota foi salva.
+- **Caixa**: com o mouse parado **1 segundo** sobre o ponto, a área ou o A e o B da rota, abre a caixa com o nome, as observações e, na rota, os endereços, a distância e os tempos.
+- **Editar**: **dois cliques** no ponto, na área, no A ou no B (ou na caixa aberta) editam o nome e as observações ali mesmo; Salvar grava, Cancelar ou Esc desistem. Na rota, a origem e o destino têm observações próprias. O clique direito sobre uma anotação também traz **Editar** e **Excluir**.
+- **Excluir**: pela caixa em edição ou pelo clique direito, com confirmação; some para todas do Marketing.
 
 Esse limite vale no banco de dados, não só na tela: mesmo pelo console do navegador, quem é do Marketing não consegue ler terrenos, ofertas, propostas, tarefas, logs ou documentos.

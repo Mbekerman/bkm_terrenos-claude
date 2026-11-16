@@ -8,6 +8,7 @@ Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era test
 
 ## 2026-11-16
 
+- **Anotações do Marketing no mapa.** Quem é do Marketing marca pontos, desenha áreas e salva rotas pelo clique direito, cada um com nome e observações, que abrem numa caixa com o mouse parado 1 segundo; dois cliques editam. A rota mostra os endereços, a distância e o tempo a pé, e de carro e de transporte público quando a pé passa de 15 minutos. Ver [2. Mapa › Anotações do Marketing](02-mapa.md#anotações-do-marketing). (#395)
 - **O @ só mostra quem vê o lugar.** Na lista do @ e na escolha de pessoas, só aparece quem pode ver aquele terreno; quem é do Marketing não aparece mais e não recebe aviso de menção. (#392)
 - **Papel Marketing.** Quem é do Marketing (Carla, Gessica e Bruna) entra só na página Mapa, com a concorrência, os mapas de renda e de densidade e os terrenos comprados, sem clique e sem ficha. Os outros terrenos não aparecem. Ver [00. Conceitos › Papéis](00-conceitos.md#papéis-das-pessoas) e [2. Mapa › Mapa do Marketing](02-mapa.md#mapa-do-marketing). (#391)
 

@@ -4585,6 +4585,31 @@ select pg_temp.ok(not exists (select 1 from app.mencoes where origem_id = :'amk'
 select pg_temp.ok(exists (select 1 from app.mencoes where origem_id = :'amk' and user_id <> '00000000-0000-0000-0000-0000000000a7'),
   'o @ continua avisando quem vê o terreno');
 delete from app.atividades where id = :'amk';
+-- anotações do Marketing no mapa (pinos, áreas e rotas): só o Marketing lê e grava
+select pg_temp.como('00000000-0000-0000-0000-0000000000a7');
+insert into app.marketing_anotacoes (empresa_id, tipo, nome, texto, latitude, longitude) values (:'emp', 'pino', 'Stand de vendas', 'Abre sábado', -23.5, -46.6);
+insert into app.marketing_anotacoes (empresa_id, tipo, nome, latitude, longitude, pontos) values (:'emp', 'area', 'Praça', -23.5, -46.6, '[[-23.5,-46.6],[-23.5,-46.61],[-23.51,-46.6]]');
+insert into app.marketing_anotacoes (empresa_id, tipo, nome, latitude, longitude, latitude_destino, longitude_destino, endereco, endereco_destino, distancia_m, pe_s, carro_s, transporte_s)
+  values (:'emp', 'rota', 'Até o metrô', -23.5, -46.6, -23.52, -46.62, 'Rua A, 1', 'Estação B', 2400, 1800, 420, 900);
+select pg_temp.ok((select count(*) from app.marketing_anotacoes) = 3 and (select bool_and(criado_por = '00000000-0000-0000-0000-0000000000a7') from app.marketing_anotacoes),
+  'o marketing grava pinos, áreas e rotas no mapa');
+select pg_temp.falha(format($$insert into app.marketing_anotacoes (empresa_id, tipo, latitude, longitude, pontos) values (%L, 'area', 0, 0, '[[0,0],[0,1]]')$$, :'emp'),
+  'área com menos de 3 pontos é recusada');
+select pg_temp.falha(format($$insert into app.marketing_anotacoes (empresa_id, tipo, latitude, longitude) values (%L, 'rota', 0, 0)$$, :'emp'),
+  'rota sem a chegada é recusada');
+update app.marketing_anotacoes set texto = 'Abre domingo' where tipo = 'pino';
+select pg_temp.ok((select texto = 'Abre domingo' from app.marketing_anotacoes where tipo = 'pino'), 'o marketing edita o texto');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.marketing_anotacoes) = 0, 'as anotações do marketing não aparecem para os outros papéis, nem para o diretor');
+select pg_temp.falha(format($$insert into app.marketing_anotacoes (empresa_id, tipo, latitude, longitude) values (%L, 'pino', 0, 0)$$, :'emp'),
+  'os outros papéis não gravam anotação do marketing');
+select pg_temp.como(:'intruso');
+select pg_temp.ok((select count(*) from app.marketing_anotacoes) = 0, 'quem não é da empresa não lê as anotações');
+select pg_temp.como('00000000-0000-0000-0000-0000000000a7');
+delete from app.marketing_anotacoes where tipo = 'area';
+select pg_temp.ok((select count(*) from app.marketing_anotacoes) = 2, 'o marketing exclui a anotação');
+reset role;
+delete from app.marketing_anotacoes;
 
 -- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
 -- e os catálogos sem empresa continuam legíveis por quem está logado.
