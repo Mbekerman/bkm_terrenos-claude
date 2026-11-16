@@ -61,7 +61,8 @@ export function useGente(terrenoId: string | null) {
     queryFn: async () => {
       const nada = Promise.resolve({ data: [], error: null });
       const [mb, us, tp, tc, pt] = await Promise.all([
-        supabase.from('membros').select('user_id,nome').eq('empresa_id', empresa!.id),
+        /* o @ só lista quem vê o lugar (regra do Moises, 16/nov/2026): o Marketing não vê terreno nenhum */
+        supabase.from('membros').select('user_id,nome').eq('empresa_id', empresa!.id).neq('papel', 'marketing'),
         supabase.from('usuarios').select('user_id,nome,email,arroba'),
         terrenoId ? supabase.from('terreno_pessoas').select('papel,pessoa_id,pessoas(nome_razao_social,email)').eq('terreno_id', terrenoId) : nada,
         terrenoId ? supabase.from('terreno_corretores').select('corretores(pessoa_id,pessoas(nome_razao_social,email))').eq('terreno_id', terrenoId) : nada,

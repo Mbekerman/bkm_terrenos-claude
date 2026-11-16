@@ -4574,6 +4574,17 @@ select pg_temp.como(:'diretor');
 select pg_temp.ok((select count(*) from app.membros where papel = 'marketing') = 1 and (select count(*) from app.terrenos) > 0,
   'os outros papéis continuam vendo a empresa toda (e o diretor vê quem é do marketing)');
 reset role;
+-- o @ só alcança quem vê o lugar (regra geral do Moises, 16/nov/2026): o marketing não é avisado
+select arroba as amkt from app.usuarios where user_id = '00000000-0000-0000-0000-0000000000a7' \gset
+select pg_temp.como(:'diretor');
+insert into app.atividades (empresa_id, terreno_id, tipo, resumo) values (:'emp', :'tcomp', 'nota', 'Falar com @' || :'amkt' || ' e @gestor') returning id as amk \gset
+reset role;
+select pg_temp.ok(not exists (select 1 from app.mencoes where origem_id = :'amk' and user_id = '00000000-0000-0000-0000-0000000000a7')
+  and not exists (select 1 from app.notificacoes where destinatario_id = '00000000-0000-0000-0000-0000000000a7'),
+  'o @ não avisa quem é do marketing (não vê o terreno)');
+select pg_temp.ok(exists (select 1 from app.mencoes where origem_id = :'amk' and user_id <> '00000000-0000-0000-0000-0000000000a7'),
+  'o @ continua avisando quem vê o terreno');
+delete from app.atividades where id = :'amk';
 
 -- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
 -- e os catálogos sem empresa continuam legíveis por quem está logado.
