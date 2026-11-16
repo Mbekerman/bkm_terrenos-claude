@@ -103,7 +103,7 @@ Você decide o que fazer: mudar o status de uma delas, excluir uma ou deixar as 
 - **Participantes da BKM:** digite **@** e parte do nome (sem acento, em qualquer ordem de letras) e escolha na lista com as setas e **Enter**, ou com o clique. Você já vem marcado. Cada colega marcado recebe um aviso no sino ("Fulano marcou você na reunião de 25/11 às 10:00"), que abre a reunião. Quem já foi citado com @ no texto da mesma reunião não recebe aviso repetido.
 - **Participantes externos:** a lista traz as pessoas **de fora cadastradas neste terreno que têm e-mail**: as pessoas das partes (proprietário, cônjuge, procurador...), os corretores do terreno e o contato principal de cada parte. Quem não está na lista entra pelo nome: digite e tecle **Enter** (ou vírgula). Marcar alguém de fora **só registra** a pessoa como participante: o sistema ainda não manda e-mail nem convite para ela.
 - Para tirar alguém, clique no **×** do nome (ou **Backspace** com o campo vazio).
-- Na **Pauta**, em **O que foi tratado** e em **Encaminhamentos**, digitar **@** abre a lista dos colegas; o @ escolhido entra no texto, aparece destacado e avisa a pessoa no sino.
+- Na **Pauta**, em **O que foi tratado** e em **Encaminhamentos**, digitar **@** abre a lista dos colegas que veem o terreno; o @ escolhido entra no texto, aparece destacado e avisa a pessoa no sino.
 
 Na lista, a reunião online com link mostra **"Entrar na reunião"** (agendada) ou **"Link da reunião"** (realizada), que abrem o link numa aba nova.
 
