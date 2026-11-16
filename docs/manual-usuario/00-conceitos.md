@@ -77,6 +77,7 @@ O papel vem do cadastro da pessoa, não de uma escolha na tela.
 | **Analista** | Cadastra e edita terrenos, registra ofertas e propostas, avança etapa quando não há pendência, pede aprovação. |
 | **Leitura** | Só consulta. Não vê lápis, lixeiras nem botões de registrar. |
 | **Básico** | Quem entrou pelo Google com e-mail da BKM e ainda não foi promovido. Por ora, igual a Leitura. |
+| **Marketing** | Só a página **Mapa**, para ver a concorrência, os mapas de renda e de densidade e os **terrenos comprados**. Não vê os outros terrenos, não abre ficha e não tem lista, funil, Pipeline, corretores, busca de terrenos nem sino. Ver [2. Mapa › Mapa do Marketing](02-mapa.md#mapa-do-marketing). |
 
 **Administrador** é uma permissão à parte (equipe e configurações), que hoje Moises e Rafael têm.
 

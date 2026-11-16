@@ -4522,6 +4522,59 @@ reset role;
 select pg_temp.ok(app._rua_chave('Rua Rodrigues Alves') = 'rodrigues alves' and app._rua_chave('Rodrigues Alves') = 'rodrigues alves'
                   and app._rua_chave(null) is null, 'só o tipo da rua sai, não o começo do nome');
 
+-- Papel Marketing (16/nov/2026): só o mapa, com os terrenos comprados por app.mapa_comprados; o resto da empresa fica fechado no banco.
+\echo '# marketing'
+reset role;
+insert into auth.users values ('00000000-0000-0000-0000-0000000000a7', 'mkt@bkm.test');
+select pg_temp.falha(format($$update app.membros set papel = 'marketing', administrador = true where user_id = %L$$,
+  '00000000-0000-0000-0000-0000000000a7'), 'marketing não pode ser administrador');
+select pg_temp.falha(format($$update app.membros set papel = 'marketing', superior_id = %L where user_id = %L$$,
+  :'diretor', '00000000-0000-0000-0000-0000000000a7'), 'marketing não entra na hierarquia');
+delete from app.membros where user_id = '00000000-0000-0000-0000-0000000000a7';
+insert into app.membros (empresa_id, user_id, papel, nome) values (:'emp', '00000000-0000-0000-0000-0000000000a7', 'marketing', 'Mkt');
+select pg_temp.como('00000000-0000-0000-0000-0000000000a7');
+select pg_temp.ok((select count(*) = 1 and bool_and(papel = 'marketing') from app.membros) and (select count(*) from app.empresas) = 1,
+  'o marketing lê só o próprio vínculo e o nome da empresa');
+do $$
+declare r record; n bigint; abertas text[] := '{}';
+begin
+  for r in select n.nspname, c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+            where n.nspname in ('app','fluxo') and c.relkind in ('r','v','p')
+              and exists (select 1 from pg_attribute a where a.attrelid = c.oid and a.attname = 'empresa_id' and not a.attisdropped)
+              and has_table_privilege('authenticated', c.oid, 'select')
+              and not (n.nspname = 'app' and c.relname in ('membros','empresas')) loop
+    begin
+      execute format('select count(*) from %I.%I where empresa_id is not null', r.nspname, r.relname) into n;
+    exception when insufficient_privilege then n := 0;
+    end;
+    if n > 0 then abertas := abertas || (r.nspname || '.' || r.relname || '=' || n); end if;
+  end loop;
+  if cardinality(abertas) > 0 then raise exception 'FALHOU: o marketing lê %', abertas; end if;
+  raise notice 'ok  o marketing não lê nenhuma tabela nem visão da empresa (terrenos, ofertas, processos, tarefas, logs...)';
+end $$;
+select pg_temp.ok(not app.ve_terreno(:'t2') and app.ficha_dados(:'emp', (select codigo from app.terrenos where id = :'t2')) is null,
+  'o marketing não vê terreno nem abre a ficha, nem a de um comprado');
+select pg_temp.falha(format('select app.checar_avanco(%L)', :'ng'), 'o marketing não lê o funil pelas funções');
+reset role;
+-- um terreno comprado (o processo de Novos Negócios concluído) e outro ainda em negociação
+select p.terreno_id as tcomp, t.codigo as ccomp from app.processos p join app.terrenos t on t.id = p.terreno_id
+ where p.empresa_id = :'emp' and p.status = 'ativo' and p.parte_id is null and t.latitude is not null order by t.codigo limit 1 \gset
+update app.processos set status = 'concluido', data_encerramento = now() where terreno_id = :'tcomp' and fase = 'novos_negocios' and parte_id is null;
+select pg_temp.como('00000000-0000-0000-0000-0000000000a7');
+select pg_temp.ok((select array_agg(codigo) from app.mapa_comprados(:'emp')) = array[:'ccomp'],
+  'o mapa do marketing traz só os comprados, sem os terrenos em negociação, prospecção, Stand By, perdidos ou descartados');
+select pg_temp.ok((select poligono_geojson is not null and latitude is not null from app.mapa_comprados(:'emp')),
+  'com o ponto e a poligonal, sem mais nada do terreno');
+select pg_temp.ok(not app.ve_terreno(:'tcomp'), 'nem o comprado abre a ficha para o marketing');
+reset role;
+update app.processos set status = 'ativo', data_encerramento = null where terreno_id = :'tcomp' and fase = 'novos_negocios' and parte_id is null;
+select pg_temp.como(:'intruso');
+select pg_temp.falha(format('select * from app.mapa_comprados(%L)', :'emp'), 'quem não é da empresa não lê os comprados');
+select pg_temp.como(:'diretor');
+select pg_temp.ok((select count(*) from app.membros where papel = 'marketing') = 1 and (select count(*) from app.terrenos) > 0,
+  'os outros papéis continuam vendo a empresa toda (e o diretor vê quem é do marketing)');
+reset role;
+
 -- Security Advisor (rls_disabled_in_public, 10/nov/2026): toda tabela dos esquemas expostos tem RLS,
 -- e os catálogos sem empresa continuam legíveis por quem está logado.
 reset role;

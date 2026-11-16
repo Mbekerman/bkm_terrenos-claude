@@ -262,3 +262,17 @@ Lotes que não se encostam são recusados. O **Ctrl+Z** volta tudo como estava, 
 - Marcar pontos de interesse da empresa no mapa (eles ficam só na ficha, aba Entorno).
 - Ver imagens de satélite antigas (régua de tempo): a API do Google Maps para sites não oferece.
 - Importar KMZ/KML pelo mapa: isso fica no [Novo terreno](03-novo-terreno.md).
+
+## Mapa do Marketing
+
+Quem tem o papel **Marketing** entra direto nesta página e só nela: o menu lateral tem só o item Mapa, e qualquer outro endereço volta para cá. O mapa é o mesmo, com menos coisas:
+
+- **Terrenos**: só os **comprados** (a negociação de Novos Negócios terminou como Comprado; o terreno continua aparecendo depois, nas fases seguintes). Cada um aparece com a etiqueta do código, em verde, e a poligonal. **Não são clicáveis**: o clique não abre ficha nem cartão; o mouse parado mostra só o código e o nome. Terrenos em prospecção, em negociação, em Stand By, perdidos ou descartados não aparecem.
+- **Concorrência**: igual à dos outros usuários, com o card, a tabela completa, o VSO e o filtro da concorrência nos três pontinhos.
+- **Renda e densidade**: nos três pontinhos, em Camadas, como para todos.
+- **Também tem**: busca de endereço, tipo de mapa, régua, minha localização e tela cheia.
+- **Não tem**: a lista de terrenos, o filtro dos terrenos, a legenda por fase, o menu do clique direito (Novo terreno aqui, rota), o botão Novo terreno, a busca de terrenos da barra de cima e o sino.
+
+A legenda tem só **Terrenos comprados** (liga e desliga) e **Concorrência**.
+
+Esse limite vale no banco de dados, não só na tela: mesmo pelo console do navegador, quem é do Marketing não consegue ler terrenos, ofertas, propostas, tarefas, logs ou documentos.
