@@ -94,7 +94,7 @@ function Foto({ nome, url }: { nome: string; url: string | null | undefined }) {
 }
 
 function Perfil() {
-  const { usuario, membro, session } = useSessao();
+  const { usuario, membro, session, marketing } = useSessao();
   const [aberto, setAberto] = useState(false);
   const navegar = useNavigate();
   const ref = useFora<HTMLDivElement>(aberto, () => setAberto(false));
@@ -108,7 +108,7 @@ function Perfil() {
       {aberto && (
         <div className="tema-menu" role="menu">
           <div className="perfil-eu"><b>{nome}</b><span>{usuario?.arroba ? `@${usuario.arroba} · ` : ''}{papel}</span></div>
-          {membro?.administrador && <button role="menuitem" onClick={() => { setAberto(false); navegar('/configuracoes/excluidos'); }}>Terrenos excluídos</button>}
+          {membro?.administrador && !marketing && <button role="menuitem" onClick={() => { setAberto(false); navegar('/configuracoes/excluidos'); }}>Terrenos excluídos</button>}
           <button role="menuitem" onClick={() => supabase.auth.signOut()}>Sair</button>
         </div>
       )}
@@ -196,6 +196,9 @@ function Sino() {
 
 export default function Moldura() {
   const { pathname, state } = useLocation();
+  /* Marketing: só o item Mapa, sem Novo terreno, sem a busca de terrenos e sem o sino */
+  const { marketing } = useSessao();
+  const nav = marketing ? NAV.filter(([r]) => r === 'mapa') : NAV;
   const navegar = useNavigate();
   const rota = pathname.split('/')[1] || 'mapa';
   /* /terrenos e /terrenos/A123/gaveta são o Pipeline; a ficha (/terrenos/A123) acende o item de onde a pessoa veio (proto.js › render) */
@@ -223,13 +226,13 @@ export default function Moldura() {
             <span className="brand-sep" /><span className="brand-prod">Terrenos</span>
           </button>
           <SeloAmbiente />
-          <label className="search" htmlFor="q-top">
+          {!marketing && <label className="search" htmlFor="q-top">
             <Bi n="busca" s={20} />
             <input id="q-top" type="search" placeholder="Buscar por nome, endereço, matrícula, SQL ou corretor" autoComplete="off" value={busca}
               onChange={(e) => { setBusca(e.target.value); if (rota !== 'mapa' && !pipeline && e.target.value.trim()) navegar('/mapa'); }} />
-          </label>
+          </label>}
           <div className="top-right">
-            <Sino />
+            {!marketing && <Sino />}
             <Perfil />
           </div>
         </div>
@@ -239,10 +242,10 @@ export default function Moldura() {
           <button className="menu-tg" aria-expanded={!menuMin} aria-label={menuMin ? 'Expandir menu' : 'Recolher menu'} title={menuMin ? 'Expandir menu' : 'Recolher menu'} onClick={alternar}>
             <Ic n={menuMin ? 'expandir' : 'recolher'} />
           </button>
-          <button className="compose" onClick={novo} {...(menuMin ? { title: 'Novo terreno', 'aria-label': 'Novo terreno' } : {})}>
+          {!marketing && <button className="compose" onClick={novo} {...(menuMin ? { title: 'Novo terreno', 'aria-label': 'Novo terreno' } : {})}>
             <Ic n="add" s={24} /><span className="rot">Novo terreno</span>
-          </button>
-          {NAV.map(([r, l, i]) => (
+          </button>}
+          {nav.map(([r, l, i]) => (
             <button key={r} className="nav-item" onClick={() => navegar(`/${r}`)} aria-current={ativo === r ? 'page' : undefined} {...(menuMin ? { title: l, 'aria-label': l } : {})}>
               <span className="ri"><Bi n={i} /></span><span className="rot">{l}</span>
             </button>
@@ -251,13 +254,15 @@ export default function Moldura() {
         <main className="main" id="main"><Outlet context={{ busca } satisfies ContextoMoldura} /></main>
       </div>
       <nav className="bnav" id="bnav" aria-label="Navegação">
-        {NAV.map(([r, l, i]) => (
+        {nav.map(([r, l, i]) => (
           <button key={r} onClick={() => navegar(`/${r}`)} aria-current={ativo === r ? 'page' : undefined}><span className="pill"><Bi n={i} s={32} /></span>{l}</button>
         ))}
       </nav>
-      <button className="fab" onClick={novo}><Ic n="add" s={22} /><span className="fab-t">Novo terreno</span></button>
-      <NovoTerreno />
-      <TrocarEndereco />
+      {!marketing && <>
+        <button className="fab" onClick={novo}><Ic n="add" s={22} /><span className="fab-t">Novo terreno</span></button>
+        <NovoTerreno />
+        <TrocarEndereco />
+      </>}
     </>
   );
 }

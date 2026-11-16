@@ -40,6 +40,8 @@ export interface Ganchos {
   editar?(id: string): void;
   /** o mouse parou sobre o pino ou a poligonal: a ficha já começa a carregar (pedido do Moisés, 6/nov/2026) */
   passar?(id: string): void;
+  /** só ver (papel Marketing, 16/nov/2026): os terrenos aparecem sem responder ao clique, nem na bolha */
+  soVer?: boolean;
 }
 /** gestos nos pontos do rascunho (proto_mod.js › vGestos, vArrastado) */
 export interface GestosPonto {
@@ -168,16 +170,16 @@ export class Motor {
       const d = document.createElement('div');
       /* etiqueta com o código do terreno e um ponto embaixo no lugar exato, para se destacar dos pinos do Google
          (opção 2 da simulação, escolhida pelo Moises em 10/nov/2026) */
-      d.className = 'pin et' + (sel === t.id ? ' sel' : '');
+      d.className = 'pin et' + (sel === t.id ? ' sel' : '') + (this.g.soVer ? ' so-ver' : '');
       d.dataset.terreno = t.id;
       d.innerHTML = `<span class="et-b" style="background:${t.cor};color:${t.fg}">${esc(t.codigo || '•')}<i style="background:${t.cor}"></i></span><span class="et-c"></span>`;
-      const mk = new AdvancedMarkerElement({ map: this.mapa, position: gLL(t.lat, t.lng), content: d, title: t.nome, gmpClickable: !this.modo, zIndex: sel === t.id ? 10 : 1 });
+      const mk = new AdvancedMarkerElement({ map: this.mapa, position: gLL(t.lat, t.lng), content: d, title: t.nome, gmpClickable: !this.modo && !this.g.soVer, zIndex: sel === t.id ? 10 : 1 });
       mk.addEventListener('gmp-click', () => this.g.pino(t.id));
       d.addEventListener('pointerenter', () => this.g.passar?.(t.id));
       mk._terreno = t.id;
       this.pinos.push(mk);
       if (t.poly) {
-        const pg = new google.maps.Polygon({ map: this.mapa, paths: t.poly.map((p) => gLL(p[0], p[1])), strokeColor: t.cor, strokeWeight: 2, fillColor: t.cor, fillOpacity: 0.18, clickable: !this.modo });
+        const pg = new google.maps.Polygon({ map: this.mapa, paths: t.poly.map((p) => gLL(p[0], p[1])), strokeColor: t.cor, strokeWeight: 2, fillColor: t.cor, fillOpacity: 0.18, clickable: !this.modo && !this.g.soVer });
         pg.addListener('mouseover', () => this.g.passar?.(t.id));
         pg.addListener('click', () => this.cliqueTerreno(t.id));
         pg.addListener('dblclick', (e: any) => { e?.stop?.(); clearTimeout(this.tc); this.g.editar?.(this.poligonalEm(e?.latLng?.lat?.(), e?.latLng?.lng?.()) ?? t.id); });
@@ -226,7 +228,7 @@ export class Motor {
     const n = ps.length, lat = ps.reduce((s, p) => s + p.lat, 0) / n, lng = ps.reduce((s, p) => s + p.lng, 0) / n;
     const passo = 360 / n, anel = ps.map((p, i) => `${p.cor} ${(i * passo).toFixed(2)}deg ${((i + 1) * passo).toFixed(2)}deg`).join(',');
     const d = document.createElement('div');
-    d.className = 'gr';
+    d.className = 'gr' + (this.g.soVer ? ' so-ver' : '');
     d.innerHTML = `<div class="gr-b" style="--gr-d:${Math.min(44, 30 + n * 2)}px;background:conic-gradient(${anel})"><span>${n}</span></div>
       <div class="gr-l" role="menu"><div class="gr-t">${n} terrenos aqui</div>${ps.map((p) => `<button type="button" class="gr-i" role="menuitem" data-terreno="${esc(p.id)}"><span class="pin-mini mp-cod" style="background:${p.cor};color:${p.fg}">${esc(p.codigo || '•')}</span><span class="gr-n">${esc(p.nome)}${p.rotulo ? `<small>${esc(p.rotulo)}</small>` : ''}</span></button>`).join('')}
       <div class="gr-p">Clique no número para aproximar</div></div>`;
@@ -237,7 +239,7 @@ export class Motor {
     d.querySelectorAll<HTMLElement>('.gr-i').forEach((b) => {
       const id = b.dataset.terreno!;
       b.addEventListener('pointerenter', () => this.g.passar?.(id));
-      b.addEventListener('click', (e) => { e.stopPropagation(); this.bolhaEm = Date.now(); this.fecharLista(); this.g.pino(id); });
+      b.addEventListener('click', (e) => { e.stopPropagation(); this.bolhaEm = Date.now(); if (this.g.soVer) return; this.fecharLista(); this.g.pino(id); });
     });
     d.querySelector('.gr-b')!.addEventListener('click', (e) => {
       e.stopPropagation(); this.bolhaEm = Date.now();
@@ -431,7 +433,8 @@ export class Motor {
     this.modo = on;
     this.el.classList.toggle('modo', on);
     if (on) { this.lugarFechar(); this.fecharLista(); }
-    this.pinos.forEach((o) => (o.setOptions ? o.setOptions({ clickable: !on }) : (o.gmpClickable = !on)));
+    const pode = !on && !this.g.soVer;
+    this.pinos.forEach((o) => (o.setOptions ? o.setOptions({ clickable: pode }) : (o.gmpClickable = pode)));
     /* a concorrência são ~2 mil marcadores: refazer com gmpClickable novo é bem mais rápido que trocar um a um (desenhaMerc) */
     if (this.mercUlt) this.mercado(...this.mercUlt);
     if (this.mercDest) this.mercDest.gmpClickable = !on;

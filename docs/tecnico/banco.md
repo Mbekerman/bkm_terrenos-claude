@@ -115,6 +115,7 @@ Tudo sai de `app.membros` (`20261015000100_base.sql:23-38`), uma linha por pesso
 | `analista` | edita | 1 |
 | `leitura` | só consulta | 0 |
 | `basico` | quem entrou pelo Google com e-mail do domínio da empresa e ainda não foi promovido; por ora consulta como `leitura` | 0 |
+| `marketing` | só o mapa: lê os terrenos comprados por `app.mapa_comprados` e nada mais da empresa (fica fora de `minhas_empresas`, `eh_membro` e `ve_terreno`); sem administrador nem superior (16/nov/2026) | 0 |
 
 - **`administrador`** é uma marca à parte (`membros.administrador`), em qualquer papel: edita a configuração (funil, Jornada, campos, notificações, parâmetros urbanísticos, listas de tarefas) e a equipe. A empresa nunca fica sem administrador (trigger `t_hierarquia`).
 - **Hierarquia por `superior_id`**: o analista responde a um gestor, o gestor a um diretor, sempre um nível acima; diretor, leitura e básico não têm superior. Quem tem subordinados não sai nem muda de papel antes de trocar o superior deles. Tudo conferido por `app.tg_membro_hierarquia` (`20261015000100_base.sql:48-81`). `app.eh_superior(empresa, chefe, membro)` sobe a cadeia (até 10 níveis) e é usada em aprovações ("qualquer superior aprova por quem está abaixo") e na lixeira do log.
@@ -126,7 +127,7 @@ Definidas em `20261015000100_base.sql:84-164`, todas `security definer` (para le
 
 | Função | Responde | Usada em |
 | --- | --- | --- |
-| `app.minhas_empresas()` | conjunto das empresas em que sou membro (qualquer papel) | toda política `ver` (`using (empresa_id in (select app.minhas_empresas()))`) |
+| `app.minhas_empresas()` | conjunto das empresas em que sou membro (qualquer papel menos `marketing`) | toda política `ver` (`using (empresa_id in (select app.minhas_empresas()))`) |
 | `app.empresas_edicao()` | empresas em que sou diretor, gestor ou analista | políticas `inserir`, `alterar`, `remover` |
 | `app.papel(empresa)` | meu papel ou nulo | regras finas dentro das RPCs |
 | `app.eh_membro`, `app.eh_gestor` (gestor ou diretor), `app.eh_administrador`, `app.eh_diretoria` (diretor ou administrador) | booleanos | RPCs e políticas |

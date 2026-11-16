@@ -720,3 +720,10 @@ html[data-tema="escuro"] .ems-res tfoot td { border-top-color: #444746 }
 
 /* estudo aberto pelo chip do chat, por cima da janela de onde veio (que pode ser a do estudo de massa, um .scrim) */
 .vb-pop.vb-pop-sobre { z-index: 46 }
+
+/* Mapa do Marketing (16/nov/2026): só o mapa, sem a lista; os terrenos comprados aparecem sem responder ao clique */
+.mapa-pg.mp-mkt { grid-template-columns: minmax(0, 1fr) !important; gap: 0 }
+@media (max-width: 899px) { .mapa-pg.mp-mkt .mapa-area { height: calc(100vh - 72px - 96px) } }
+.pin.et.so-ver { cursor: default }
+.gr.so-ver .gr-i { cursor: default }
+.gr.so-ver .gr-i:hover, .gr.so-ver .gr-i:focus-visible { background: none }

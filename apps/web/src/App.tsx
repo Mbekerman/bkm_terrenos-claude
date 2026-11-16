@@ -12,15 +12,25 @@ import FichaPagina from './pages/FichaPagina';
 import Funil from './pages/Funil';
 import Corretores from './pages/Corretores';
 import Pipeline from './pages/Pipeline';
+import MapaMarketing from './pages/MapaMarketing';
 
 // Porte tela a tela (docs/adr/0001): login, mapa, novo terreno, ficha, funil e o Pipeline (tabela de terrenos). Os endereços
 // seguem os do protótipo; o login aparece no próprio endereço do link e, entrando, a tela abre.
 export default function App() {
-  const { carregando, session, empresa } = useSessao();
+  const { carregando, session, empresa, marketing } = useSessao();
   if (!configurado) return <Setup />;
   if (carregando) return <Carregando />;
   if (!session) return <Login />;
   if (!empresa) return <SemAcesso />;
+  /* Marketing: só o mapa (pedido do Moises, 16/nov/2026); qualquer outro endereço volta para ele */
+  if (marketing) return (
+    <Routes>
+      <Route element={<Moldura />}>
+        <Route path="mapa" element={<MapaMarketing />} />
+        <Route path="*" element={<Navigate to="/mapa" replace />} />
+      </Route>
+    </Routes>
+  );
   return (
     <Routes>
       <Route element={<Moldura />}>

@@ -6,6 +6,10 @@ Quem desenvolve: toda mudança que o usuário vê ganha uma linha aqui, na data 
 
 Antes de 5/nov/2026, o sistema real ainda não tinha telas de uso: tudo era testado no protótipo. Este registro começa no porte das telas para o sistema real.
 
+## 2026-11-16
+
+- **Papel Marketing.** Quem é do Marketing (Carla, Gessica e Bruna) entra só na página Mapa, com a concorrência, os mapas de renda e de densidade e os terrenos comprados, sem clique e sem ficha. Os outros terrenos não aparecem. Ver [00. Conceitos › Papéis](00-conceitos.md#papéis-das-pessoas) e [2. Mapa › Mapa do Marketing](02-mapa.md#mapa-do-marketing). (#391)
+
 ## 2026-11-12
 
 - **Pasta do Drive: número para terrenos da mesma rua.** O segundo terreno cadastrado na mesma rua e cidade fica com a pasta `..._A002_Av. São Miguel 2`, o terceiro com ` 3`, e assim por diante; o primeiro fica sem número. Ver [03. Novo terreno › Pastas do terreno no Drive](03-novo-terreno.md#pastas-do-terreno-no-drive). (#387)

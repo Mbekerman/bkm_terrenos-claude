@@ -18,10 +18,12 @@ interface Sessao {
   eGestor: boolean;
   /** Edita (analista para cima); leitura e básico só consultam. */
   edita: boolean;
+  /** Marketing: só o mapa, com a concorrência, a renda, a densidade e os terrenos comprados (o banco fecha o resto). */
+  marketing: boolean;
 }
 
 export const NOME_PAPEL: Record<Papel, string> = {
-  diretor: 'Diretor', gestor: 'Gestor', analista: 'Analista', leitura: 'Leitura', basico: 'Básico',
+  diretor: 'Diretor', gestor: 'Gestor', analista: 'Analista', leitura: 'Leitura', basico: 'Básico', marketing: 'Marketing',
 };
 
 const Ctx = createContext<Sessao | null>(null);
@@ -89,6 +91,7 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
     erro,
     eGestor: membro?.papel === 'gestor' || membro?.papel === 'diretor',
     edita: membro?.papel === 'analista' || membro?.papel === 'gestor' || membro?.papel === 'diretor',
+    marketing: membro?.papel === 'marketing',
     recarregar: async () => { if (session?.user) await carregar(session.user.id); },
   };
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
