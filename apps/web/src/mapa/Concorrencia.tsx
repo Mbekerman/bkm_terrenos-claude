@@ -7,6 +7,7 @@ import { VsoKv } from './VsoHist';
 import {
   MF_DT, MF_UN, MK_SIT, brl, lerNum, mercado, mfAtivos, mfPassa, mkAreaN, mkData, mkDias, mkDormN, mkGrupos, mkM2, mkMarcaHtml, mkFxMarcaHtml, mkFxInfo, mkFxK, MK_FX_CHAVES, mkVisivel, mkPct, mkPeriodo,
   mkSitK, mkSitNome, mkVagaN, mkVso, num, type Emp, type Filtro,
+  mkEnq, mkEnqEmp,
 } from './mercado';
 
 // Marcação da Concorrência, igual à do protótipo (tools/prototipo/proto_mercado.js: mfBotao, mfDrawer, mfRodape,
@@ -131,7 +132,7 @@ export function FiltroConc({ f, mudar, fechar, aviso }: { f: Filtro; mudar: (f: 
             </div>
           );
         })}
-        <div className="fx-c"><div className="fx-l">Programa social</div><div className="fx-ops">{op('prog', 'sim', 'Sim')}{op('prog', 'nao', 'Não')}</div><div className="fx-hint">Como o Órulo marca o empreendimento; não separa HIS de HMP.</div></div>
+        <div className="fx-c"><div className="fx-l">Programa social</div><div className="fx-ops">{op('prog', 'sim', 'Sim')}{op('prog', 'nao', 'Não')}</div><div className="fx-hint">Sim inclui os que o alvará da prefeitura marca como HIS ou HMP (só São Paulo), além dos que o Órulo marca.</div></div>
         <div className="fx-c"><div className="fx-l">Incorporadora</div>
           <input className="fx-in" type="search" placeholder="Buscar incorporadora…" value={busca} aria-label="Buscar incorporadora" onChange={(ev) => setBusca(ev.target.value)} />
           <div className="fx-ops">{incs.length ? incs.slice(0, q ? 200 : 40).map((i) => op('inc', i, i)) : <span className="fx-hint">Nada encontrado.</span>}</div>
@@ -230,7 +231,7 @@ export function CaixaEmp({ e, fechar, tabela, vso: abrirVso, pausado }: { e: Emp
         <button type="button" className="iconbtn" aria-label="Fechar" title="Fechar (Esc)" onClick={fechar}><Ic n="close" s={20} /></button></div>
       <div className="cc-k mk-k"><div className="cc-big">{m2 != null ? brl(Math.round(m2)) + '/m²' : 'Sem estoque com preço'}</div>
         <div className="faint">{m2 != null ? 'preço médio por m² das unidades à venda' : e.estoque ? 'as unidades à venda estão sem preço na tabela' : 'nenhuma unidade à venda'}</div>
-        <div className="mk-prog">Enquadramento social: <b>{e.prog === 'sim' ? 'Sim' : e.prog === 'nao' ? 'Não' : 'Não informado'}</b></div></div>
+        <div className="mk-prog">Enquadramento social: <b>{mkEnqEmp(e)}</b></div></div>
       <div className="mk-grid">{kv('Lançamento', mkData(e.lanc))}{kv('Entrega', mkData(e.ent))}{kv('Unidades', num(e.unidades))}{kv('Estoque', num(e.estoque), pct + '%')}
         {/* com o histórico do Órulo, VSO e vendas dos últimos 3 meses e o quartil de vendas (pedido do Moises, 12/nov/2026); sem ele, o que o monitor mediu */}
         <VsoKv id={e.id} abrir={() => abrirVso(e.id)} semHist={<>{kv('Vendas', num(e.vendas), mkPeriodo())}{kv('VSO', mkPct(vso), dias ? `em ${dias} dias` : '')}</>} /></div>
@@ -244,7 +245,6 @@ export function CaixaEmp({ e, fechar, tabela, vso: abrirVso, pausado }: { e: Emp
 /* ---------- tabela completa do empreendimento, ao vivo do monitor (public.im_tabela_empreendimento) ---------- */
 const MK_SIT_UN: Record<string, string> = { disponivel: 'À venda', reservada: 'Reservada', vendida: 'Vendida' };
 const MK_TP_UN: Record<string, string> = { apartamento: 'Apto', garden: 'Garden', cobertura: 'Cobertura', duplex: 'Duplex', studio: 'Studio', loft: 'Loft', casa: 'Casa', sala: 'Sala', loja: 'Loja' };
-const simNao = (v: string | null) => (v === 'sim' ? 'Sim' : v === 'nao' ? 'Não' : 'Não informado');
 async function pedirTabela(id: string) {
   const { data, error } = await supabase.schema('public').rpc('im_tabela_empreendimento', { p_id: id });
   if (error) throw new Error(error.message);
@@ -292,7 +292,7 @@ export function TabelaEmp({ id, fechar }: { id: string; fechar: () => void }) {
     corpo = <>
       <div className="dh"><div><h2>{tit}</h2><div className="muted" style={{ marginTop: 4 }}>{[mkSitNome(E.situacao), E.bairro].filter(Boolean).join(' · ')}</div></div>{x}</div>
       <div className="mkt-cab">{kv('Incorporadora', E.incorporadora || 'Não informada')}{kv('CNPJ', E.cnpj || 'Não informado')}{kv('Endereço', E.endereco || 'Não informado')}
-        {kv('Torres', E.torres == null ? '—' : num(E.torres))}{kv('Tipo', [E.tipo, E.finalidade].filter(Boolean).join(', ') || '—')}{kv('Enquadramento social', simNao(E.programa_social))}
+        {kv('Torres', E.torres == null ? '—' : num(E.torres))}{kv('Tipo', [E.tipo, E.finalidade].filter(Boolean).join(', ') || '—')}{kv('Enquadramento social', mkEnq(E.programa_social, E.his_alvara, E.hmp_alvara))}
         {kv('Lançamento', mkData(E.lancamento))}{kv('Entrega', mkData(E.entrega))}{kv('Unidades no Órulo', E.unidades == null ? '—' : num(E.unidades))}
         {E.link && kv('Fonte', <a href={E.link} target="_blank" rel="noopener">Ver no Órulo</a>)}</div>
       <div className="mkt-fs" role="group" aria-label="Situação">{seg('todas', cont.todas)}{seg('venda', cont.venda)}{seg('vendida', cont.vendida)}</div>
