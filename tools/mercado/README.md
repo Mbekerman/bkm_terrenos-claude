@@ -17,4 +17,6 @@ O agrupamento mora no banco do monitor (Mbekerman/bkm-monitor-mercado, migration
 3. Salvar a linha de `im_mercado_config` em `config.json` e rodar `python3 tools/mercado/montar.py emps.json grupos.json config.json docs/dados/mercado.json`.
 4. `python3 tools/prototipo/build.py`.
 
+Enquadramento social (pedido do Moises, 17/nov/2026): o campo `social_alvara` (`his`, `hmp`, `his_hmp` ou nulo) vem de `his_alvara`/`hmp_alvara` do monitor, a marcação do processo de licenciamento da prefeitura (alvará, só São Paulo; migration `alvara_sistematico` de lá). O card e a tabela completa mostram "Sim (alvará: HIS e HMP)" quando há marcação; senão, o `programa_social` do Órulo. O filtro "Programa social: Sim" inclui os dois. Em 17/nov/2026 o campo foi acrescentado ao retrato de 4/nov sem refazer o resto.
+
 Leitura do VSO: vendas ÷ (vendas + à venda), contando só as vendas que o monitor viu (as de antes do monitor ficam fora). O período é o das mensais completas dos últimos 3 meses; enquanto houver só uma, é curto (em 4/nov/2026, 24/10 a 1/11).

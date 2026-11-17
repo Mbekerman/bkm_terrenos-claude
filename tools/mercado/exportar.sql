@@ -10,6 +10,9 @@
 --   VSO      = vendas ÷ (vendas + estoque), calculado no protótipo
 --   estoque_un = as unidades à venda, "dorm,área,preço" separadas por ";"
 --               (preço vazio quando a tabela não traz), para os filtros do mapa
+--   social_alvara = his | hmp | his_hmp quando o processo de licenciamento da prefeitura
+--               (alvará, só São Paulo) marca HIS/HMP; nulo sem marcação. Vem de his_alvara e
+--               hmp_alvara do monitor (migration alvara_sistematico, 17/nov/2026)
 with mensais as (
   select id, referencia from public.im_coletas
    where tipo = 'completa_mensal' and situacao = 'completa'
@@ -39,11 +42,13 @@ select json_build_object(
   'janela', (select json_build_object('de', min(v.vendida_de), 'ate', max(v.vendida_ate), 'vendas', count(*))
                from public.im_vendas v join mensais m on m.id = v.coleta_id
               where not v.antes_do_monitor and v.desfeita_coleta_id is null),
-  'campos', json_build_array('id','nome','incorporadora','bairro','municipio','lat','lng','situacao','lancamento','entrega','programa_social','unidades','estoque','preco','area','vendas','estoque_un'),
+  'campos', json_build_array('id','nome','incorporadora','bairro','municipio','lat','lng','situacao','lancamento','entrega','programa_social','unidades','estoque','preco','area','vendas','estoque_un','social_alvara'),
   'emps', (select json_agg(json_build_array(
       e.id, e.nome, i.nome, e.bairro, m.codigo_ibge, round(e.latitude::numeric, 5), round(e.longitude::numeric, 5), e.situacao,
       e.data_lancamento, e.previsao_entrega, e.programa_social, coalesce(ag.unidades, 0), coalesce(ag.estoque, 0),
-      ag.preco, ag.area, coalesce(ag.vendas, 0), ag.estoque_un) order by e.nome)
+      ag.preco, ag.area, coalesce(ag.vendas, 0), ag.estoque_un,
+      case when e.his_alvara and e.hmp_alvara then 'his_hmp' when e.his_alvara then 'his' when e.hmp_alvara then 'hmp' end)
+      order by e.nome)
     from public.im_empreendimentos e
     join public.im_empreendimento_estados es on es.empreendimento_id = e.id and es.ate_coleta_id is null
     join public.im_incorporadoras i on i.id = e.incorporadora_id

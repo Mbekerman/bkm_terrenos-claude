@@ -31,11 +31,20 @@ export const mkVisivel = (e: Emp, off: string[]) => !off.includes(mkSitK(e)) && 
 
 export interface Emp {
   id: string; nome: string; inc: string; bairro: string; mun: string; lat: number; lng: number; sit: string;
-  lanc: string | null; ent: string | null; prog: string | null; unidades: number; estoque: number; preco: number | null; area: number | null; vendas: number;
+  lanc: string | null; ent: string | null; prog: string | null; alv: string | null; unidades: number; estoque: number; preco: number | null; area: number | null; vendas: number;
   _u: string | null; u: (number | null)[][] | null; _g: any[] | null; g: any[] | null;
 }
 export interface Mercado { emps: Emp[]; janela: { de: string; ate: string } | null; cg: string[]; cfg: any; gerado: string; incs: string[] }
 
+/* enquadramento social: o do Órulo (programa_social) ou, quando o processo de licenciamento da prefeitura
+   (alvará, só São Paulo) marca HIS/HMP, "Sim (alvará: HIS e HMP)" (pedido do Moises, 17/nov/2026) */
+export const mkAlvTxt = (his: boolean | null | undefined, hmp: boolean | null | undefined) =>
+  [his && 'HIS', hmp && 'HMP'].filter(Boolean).join(' e ');
+export const mkEnq = (prog: string | null | undefined, his?: boolean | null, hmp?: boolean | null) =>
+  his || hmp ? `Sim (alvará: ${mkAlvTxt(his, hmp)})` : prog === 'sim' ? 'Sim' : prog === 'nao' ? 'Não' : 'Não informado';
+export const mkEnqEmp = (e: { prog: string | null; alv?: string | null }) =>
+  mkEnq(e.prog, e.alv === 'his' || e.alv === 'his_hmp', e.alv === 'hmp' || e.alv === 'his_hmp');
+export const mkProgEf = (e: { prog: string | null; alv?: string | null }) => (e.alv ? 'sim' : e.prog);
 export const mkSitK = (e: { sit?: string } | null | undefined) => (e?.sit && MK_SIT[e.sit] ? e.sit : 'nao_informado');
 export const mkSitNome = (s: string | null | undefined) => (MK_SIT[s || ''] || MK_SIT.nao_informado)[0];
 export const mkTitulo = (e: Emp) => { const k = mkFxK(e); return `${e.nome} · ${mkSitNome(e.sit)} · ${k === 'fx' ? 'sem preço' : 'R$/m² ' + mkFxInfo(k)[0].toLowerCase()}`; };
@@ -51,7 +60,7 @@ export function carregarMercado(): Promise<Mercado> {
     const emps: Emp[] = j.emps.map((a: any[]) => {
       const o: any = {}; c.forEach((k, i) => (o[k] = a[i]));
       return { id: o.id, nome: o.nome, inc: o.incorporadora, bairro: o.bairro, mun: o.municipio, lat: +o.lat, lng: +o.lng, sit: o.situacao,
-        lanc: o.lancamento, ent: o.entrega, prog: o.programa_social, unidades: o.unidades, estoque: o.estoque, preco: o.preco == null ? null : +o.preco,
+        lanc: o.lancamento, ent: o.entrega, prog: o.programa_social, alv: o.social_alvara || null, unidades: o.unidades, estoque: o.estoque, preco: o.preco == null ? null : +o.preco,
         area: o.area == null ? null : +o.area, vendas: o.vendas, _u: o.estoque_un, u: null, _g: o.grupos || [], g: null };
     });
     return (MK = { emps, janela: j.janela, cg: j.campos_grupo, cfg: j.agrupamento, gerado: j.gerado_em, incs: [...new Set(emps.map((e) => e.inc))].sort((a, b) => String(a).localeCompare(String(b), 'pt-BR')) });
@@ -101,7 +110,7 @@ export function mfPassa(f: Filtro, e: any, sem?: string) {
     if ((w.min && v < w.min) || (w.max && v > w.max)) return false;
   }
   if (sem !== 'inc' && f.inc?.length && !f.inc.includes(e.inc)) return false;
-  if (sem !== 'prog' && f.prog?.length && !f.prog.includes(e.prog)) return false;
+  if (sem !== 'prog' && f.prog?.length && !f.prog.includes(mkProgEf(e) ?? '')) return false;
   const us = MF_UN.filter(([k]) => k !== sem && f[k] && (f[k].min != null || f[k].max != null)); if (!us.length) return true;
   /* basta uma unidade à venda dentro de todos os filtros de unidade, a mesma */
   return mkUn(e).some((u) => us.every(([k, , , i]) => dentro(i === 3 ? mkM2(u[2], u[1]) : u[i], f[k])));
